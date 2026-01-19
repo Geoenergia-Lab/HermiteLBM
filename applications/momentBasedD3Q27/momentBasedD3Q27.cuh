@@ -66,6 +66,7 @@ namespace LBM
 
     using VelocitySet = D3Q27;
     using Collision = secondOrder;
+    using BlockHalo = device::halo<VelocitySet, periodicX(), periodicY()>;
 
     __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept { return block::sharedMemoryBufferSize<VelocitySet, 10>(sizeof(scalar_t)); }
 
@@ -150,10 +151,11 @@ namespace LBM
         }
 
         // Load pop from global memory in cover nodes
-        device::halo<VelocitySet>::load(pop, fGhost);
+        BlockHalo::load(pop, fGhost);
 
         if constexpr (std::is_same<BoundaryConditions, lidDrivenCavity>::value)
-        { // Calculate the moments either at the boundary or interior
+        {
+            // Calculate the moments either at the boundary or interior
             {
                 const normalVector boundaryNormal;
 
@@ -172,15 +174,14 @@ namespace LBM
         {
             // Compute post-stream moments
             velocitySet::calculate_moments<VelocitySet>(pop, moments);
-            {
-                // Update the shared buffer with the refreshed moments
-                device::constexpr_for<0, NUMBER_MOMENTS()>(
-                    [&](const auto moment)
-                    {
-                        const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
-                        shared_buffer[ID] = moments[moment];
-                    });
-            }
+
+            // Update the shared buffer with the refreshed moments
+            device::constexpr_for<0, NUMBER_MOMENTS()>(
+                [&](const auto moment)
+                {
+                    const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
+                    shared_buffer[ID] = moments[moment];
+                });
 
             __syncthreads();
 
@@ -213,7 +214,7 @@ namespace LBM
             });
 
         // Save the populations to the block halo
-        device::halo<VelocitySet>::save(pop, gGhost);
+        BlockHalo::save(pop, gGhost);
     }
 }
 
