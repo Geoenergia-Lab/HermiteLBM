@@ -91,6 +91,8 @@ namespace LBM
         const device::ptrCollection<6, const scalar_t> fGhost,
         const device::ptrCollection<6, scalar_t> gGhost)
     {
+        static_assert((std::is_same<BoundaryConditions, lidDrivenCavity>::value) || std::is_same<BoundaryConditions, jetFlow>::value);
+
         // Always a multiple of 32, so no need to check this(I think)
         if constexpr (out_of_bounds_check())
         {
@@ -152,7 +154,7 @@ namespace LBM
             pop,
             fGhost);
 
-        if constexpr (std::is_same<BoundaryConditions, lidDrivenCavityBoundaryConditions>::value)
+        if constexpr (std::is_same<BoundaryConditions, lidDrivenCavity>::value)
         { // Calculate the moments either at the boundary or interior
             {
                 const normalVector boundaryNormal;
@@ -168,7 +170,7 @@ namespace LBM
             }
         }
 
-        if constexpr (std::is_same<BoundaryConditions, jetFlowBoundaryConditions>::value)
+        if constexpr (std::is_same<BoundaryConditions, jetFlow>::value)
         {
             // Compute post-stream moments
             velocitySet::calculate_moments<VelocitySet>(pop, moments);

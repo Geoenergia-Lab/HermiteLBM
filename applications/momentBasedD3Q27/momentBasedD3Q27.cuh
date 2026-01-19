@@ -91,6 +91,8 @@ namespace LBM
         const device::ptrCollection<6, const scalar_t> fGhost,
         const device::ptrCollection<6, scalar_t> gGhost)
     {
+        static_assert((std::is_same<BoundaryConditions, lidDrivenCavity>::value) || std::is_same<BoundaryConditions, jetFlow>::value);
+
         // Always a multiple of 32, so no need to check this(I think)
         if constexpr (out_of_bounds_check())
         {
@@ -150,17 +152,46 @@ namespace LBM
         // Load pop from global memory in cover nodes
         device::halo<VelocitySet>::load(pop, fGhost);
 
-        // Calculate the moments either at the boundary or interior
-        {
-            const normalVector boundaryNormal;
+        if constexpr (std::is_same<BoundaryConditions, lidDrivenCavity>::value)
+        { // Calculate the moments either at the boundary or interior
+            {
+                const normalVector boundaryNormal;
 
-            if (boundaryNormal.isBoundary())
-            {
-                BoundaryConditions::calculate_moments<VelocitySet>(pop, moments, boundaryNormal, shared_buffer);
+                if (boundaryNormal.isBoundary())
+                {
+                    BoundaryConditions::calculate_moments<VelocitySet>(pop, moments, boundaryNormal, &(shared_buffer[0]));
+                }
+                else
+                {
+                    velocitySet::calculate_moments<VelocitySet>(pop, moments);
+                }
             }
-            else
+        }
+
+        if constexpr (std::is_same<BoundaryConditions, jetFlow>::value)
+        {
+            // Compute post-stream moments
+            velocitySet::calculate_moments<VelocitySet>(pop, moments);
             {
-                velocitySet::calculate_moments<VelocitySet>(pop, moments);
+                // Update the shared buffer with the refreshed moments
+                device::constexpr_for<0, NUMBER_MOMENTS()>(
+                    [&](const auto moment)
+                    {
+                        const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
+                        shared_buffer[ID] = moments[moment];
+                    });
+            }
+
+            __syncthreads();
+
+            // Calculate the moments at the boundary
+            {
+                const normalVector boundaryNormal;
+
+                if (boundaryNormal.isBoundary())
+                {
+                    BoundaryConditions::calculate_moments<VelocitySet>(pop, moments, boundaryNormal, &(shared_buffer[0]));
+                }
             }
         }
 

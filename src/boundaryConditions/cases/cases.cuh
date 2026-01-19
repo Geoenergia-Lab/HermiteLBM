@@ -60,11 +60,11 @@ namespace LBM
 {
 
 #ifdef JETFLOW
-    using BoundaryConditions = jetFlowBoundaryConditions;
+    using BoundaryConditions = jetFlow;
 #endif
 
 #ifdef LIDDRIVENCAVITY
-    using BoundaryConditions = lidDrivenCavityBoundaryConditions;
+    using BoundaryConditions = lidDrivenCavity;
 #endif
 
 }

@@ -43,12 +43,12 @@ Namespace
     LBM
 
 SourceFiles
-    jetFlowBoundaryConditions.cuh
+    jetFlow.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_JETFLOWBOUNDARYCONDITIONS_CUH
-#define __MBLBM_JETFLOWBOUNDARYCONDITIONS_CUH
+#ifndef __MBLBM_jetFlow_CUH
+#define __MBLBM_jetFlow_CUH
 
 // Fallback print tracker for all 26 boundary cases
 __device__ int printedFallback[26] = {false};
@@ -62,7 +62,7 @@ namespace LBM
     }
 
     /**
-     * @class jetFlowBoundaryConditions
+     * @class jetFlow
      *
      * @brief Applies boundary conditions for turbulent jet simulations using moment representation
      *
@@ -71,13 +71,13 @@ namespace LBM
      * outflow boundaries using moment-based boundary conditions derived from the
      * regularized LBM approach.
      **/
-    class jetFlowBoundaryConditions
+    class jetFlow
     {
     public:
         /**
          * @brief Default constructor (constexpr)
          **/
-        __device__ __host__ [[nodiscard]] inline consteval jetFlowBoundaryConditions(){};
+        __device__ __host__ [[nodiscard]] inline consteval jetFlow(){};
 
         /**
          * @brief Calculate moment variables at boundary nodes
@@ -108,7 +108,7 @@ namespace LBM
             const normalVector &boundaryNormal,
             const scalar_t *const ptrRestrict shared_buffer) noexcept
         {
-            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: jetFlowBoundaryConditions::calculate_moments only supports D3Q19 and D3Q27.");
+            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: jetFlow::calculate_moments only supports D3Q19 and D3Q27.");
 
             const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -176,7 +176,7 @@ namespace LBM
             const normalVector &boundaryNormal,
             const thread::array<scalar_t, N> &shared_buffer) noexcept
         {
-            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: jetFlowBoundaryConditions::calculate_moments only supports D3Q19 and D3Q27.");
+            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: jetFlow::calculate_moments only supports D3Q19 and D3Q27.");
 
             // const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
             const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);

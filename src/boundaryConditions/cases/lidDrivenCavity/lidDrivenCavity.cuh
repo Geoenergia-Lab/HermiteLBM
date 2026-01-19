@@ -43,19 +43,19 @@ Namespace
     LBM
 
 SourceFiles
-    lidDrivenCavityBoundaryConditions.cuh
+    lidDrivenCavity.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_LIDDRIVENCAVITYBOUNDARYCONDITIONS_CUH
-#define __MBLBM_LIDDRIVENCAVITYBOUNDARYCONDITIONS_CUH
+#ifndef __MBLBM_lidDrivenCavity_CUH
+#define __MBLBM_lidDrivenCavity_CUH
 
 __host__ __device__ [[nodiscard]] inline consteval bool check_n_boundaries() noexcept { return false; }
 
 namespace LBM
 {
     /**
-     * @class lidDrivenCavityBoundaryConditions
+     * @class lidDrivenCavity
      * @brief Applies boundary conditions for lid-driven cavity simulations using moment representation
      *
      * This class implements the boundary condition treatment for the D3Q19 lattice model
@@ -63,13 +63,13 @@ namespace LBM
      * moving lid boundaries using moment-based boundary conditions derived from the
      * regularized LBM approach.
      **/
-    class lidDrivenCavityBoundaryConditions
+    class lidDrivenCavity
     {
     public:
         /**
          * @brief Default constructor (constexpr)
          **/
-        __device__ __host__ [[nodiscard]] inline consteval lidDrivenCavityBoundaryConditions(){};
+        __device__ __host__ [[nodiscard]] inline consteval lidDrivenCavity(){};
 
         /**
          * @brief Calculate moment variables at boundary nodes
@@ -95,7 +95,7 @@ namespace LBM
             const normalVector &boundaryNormal,
             [[maybe_unused]] const scalar_t *const ptrRestrict shared_buffer) noexcept
         {
-            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: lidDrivenCavityBoundaryConditions::calculate_moments only supports D3Q19 and D3Q27.");
+            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: lidDrivenCavity::calculate_moments only supports D3Q19 and D3Q27.");
 
             const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
