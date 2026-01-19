@@ -90,7 +90,12 @@ namespace LBM
                   L_(
                       {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
                        string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")})
+                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
+                  origin_(
+                      {static_cast<scalar_t>(0),
+                       static_cast<scalar_t>(0),
+                       static_cast<scalar_t>(0)}),
+                  spacing_(spacingFromL(nx_, ny_, nz_, L_))
             {
                 std::cout << "latticeMesh:" << std::endl;
                 std::cout << "{" << std::endl;
@@ -175,11 +180,12 @@ namespace LBM
 
                 // Allocate programControl symbols on the GPU (clean up later)
                 {
-                    const scalar_t viscosityTemp = programCtrl.u_inf() * static_cast<scalar_t>(nx_ - 1) / programCtrl.Re();
+                    const scalar_t viscosityTemp = programCtrl.u_inf() * programCtrl.L_char() / programCtrl.Re();
                     const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
                     const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTemp;
                     const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
                     const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
+
                     const scalar_t U_North_temp[3] = {programCtrl.u_inf(), 0, 0};
                     const scalar_t U_South_temp[3] = {0, 0, 0};
                     const scalar_t U_East_temp[3] = {0, 0, 0};
@@ -188,16 +194,19 @@ namespace LBM
                     const scalar_t U_Back_temp[3] = {0, 0, 0};
 
                     copyToSymbol(device::Re, programCtrl.Re());
+                    copyToSymbol(device::u_inf, programCtrl.u_inf());
+                    copyToSymbol(device::L_char, programCtrl.L_char());
+                    copyToSymbol(device::tau, tauTemp);
+                    copyToSymbol(device::omega, omegaTemp);
+                    copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
+                    copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
+
                     copyToSymbol(device::U_North, U_North_temp);
                     copyToSymbol(device::U_South, U_South_temp);
                     copyToSymbol(device::U_East, U_East_temp);
                     copyToSymbol(device::U_West, U_West_temp);
                     copyToSymbol(device::U_Front, U_Front_temp);
                     copyToSymbol(device::U_Back, U_Back_temp);
-                    copyToSymbol(device::tau, tauTemp);
-                    copyToSymbol(device::omega, omegaTemp);
-                    copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
-                    copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
                 }
 
                 // Allocate mesh symbols on the GPU
@@ -218,7 +227,12 @@ namespace LBM
                   L_(
                       {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
                        string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}){};
+                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
+                  origin_(
+                      {static_cast<scalar_t>(0),
+                       static_cast<scalar_t>(0),
+                       static_cast<scalar_t>(0)}),
+                  spacing_(spacingFromL(nx_, ny_, nz_, L_)){};
 
             __host__ [[nodiscard]] latticeMesh(const blockLabel_t meshDimensions) noexcept
                 : nx_(meshDimensions.nx),
@@ -228,21 +242,30 @@ namespace LBM
                   L_(
                       {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
                        string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}){};
+                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
+                  origin_(
+                      {static_cast<scalar_t>(0),
+                       static_cast<scalar_t>(0),
+                       static_cast<scalar_t>(0)}),
+                  spacing_(spacingFromL(nx_, ny_, nz_, L_)){};
 
             __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const blockLabel_t meshDimensions) noexcept
                 : nx_(meshDimensions.nx),
                   ny_(meshDimensions.ny),
                   nz_(meshDimensions.nz),
                   nPoints_(nx_ * ny_ * nz_),
-                  L_(mesh.L()){};
+                  L_(mesh.L()),
+                  origin_(mesh.origin()),
+                  spacing_(spacingFromL(nx_, ny_, nz_, L_)){};
 
             __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh) noexcept
                 : nx_(mesh.nx()),
                   ny_(mesh.ny()),
                   nz_(mesh.nz()),
                   nPoints_(nx_ * ny_ * nz_),
-                  L_(mesh.L()){};
+                  L_(mesh.L()),
+                  origin_(mesh.origin()),
+                  spacing_(mesh.spacing()){};
 
             /**
              * @name Grid Dimension Accessors
@@ -316,6 +339,32 @@ namespace LBM
             }
 
             /**
+             * @brief Get VTI origin
+             * @return Const reference to pointVector containing origin
+             **/
+            __host__ [[nodiscard]] inline constexpr const pointVector &origin() const noexcept
+            {
+                return origin_;
+            }
+
+            /**
+             * @brief Get VTI spacing
+             * @return Const reference to pointVector containing spacing
+             **/
+            __host__ [[nodiscard]] inline constexpr const pointVector &spacing() const noexcept
+            {
+                return spacing_;
+            }
+
+            __host__ [[nodiscard]] inline constexpr scalar_t x0() const noexcept { return origin_.x; }
+            __host__ [[nodiscard]] inline constexpr scalar_t y0() const noexcept { return origin_.y; }
+            __host__ [[nodiscard]] inline constexpr scalar_t z0() const noexcept { return origin_.z; }
+
+            __host__ [[nodiscard]] inline constexpr scalar_t dx() const noexcept { return spacing_.x; }
+            __host__ [[nodiscard]] inline constexpr scalar_t dy() const noexcept { return spacing_.y; }
+            __host__ [[nodiscard]] inline constexpr scalar_t dz() const noexcept { return spacing_.z; }
+
+            /**
              * @brief Get the number of physical dimensions of the mesh
              * @return Const reference to pointVector containing domain size
              **/
@@ -337,6 +386,29 @@ namespace LBM
              * @brief Physical dimensions of the domain
              **/
             const pointVector L_;
+
+            /**
+             * @brief VTI origin and spacing (ImageData implicit coordinates)
+             **/
+            const pointVector origin_;
+            const pointVector spacing_;
+
+            /**
+             * @brief Computes VTI spacing from the physical domain length and lattice resolution
+             * @return Spacing vector (dx, dy, dz) computed as L/(n-1) per axis (or 1 when n==1)
+             */
+            __host__ [[nodiscard]] static inline constexpr pointVector spacingFromL(
+                const label_t nx,
+                const label_t ny,
+                const label_t nz,
+                const pointVector &L) noexcept
+            {
+                const scalar_t dx = (nx > 1) ? (L.x / static_cast<scalar_t>(nx - 1)) : static_cast<scalar_t>(1);
+                const scalar_t dy = (ny > 1) ? (L.y / static_cast<scalar_t>(ny - 1)) : static_cast<scalar_t>(1);
+                const scalar_t dz = (nz > 1) ? (L.z / static_cast<scalar_t>(nz - 1)) : static_cast<scalar_t>(1);
+
+                return {dx, dy, dz};
+            }
         };
     }
 }

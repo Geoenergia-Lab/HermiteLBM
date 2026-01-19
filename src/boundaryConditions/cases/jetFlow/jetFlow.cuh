@@ -55,12 +55,6 @@ __device__ int printedFallback[26] = {false};
 
 namespace LBM
 {
-
-    __device__ __host__ [[nodiscard]] inline consteval scalar_t L_char() noexcept
-    {
-        return static_cast<scalar_t>(10);
-    }
-
     /**
      * @class jetFlow
      *
@@ -251,7 +245,7 @@ namespace LBM
 
         __device__ [[nodiscard]] static inline scalar_t radius() noexcept
         {
-            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(L_char());
+            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::L_char);
         }
 
         __device__ [[nodiscard]] static inline scalar_t r2() noexcept
