@@ -101,7 +101,7 @@ namespace LBM
 
             switch (boundaryNormal.nodeType())
             {
-            // Round inflow + no-slip
+            // Oil inflow + no-slip
             case normalVector::BACK():
             {
                 const label_t x = threadIdx.x + block::nx() * blockIdx.x;
@@ -131,12 +131,42 @@ namespace LBM
                 already_handled = true;
                 return;
             }
+            // Water inflow + no-slip
+            case normalVector::SOUTH():
+            {
+                const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+                const label_t z = threadIdx.z + block::nz() * blockIdx.z;
+
+                const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(z) - center_z()) * (static_cast<scalar_t>(z) - center_z()) < r2());
+
+                const scalar_t mxy_I = BACK_mxy_I(pop);
+                const scalar_t myz_I = BACK_myz_I(pop);
+
+                const scalar_t p = static_cast<scalar_t>(0);
+                const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I;
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I;
+
+                moments[m_i<0>()] = p;                                        // p
+                moments[m_i<1>()] = static_cast<scalar_t>(0);                 // ux
+                moments[m_i<2>()] = is_jet * device::u_inf;                   // uy
+                moments[m_i<3>()] = static_cast<scalar_t>(0);                 // uz
+                moments[m_i<4>()] = static_cast<scalar_t>(0);                 // mxx
+                moments[m_i<5>()] = mxy;                                      // mxy
+                moments[m_i<6>()] = static_cast<scalar_t>(0);                 // mxz
+                moments[m_i<7>()] = is_jet * (device::u_inf * device::u_inf); // myy
+                moments[m_i<8>()] = myz;                                      // myz
+                moments[m_i<9>()] = static_cast<scalar_t>(0);                 // mzz
+                moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1);
+
+                already_handled = true;
+                return;
+            }
 
 // Periodic
 #include "include/periodic.cuh"
 
 // Outflow (zero-gradient) at front face
-#include "include/multiphaseIRBCN.cuh"
+#include "include/IRBCNeumann.cuh"
 
             // Call static boundaries for uncovered cases
             default:
@@ -145,7 +175,7 @@ namespace LBM
                 {
                     switch (boundaryNormal.nodeType())
                     {
-#include "include/multiphaseFallback.cuh"
+#include "include/fallback.cuh"
                     }
                 }
 
@@ -170,7 +200,7 @@ namespace LBM
 
             switch (boundaryNormal.nodeType())
             {
-            // Round inflow + no-slip
+            // Oil inflow + no-slip
             case normalVector::BACK():
             {
                 const label_t x = threadIdx.x + block::nx() * blockIdx.x;
@@ -200,12 +230,42 @@ namespace LBM
                 already_handled = true;
                 return;
             }
+            // Water inflow + no-slip
+            case normalVector::SOUTH():
+            {
+                const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+                const label_t z = threadIdx.z + block::nz() * blockIdx.z;
+
+                const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(z) - center_z()) * (static_cast<scalar_t>(z) - center_z()) < r2());
+
+                const scalar_t mxy_I = BACK_mxy_I(pop);
+                const scalar_t myz_I = BACK_myz_I(pop);
+
+                const scalar_t p = static_cast<scalar_t>(0);
+                const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I;
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I;
+
+                moments[m_i<0>()] = p;                                        // p
+                moments[m_i<1>()] = static_cast<scalar_t>(0);                 // ux
+                moments[m_i<2>()] = is_jet * device::u_inf;                   // uy
+                moments[m_i<3>()] = static_cast<scalar_t>(0);                 // uz
+                moments[m_i<4>()] = static_cast<scalar_t>(0);                 // mxx
+                moments[m_i<5>()] = mxy;                                      // mxy
+                moments[m_i<6>()] = static_cast<scalar_t>(0);                 // mxz
+                moments[m_i<7>()] = is_jet * (device::u_inf * device::u_inf); // myy
+                moments[m_i<8>()] = myz;                                      // myz
+                moments[m_i<9>()] = static_cast<scalar_t>(0);                 // mzz
+                moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1);
+
+                already_handled = true;
+                return;
+            }
 
 // Periodic
 #include "include/periodic.cuh"
 
 // Outflow (zero-gradient) at front face
-#include "include/multiphaseIRBCN.cuh"
+#include "include/IRBCNeumann.cuh"
 
             // Call static boundaries for uncovered cases
             default:
@@ -214,7 +274,7 @@ namespace LBM
                 {
                     switch (boundaryNormal.nodeType())
                     {
-#include "include/multiphaseFallback.cuh"
+#include "include/fallback.cuh"
                     }
                 }
 
@@ -232,6 +292,11 @@ namespace LBM
         __device__ [[nodiscard]] static inline scalar_t center_y() noexcept
         {
             return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::ny - 1);
+        }
+
+        __device__ [[nodiscard]] static inline scalar_t center_z() noexcept
+        {
+            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::nz - 1);
         }
 
         __device__ [[nodiscard]] static inline scalar_t radius() noexcept

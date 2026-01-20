@@ -203,7 +203,7 @@ namespace LBM
 #include "include/periodic.cuh"
 
 // Outflow (zero-gradient) at front face
-#include "include/IRBCN.cuh"
+#include "include/IRBCNeumann.cuh"
 
             // Call static boundaries for uncovered cases
             default:

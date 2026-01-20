@@ -50,12 +50,19 @@ SourceFiles
 #ifndef __MBLBM_CASES_CUH
 #define __MBLBM_CASES_CUH
 
+// Monophase boundary conditions defines
 #define MONOPHASEJET
 // #define LIDDRIVENCAVITY
 
 #include "monophaseJet/monophaseJet.cuh"
-#include "multiphaseJet/multiphaseJet.cuh"
 #include "lidDrivenCavity/lidDrivenCavity.cuh"
+
+// Multiphase boundary conditions defines
+#define MULTIPHASEJET
+// #define SSMD
+
+#include "multiphaseJet/multiphaseJet.cuh"
+#include "SSMD/SSMD.cuh"
 
 namespace LBM
 {
@@ -64,15 +71,14 @@ namespace LBM
      **/
 #ifdef MONOPHASEJET
     using BoundaryConditions = monophaseJet;
-    __host__ __device__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
-    __host__ __device__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
 #endif
 
 #ifdef LIDDRIVENCAVITY
     using BoundaryConditions = lidDrivenCavity;
-
-    __host__ __device__ [[nodiscard]] inline consteval bool periodicX() noexcept { return false; }
-    __host__ __device__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return false; }
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
 #endif
 
     /**
@@ -80,9 +86,17 @@ namespace LBM
      **/
     namespace multiphase
     {
+#ifdef MULTIPHASEJET
         using BoundaryConditions = multiphaseJet;
-        __host__ __device__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
-        __host__ __device__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
+        __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
+        __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
+#endif
+
+#ifdef SSMD
+        using BoundaryConditions = SSMD;
+        __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
+        __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
+#endif
     }
 
 }

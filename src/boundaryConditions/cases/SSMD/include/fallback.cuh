@@ -507,30 +507,6 @@ case normalVector::EAST(): // OK
 
     return;
 }
-case normalVector::SOUTH(): // OK
-{
-    const scalar_t mxy_I = SOUTH_mxy_I(pop);
-    const scalar_t myz_I = SOUTH_myz_I(pop);
-
-    const scalar_t p = static_cast<scalar_t>(6) * p_I / static_cast<scalar_t>(5);
-    const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I;
-    const scalar_t myz = static_cast<scalar_t>(2) * myz_I;
-
-    moments[m_i<0>()] = p;
-    moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
-    moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
-    moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
-    moments[m_i<4>()] = static_cast<scalar_t>(0); // mxx
-    moments[m_i<5>()] = mxy;                      // mxy
-    moments[m_i<6>()] = static_cast<scalar_t>(0); // mxz
-    moments[m_i<7>()] = static_cast<scalar_t>(0); // myy
-    moments[m_i<8>()] = myz;                      // myz
-    moments[m_i<9>()] = static_cast<scalar_t>(0); // mzz
-
-    moments[m_i<10>()] = static_cast<scalar_t>(0);
-
-    return;
-}
 case normalVector::NORTH(): // OK
 {
     const scalar_t mxy_I = NORTH_mxy_I(pop);

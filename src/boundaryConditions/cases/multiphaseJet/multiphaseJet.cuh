@@ -136,7 +136,7 @@ namespace LBM
 #include "include/periodic.cuh"
 
 // Outflow (zero-gradient) at front face
-#include "include/multiphaseIRBCN.cuh"
+#include "include/IRBCNeumann.cuh"
 
             // Call static boundaries for uncovered cases
             default:
@@ -145,7 +145,7 @@ namespace LBM
                 {
                     switch (boundaryNormal.nodeType())
                     {
-#include "include/multiphaseFallback.cuh"
+#include "include/fallback.cuh"
                     }
                 }
 
@@ -205,7 +205,7 @@ namespace LBM
 #include "include/periodic.cuh"
 
 // Outflow (zero-gradient) at front face
-#include "include/multiphaseIRBCN.cuh"
+#include "include/IRBCNeumann.cuh"
 
             // Call static boundaries for uncovered cases
             default:
@@ -214,7 +214,7 @@ namespace LBM
                 {
                     switch (boundaryNormal.nodeType())
                     {
-#include "include/multiphaseFallback.cuh"
+#include "include/fallback.cuh"
                     }
                 }
 
