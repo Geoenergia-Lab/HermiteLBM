@@ -64,7 +64,7 @@ namespace LBM
          * CUDA blocks during LBM simulations. It maintains double-buffered halo regions
          * to support efficient ping-pong swapping between computation steps.
          **/
-        template <class VelocitySet>
+        template <class VelocitySet, const bool xPeriodic, const bool yPeriodic>
         class halo
         {
         public:
@@ -918,7 +918,14 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool West(const label_t x) noexcept
             {
-                return (threadIdx.x == 0 && x != 0);
+                if constexpr (xPeriodic)
+                {
+                    return (threadIdx.x == 0);
+                }
+                else
+                {
+                    return (threadIdx.x == 0 && x != 0);
+                }
             }
 
             /**
@@ -928,7 +935,14 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool East(const label_t x) noexcept
             {
-                return (threadIdx.x == (block::nx() - 1) && x != (device::nx - 1));
+                if constexpr (xPeriodic)
+                {
+                    return (threadIdx.x == (block::nx() - 1));
+                }
+                else
+                {
+                    return (threadIdx.x == (block::nx() - 1) && x != (device::nx - 1));
+                }
             }
 
             /**
@@ -938,7 +952,14 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool South(const label_t y) noexcept
             {
-                return (threadIdx.y == 0 && y != 0);
+                if constexpr (yPeriodic)
+                {
+                    return (threadIdx.y == 0);
+                }
+                else
+                {
+                    return (threadIdx.y == 0 && y != 0);
+                }
             }
 
             /**
@@ -948,7 +969,14 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool North(const label_t y) noexcept
             {
-                return (threadIdx.y == (block::ny() - 1) && y != (device::ny - 1));
+                if constexpr (yPeriodic)
+                {
+                    return (threadIdx.y == (block::ny() - 1));
+                }
+                else
+                {
+                    return (threadIdx.y == (block::ny() - 1) && y != (device::ny - 1));
+                }
             }
 
             /**

@@ -60,11 +60,16 @@ namespace LBM
 {
 
 #ifdef JETFLOW
-    using BoundaryConditions = jetFlowBoundaryConditions;
+    using BoundaryConditions = jetFlow;
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
 #endif
 
 #ifdef LIDDRIVENCAVITY
-    using BoundaryConditions = lidDrivenCavityBoundaryConditions;
+    using BoundaryConditions = lidDrivenCavity;
+
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return false; }
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
 #endif
 
 }
