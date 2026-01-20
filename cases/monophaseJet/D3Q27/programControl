@@ -1,0 +1,32 @@
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+caseName        monophaseJet;
+
+Re              3000;
+
+u_inf           0.016;
+
+L_char          8;
+
+startFrom       latestTime;
+
+startTime       0;
+
+nTimeSteps      200001;
+
+saveInterval    1000;
+
+infoInterval    1000;
+
+multiphase      false;
+
+\*---------------------------------------------------------------------------*/

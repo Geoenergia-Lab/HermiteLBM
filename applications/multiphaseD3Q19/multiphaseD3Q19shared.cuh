@@ -58,15 +58,8 @@ SourceFiles
 #include "../../src/fileIO/fileIO.cuh"
 #include "../../src/runTimeIO/runTimeIO.cuh"
 #include "../../src/functionObjects/objectRegistry.cuh"
-
-#include <cooperative_groups.h>
-namespace cg = cooperative_groups;
-
-namespace config
-{
-    constexpr bool periodicX = true;
-    constexpr bool periodicY = true;
-}
+#include "../../src/array/array.cuh"
+#include "../../src/boundaryConditions/boundaryConditions.cuh"
 
 namespace LBM
 {
@@ -76,8 +69,8 @@ namespace LBM
     using Collision = secondOrder;
 
     // Aliases use the standard halo methods
-    using HydroHalo = device::halo<VelocitySet, config::periodicX, config::periodicY>;
-    using PhaseHalo = device::halo<PhaseVelocitySet, config::periodicX, config::periodicY>;
+    using HydroHalo = device::halo<VelocitySet, periodicX(), periodicY()>;
+    using PhaseHalo = device::halo<PhaseVelocitySet, periodicX(), periodicY()>;
 
     __device__ __host__ [[nodiscard]] inline consteval scalar_t rho_oil() noexcept { return static_cast<scalar_t>(0.852); }
     __device__ __host__ [[nodiscard]] inline consteval scalar_t rho_water() noexcept { return static_cast<scalar_t>(1); }
@@ -268,10 +261,16 @@ namespace LBM
         // Load phase pop from global memory in cover nodes
         PhaseHalo::load(pop_g, ghostPhase);
 
-        // Compute post-stream moments
-        velocitySet::calculate_moments<VelocitySet>(pop, moments);
-        PhaseVelocitySet::calculate_phi(pop_g, moments);
+        if constexpr (std::is_same<BoundaryConditions, lidDrivenCavity>::value)
         {
+            static_assert(!std::is_same<BoundaryConditions, lidDrivenCavity>::value, "Error: lidDrivenCavity boundary conditions do NOT support multiphase simulations.");
+        }
+
+        if constexpr (std::is_same<BoundaryConditions, monophaseJet>::value || std::is_same<BoundaryConditions, multiphaseJet>::value)
+        {
+            // Compute post-stream moments
+            velocitySet::calculate_moments<VelocitySet>(pop, moments);
+
             // Update the shared buffer with the refreshed moments
             device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
                 [&](const auto moment)
@@ -279,17 +278,17 @@ namespace LBM
                     const label_t ID = tid * label_constant<NUMBER_MOMENTS<true>() + 1>() + label_constant<moment>();
                     shared_buffer[ID] = moments[moment];
                 });
-        }
 
-        __syncthreads();
+            __syncthreads();
 
-        // Calculate the moments at the boundary
-        {
-            const normalVector boundaryNormal;
-
-            if (boundaryNormal.isBoundary())
+            // Calculate the moments at the boundary
             {
-                boundaryConditions::calculate_moments<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, shared_buffer);
+                const normalVector boundaryNormal;
+
+                if (boundaryNormal.isBoundary())
+                {
+                    BoundaryConditions::calculate_moments<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, &(shared_buffer[0]));
+                }
             }
         }
 

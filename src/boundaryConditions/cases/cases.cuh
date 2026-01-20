@@ -43,26 +43,43 @@ Namespace
     LBM
 
 SourceFiles
-    boundaryConditions.cuh
+    cases.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_BOUNDARYCONDITIONS_CUH
-#define __MBLBM_BOUNDARYCONDITIONS_CUH
+#ifndef __MBLBM_CASES_CUH
+#define __MBLBM_CASES_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
-#include "../array/threadArray.cuh"
-#include "normalVector.cuh"
-#include "boundaryValue.cuh"
-#include "boundaryRegion.cuh"
-#include "boundaryFields.cuh"
+// #define MONOPHASEJET
+#define MULTIPHASEJET
+// #define LIDDRIVENCAVITY
+
+#include "monophaseJet/monophaseJet.cuh"
+#include "multiphaseJet/multiphaseJet.cuh"
+#include "lidDrivenCavity/lidDrivenCavity.cuh"
 
 namespace LBM
 {
 
-}
+#ifdef MONOPHASEJET
+    using BoundaryConditions = monophaseJet;
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
+#endif
 
-#include "cases/cases.cuh"
+#ifdef MULTIPHASEJET
+    using BoundaryConditions = multiphaseJet;
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
+#endif
+
+#ifdef LIDDRIVENCAVITY
+    using BoundaryConditions = lidDrivenCavity;
+
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicX() noexcept { return false; }
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
+#endif
+
+}
 
 #endif
