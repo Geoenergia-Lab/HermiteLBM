@@ -230,14 +230,7 @@ namespace LBM
             {
                 const label_t ID = tid * m_i<NUMBER_MOMENTS<true>() + 1>() + m_i<moment>();
                 shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
-                if constexpr (moment == index::rho())
-                {
-                    moments[moment] = shared_buffer[ID] + rho0<scalar_t>();
-                }
-                else
-                {
-                    moments[moment] = shared_buffer[ID];
-                }
+                moments[moment] = shared_buffer[ID];
             });
 
         __syncthreads();
@@ -297,7 +290,6 @@ namespace LBM
         }
 
         // Coalesced write to global memory
-        moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
             [&](const auto moment)
             {
@@ -552,26 +544,26 @@ namespace LBM
                 cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
             });
 
+        const scalar_t rho_ = static_cast<scalar_t>(1);
+
         // Coalesced read from global memory
         thread::array<scalar_t, NUMBER_MOMENTS<true>()> moments;
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
             [&](const auto moment)
             {
-                if constexpr (moment == index::rho())
-                {
-                    moments[moment] = devPtrs.ptr<moment>()[idx] + rho0<scalar_t>();
-                }
-                else
-                {
-                    moments[moment] = devPtrs.ptr<moment>()[idx];
-                }
+                moments[moment] = devPtrs.ptr<moment>()[idx];
             });
+
+        // Perform velocity half-step
+        moments[m_i<1>()] += 0.5 * ffx_ / rho_;
+        moments[m_i<2>()] += 0.5 * ffy_ / rho_;
+        moments[m_i<3>()] += 0.5 * ffz_ / rho_;
 
         // Scale the moments correctly
         velocitySet::scale(moments);
 
         // Collide
-        Collision::collide(moments, ffx_, ffy_, ffz_);
+        Collision::collide(moments, ffx_, ffy_, ffz_, rho_);
 
         // Calculate post collision populations
         thread::array<scalar_t, VelocitySet::Q()> pop;
@@ -586,7 +578,6 @@ namespace LBM
         PhaseVelocitySet::sharpen(pop_g, phi_, normx_, normy_, normz_);
 
         // Coalesced write to global memory
-        moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
             [&](const auto moment)
             {

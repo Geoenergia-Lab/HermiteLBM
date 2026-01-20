@@ -116,7 +116,7 @@ namespace LBM
                 {
                     // Direct fold expression with comma operator for multiple operations
                     ((shared_buffer[tid * m_i<N + 1>() + m_i<Is>()] = devPtrs.template ptr<Is>()[idx],
-                      data_[Is] = shared_buffer[tid * m_i<N + 1>() + m_i<Is>()] + rho0<T>()),
+                      data_[Is] = shared_buffer[tid * m_i<N + 1>() + m_i<Is>()]),
                      ...);
                 }(std::make_index_sequence<N>{});
 

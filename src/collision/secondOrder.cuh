@@ -117,29 +117,7 @@ namespace LBM
          * @note This implementation assumes force terms, so velocity updates are not omitted
          * @note Uses device-level relaxation parameters (device::t_omegaVar, device::omegaVar_d2, device::omega)
          **/
-        __device__ static inline void collide(thread::array<scalar_t, 11> &moments, const scalar_t ffx, const scalar_t ffy, const scalar_t ffz) noexcept
-        {
-            const scalar_t invRho = static_cast<scalar_t>(1) / moments[m_i<0>()];
-
-            // Velocity updates
-            moments[m_i<1>()] += static_cast<scalar_t>(3) * invRho * ffx;
-            moments[m_i<2>()] += static_cast<scalar_t>(3) * invRho * ffy;
-            moments[m_i<3>()] += static_cast<scalar_t>(3) * invRho * ffz;
-
-            const scalar_t invRho_t15 = static_cast<scalar_t>(3) * invRho * static_cast<scalar_t>(0.5);
-
-            // Diagonal moment updates
-            moments[m_i<4>()] = device::t_omegaVar * moments[m_i<4>()] + device::omegaVar_d2 * (moments[m_i<1>()]) * (moments[m_i<1>()]) + invRho_t15 * device::tt_omegaVar * (ffx * moments[m_i<1>()] + ffx * moments[m_i<1>()]);
-            moments[m_i<7>()] = device::t_omegaVar * moments[m_i<7>()] + device::omegaVar_d2 * (moments[m_i<2>()]) * (moments[m_i<2>()]) + invRho_t15 * device::tt_omegaVar * (ffy * moments[m_i<2>()] + ffy * moments[m_i<2>()]);
-            moments[m_i<9>()] = device::t_omegaVar * moments[m_i<9>()] + device::omegaVar_d2 * (moments[m_i<3>()]) * (moments[m_i<3>()]) + invRho_t15 * device::tt_omegaVar * (ffz * moments[m_i<3>()] + ffz * moments[m_i<3>()]);
-
-            // Off-diagonal moment updates
-            moments[m_i<5>()] = device::t_omegaVar * moments[m_i<5>()] + device::omega * (moments[m_i<1>()]) * (moments[m_i<2>()]) + device::tt_omegaVar_t3 * invRho * (ffx * moments[m_i<2>()] + ffy * moments[m_i<1>()]); // mxy
-            moments[m_i<6>()] = device::t_omegaVar * moments[m_i<6>()] + device::omega * (moments[m_i<1>()]) * (moments[m_i<3>()]) + device::tt_omegaVar_t3 * invRho * (ffx * moments[m_i<3>()] + ffz * moments[m_i<1>()]); // mxz
-            moments[m_i<8>()] = device::t_omegaVar * moments[m_i<8>()] + device::omega * (moments[m_i<2>()]) * (moments[m_i<3>()]) + device::tt_omegaVar_t3 * invRho * (ffy * moments[m_i<3>()] + ffz * moments[m_i<2>()]); // myz
-        }
-
-        __device__ static inline void collide_pressure(thread::array<scalar_t, 11> &moments, const scalar_t ffx, const scalar_t ffy, const scalar_t ffz, const scalar_t rho) noexcept
+        __device__ static inline void collide(thread::array<scalar_t, 11> &moments, const scalar_t ffx, const scalar_t ffy, const scalar_t ffz, const scalar_t rho) noexcept
         {
             const scalar_t invRho = static_cast<scalar_t>(1) / rho;
 

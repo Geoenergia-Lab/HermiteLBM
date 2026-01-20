@@ -106,8 +106,7 @@ namespace LBM
             static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculate_moments only supports D3Q19 and D3Q27.");
 
             // const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
-            const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
-            const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+            const scalar_t p_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
 
             bool already_handled = false;
 
@@ -121,23 +120,23 @@ namespace LBM
 
                 const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(y) - center_y()) * (static_cast<scalar_t>(y) - center_y()) < r2());
 
-                const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
-                const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
+                const scalar_t mxz_I = BACK_mxz_I(pop);
+                const scalar_t myz_I = BACK_myz_I(pop);
 
-                const scalar_t rho = rho0<scalar_t>();
-                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
-                const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+                const scalar_t p = static_cast<scalar_t>(0);
+                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I;
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I;
 
-                moments[m_i<0>()] = rho;                                            // rho
-                moments[m_i<1>()] = static_cast<scalar_t>(0);                       // ux
-                moments[m_i<2>()] = static_cast<scalar_t>(0);                       // uy
-                moments[m_i<3>()] = is_jet * device::u_inf;                         // uz
-                moments[m_i<4>()] = static_cast<scalar_t>(0);                       // mxx
-                moments[m_i<5>()] = static_cast<scalar_t>(0);                       // mxy
-                moments[m_i<6>()] = mxz;                                            // mxz
-                moments[m_i<7>()] = static_cast<scalar_t>(0);                       // myy
-                moments[m_i<8>()] = myz;                                            // myz
-                moments[m_i<9>()] = is_jet * (rho * device::u_inf * device::u_inf); // mzz
+                moments[m_i<0>()] = p;                                        // p
+                moments[m_i<1>()] = static_cast<scalar_t>(0);                 // ux
+                moments[m_i<2>()] = static_cast<scalar_t>(0);                 // uy
+                moments[m_i<3>()] = is_jet * device::u_inf;                   // uz
+                moments[m_i<4>()] = static_cast<scalar_t>(0);                 // mxx
+                moments[m_i<5>()] = static_cast<scalar_t>(0);                 // mxy
+                moments[m_i<6>()] = mxz;                                      // mxz
+                moments[m_i<7>()] = static_cast<scalar_t>(0);                 // myy
+                moments[m_i<8>()] = myz;                                      // myz
+                moments[m_i<9>()] = is_jet * (device::u_inf * device::u_inf); // mzz
 
                 already_handled = true;
                 return;
@@ -175,8 +174,7 @@ namespace LBM
             static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculate_moments only supports D3Q19 and D3Q27.");
 
             // const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
-            const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
-            const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+            const scalar_t p_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
 
             bool already_handled = false;
 
@@ -190,23 +188,23 @@ namespace LBM
 
                 const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(y) - center_y()) * (static_cast<scalar_t>(y) - center_y()) < r2());
 
-                const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
-                const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
+                const scalar_t mxz_I = BACK_mxz_I(pop);
+                const scalar_t myz_I = BACK_myz_I(pop);
 
-                const scalar_t rho = rho0<scalar_t>();
-                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
-                const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+                const scalar_t p = static_cast<scalar_t>(0);
+                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I;
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I;
 
-                moments[m_i<0>()] = rho;                                            // rho
-                moments[m_i<1>()] = static_cast<scalar_t>(0);                       // ux
-                moments[m_i<2>()] = static_cast<scalar_t>(0);                       // uy
-                moments[m_i<3>()] = is_jet * device::u_inf;                         // uz
-                moments[m_i<4>()] = static_cast<scalar_t>(0);                       // mxx
-                moments[m_i<5>()] = static_cast<scalar_t>(0);                       // mxy
-                moments[m_i<6>()] = mxz;                                            // mxz
-                moments[m_i<7>()] = static_cast<scalar_t>(0);                       // myy
-                moments[m_i<8>()] = myz;                                            // myz
-                moments[m_i<9>()] = is_jet * (rho * device::u_inf * device::u_inf); // mzz
+                moments[m_i<0>()] = p;                                        // p
+                moments[m_i<1>()] = static_cast<scalar_t>(0);                 // ux
+                moments[m_i<2>()] = static_cast<scalar_t>(0);                 // uy
+                moments[m_i<3>()] = is_jet * device::u_inf;                   // uz
+                moments[m_i<4>()] = static_cast<scalar_t>(0);                 // mxx
+                moments[m_i<5>()] = static_cast<scalar_t>(0);                 // mxy
+                moments[m_i<6>()] = mxz;                                      // mxz
+                moments[m_i<7>()] = static_cast<scalar_t>(0);                 // myy
+                moments[m_i<8>()] = myz;                                      // myz
+                moments[m_i<9>()] = is_jet * (device::u_inf * device::u_inf); // mzz
 
                 already_handled = true;
                 return;
@@ -235,14 +233,14 @@ namespace LBM
         }
 
         template <class VelocitySet, class PhaseVelocitySet>
-        __device__ static inline constexpr void calculate_moments_pressure(
+        __device__ static inline constexpr void calculate_moments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS<true>()> &moments,
             const normalVector &boundaryNormal,
             const scalar_t *const ptrRestrict shared_buffer) noexcept
         {
-            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculate_moments_pressure only supports D3Q19 and D3Q27.");
-            static_assert((PhaseVelocitySet::Q() == 7), "Error: boundaryConditions::calculate_moments_pressure only supports D3Q7 for phase field.");
+            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculate_moments only supports D3Q19 and D3Q27.");
+            static_assert((PhaseVelocitySet::Q() == 7), "Error: boundaryConditions::calculate_moments only supports D3Q7 for phase field.");
 
             const scalar_t p_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
 
@@ -304,14 +302,14 @@ namespace LBM
         }
 
         template <class VelocitySet, class PhaseVelocitySet, const label_t N>
-        __device__ static inline constexpr void calculate_moments_pressure(
+        __device__ static inline constexpr void calculate_moments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS<true>()> &moments,
             const normalVector &boundaryNormal,
             const thread::array<scalar_t, N> &shared_buffer) noexcept
         {
-            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculate_moments_pressure only supports D3Q19 and D3Q27.");
-            static_assert((PhaseVelocitySet::Q() == 7), "Error: boundaryConditions::calculate_moments_pressure only supports D3Q7 for phase field.");
+            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculate_moments only supports D3Q19 and D3Q27.");
+            static_assert((PhaseVelocitySet::Q() == 7), "Error: boundaryConditions::calculate_moments only supports D3Q7 for phase field.");
 
             const scalar_t p_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
 
@@ -479,368 +477,6 @@ namespace LBM
         }
 
         template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t WEST_SOUTH_mxy_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return pop[q_i<8>()] * inv_rho_I;
-            }
-            else
-            {
-                return (pop[q_i<8>()] + pop[q_i<20>()] + pop[q_i<22>()]) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t EAST_SOUTH_mxy_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return -pop[q_i<13>()] * inv_rho_I;
-            }
-            else
-            {
-                return -(pop[q_i<13>()] + pop[q_i<23>()] + pop[q_i<26>()]) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t WEST_BACK_mxz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return (pop[q_i<10>()]) * inv_rho_I;
-            }
-            else
-            {
-                return (pop[q_i<10>()] + pop[q_i<20>()] + pop[q_i<24>()]) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t WEST_FRONT_mxz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return -(pop[q_i<16>()]) * inv_rho_I;
-            }
-            else
-            {
-                return -(pop[q_i<16>()] + pop[q_i<22>()] + pop[q_i<25>()]) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t EAST_BACK_mxz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return -(pop[q_i<15>()]) * inv_rho_I;
-            }
-            else
-            {
-                return -(pop[q_i<15>()] + pop[q_i<21>()] + pop[q_i<26>()]) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t EAST_FRONT_mxz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return (pop[q_i<9>()]) * inv_rho_I;
-            }
-            else
-            {
-                return (pop[q_i<9>()] + pop[q_i<19>()] + pop[q_i<23>()]) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t SOUTH_BACK_myz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return (pop[q_i<12>()]) * inv_rho_I;
-            }
-            else
-            {
-                return (pop[q_i<12>()] + pop[q_i<20>()] + pop[q_i<26>()]) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t SOUTH_FRONT_myz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return -(pop[q_i<18>()]) * inv_rho_I;
-            }
-            else
-            {
-                return -(pop[q_i<18>()] + pop[q_i<22>()] + pop[q_i<23>()]) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t WEST_mxy_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return ((pop[q_i<8>()]) - (pop[q_i<14>()])) * inv_rho_I;
-            }
-            else
-            {
-                return ((pop[q_i<8>()] + pop[q_i<20>()] + pop[q_i<22>()]) - (pop[q_i<14>()] + pop[q_i<24>()] + pop[q_i<25>()])) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t WEST_mxz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return ((pop[q_i<10>()]) - (pop[q_i<16>()])) * inv_rho_I;
-            }
-            else
-            {
-                return ((pop[q_i<10>()] + pop[q_i<20>()] + pop[q_i<24>()]) - (pop[q_i<16>()] + pop[q_i<22>()] + pop[q_i<25>()])) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t EAST_mxy_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return ((pop[q_i<7>()]) - (pop[q_i<13>()])) * inv_rho_I;
-            }
-            else
-            {
-                return ((pop[q_i<7>()] + pop[q_i<19>()] + pop[q_i<21>()]) - (pop[q_i<13>()] + pop[q_i<23>()] + pop[q_i<26>()])) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t EAST_mxz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return ((pop[q_i<9>()]) - (pop[q_i<15>()])) * inv_rho_I;
-            }
-            else
-            {
-                return ((pop[q_i<9>()] + pop[q_i<19>()] + pop[q_i<23>()]) - (pop[q_i<15>()] + pop[q_i<21>()] + pop[q_i<26>()])) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t SOUTH_mxy_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return ((pop[q_i<8>()]) - (pop[q_i<13>()])) * inv_rho_I;
-            }
-            else
-            {
-                return ((pop[q_i<8>()] + pop[q_i<20>()] + pop[q_i<22>()]) - (pop[q_i<13>()] + pop[q_i<23>()] + pop[q_i<26>()])) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t SOUTH_myz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return ((pop[q_i<12>()]) - (pop[q_i<18>()])) * inv_rho_I;
-            }
-            else
-            {
-                return ((pop[q_i<12>()] + pop[q_i<20>()] + pop[q_i<26>()]) - (pop[q_i<18>()] + pop[q_i<22>()] + pop[q_i<23>()])) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t BACK_mxz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return ((pop[q_i<10>()]) - (pop[q_i<15>()])) * inv_rho_I;
-            }
-            else
-            {
-                return ((pop[q_i<10>()] + pop[q_i<20>()] + pop[q_i<24>()]) - (pop[q_i<15>()] + pop[q_i<21>()] + pop[q_i<26>()])) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t BACK_myz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return ((pop[q_i<12>()]) - (pop[q_i<17>()])) * inv_rho_I;
-            }
-            else
-            {
-                return ((pop[q_i<12>()] + pop[q_i<20>()] + pop[q_i<26>()]) - (pop[q_i<17>()] + pop[q_i<21>()] + pop[q_i<24>()])) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t FRONT_mxz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return ((pop[q_i<9>()]) - (pop[q_i<16>()])) * inv_rho_I;
-            }
-            else
-            {
-                return ((pop[q_i<9>()] + pop[q_i<19>()] + pop[q_i<23>()]) - (pop[q_i<16>()] + pop[q_i<22>()] + pop[q_i<25>()])) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t FRONT_myz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return ((pop[q_i<11>()]) - (pop[q_i<18>()])) * inv_rho_I;
-            }
-            else
-            {
-                return ((pop[q_i<11>()] + pop[q_i<19>()] + pop[q_i<25>()]) - (pop[q_i<18>()] + pop[q_i<22>()] + pop[q_i<23>()])) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t NORTH_mxy_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return ((pop[q_i<7>()]) - (pop[q_i<14>()])) * inv_rho_I;
-            }
-            else
-            {
-                return ((pop[q_i<7>()] + pop[q_i<19>()] + pop[q_i<21>()]) - (pop[q_i<14>()] + pop[q_i<24>()] + pop[q_i<25>()])) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t NORTH_myz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return ((pop[q_i<11>()]) - (pop[q_i<17>()])) * inv_rho_I;
-            }
-            else
-            {
-                return ((pop[q_i<11>()] + pop[q_i<19>()] + pop[q_i<25>()]) - (pop[q_i<17>()] + pop[q_i<21>()] + pop[q_i<24>()])) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t NORTH_BACK_myz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return -(pop[q_i<17>()]) * inv_rho_I;
-            }
-            else
-            {
-                return -(pop[q_i<17>()] + pop[q_i<21>()] + pop[q_i<24>()]) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t NORTH_FRONT_myz_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return (pop[q_i<11>()]) * inv_rho_I;
-            }
-            else
-            {
-                return (pop[q_i<11>()] + pop[q_i<19>()] + pop[q_i<25>()]) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t EAST_NORTH_mxy_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return (pop[q_i<7>()]) * inv_rho_I;
-            }
-            else
-            {
-                return (pop[q_i<7>()] + pop[q_i<19>()] + pop[q_i<21>()]) * inv_rho_I;
-            }
-        }
-
-        template <const label_t Q>
-        __device__ [[nodiscard]] static inline constexpr scalar_t WEST_NORTH_mxy_I(
-            const thread::array<scalar_t, Q> &pop,
-            const scalar_t inv_rho_I) noexcept
-        {
-            if constexpr (Q == 19)
-            {
-                return -(pop[q_i<14>()]) * inv_rho_I;
-            }
-            else
-            {
-                return -(pop[q_i<14>()] + pop[q_i<24>()] + pop[q_i<25>()]) * inv_rho_I;
-            }
-        }
-
-        // ============================================= PRESSURE OVERLOADS ============================================= //
-
-        template <const label_t Q>
         __device__ [[nodiscard]] static inline constexpr scalar_t WEST_SOUTH_mxy_I(const thread::array<scalar_t, Q> &pop) noexcept
         {
             if constexpr (Q == 19)
@@ -897,7 +533,7 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return -(pop[q_i<15>()])I;
+                return -(pop[q_i<15>()]);
             }
             else
             {

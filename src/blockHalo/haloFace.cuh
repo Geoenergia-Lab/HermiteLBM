@@ -289,7 +289,7 @@ namespace LBM
 
                                             pop = VelocitySet::reconstruct(
                                                 thread::array<scalar_t, 11>{
-                                                    rho0<scalar_t>() + rho.arr()[base],
+                                                    rho.arr()[base],
                                                     u.arr()[base],
                                                     v.arr()[base],
                                                     w.arr()[base],
@@ -307,7 +307,7 @@ namespace LBM
                                             {
                                                 pop = VelocitySet::reconstruct(
                                                     thread::array<scalar_t, 11>{
-                                                        rho0<scalar_t>() + rho.arr()[base],
+                                                        rho.arr()[base],
                                                         u.arr()[base],
                                                         v.arr()[base],
                                                         w.arr()[base],
@@ -323,7 +323,7 @@ namespace LBM
                                             {
                                                 pop = VelocitySet::reconstruct(
                                                     thread::array<scalar_t, 10>{
-                                                        rho0<scalar_t>() + rho.arr()[base],
+                                                        rho.arr()[base],
                                                         u.arr()[base],
                                                         v.arr()[base],
                                                         w.arr()[base],

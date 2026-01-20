@@ -151,7 +151,7 @@ namespace LBM
         __syncthreads();
 
         // Reconstruct the populations from the moments
-        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct_pressure(moments);
+        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
         thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct(moments);
 
         // Gather current phase field state
@@ -180,7 +180,7 @@ namespace LBM
         PhaseHalo::load(pop_g, ghostPhase);
 
         // Compute post-stream moments
-        velocitySet::calculate_moments_pressure<VelocitySet>(pop, moments);
+        velocitySet::calculate_moments<VelocitySet>(pop, moments);
         PhaseVelocitySet::calculate_phi(pop_g, moments);
         {
             // Update the shared buffer with the refreshed moments
@@ -200,7 +200,7 @@ namespace LBM
 
             if (boundaryNormal.isBoundary())
             {
-                boundaryConditions::calculate_moments_pressure<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, shared_buffer);
+                boundaryConditions::calculate_moments<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, shared_buffer);
             }
         }
 
@@ -439,6 +439,8 @@ namespace LBM
                 cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
             });
 
+        const scalar_t rho_ = static_cast<scalar_t>(1);
+
         // Coalesced read from global memory
         thread::array<scalar_t, NUMBER_MOMENTS<true>()> moments;
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
@@ -456,12 +458,12 @@ namespace LBM
         velocitySet::scale(moments);
 
         // Collide
-        Collision::collide_pressure(moments, ffx_, ffy_, ffz_, rho_);
+        Collision::collide(moments, ffx_, ffy_, ffz_, rho_);
 
         // Calculate post collision populations
         thread::array<scalar_t, VelocitySet::Q()> pop;
         thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g;
-        VelocitySet::reconstruct_pressure(pop, moments);
+        VelocitySet::reconstruct(pop, moments);
         PhaseVelocitySet::reconstruct(pop_g, moments);
 
         // Gather current phase field state

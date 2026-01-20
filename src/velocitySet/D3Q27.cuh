@@ -529,8 +529,6 @@ namespace LBM
             return pop;
         }
 
-        // ===================================================== PRESSURE ===================================================== //
-
         /**
          * @brief Print velocity set information to terminal
          **/

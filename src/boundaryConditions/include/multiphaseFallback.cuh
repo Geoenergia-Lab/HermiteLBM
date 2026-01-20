@@ -1,5 +1,5 @@
 // Static corners
-case normalVector::WEST_SOUTH_BACK():
+case normalVector::WEST_SOUTH_BACK(): // OK
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -23,7 +23,7 @@ case normalVector::WEST_SOUTH_BACK():
 
     return;
 }
-case normalVector::WEST_SOUTH_FRONT():
+case normalVector::WEST_SOUTH_FRONT(): // OK
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -47,7 +47,7 @@ case normalVector::WEST_SOUTH_FRONT():
 
     return;
 }
-case normalVector::EAST_SOUTH_BACK():
+case normalVector::EAST_SOUTH_BACK(): // OK
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -71,7 +71,7 @@ case normalVector::EAST_SOUTH_BACK():
 
     return;
 }
-case normalVector::EAST_SOUTH_FRONT():
+case normalVector::EAST_SOUTH_FRONT(): // OK
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -95,7 +95,7 @@ case normalVector::EAST_SOUTH_FRONT():
 
     return;
 }
-case normalVector::WEST_NORTH_BACK():
+case normalVector::WEST_NORTH_BACK(): // OK
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -119,7 +119,7 @@ case normalVector::WEST_NORTH_BACK():
 
     return;
 }
-case normalVector::WEST_NORTH_FRONT():
+case normalVector::WEST_NORTH_FRONT(): // OK
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -143,7 +143,7 @@ case normalVector::WEST_NORTH_FRONT():
 
     return;
 }
-case normalVector::EAST_NORTH_BACK():
+case normalVector::EAST_NORTH_BACK(): // OK
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -167,7 +167,7 @@ case normalVector::EAST_NORTH_BACK():
 
     return;
 }
-case normalVector::EAST_NORTH_FRONT():
+case normalVector::EAST_NORTH_FRONT(): // OK
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -191,18 +191,16 @@ case normalVector::EAST_NORTH_FRONT():
 
     return;
 }
-
-// =========================== TODO =========================== //
 
 // Static edges
-case normalVector::WEST_SOUTH():
+case normalVector::WEST_SOUTH(): // OK
 {
     const scalar_t mxy_I = WEST_SOUTH_mxy_I(pop);
 
-    const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
-    const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
+    const scalar_t p = static_cast<scalar_t>(36) * (-mxy_I + p_I + mxy_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t mxy = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * mxy_I - p_I) / (static_cast<scalar_t>(24) + device::omega);
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -217,14 +215,14 @@ case normalVector::WEST_SOUTH():
 
     return;
 }
-case normalVector::EAST_SOUTH():
+case normalVector::EAST_SOUTH(): // OK
 {
     const scalar_t mxy_I = EAST_SOUTH_mxy_I(pop);
 
-    const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
-    const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
+    const scalar_t p = -static_cast<scalar_t>(36) * (-mxy_I - p_I + mxy_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t mxy = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * mxy_I + p_I) / (static_cast<scalar_t>(24) + device::omega);
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -239,14 +237,14 @@ case normalVector::EAST_SOUTH():
 
     return;
 }
-case normalVector::WEST_NORTH():
+case normalVector::WEST_NORTH(): // OK
 {
     const scalar_t mxy_I = WEST_NORTH_mxy_I(pop);
 
-    const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
-    const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
+    const scalar_t p = -static_cast<scalar_t>(36) * (-mxy_I - p_I + mxy_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t mxy = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * mxy_I + p_I) / (static_cast<scalar_t>(24) + device::omega);
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -261,14 +259,14 @@ case normalVector::WEST_NORTH():
 
     return;
 }
-case normalVector::EAST_NORTH():
+case normalVector::EAST_NORTH(): // OK
 {
     const scalar_t mxy_I = EAST_NORTH_mxy_I(pop);
 
-    const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
-    const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
+    const scalar_t p = static_cast<scalar_t>(36) * (-mxy_I + p_I + mxy_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t mxy = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * mxy_I - p_I) / (static_cast<scalar_t>(24) + device::omega);
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -283,14 +281,14 @@ case normalVector::EAST_NORTH():
 
     return;
 }
-case normalVector::WEST_BACK():
+case normalVector::WEST_BACK(): // OK
 {
-    const scalar_t mxz_I = WEST_BACK_mxz_I(pop, inv_rho_I);
+    const scalar_t mxz_I = WEST_BACK_mxz_I(pop);
 
-    const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
-    const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
+    const scalar_t p = static_cast<scalar_t>(36) * (-mxz_I + p_I + mxz_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t mxz = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * mxz_I - p_I) / (static_cast<scalar_t>(24) + device::omega);
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -305,14 +303,14 @@ case normalVector::WEST_BACK():
 
     return;
 }
-case normalVector::WEST_FRONT():
+case normalVector::WEST_FRONT(): // OK
 {
-    const scalar_t mxz_I = WEST_FRONT_mxz_I(pop, inv_rho_I);
+    const scalar_t mxz_I = WEST_FRONT_mxz_I(pop);
 
-    const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
-    const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
+    const scalar_t p = -static_cast<scalar_t>(36) * (-mxz_I - p_I + mxz_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t mxz = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * mxz_I + p_I) / (static_cast<scalar_t>(24) + device::omega);
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -327,14 +325,14 @@ case normalVector::WEST_FRONT():
 
     return;
 }
-case normalVector::EAST_BACK():
+case normalVector::EAST_BACK(): // OK
 {
-    const scalar_t mxz_I = EAST_BACK_mxz_I(pop, inv_rho_I);
+    const scalar_t mxz_I = EAST_BACK_mxz_I(pop);
 
-    const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
-    const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
+    const scalar_t p = -static_cast<scalar_t>(36) * (-mxz_I - p_I + mxz_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t mxz = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * mxz_I + p_I) / (static_cast<scalar_t>(24) + device::omega);
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -349,14 +347,14 @@ case normalVector::EAST_BACK():
 
     return;
 }
-case normalVector::EAST_FRONT():
+case normalVector::EAST_FRONT(): // OK
 {
-    const scalar_t mxz_I = EAST_FRONT_mxz_I(pop, inv_rho_I);
+    const scalar_t mxz_I = EAST_FRONT_mxz_I(pop);
 
-    const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
-    const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
+    const scalar_t p = static_cast<scalar_t>(36) * (-mxz_I + p_I + mxz_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t mxz = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * mxz_I - p_I) / (static_cast<scalar_t>(24) + device::omega);
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -371,14 +369,14 @@ case normalVector::EAST_FRONT():
 
     return;
 }
-case normalVector::SOUTH_BACK():
+case normalVector::SOUTH_BACK(): // OK
 {
-    const scalar_t myz_I = SOUTH_BACK_myz_I(pop, inv_rho_I);
+    const scalar_t myz_I = SOUTH_BACK_myz_I(pop);
 
-    const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
-    const scalar_t myz = (static_cast<scalar_t>(36) * myz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
+    const scalar_t p = static_cast<scalar_t>(36) * (-myz_I + p_I + myz_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t myz = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * myz_I - p_I) / (static_cast<scalar_t>(24) + device::omega);
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -393,14 +391,14 @@ case normalVector::SOUTH_BACK():
 
     return;
 }
-case normalVector::SOUTH_FRONT():
+case normalVector::SOUTH_FRONT(): // OK
 {
-    const scalar_t myz_I = SOUTH_FRONT_myz_I(pop, inv_rho_I);
+    const scalar_t myz_I = SOUTH_FRONT_myz_I(pop);
 
-    const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
-    const scalar_t myz = (static_cast<scalar_t>(36) * myz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
+    const scalar_t p = -static_cast<scalar_t>(36) * (-myz_I - p_I + myz_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t myz = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * myz_I + p_I) / (static_cast<scalar_t>(24) + device::omega);
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -415,14 +413,14 @@ case normalVector::SOUTH_FRONT():
 
     return;
 }
-case normalVector::NORTH_BACK():
+case normalVector::NORTH_BACK(): // OK
 {
-    const scalar_t myz_I = NORTH_BACK_myz_I(pop, inv_rho_I);
+    const scalar_t myz_I = NORTH_BACK_myz_I(pop);
 
-    const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
-    const scalar_t myz = (static_cast<scalar_t>(36) * myz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
+    const scalar_t p = -static_cast<scalar_t>(36) * (-myz_I - p_I + myz_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t myz = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * myz_I + p_I) / (static_cast<scalar_t>(24) + device::omega);
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -437,14 +435,14 @@ case normalVector::NORTH_BACK():
 
     return;
 }
-case normalVector::NORTH_FRONT():
+case normalVector::NORTH_FRONT(): // OK
 {
-    const scalar_t myz_I = NORTH_FRONT_myz_I(pop, inv_rho_I);
+    const scalar_t myz_I = NORTH_FRONT_myz_I(pop);
 
-    const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
-    const scalar_t myz = (static_cast<scalar_t>(36) * myz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
+    const scalar_t p = static_cast<scalar_t>(36) * (-myz_I + p_I + myz_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t myz = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * myz_I - p_I) / (static_cast<scalar_t>(24) + device::omega);
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -461,16 +459,16 @@ case normalVector::NORTH_FRONT():
 }
 
 // Static faces
-case normalVector::WEST():
+case normalVector::WEST(): // OK
 {
-    const scalar_t mxy_I = WEST_mxy_I(pop, inv_rho_I);
-    const scalar_t mxz_I = WEST_mxz_I(pop, inv_rho_I);
+    const scalar_t mxy_I = WEST_mxy_I(pop);
+    const scalar_t mxz_I = WEST_mxz_I(pop);
 
-    const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
-    const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
-    const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+    const scalar_t p = static_cast<scalar_t>(6) * p_I / static_cast<scalar_t>(5);
+    const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I;
+    const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I;
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -485,16 +483,16 @@ case normalVector::WEST():
 
     return;
 }
-case normalVector::EAST():
+case normalVector::EAST(): // OK
 {
-    const scalar_t mxy_I = EAST_mxy_I(pop, inv_rho_I);
-    const scalar_t mxz_I = EAST_mxz_I(pop, inv_rho_I);
+    const scalar_t mxy_I = EAST_mxy_I(pop);
+    const scalar_t mxz_I = EAST_mxz_I(pop);
 
-    const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
-    const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
-    const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+    const scalar_t p = static_cast<scalar_t>(6) * p_I / static_cast<scalar_t>(5);
+    const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I;
+    const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I;
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -509,16 +507,16 @@ case normalVector::EAST():
 
     return;
 }
-case normalVector::SOUTH():
+case normalVector::SOUTH(): // OK
 {
-    const scalar_t mxy_I = SOUTH_mxy_I(pop, inv_rho_I);
-    const scalar_t myz_I = SOUTH_myz_I(pop, inv_rho_I);
+    const scalar_t mxy_I = SOUTH_mxy_I(pop);
+    const scalar_t myz_I = SOUTH_myz_I(pop);
 
-    const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
-    const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
-    const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+    const scalar_t p = static_cast<scalar_t>(6) * p_I / static_cast<scalar_t>(5);
+    const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I;
+    const scalar_t myz = static_cast<scalar_t>(2) * myz_I;
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
@@ -533,16 +531,16 @@ case normalVector::SOUTH():
 
     return;
 }
-case normalVector::NORTH():
+case normalVector::NORTH(): // OK
 {
-    const scalar_t mxy_I = NORTH_mxy_I(pop, inv_rho_I);
-    const scalar_t myz_I = NORTH_myz_I(pop, inv_rho_I);
+    const scalar_t mxy_I = NORTH_mxy_I(pop);
+    const scalar_t myz_I = NORTH_myz_I(pop);
 
-    const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
-    const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
-    const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+    const scalar_t p = static_cast<scalar_t>(6) * p_I / static_cast<scalar_t>(5);
+    const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I;
+    const scalar_t myz = static_cast<scalar_t>(2) * myz_I;
 
-    moments[m_i<0>()] = rho;
+    moments[m_i<0>()] = p;
     moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
     moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
     moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
