@@ -226,37 +226,56 @@ namespace LBM
          * @brief Check if the point lies on specific boundaries
          * @return True if the point lies on the specified boundary
          **/
-        __device__ __host__ [[nodiscard]] inline bool isWest() const noexcept
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] inline T isWest() const noexcept
         {
-            return bitmask_ & WEST();
+            return static_cast<T>(static_cast<bool>(bitmask_ & WEST()));
         }
-        __device__ __host__ [[nodiscard]] inline bool isEast() const noexcept
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] inline T isEast() const noexcept
         {
-            return bitmask_ & EAST();
+            return static_cast<T>(static_cast<bool>(bitmask_ & EAST()));
         }
-        __device__ __host__ [[nodiscard]] inline bool isSouth() const noexcept
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] inline T isSouth() const noexcept
         {
-            return bitmask_ & SOUTH();
+            return static_cast<T>(static_cast<bool>(bitmask_ & SOUTH()));
         }
-        __device__ __host__ [[nodiscard]] inline bool isNorth() const noexcept
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] inline T isNorth() const noexcept
         {
-            return bitmask_ & NORTH();
+            return static_cast<T>(static_cast<bool>(bitmask_ & NORTH()));
         }
-        __device__ __host__ [[nodiscard]] inline bool isBack() const noexcept
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] inline T isBack() const noexcept
         {
-            return bitmask_ & BACK();
+            return static_cast<T>(static_cast<bool>(bitmask_ & BACK()));
         }
-        __device__ __host__ [[nodiscard]] inline bool isFront() const noexcept
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] inline T isFront() const noexcept
         {
-            return bitmask_ & FRONT();
+            return static_cast<T>(static_cast<bool>(bitmask_ & FRONT()));
         }
-        __device__ __host__ [[nodiscard]] inline bool isBoundary() const noexcept
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] inline T isBoundary() const noexcept
         {
-            return bitmask_ & 0x40;
+            return static_cast<T>(static_cast<bool>(bitmask_ & 0x40));
         }
-        __device__ __host__ [[nodiscard]] inline bool isInterior() const noexcept
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] inline T isInterior() const noexcept
         {
-            return !isBoundary();
+            return static_cast<T>(!isBoundary<bool>());
+        }
+        template <typename T = uint8_t>
+        __device__ __host__ [[nodiscard]] inline T countBoundaries() const noexcept
+        {
+            // Count set bits in 6-bit value using parallel addition
+            // This is known as the "popcount" algorithm for small integers
+            uint8_t x = bitmask_ & 0x3F;
+            x = (x & 0x55) + ((x >> 1) & 0x55); // Count bits in pairs
+            x = (x & 0x33) + ((x >> 2) & 0x33); // Count bits in nibbles
+            x = (x & 0x0F) + ((x >> 4) & 0x0F); // Add the two nibbles
+            return static_cast<T>(x);
         }
 
         /**

@@ -9,13 +9,13 @@
 
 /*---------------------------------------------------------------------------*\
 
-caseName        lidDrivenCavity;
+caseName        jetFlow;
 
-Re              10000;
+Re              3000;
 
-u_inf           0.0256;
+u_inf           0.016;
 
-L_char          TODO;
+L_char          8;
 
 startFrom       latestTime;
 

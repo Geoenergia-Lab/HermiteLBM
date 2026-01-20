@@ -66,6 +66,7 @@ namespace LBM
 
     using VelocitySet = D3Q19;
     using Collision = secondOrder;
+    using BlockHalo = device::halo<VelocitySet, periodicX(), periodicY()>;
 
     using Halo = device::halo<VelocitySet, periodicX(), periodicY()>;
 
@@ -93,6 +94,8 @@ namespace LBM
         const device::ptrCollection<6, const scalar_t> fGhost,
         const device::ptrCollection<6, scalar_t> gGhost)
     {
+        static_assert((std::is_same<BoundaryConditions, lidDrivenCavity>::value) || std::is_same<BoundaryConditions, jetFlow>::value);
+
         // Always a multiple of 32, so no need to check this(I think)
         if constexpr (out_of_bounds_check())
         {
@@ -143,7 +146,9 @@ namespace LBM
         }
 
         // Load pop from global memory in cover nodes
-        Halo::load(pop, fGhost);
+        BlockHalo::load(
+            pop,
+            fGhost);
 
         if constexpr (std::is_same<BoundaryConditions, lidDrivenCavity>::value)
         { // Calculate the moments either at the boundary or interior
@@ -195,7 +200,7 @@ namespace LBM
 
         // Calculate post collision populations
         VelocitySet::reconstruct(pop, moments);
-        Halo::transpose_to_shared(pop, shared_buffer);
+        BlockHalo::transpose_to_shared(pop, shared_buffer);
 
         // Coalesced write to global memory
         device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
@@ -205,8 +210,8 @@ namespace LBM
             });
 
         // Save the populations to the block halo
-        Halo::save_from_shared(shared_buffer, gGhost);
-        // Halo::save(pop, gGhost);
+        BlockHalo::save_from_shared(shared_buffer, gGhost);
+        // BlockHalo::save(pop, gGhost);
     }
 }
 

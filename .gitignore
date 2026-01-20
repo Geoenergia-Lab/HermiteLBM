@@ -40,39 +40,16 @@ thirdParty/opt*
 thirdParty/openmpi-5.0.7.tar.gz
 build
 
-# Monophase jet directory ignores
-monophaseJet/*.dat
-monophaseJet/*.vtu
-monophaseJet/*.vts
-monophaseJet/*.LBMBin
-monophaseJet/*/*.dat
-monophaseJet/*/*.vtu
-monophaseJet/*/*.vts
-monophaseJet/*/*.vti
-monophaseJet/*/*.LBMBin
-
-# Multiphase jet directory ignores
-multiphaseJet/*.dat
-multiphaseJet/*.vtu
-multiphaseJet/*.vts
-multiphaseJet/*.vti
-multiphaseJet/*.LBMBin
-multiphaseJet/*/*.dat
-multiphaseJet/*/*.vtu
-multiphaseJet/*/*.vts
-multiphaseJet/*/*.vti
-multiphaseJet/*/*.LBMBin
-
-# Lid driven cavity directory ignores
-lidDrivenCavity/*/*.dat
-lidDrivenCavity/*/*.vtu
-lidDrivenCavity/*/*.vts
-lidDrivenCavity/*/*.vti
-lidDrivenCavity/*/*.LBMBin
-lidDrivenCavity/*/*/*.dat
-lidDrivenCavity/*/*/*.vtu
-lidDrivenCavity/*/*/*.vts
-lidDrivenCavity/*/*/*.vti
+# Case directory ignores
+cases/*/*/*.dat
+cases/*/*/*.vtu
+cases/*/*/*.vts
+cases/*/*/*.vti
+cases/*/*/*.LBMBin
+cases/*/*/*/*.dat
+cases/*/*/*/*.vtu
+cases/*/*/*/*.vts
+cases/*/*/*/*.vti
 
 # Unit test directory ignores
 unitTests/ComputeSanitizerTest/*.dat

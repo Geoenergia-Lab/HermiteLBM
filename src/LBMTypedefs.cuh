@@ -228,12 +228,12 @@ namespace LBM
     // template <const time::::type T>
     // using timeType = const std::integral_constant<time::::type, T>;
 
-    typedef enum axisDirectionEnum : int
+    typedef enum axisDirectionEnum : label_t
     {
         X = 0,
         Y = 1,
         Z = 2,
-        NO_DIRECTION = -1
+        NO_DIRECTION = static_cast<label_t>(-1)
     } axisDirection;
 
     struct dim2
@@ -255,6 +255,16 @@ namespace LBM
         __device__ __constant__ scalar_t tau;
         __device__ __constant__ scalar_t u_inf;
         __device__ __constant__ scalar_t L_char;
+        __device__ __constant__ scalar_t u_inf_sq;
+        __device__ __constant__ scalar_t L_char;
+
+        __device__ __constant__ scalar_t U_North[3];
+        __device__ __constant__ scalar_t U_South[3];
+        __device__ __constant__ scalar_t U_East[3];
+        __device__ __constant__ scalar_t U_West[3];
+        __device__ __constant__ scalar_t U_Front[3];
+        __device__ __constant__ scalar_t U_Back[3];
+
         __device__ __constant__ scalar_t omega;
         __device__ __constant__ scalar_t t_omegaVar;
         __device__ __constant__ scalar_t omegaVar_d2;

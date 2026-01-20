@@ -576,14 +576,22 @@ namespace LBM
     /**
      * @brief Allocates a symbol of type T to the device
      * @param[in] symbol The symbol to which the value is to be copied
-     * @param[in] src The value to copy to the symbol
+     * @param[in] value The value to copy to the symbol
      **/
     template <typename T>
     void copyToSymbol(const T &symbol, const T value)
     {
         cudaDeviceSynchronize();
         const T valueTemp = value;
-        checkCudaErrors(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T)));
+        checkCudaErrors(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), 0, cudaMemcpyHostToDevice));
+        cudaDeviceSynchronize();
+    }
+
+    template <typename T, const std::size_t N>
+    void copyToSymbol(const T (&symbol)[N], const T (&value)[N])
+    {
+        cudaDeviceSynchronize();
+        checkCudaErrors(cudaMemcpyToSymbol(symbol, value, N * sizeof(T), 0, cudaMemcpyHostToDevice));
         cudaDeviceSynchronize();
     }
 

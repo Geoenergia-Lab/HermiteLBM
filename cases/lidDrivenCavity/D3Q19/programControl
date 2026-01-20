@@ -9,24 +9,22 @@
 
 /*---------------------------------------------------------------------------*\
 
-caseName        monophaseJet;
+caseName        lidDrivenCavity;
 
-Re              3000;
+Re              10000;
 
-u_inf           0.016;
+u_inf           0.0256;
 
-L_char          8;
+L_char          TODO;
 
 startFrom       latestTime;
 
 startTime       0;
 
-nTimeSteps      10001;
+nTimeSteps 200001;
 
-saveInterval    1000;
+saveInterval 20000;
 
-infoInterval    1000;
+infoInterval 2000;
 
-multiphase      false;
-
-\*---------------------------------------------------------------------------*/
+\* -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -*/

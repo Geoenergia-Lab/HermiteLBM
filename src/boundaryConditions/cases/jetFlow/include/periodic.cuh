@@ -10,7 +10,7 @@
 /*---------------------------------------------------------------------------*\
 
 Copyright (C) 2023 UDESC Geoenergia Lab
-Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+Authors: Nathan Duggins, Breno Gemelgo (Geoenergia Lab, UDESC)
 
 This implementation is derived from concepts and algorithms developed in:
   MR-LBM: Moment Representation Lattice Boltzmann Method
@@ -37,39 +37,26 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the array class
-
-Namespace
-    LBM
+    Boundary returns for (x,y). Periodicity is implemented at halo level,
+    see /src/blockHalo/halo.cuh for more informations
 
 SourceFiles
-    array.cuh
+    periodic.cuh
+
+    This file is intended to be included directly inside a switch-case block.
+    Do NOT use include guards (#ifndef/#define/#endif).
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_ARRAY_CUH
-#define __MBLBM_ARRAY_CUH
-
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
-
-#include "threadArray.cuh"
-
-#include "../latticeMesh/latticeMesh.cuh"
-#include "../fileIO/fileIO.cuh"
-#include "../velocitySet/velocitySet.cuh"
-
-#include "../boundaryConditions/normalVector.cuh"
-#include "../boundaryConditions/boundaryValue.cuh"
-#include "../boundaryConditions/boundaryRegion.cuh"
-#include "../boundaryConditions/boundaryFields.cuh"
-
-namespace LBM
+case normalVector::WEST():
+case normalVector::EAST():
+case normalVector::SOUTH():
+case normalVector::NORTH():
+case normalVector::SOUTH_WEST():
+case normalVector::NORTH_WEST():
+case normalVector::SOUTH_EAST():
+case normalVector::NORTH_EAST():
 {
-
+    already_handled = true;
+    return;
 }
-
-#include "hostArray.cuh"
-#include "deviceArray.cuh"
-
-#endif
