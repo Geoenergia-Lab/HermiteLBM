@@ -334,6 +334,7 @@ namespace LBM
         const scalar_t *const ptrRestrict normy,
         const scalar_t *const ptrRestrict normz,
         const scalar_t *const ptrRestrict ind,
+        const scalar_t *const ptrRestrict phi,
         const device::ptrCollection<6, scalar_t> ghostHydro,
         const device::ptrCollection<6, scalar_t> ghostPhase)
     {
@@ -357,12 +358,42 @@ namespace LBM
 
         const label_t idx = device::idx();
 
+        // Prefetch devPtrs into L2
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
+            });
+
+        // Coalesced read from global memory
+        thread::array<scalar_t, NUMBER_MOMENTS<true>()> moments;
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                moments[moment] = devPtrs.ptr<moment>()[idx];
+            });
+
         const scalar_t normx_ = normx[idx];
         const scalar_t normy_ = normy[idx];
         const scalar_t normz_ = normz[idx];
-        scalar_t ffx_ = static_cast<scalar_t>(0);
-        scalar_t ffy_ = static_cast<scalar_t>(0);
-        scalar_t ffz_ = static_cast<scalar_t>(0);
+
+        scalar_t Fsx = static_cast<scalar_t>(0);
+        scalar_t Fsy = static_cast<scalar_t>(0);
+        scalar_t Fsz = static_cast<scalar_t>(0);
+
+        scalar_t Fpx = static_cast<scalar_t>(0);
+        scalar_t Fpy = static_cast<scalar_t>(0);
+        scalar_t Fpz = static_cast<scalar_t>(0);
+
+        scalar_t Fnx = static_cast<scalar_t>(0);
+        scalar_t Fny = static_cast<scalar_t>(0);
+        scalar_t Fnz = static_cast<scalar_t>(0);
+
+        scalar_t Fx = static_cast<scalar_t>(0);
+        scalar_t Fy = static_cast<scalar_t>(0);
+        scalar_t Fz = static_cast<scalar_t>(0);
+
+        scalar_t rho_ = static_cast<scalar_t>(1);
 
         if (isInterior)
         {
@@ -427,38 +458,89 @@ namespace LBM
             const scalar_t curvature = velocitySet::as2<scalar_t>() * (scx + scy + scz);
 
             const scalar_t stCurv = -device::sigma * curvature * ind[idx];
-            ffx_ = stCurv * normx[idx];
-            ffy_ = stCurv * normy[idx];
-            ffz_ = stCurv * normz[idx];
+
+            Fsx = stCurv * normx[idx];
+            Fsy = stCurv * normy[idx];
+            Fsz = stCurv * normz[idx];
+
+            // Build stress tensor
+            const scalar_t pxx = moments[m_i<4>()] - moments[m_i<1>()] * moments[m_i<1>()];
+            const scalar_t pxy = moments[m_i<5>()] - moments[m_i<1>()] * moments[m_i<2>()];
+            const scalar_t pxz = moments[m_i<6>()] - moments[m_i<1>()] * moments[m_i<3>()];
+            const scalar_t pyy = moments[m_i<7>()] - moments[m_i<2>()] * moments[m_i<2>()];
+            const scalar_t pyz = moments[m_i<8>()] - moments[m_i<2>()] * moments[m_i<3>()];
+            const scalar_t pzz = moments[m_i<9>()] - moments[m_i<3>()] * moments[m_i<3>()];
+
+            // Load the neighbor phi values
+            const scalar_t phi_xp1_yp1_z = phi[xp1_yp1_z];
+            const scalar_t phi_xp1_ym1_z = phi[xp1_ym1_z];
+            const scalar_t phi_xm1_yp1_z = phi[xm1_yp1_z];
+            const scalar_t phi_xm1_ym1_z = phi[xm1_ym1_z];
+            const scalar_t phi_xp1_y_zp1 = phi[xp1_y_zp1];
+            const scalar_t phi_xp1_y_zm1 = phi[xp1_y_zm1];
+            const scalar_t phi_xm1_y_zp1 = phi[xm1_y_zp1];
+            const scalar_t phi_xm1_y_zm1 = phi[xm1_y_zm1];
+            const scalar_t phi_x_yp1_zp1 = phi[x_yp1_zp1];
+            const scalar_t phi_x_yp1_zm1 = phi[x_yp1_zm1];
+            const scalar_t phi_x_ym1_zp1 = phi[x_ym1_zp1];
+            const scalar_t phi_x_ym1_zm1 = phi[x_ym1_zm1];
+
+            // Compute gradients
+            const scalar_t sgx =
+                VelocitySet::w_1<scalar_t>() * (phi[i_xp] - phi[i_xm]) +
+                VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
+                                                phi_xp1_y_zp1 - phi_xm1_y_zm1 +
+                                                phi_xp1_ym1_z - phi_xm1_yp1_z +
+                                                phi_xp1_y_zm1 - phi_xm1_y_zp1);
+
+            const scalar_t sgy =
+                VelocitySet::w_1<scalar_t>() * (phi[i_yp] - phi[i_ym]) +
+                VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
+                                                phi_x_yp1_zp1 - phi_x_ym1_zm1 +
+                                                phi_xm1_yp1_z - phi_xp1_ym1_z +
+                                                phi_x_yp1_zm1 - phi_x_ym1_zp1);
+
+            const scalar_t sgz =
+                VelocitySet::w_1<scalar_t>() * (phi[i_zp] - phi[i_zm]) +
+                VelocitySet::w_2<scalar_t>() * (phi_xp1_y_zp1 - phi_xm1_y_zm1 +
+                                                phi_x_yp1_zp1 - phi_x_ym1_zm1 +
+                                                phi_xm1_y_zp1 - phi_xp1_y_zm1 +
+                                                phi_x_ym1_zp1 - phi_x_yp1_zm1);
+
+            // TODO: phase-dependent rho as input
+            const scalar_t delta_rho = static_cast<scalar_t>(0.852) - static_cast<scalar_t>(1);
+            rho_ = static_cast<scalar_t>(1) + delta_rho * moments[m_i<10>()];
+
+            const scalar_t drhox = delta_rho * velocitySet::as2<scalar_t>() * sgx;
+            const scalar_t drhoy = delta_rho * velocitySet::as2<scalar_t>() * sgy;
+            const scalar_t drhoz = delta_rho * velocitySet::as2<scalar_t>() * sgz;
+
+            // Compute pressure force
+            Fpx = -moments[m_i<0>()] * (velocitySet::cs2<scalar_t>() * drhox);
+            Fpy = -moments[m_i<0>()] * (velocitySet::cs2<scalar_t>() * drhoy);
+            Fpz = -moments[m_i<0>()] * (velocitySet::cs2<scalar_t>() * drhoz);
+
+            // Compute viscous correction force
+            Fnx = -tt_omegaVar * (pxx * drhox + pxy * drhoy + pxz * drhoz);
+            Fny = -tt_omegaVar * (pxy * drhox + pyy * drhoy + pyz * drhoz);
+            Fnz = -tt_omegaVar * (pxz * drhox + pyz * drhoy + pzz * drhoz);
+
+            // Build force density
+            Fx = Fsx + Fpx + Fnx;
+            Fy = Fsy + Fpy + Fny;
+            Fz = Fsz + Fpz + Fnz;
         }
 
-        // Prefetch devPtrs into L2
-        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
-            [&](const auto moment)
-            {
-                cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
-            });
-
-        const scalar_t rho_ = static_cast<scalar_t>(1);
-
-        // Coalesced read from global memory
-        thread::array<scalar_t, NUMBER_MOMENTS<true>()> moments;
-        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
-            [&](const auto moment)
-            {
-                moments[moment] = devPtrs.ptr<moment>()[idx];
-            });
-
         // Perform velocity half-step
-        moments[m_i<1>()] += 0.5 * ffx_ / rho_;
-        moments[m_i<2>()] += 0.5 * ffy_ / rho_;
-        moments[m_i<3>()] += 0.5 * ffz_ / rho_;
+        moments[m_i<1>()] += 0.5 * Fx / rho_;
+        moments[m_i<2>()] += 0.5 * Fy / rho_;
+        moments[m_i<3>()] += 0.5 * Fz / rho_;
 
         // Scale the moments correctly
         velocitySet::scale(moments);
 
         // Collide
-        Collision::collide(moments, ffx_, ffy_, ffz_, rho_);
+        Collision::collide(moments, Fx, Fy, Fz, rho_);
 
         // Calculate post collision populations
         thread::array<scalar_t, VelocitySet::Q()> pop;

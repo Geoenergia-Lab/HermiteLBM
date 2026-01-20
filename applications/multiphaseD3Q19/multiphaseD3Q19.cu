@@ -167,7 +167,7 @@ int main(const int argc, const char *const argv[])
                     phi.ptr(), normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr());
 
                 multiphaseCollide<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
-                    devPtrs, normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr(),
+                    devPtrs, normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr(), phi.ptr(),
                     fBlockHalo.ghost(),
                     gBlockHalo.ghost());
 #else
