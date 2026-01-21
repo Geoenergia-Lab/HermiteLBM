@@ -98,7 +98,6 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
 #endif
     }
-
 }
 
 #endif

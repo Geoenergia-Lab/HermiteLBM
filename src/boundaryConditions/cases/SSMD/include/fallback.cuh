@@ -48,8 +48,6 @@ Notes
 
 \*---------------------------------------------------------------------------*/
 
-// TODO
-
 // Static corners
 case normalVector::WEST_SOUTH_BACK():
 {
@@ -149,6 +147,48 @@ case normalVector::EAST_NORTH_BACK():
 }
 
 // Static edges
+case normalVector::WEST_SOUTH():
+{
+    const scalar_t mxy_I = WEST_SOUTH_mxy_I(pop);
+
+    const scalar_t p = static_cast<scalar_t>(36) * (-mxy_I + p_I + mxy_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t mxy = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * mxy_I - p_I) / (static_cast<scalar_t>(24) + device::omega);
+
+    moments[m_i<0>()] = p;                         // p
+    moments[m_i<1>()] = static_cast<scalar_t>(0);  // ux
+    moments[m_i<2>()] = static_cast<scalar_t>(0);  // uy
+    moments[m_i<3>()] = static_cast<scalar_t>(0);  // uz
+    moments[m_i<4>()] = static_cast<scalar_t>(0);  // mxx
+    moments[m_i<5>()] = mxy;                       // mxy
+    moments[m_i<6>()] = static_cast<scalar_t>(0);  // mxz
+    moments[m_i<7>()] = static_cast<scalar_t>(0);  // myy
+    moments[m_i<8>()] = static_cast<scalar_t>(0);  // myz
+    moments[m_i<9>()] = static_cast<scalar_t>(0);  // mzz
+    moments[m_i<10>()] = static_cast<scalar_t>(0); // phi
+
+    return;
+}
+case normalVector::EAST_SOUTH():
+{
+    const scalar_t mxy_I = EAST_SOUTH_mxy_I(pop);
+
+    const scalar_t p = -static_cast<scalar_t>(36) * (-mxy_I - p_I + mxy_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t mxy = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * mxy_I + p_I) / (static_cast<scalar_t>(24) + device::omega);
+
+    moments[m_i<0>()] = p;                         // p
+    moments[m_i<1>()] = static_cast<scalar_t>(0);  // ux
+    moments[m_i<2>()] = static_cast<scalar_t>(0);  // uy
+    moments[m_i<3>()] = static_cast<scalar_t>(0);  // uz
+    moments[m_i<4>()] = static_cast<scalar_t>(0);  // mxx
+    moments[m_i<5>()] = mxy;                       // mxy
+    moments[m_i<6>()] = static_cast<scalar_t>(0);  // mxz
+    moments[m_i<7>()] = static_cast<scalar_t>(0);  // myy
+    moments[m_i<8>()] = static_cast<scalar_t>(0);  // myz
+    moments[m_i<9>()] = static_cast<scalar_t>(0);  // mzz
+    moments[m_i<10>()] = static_cast<scalar_t>(0); // phi
+
+    return;
+}
 case normalVector::WEST_BACK():
 {
     const scalar_t mxz_I = WEST_BACK_mxz_I(pop);

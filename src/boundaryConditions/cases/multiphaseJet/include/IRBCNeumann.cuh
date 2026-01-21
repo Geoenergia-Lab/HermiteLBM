@@ -54,11 +54,11 @@ case normalVector::WEST_SOUTH_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<10>()]; // phi
+    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
+    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
 
     // IRBC-Neumann
     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
@@ -75,11 +75,11 @@ case normalVector::WEST_NORTH_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<10>()]; // phi
+    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
+    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
 
     // IRBC-Neumann
     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
@@ -96,11 +96,11 @@ case normalVector::EAST_SOUTH_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<10>()]; // phi
+    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
+    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
 
     // IRBC-Neumann
     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
@@ -117,11 +117,11 @@ case normalVector::EAST_NORTH_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<10>()]; // phi
+    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
+    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
 
     // IRBC-Neumann
     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
@@ -140,11 +140,11 @@ case normalVector::WEST_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<10>()]; // phi
+    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
+    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
 
     // Incoming moments
     const scalar_t mxy_I = velocitySet::calculate_moment<VelocitySet, X, Y>(pop, boundaryNormal);
@@ -178,11 +178,11 @@ case normalVector::EAST_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<10>()]; // phi
+    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
+    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
 
     // Incoming moments
     const scalar_t mxy_I = velocitySet::calculate_moment<VelocitySet, X, Y>(pop, boundaryNormal);
@@ -216,11 +216,11 @@ case normalVector::SOUTH_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<10>()]; // phi
+    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
+    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
 
     // Incoming moments
     const scalar_t mxy_I = velocitySet::calculate_moment<VelocitySet, X, Y>(pop, boundaryNormal);
@@ -254,11 +254,11 @@ case normalVector::NORTH_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<10>()]; // phi
+    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
+    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
 
     // Incoming moments
     const scalar_t mxy_I = velocitySet::calculate_moment<VelocitySet, X, Y>(pop, boundaryNormal);
@@ -294,11 +294,11 @@ case normalVector::FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<false>() + 1) + m_i<10>()]; // phi
+    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
+    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
 
     // Incoming moments
     const scalar_t mxx_I = velocitySet::calculate_moment<VelocitySet, X, X>(pop, boundaryNormal);
