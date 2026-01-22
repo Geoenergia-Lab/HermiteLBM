@@ -40,7 +40,7 @@ Description
     Applies static boundary conditions
 
 SourceFiles
-    fallback.cuh
+    static.cuh
 
 Notes
     This file is intended to be included directly inside a switch-case block.
@@ -73,6 +73,29 @@ case normalVector::WEST_SOUTH_BACK():
 
     return;
 }
+case normalVector::WEST_SOUTH_FRONT():
+{
+    if constexpr (VelocitySet::Q() == 19)
+    {
+        moments[m_i<0>()] = static_cast<scalar_t>(12) * p_I / static_cast<scalar_t>(7); // p
+    }
+    else
+    {
+        moments[m_i<0>()] = static_cast<scalar_t>(216) * p_I / static_cast<scalar_t>(125); // p
+    }
+
+    moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
+    moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
+    moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
+    moments[m_i<4>()] = static_cast<scalar_t>(0); // mxx
+    moments[m_i<5>()] = static_cast<scalar_t>(0); // mxy
+    moments[m_i<6>()] = static_cast<scalar_t>(0); // mxz
+    moments[m_i<7>()] = static_cast<scalar_t>(0); // myy
+    moments[m_i<8>()] = static_cast<scalar_t>(0); // myz
+    moments[m_i<9>()] = static_cast<scalar_t>(0); // mzz
+
+    return;
+}
 case normalVector::EAST_SOUTH_BACK():
 {
     if constexpr (VelocitySet::Q() == 19)
@@ -94,6 +117,29 @@ case normalVector::EAST_SOUTH_BACK():
     moments[m_i<8>()] = static_cast<scalar_t>(0);  // myz
     moments[m_i<9>()] = static_cast<scalar_t>(0);  // mzz
     moments[m_i<10>()] = static_cast<scalar_t>(0); // phi
+
+    return;
+}
+case normalVector::EAST_SOUTH_FRONT():
+{
+    if constexpr (VelocitySet::Q() == 19)
+    {
+        moments[m_i<0>()] = static_cast<scalar_t>(12) * p_I / static_cast<scalar_t>(7); // p
+    }
+    else
+    {
+        moments[m_i<0>()] = static_cast<scalar_t>(216) * p_I / static_cast<scalar_t>(125); // p
+    }
+
+    moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
+    moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
+    moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
+    moments[m_i<4>()] = static_cast<scalar_t>(0); // mxx
+    moments[m_i<5>()] = static_cast<scalar_t>(0); // mxy
+    moments[m_i<6>()] = static_cast<scalar_t>(0); // mxz
+    moments[m_i<7>()] = static_cast<scalar_t>(0); // myy
+    moments[m_i<8>()] = static_cast<scalar_t>(0); // myz
+    moments[m_i<9>()] = static_cast<scalar_t>(0); // mzz
 
     return;
 }
@@ -249,6 +295,26 @@ case normalVector::SOUTH_BACK():
     moments[m_i<8>()] = myz;                       // myz
     moments[m_i<9>()] = static_cast<scalar_t>(0);  // mzz
     moments[m_i<10>()] = static_cast<scalar_t>(0); // phi
+
+    return;
+}
+case normalVector::SOUTH_FRONT():
+{
+    const scalar_t myz_I = SOUTH_FRONT_myz_I(pop);
+
+    const scalar_t p = -static_cast<scalar_t>(36) * (-myz_I - p_I + myz_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t myz = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * myz_I + p_I) / (static_cast<scalar_t>(24) + device::omega);
+
+    moments[m_i<0>()] = p;                        // p
+    moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
+    moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
+    moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
+    moments[m_i<4>()] = static_cast<scalar_t>(0); // mxx
+    moments[m_i<5>()] = static_cast<scalar_t>(0); // mxy
+    moments[m_i<6>()] = static_cast<scalar_t>(0); // mxz
+    moments[m_i<7>()] = static_cast<scalar_t>(0); // myy
+    moments[m_i<8>()] = myz;                      // myz
+    moments[m_i<9>()] = static_cast<scalar_t>(0); // mzz
 
     return;
 }

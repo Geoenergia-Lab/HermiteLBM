@@ -40,7 +40,7 @@ Description
     Applies static boundary conditions
 
 SourceFiles
-    fallback.cuh
+    static.cuh
 
 Notes
     This file is intended to be included directly inside a switch-case block.

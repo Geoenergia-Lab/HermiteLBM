@@ -163,7 +163,7 @@ namespace LBM
 #include "include/IRBCNeumann.cuh"
 
 // Static boundaries
-#include "include/fallback.cuh"
+#include "include/static.cuh"
             }
         }
 
@@ -247,7 +247,7 @@ namespace LBM
 #include "include/IRBCNeumann.cuh"
 
 // Static boundaries
-#include "include/fallback.cuh"
+#include "include/static.cuh"
             }
         }
 

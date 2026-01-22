@@ -114,32 +114,32 @@ namespace LBM
          * - Off-diagonal moments (m_xy, m_xz, m_yz): Relaxed and updated with
          *   product of velocity components
          *
-         * @note This implementation assumes force terms, so velocity updates are not omitted
-         * @note Uses device-level relaxation parameters (device::t_omegaVar, device::omegaVar_d2, device::omega)
+         * @note This implementation is based on the Guo forcing scheme
+         * @note Uses device-level relaxation parameters (device::t_omegaVar, device::omegaVar_d2, device::omega, device::tt_omegaVar_t3)
          **/
-        __device__ static inline void collide(thread::array<scalar_t, 11> &moments, const scalar_t ffx, const scalar_t ffy, const scalar_t ffz, const scalar_t rho) noexcept
+        __device__ static inline void collide(thread::array<scalar_t, 11> &moments, const scalar_t forceX, const scalar_t forceY, const scalar_t forceZ, const scalar_t rho) noexcept
         {
             const scalar_t invRho = static_cast<scalar_t>(1) / rho;
 
             // Get pre-update velocities (half-step)
-            const scalar_t ux_eq = moments[m_i<1>()];
-            const scalar_t uy_eq = moments[m_i<2>()];
-            const scalar_t uz_eq = moments[m_i<3>()];
+            const scalar_t uxEq = moments[m_i<1>()];
+            const scalar_t uyEq = moments[m_i<2>()];
+            const scalar_t uzEq = moments[m_i<3>()];
 
             // Velocity updates
-            moments[m_i<1>()] = device::t_omegaVar * (moments[m_i<1>()] - static_cast<scalar_t>(1.5) * invRho * ffx) + device::omega * moments[m_i<1>()] + device::tt_omegaVar_t3 * invRho * ffx;
-            moments[m_i<2>()] = device::t_omegaVar * (moments[m_i<2>()] - static_cast<scalar_t>(1.5) * invRho * ffy) + device::omega * moments[m_i<2>()] + device::tt_omegaVar_t3 * invRho * ffy;
-            moments[m_i<3>()] = device::t_omegaVar * (moments[m_i<3>()] - static_cast<scalar_t>(1.5) * invRho * ffz) + device::omega * moments[m_i<3>()] + device::tt_omegaVar_t3 * invRho * ffz;
+            moments[m_i<1>()] = device::t_omegaVar * (uxEq - static_cast<scalar_t>(1.5) * invRho * forceX) + device::omega * uxEq + device::tt_omegaVar_t3 * invRho * forceX; // ux
+            moments[m_i<2>()] = device::t_omegaVar * (uyEq - static_cast<scalar_t>(1.5) * invRho * forceY) + device::omega * uyEq + device::tt_omegaVar_t3 * invRho * forceY; // uy
+            moments[m_i<3>()] = device::t_omegaVar * (uzEq - static_cast<scalar_t>(1.5) * invRho * forceZ) + device::omega * uzEq + device::tt_omegaVar_t3 * invRho * forceZ; // uz
 
             // Diagonal moment updates
-            moments[m_i<4>()] = device::t_omegaVar * moments[m_i<4>()] + device::omegaVar_d2 * ux_eq * ux_eq + static_cast<scalar_t>(1.5) * device::tt_omegaVar * invRho * (ffx * ux_eq + ffx * ux_eq);
-            moments[m_i<7>()] = device::t_omegaVar * moments[m_i<7>()] + device::omegaVar_d2 * uy_eq * uy_eq + static_cast<scalar_t>(1.5) * device::tt_omegaVar * invRho * (ffy * uy_eq + ffy * uy_eq);
-            moments[m_i<9>()] = device::t_omegaVar * moments[m_i<9>()] + device::omegaVar_d2 * uz_eq * uz_eq + static_cast<scalar_t>(1.5) * device::tt_omegaVar * invRho * (ffz * uz_eq + ffz * uz_eq);
+            moments[m_i<4>()] = device::t_omegaVar * moments[m_i<4>()] + device::omegaVar_d2 * uxEq * uxEq + static_cast<scalar_t>(1.5) * device::tt_omegaVar * invRho * (forceX * uxEq + forceX * uxEq); // mxx
+            moments[m_i<7>()] = device::t_omegaVar * moments[m_i<7>()] + device::omegaVar_d2 * uyEq * uyEq + static_cast<scalar_t>(1.5) * device::tt_omegaVar * invRho * (forceY * uyEq + forceY * uyEq); // myy
+            moments[m_i<9>()] = device::t_omegaVar * moments[m_i<9>()] + device::omegaVar_d2 * uzEq * uzEq + static_cast<scalar_t>(1.5) * device::tt_omegaVar * invRho * (forceZ * uzEq + forceZ * uzEq); // mzz
 
             // Off-diagonal moment updates
-            moments[m_i<5>()] = device::t_omegaVar * moments[m_i<5>()] + device::omega * ux_eq * uy_eq + device::tt_omegaVar_t3 * invRho * (ffx * uy_eq + ffy * ux_eq); // mxy
-            moments[m_i<6>()] = device::t_omegaVar * moments[m_i<6>()] + device::omega * ux_eq * uz_eq + device::tt_omegaVar_t3 * invRho * (ffx * uz_eq + ffz * ux_eq); // mxz
-            moments[m_i<8>()] = device::t_omegaVar * moments[m_i<8>()] + device::omega * uy_eq * uz_eq + device::tt_omegaVar_t3 * invRho * (ffy * uz_eq + ffz * uy_eq); // myz
+            moments[m_i<5>()] = device::t_omegaVar * moments[m_i<5>()] + device::omega * uxEq * uyEq + device::tt_omegaVar_t3 * invRho * (forceX * uyEq + forceY * uxEq); // mxy
+            moments[m_i<6>()] = device::t_omegaVar * moments[m_i<6>()] + device::omega * uxEq * uzEq + device::tt_omegaVar_t3 * invRho * (forceX * uzEq + forceZ * uxEq); // mxz
+            moments[m_i<8>()] = device::t_omegaVar * moments[m_i<8>()] + device::omega * uyEq * uzEq + device::tt_omegaVar_t3 * invRho * (forceY * uzEq + forceZ * uyEq); // myz
         }
 
     private:

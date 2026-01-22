@@ -48,90 +48,92 @@ Notes
 
 \*---------------------------------------------------------------------------*/
 
-// TODO
-
 // Corners
-case normalVector::WEST_SOUTH_FRONT():
-{
-    const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
+// case normalVector::WEST_NORTH_FRONT():
+// {
+//     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
-    // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
+//     // Classic Neumann
+//     moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
+//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
+//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
+//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
+//     moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
 
-    // IRBC-Neumann
-    moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
-    moments[m_i<5>()] = moments[m_i<1>()] * moments[m_i<2>()]; // mxy
-    moments[m_i<6>()] = moments[m_i<1>()] * moments[m_i<3>()]; // mxz
-    moments[m_i<7>()] = moments[m_i<2>()] * moments[m_i<2>()]; // myy
-    moments[m_i<8>()] = moments[m_i<2>()] * moments[m_i<3>()]; // myz
-    moments[m_i<9>()] = moments[m_i<3>()] * moments[m_i<3>()]; // mzz
+//     // IRBC-Neumann
+//     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
+//     moments[m_i<5>()] = moments[m_i<1>()] * moments[m_i<2>()]; // mxy
+//     moments[m_i<6>()] = moments[m_i<1>()] * moments[m_i<3>()]; // mxz
+//     moments[m_i<7>()] = moments[m_i<2>()] * moments[m_i<2>()]; // myy
+//     moments[m_i<8>()] = moments[m_i<2>()] * moments[m_i<3>()]; // myz
+//     moments[m_i<9>()] = moments[m_i<3>()] * moments[m_i<3>()]; // mzz
 
-    return;
-}
+//     return;
+// }
 case normalVector::WEST_NORTH_FRONT():
 {
-    const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
+    if constexpr (VelocitySet::Q() == 19)
+    {
+        moments[m_i<0>()] = static_cast<scalar_t>(12) * p_I / static_cast<scalar_t>(7); // p
+    }
+    else
+    {
+        moments[m_i<0>()] = static_cast<scalar_t>(216) * p_I / static_cast<scalar_t>(125); // p
+    }
 
-    // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
-
-    // IRBC-Neumann
-    moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
-    moments[m_i<5>()] = moments[m_i<1>()] * moments[m_i<2>()]; // mxy
-    moments[m_i<6>()] = moments[m_i<1>()] * moments[m_i<3>()]; // mxz
-    moments[m_i<7>()] = moments[m_i<2>()] * moments[m_i<2>()]; // myy
-    moments[m_i<8>()] = moments[m_i<2>()] * moments[m_i<3>()]; // myz
-    moments[m_i<9>()] = moments[m_i<3>()] * moments[m_i<3>()]; // mzz
-
-    return;
-}
-case normalVector::EAST_SOUTH_FRONT():
-{
-    const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
-
-    // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
-
-    // IRBC-Neumann
-    moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
-    moments[m_i<5>()] = moments[m_i<1>()] * moments[m_i<2>()]; // mxy
-    moments[m_i<6>()] = moments[m_i<1>()] * moments[m_i<3>()]; // mxz
-    moments[m_i<7>()] = moments[m_i<2>()] * moments[m_i<2>()]; // myy
-    moments[m_i<8>()] = moments[m_i<2>()] * moments[m_i<3>()]; // myz
-    moments[m_i<9>()] = moments[m_i<3>()] * moments[m_i<3>()]; // mzz
+    moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
+    moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
+    moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
+    moments[m_i<4>()] = static_cast<scalar_t>(0); // mxx
+    moments[m_i<5>()] = static_cast<scalar_t>(0); // mxy
+    moments[m_i<6>()] = static_cast<scalar_t>(0); // mxz
+    moments[m_i<7>()] = static_cast<scalar_t>(0); // myy
+    moments[m_i<8>()] = static_cast<scalar_t>(0); // myz
+    moments[m_i<9>()] = static_cast<scalar_t>(0); // mzz
 
     return;
 }
+// case normalVector::EAST_NORTH_FRONT():
+// {
+//     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
+
+//     // Classic Neumann
+//     moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
+//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
+//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
+//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
+//     moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
+
+//     // IRBC-Neumann
+//     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
+//     moments[m_i<5>()] = moments[m_i<1>()] * moments[m_i<2>()]; // mxy
+//     moments[m_i<6>()] = moments[m_i<1>()] * moments[m_i<3>()]; // mxz
+//     moments[m_i<7>()] = moments[m_i<2>()] * moments[m_i<2>()]; // myy
+//     moments[m_i<8>()] = moments[m_i<2>()] * moments[m_i<3>()]; // myz
+//     moments[m_i<9>()] = moments[m_i<3>()] * moments[m_i<3>()]; // mzz
+
+//     return;
+// }
 case normalVector::EAST_NORTH_FRONT():
 {
-    const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
+    if constexpr (VelocitySet::Q() == 19)
+    {
+        moments[m_i<0>()] = static_cast<scalar_t>(12) * p_I / static_cast<scalar_t>(7); // p
+    }
+    else
+    {
+        moments[m_i<0>()] = static_cast<scalar_t>(216) * p_I / static_cast<scalar_t>(125); // p
+    }
 
-    // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
-
-    // IRBC-Neumann
-    moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
-    moments[m_i<5>()] = moments[m_i<1>()] * moments[m_i<2>()]; // mxy
-    moments[m_i<6>()] = moments[m_i<1>()] * moments[m_i<3>()]; // mxz
-    moments[m_i<7>()] = moments[m_i<2>()] * moments[m_i<2>()]; // myy
-    moments[m_i<8>()] = moments[m_i<2>()] * moments[m_i<3>()]; // myz
-    moments[m_i<9>()] = moments[m_i<3>()] * moments[m_i<3>()]; // mzz
+    moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
+    moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
+    moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
+    moments[m_i<4>()] = static_cast<scalar_t>(0); // mxx
+    moments[m_i<5>()] = static_cast<scalar_t>(0); // mxy
+    moments[m_i<6>()] = static_cast<scalar_t>(0); // mxz
+    moments[m_i<7>()] = static_cast<scalar_t>(0); // myy
+    moments[m_i<8>()] = static_cast<scalar_t>(0); // myz
+    moments[m_i<9>()] = static_cast<scalar_t>(0); // mzz
 
     return;
 }
@@ -289,44 +291,6 @@ case normalVector::EAST_FRONT():
 
     return;
 }
-case normalVector::SOUTH_FRONT():
-{
-    const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
-
-    // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];   // p
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()];   // ux
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()];   // uy
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()];   // uz
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]; // phi
-
-    // Incoming moments
-    const scalar_t mxy_I = velocitySet::calculate_moment<VelocitySet, X, Y>(pop, boundaryNormal);
-    const scalar_t mxz_I = velocitySet::calculate_moment<VelocitySet, X, Z>(pop, boundaryNormal);
-
-    if constexpr (VelocitySet::Q() == 19)
-    {
-        // IRBC-Neumann
-        moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];                                               // mxx
-        moments[m_i<5>()] = (static_cast<scalar_t>(6) * mxy_I + moments[m_i<1>()]) / (static_cast<scalar_t>(3)); // mxy
-        moments[m_i<6>()] = (static_cast<scalar_t>(6) * mxz_I - moments[m_i<1>()]) / (static_cast<scalar_t>(3)); // mxz
-        moments[m_i<7>()] = moments[m_i<2>()] * moments[m_i<2>()];                                               // myy
-        moments[m_i<8>()] = moments[m_i<2>()] * moments[m_i<3>()];                                               // myz
-        moments[m_i<9>()] = moments[m_i<3>()] * moments[m_i<3>()];                                               // mzz
-    }
-    else
-    {
-        // IRBC-Neumann
-        moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];                                                                                                                 // mxx
-        moments[m_i<5>()] = -(-static_cast<scalar_t>(45) * mxy_I - static_cast<scalar_t>(9) * mxz_I - static_cast<scalar_t>(5) * moments[m_i<1>()]) / (static_cast<scalar_t>(18)); // mxy
-        moments[m_i<6>()] = -(-static_cast<scalar_t>(9) * mxy_I - static_cast<scalar_t>(45) * mxz_I + static_cast<scalar_t>(5) * moments[m_i<1>()]) / (static_cast<scalar_t>(18)); // mxz
-        moments[m_i<7>()] = moments[m_i<2>()] * moments[m_i<2>()];                                                                                                                 // myy
-        moments[m_i<8>()] = moments[m_i<2>()] * moments[m_i<3>()];                                                                                                                 // myz
-        moments[m_i<9>()] = moments[m_i<3>()] * moments[m_i<3>()];                                                                                                                 // mzz
-    }
-
-    return;
-}
 // case normalVector::NORTH_FRONT():
 // {
 //     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
@@ -365,6 +329,26 @@ case normalVector::SOUTH_FRONT():
 
 //     return;
 // }
+case normalVector::NORTH_FRONT():
+{
+    const scalar_t myz_I = NORTH_FRONT_myz_I(pop);
+
+    const scalar_t p = static_cast<scalar_t>(36) * (-myz_I + p_I + myz_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+    const scalar_t myz = static_cast<scalar_t>(4) * (static_cast<scalar_t>(25) * myz_I - p_I) / (static_cast<scalar_t>(24) + device::omega);
+
+    moments[m_i<0>()] = p;                        // p
+    moments[m_i<1>()] = static_cast<scalar_t>(0); // ux
+    moments[m_i<2>()] = static_cast<scalar_t>(0); // uy
+    moments[m_i<3>()] = static_cast<scalar_t>(0); // uz
+    moments[m_i<4>()] = static_cast<scalar_t>(0); // mxx
+    moments[m_i<5>()] = static_cast<scalar_t>(0); // mxy
+    moments[m_i<6>()] = static_cast<scalar_t>(0); // mxz
+    moments[m_i<7>()] = static_cast<scalar_t>(0); // myy
+    moments[m_i<8>()] = myz;                      // myz
+    moments[m_i<9>()] = static_cast<scalar_t>(0); // mzz
+
+    return;
+}
 
 // Faces
 case normalVector::NORTH():

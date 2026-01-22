@@ -132,7 +132,7 @@ namespace LBM
 #include "include/IRBCNeumann.cuh"
 
 // Static back face outside of the jet
-#include "include/fallback.cuh"
+#include "include/static.cuh"
             }
         }
 
@@ -185,7 +185,7 @@ namespace LBM
 #include "include/IRBCNeumann.cuh"
 
 // Static back face outside of the jet
-#include "include/fallback.cuh"
+#include "include/static.cuh"
             }
         }
 
