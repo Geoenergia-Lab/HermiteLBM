@@ -337,15 +337,15 @@ namespace LBM
                                             static_cast<label_t>(is_east) +
                                             static_cast<label_t>(is_south) +
                                             static_cast<label_t>(is_north) +
-                                            static_cast<label_t>(is_front) +
-                                            static_cast<label_t>(is_back);
+                                            static_cast<label_t>(is_back) +
+                                            static_cast<label_t>(is_front);
                                         const T value_sum =
                                             (is_west * bField.West()) +
                                             (is_east * bField.East()) +
                                             (is_south * bField.South()) +
                                             (is_north * bField.North()) +
-                                            (is_front * bField.Front()) +
-                                            (is_back * bField.Back());
+                                            (is_back * bField.Back()) +
+                                            (is_front * bField.Front());
 
                                         field[index] = boundary_count > 0 ? value_sum / static_cast<T>(boundary_count) : bField.internalField();
                                     }

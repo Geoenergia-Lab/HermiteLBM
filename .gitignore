@@ -40,7 +40,7 @@ thirdParty/opt*
 thirdParty/openmpi-5.0.7.tar.gz
 build
 
-# Case directory ignores
+# Lid driven cavity directory ignores
 cases/*/*/*.dat
 cases/*/*/*.vtu
 cases/*/*/*.vts

@@ -50,28 +50,11 @@ SourceFiles
 #ifndef __MBLBM_CASES_CUH
 #define __MBLBM_CASES_CUH
 
-// #define JETFLOW
-#define LIDDRIVENCAVITY
-
 #include "jetFlow/jetFlow.cuh"
 #include "lidDrivenCavity/lidDrivenCavity.cuh"
 
 namespace LBM
 {
-
-#ifdef JETFLOW
-    using BoundaryConditions = jetFlow;
-
-    __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
-    __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
-#endif
-
-#ifdef LIDDRIVENCAVITY
-    using BoundaryConditions = lidDrivenCavity;
-
-    __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return false; }
-    __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
-#endif
 
 }
 

@@ -64,7 +64,7 @@ namespace LBM
          * CUDA blocks during LBM simulations. It maintains double-buffered halo regions
          * to support efficient ping-pong swapping between computation steps.
          **/
-        template <class VelocitySet, const bool xPeriodic, const bool yPeriodic>
+        template <class VelocitySet, const bool x_periodic, const bool y_periodic>
         class halo
         {
         public:
@@ -77,28 +77,28 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl) noexcept
                 : fGhost_(haloFace<VelocitySet>(
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
                       mesh)),
                   gGhost_(haloFace<VelocitySet>(
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
+                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
                       mesh)){};
 
             /**
@@ -107,16 +107,16 @@ namespace LBM
              * @param[in] mesh Lattice mesh defining simulation domain
              **/
             __host__ [[nodiscard]] halo(
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &rho,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &u,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &v,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &w,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xx,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xy,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xz,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yy,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yz,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_zz,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &rho,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &u,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &v,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &w,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xx,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xy,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xz,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_yy,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_yz,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh) noexcept
                 : fGhost_(haloFace<VelocitySet>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
                   gGhost_(haloFace<VelocitySet>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)){};
@@ -618,7 +618,7 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool West(const label_t x) noexcept
             {
-                if constexpr (xPeriodic)
+                if constexpr (x_periodic)
                 {
                     return (threadIdx.x == 0);
                 }
@@ -635,7 +635,7 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool East(const label_t x) noexcept
             {
-                if constexpr (xPeriodic)
+                if constexpr (x_periodic)
                 {
                     return (threadIdx.x == (block::nx() - 1));
                 }
@@ -652,7 +652,7 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool South(const label_t y) noexcept
             {
-                if constexpr (yPeriodic)
+                if constexpr (y_periodic)
                 {
                     return (threadIdx.y == 0);
                 }
@@ -669,7 +669,7 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool North(const label_t y) noexcept
             {
-                if constexpr (yPeriodic)
+                if constexpr (y_periodic)
                 {
                     return (threadIdx.y == (block::ny() - 1));
                 }
@@ -748,7 +748,7 @@ namespace LBM
              * @param[in] I The index of a thread within a warp
              * @return Two-dimensional representation of I
              **/
-            template <const axis::direction alpha, const axis::direction beta>
+            template <const axis::type alpha, const axis::type beta>
             __device__ __host__ [[nodiscard]] static inline constexpr dim2 ij(const label_t I) noexcept
             {
                 if constexpr ((alpha == axis::X) && (beta == axis::Y))

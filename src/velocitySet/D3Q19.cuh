@@ -150,10 +150,7 @@ namespace LBM
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, vs::Q()> w_q() noexcept
         {
-            return {
-                w_0<T>(),
-                w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(),
-                w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>()};
+            return {w_0<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>()};
         }
 
         /**
@@ -254,10 +251,10 @@ namespace LBM
          * @brief Get alpha-components for all directions
          * @return Thread array of 19 alpha-velocity components
          **/
-        template <typename T, const axis::direction alpha>
+        template <typename T, const axis::type alpha>
         __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, vs::Q()> c() noexcept
         {
-            assertions::validate_direction<alpha, axis::CAN_BE_NULL>();
+            assertions::axis::validate<alpha, axis::CAN_BE_NULL>();
 
             if constexpr (alpha == axis::NO_DIRECTION)
             {

@@ -315,7 +315,7 @@ namespace LBM
          * @param nyBlocks Number of blocks in y-direction
          * @return Linearized index: idxPopX, idxPopY, idxPopZ
          **/
-        template <const axis::direction alpha, const label_t pop, const label_t QF>
+        template <const axis::type alpha, const label_t pop, const label_t QF>
         __host__ [[nodiscard]] inline label_t idxPop(
             const label_t tx, const label_t ty, const label_t tz,
             const label_t bx, const label_t by, const label_t bz,

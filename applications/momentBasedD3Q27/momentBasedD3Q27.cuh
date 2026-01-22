@@ -64,6 +64,18 @@ SourceFiles
 namespace LBM
 {
 
+#ifdef JETFLOW
+    using BoundaryConditions = jetFlow;
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
+#endif
+
+#ifdef LIDDRIVENCAVITY
+    using BoundaryConditions = lidDrivenCavity;
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicX() noexcept { return false; }
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
+#endif
+
     using VelocitySet = D3Q27;
     using Collision = secondOrder;
     using BlockHalo = device::halo<VelocitySet, periodicX(), periodicY()>;
@@ -174,14 +186,15 @@ namespace LBM
         {
             // Compute post-stream moments
             velocitySet::calculate_moments<VelocitySet>(pop, moments);
-
-            // Update the shared buffer with the refreshed moments
-            device::constexpr_for<0, NUMBER_MOMENTS()>(
-                [&](const auto moment)
-                {
-                    const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
-                    shared_buffer[ID] = moments[moment];
-                });
+            {
+                // Update the shared buffer with the refreshed moments
+                device::constexpr_for<0, NUMBER_MOMENTS()>(
+                    [&](const auto moment)
+                    {
+                        const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
+                        shared_buffer[ID] = moments[moment];
+                    });
+            }
 
             __syncthreads();
 

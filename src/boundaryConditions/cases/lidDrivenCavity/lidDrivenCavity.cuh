@@ -47,8 +47,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_lidDrivenCavity_CUH
-#define __MBLBM_lidDrivenCavity_CUH
+#ifndef __MBLBM_LIDDRIVENCAVITY_CUH
+#define __MBLBM_LIDDRIVENCAVITY_CUH
 
 __device__ __host__ [[nodiscard]] inline consteval bool check_n_boundaries() noexcept { return false; }
 
@@ -95,7 +95,7 @@ namespace LBM
             const normalVector &boundaryNormal,
             [[maybe_unused]] const scalar_t *const ptrRestrict shared_buffer) noexcept
         {
-            assertions::validate<VelocitySet>();
+            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: lidDrivenCavity::calculate_moments only supports D3Q19 and D3Q27.");
 
             const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -109,8 +109,8 @@ namespace LBM
                     boundaryNormal.isEast<scalar_t>(),
                     boundaryNormal.isNorth<scalar_t>(),
                     boundaryNormal.isSouth<scalar_t>(),
-                    boundaryNormal.isFront<scalar_t>(),
-                    boundaryNormal.isBack<scalar_t>()};
+                    boundaryNormal.isBack<scalar_t>(),
+                    boundaryNormal.isFront<scalar_t>()};
 
                 moments[m_i<1>()] = U<axis::X>(boundarySwitches, nBoundaries);
                 moments[m_i<2>()] = U<axis::Y>(boundarySwitches, nBoundaries);
@@ -533,7 +533,7 @@ namespace LBM
          * @tparam index Index of the velocity component to compute
          * @return Velocity component value
          **/
-        template <const axis::direction alpha>
+        template <const axis::type alpha>
         __device__ static inline constexpr scalar_t U(const thread::array<scalar_t, 6> &boundarySwitches, const scalar_t n_boundaries) noexcept
         {
             // Calculate the boundary velocity value
@@ -541,8 +541,8 @@ namespace LBM
                     (boundarySwitches[1] * device::U_East[alpha]) +
                     (boundarySwitches[2] * device::U_North[alpha]) +
                     (boundarySwitches[3] * device::U_South[alpha]) +
-                    (boundarySwitches[4] * device::U_Front[alpha]) +
-                    (boundarySwitches[5] * device::U_Back[alpha])) /
+                    (boundarySwitches[4] * device::U_Back[alpha]) +
+                    (boundarySwitches[5] * device::U_Front[alpha])) /
                    n_boundaries;
         }
     };
