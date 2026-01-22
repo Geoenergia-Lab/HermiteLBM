@@ -85,7 +85,7 @@ namespace LBM
                 f(std::integral_constant<label_t, Start>());
                 if constexpr (Start + 1 < End)
                 {
-                    constexpr_for<Start + 1, End>(std::forward<F>(f));
+                    host::constexpr_for<Start + 1, End>(std::forward<F>(f));
                 }
             }
         }
@@ -101,7 +101,7 @@ namespace LBM
                 f(integralConstant<label_t, Start>());
                 if constexpr (Start + 1 < End)
                 {
-                    constexpr_for<Start + 1, End>(std::forward<F>(f));
+                    device::constexpr_for<Start + 1, End>(std::forward<F>(f));
                 }
             }
         }
@@ -292,6 +292,39 @@ namespace LBM
             const label_t nxBlocks, const label_t nyBlocks) noexcept
         {
             return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
+        }
+
+        /**
+         * @brief Index for arbitrarily aligned population arrays
+         * @tparam pop Population index
+         * @tparam QF Number of populations
+         * @tparam alpha The axis direction
+         * @param tx,ty,tz Thread-local x/y/z coordinates
+         * @param bx,by,bz Block indices
+         * @param nxBlocks Number of blocks in x-direction
+         * @param nyBlocks Number of blocks in y-direction
+         * @return Linearized index: idxPopX, idxPopY, idxPopZ
+         **/
+        template <const axis::type alpha, const label_t pop, const label_t QF>
+        __host__ [[nodiscard]] inline label_t idxPop(
+            const label_t tx, const label_t ty, const label_t tz,
+            const label_t bx, const label_t by, const label_t bz,
+            const label_t nxBlocks, const label_t nyBlocks)
+        {
+            if constexpr (alpha == axis::X)
+            {
+                return idxPopX<pop, QF>(ty, tz, bx, by, bz, nxBlocks, nyBlocks);
+            }
+
+            if constexpr (alpha == axis::Y)
+            {
+                return idxPopY<pop, QF>(tx, tz, bx, by, bz, nxBlocks, nyBlocks);
+            }
+
+            if constexpr (alpha == axis::Z)
+            {
+                return idxPopZ<pop, QF>(tx, ty, bx, by, bz, nxBlocks, nyBlocks);
+            }
         }
     }
 

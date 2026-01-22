@@ -50,22 +50,11 @@ SourceFiles
 #ifndef __MBLBM_CASES_CUH
 #define __MBLBM_CASES_CUH
 
-// #define JETFLOW
-#define LIDDRIVENCAVITY
-
 #include "jetFlow/jetFlow.cuh"
 #include "lidDrivenCavity/lidDrivenCavity.cuh"
 
 namespace LBM
 {
-
-#ifdef JETFLOW
-    using BoundaryConditions = jetFlowBoundaryConditions;
-#endif
-
-#ifdef LIDDRIVENCAVITY
-    using BoundaryConditions = lidDrivenCavityBoundaryConditions;
-#endif
 
 }
 

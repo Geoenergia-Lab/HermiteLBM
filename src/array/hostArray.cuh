@@ -329,23 +329,23 @@ namespace LBM
                                         const bool is_east = (x == mesh.nx() - 1);
                                         const bool is_south = (y == 0);
                                         const bool is_north = (y == mesh.ny() - 1);
-                                        const bool is_front = (z == 0);
-                                        const bool is_back = (z == mesh.nz() - 1);
+                                        const bool is_back = (z == 0);
+                                        const bool is_front = (z == mesh.nz() - 1);
 
                                         const label_t boundary_count =
                                             static_cast<label_t>(is_west) +
                                             static_cast<label_t>(is_east) +
                                             static_cast<label_t>(is_south) +
                                             static_cast<label_t>(is_north) +
-                                            static_cast<label_t>(is_front) +
-                                            static_cast<label_t>(is_back);
+                                            static_cast<label_t>(is_back) +
+                                            static_cast<label_t>(is_front);
                                         const T value_sum =
                                             (is_west * bField.West()) +
                                             (is_east * bField.East()) +
                                             (is_south * bField.South()) +
                                             (is_north * bField.North()) +
-                                            (is_front * bField.Front()) +
-                                            (is_back * bField.Back());
+                                            (is_back * bField.Back()) +
+                                            (is_front * bField.Front());
 
                                         field[index] = boundary_count > 0 ? value_sum / static_cast<T>(boundary_count) : bField.internalField();
                                     }

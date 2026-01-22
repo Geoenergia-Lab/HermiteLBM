@@ -10,7 +10,7 @@
 /*---------------------------------------------------------------------------*\
 
 Copyright (C) 2023 UDESC Geoenergia Lab
-Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+Authors: Nathan Duggins, Breno Gemelgo (Geoenergia Lab, UDESC)
 
 This implementation is derived from concepts and algorithms developed in:
   MR-LBM: Moment Representation Lattice Boltzmann Method
@@ -37,58 +37,47 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A list of header files necessary for compilation
-
-Namespace
-    LBM
+    Face and edge definitions along the lateral planes of the jet.
+    Periodicity is implemented at halo level.
+    See /src/blockHalo/halo.cuh for more information.
 
 SourceFiles
-    LBMIncludes.cuh
+    lateralFacesAndEdges.cuh
+
+    This file is intended to be included directly inside a switch-case block.
+    Do NOT use include guards (#ifndef/#define/#endif).
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_INCLUDES_CUH
-#define __MBLBM_INCLUDES_CUH
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-#include <algorithm>
-#include <array>
-#include <atomic>
-#include <bit>
-#include <cctype>
-#include <charconv>
-#include <chrono>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <filesystem>
-#include <fstream>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <limits>
-#include <locale>
-#include <memory>
-#include <nvrtc.h>
-// #include <mpi.h>
-#include <source_location>
-#include <sstream>
-#include <stdexcept>
-#include <stdint.h>
-#include <string>
-#include <string_view>
-#include <typeinfo>
-#include <type_traits>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-
-#define JETFLOW
-// #define LIDDRIVENCAVITY
-
-#endif
+case normalVector::WEST():
+{
+    return;
+}
+case normalVector::EAST():
+{
+    return;
+}
+case normalVector::SOUTH():
+{
+    return;
+}
+case normalVector::NORTH():
+{
+    return;
+}
+case normalVector::SOUTH_WEST():
+{
+    return;
+}
+case normalVector::NORTH_WEST():
+{
+    return;
+}
+case normalVector::SOUTH_EAST():
+{
+    return;
+}
+case normalVector::NORTH_EAST():
+{
+    return;
+}

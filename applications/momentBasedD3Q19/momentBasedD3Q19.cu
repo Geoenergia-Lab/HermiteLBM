@@ -97,7 +97,7 @@ int main(const int argc, const char *const argv[])
 
     objectRegistry<VelocitySet, NStreams()> runTimeObjects(mesh, devPtrs, streamsLBM);
 
-    device::halo<VelocitySet> blockHalo(mesh, programCtrl);
+    BlockHalo blockHalo(mesh, programCtrl);
 
     kernelSetup<smem_alloc_size()>(momentBasedD3Q19);
 

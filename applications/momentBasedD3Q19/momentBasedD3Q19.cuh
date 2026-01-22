@@ -64,8 +64,21 @@ SourceFiles
 namespace LBM
 {
 
+#ifdef JETFLOW
+    using BoundaryConditions = jetFlow;
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
+#endif
+
+#ifdef LIDDRIVENCAVITY
+    using BoundaryConditions = lidDrivenCavity;
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicX() noexcept { return false; }
+    __host__ __device__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
+#endif
+
     using VelocitySet = D3Q19;
     using Collision = secondOrder;
+    using BlockHalo = device::halo<VelocitySet, periodicX(), periodicY()>;
 
     __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept { return 0; }
 
@@ -148,11 +161,11 @@ namespace LBM
         }
 
         // Load pop from global memory in cover nodes
-        device::halo<VelocitySet>::load(
+        BlockHalo::load(
             pop,
             fGhost);
 
-        if constexpr (std::is_same<BoundaryConditions, lidDrivenCavityBoundaryConditions>::value)
+        if constexpr (std::is_same<BoundaryConditions, lidDrivenCavity>::value)
         {
             // Calculate the moments either at the boundary or interior
             {
@@ -169,7 +182,7 @@ namespace LBM
             }
         }
 
-        if constexpr (std::is_same<BoundaryConditions, jetFlowBoundaryConditions>::value)
+        if constexpr (std::is_same<BoundaryConditions, jetFlow>::value)
         {
             // Compute post-stream moments
             velocitySet::calculate_moments<VelocitySet>(pop, moments);
@@ -204,7 +217,7 @@ namespace LBM
 
         // Calculate post collision populations
         VelocitySet::reconstruct(pop, moments);
-        device::halo<VelocitySet>::transpose_to_shared(pop, shared_buffer);
+        // BlockHalo::transpose_to_shared(pop, shared_buffer);
 
         // Coalesced write to global memory
         moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
@@ -215,8 +228,8 @@ namespace LBM
             });
 
         // Save the populations to the block halo
-        device::halo<VelocitySet>::save_from_shared(shared_buffer, gGhost);
-        // device::halo<VelocitySet>::save(pop, gGhost);
+        // BlockHalo::save_from_shared(shared_buffer, gGhost);
+        BlockHalo::save(pop, gGhost);
     }
 }
 

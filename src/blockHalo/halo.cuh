@@ -64,7 +64,7 @@ namespace LBM
          * CUDA blocks during LBM simulations. It maintains double-buffered halo regions
          * to support efficient ping-pong swapping between computation steps.
          **/
-        template <class VelocitySet>
+        template <class VelocitySet, const bool x_periodic, const bool y_periodic>
         class halo
         {
         public:
@@ -406,9 +406,9 @@ namespace LBM
                 const label_t idx_in_warp = idxWarp(threadIdx.x, threadIdx.y, threadIdx.z);
 
                 // Equivalent of threadIdx.alpha, threadIdx.beta
-                const dim2 xy = ij<X, Y>(idx_in_warp + offset);
-                const dim2 xz = ij<X, Z>(idx_in_warp + offset);
-                const dim2 yz = ij<Y, Z>(idx_in_warp + offset);
+                const dim2 xy = ij<axis::X, axis::Y>(idx_in_warp + offset);
+                const dim2 xz = ij<axis::X, axis::Z>(idx_in_warp + offset);
+                const dim2 yz = ij<axis::Y, axis::Z>(idx_in_warp + offset);
 
                 const label_t ID = idx_block(threadIdx.x, threadIdx.y, threadIdx.z);
 
@@ -614,9 +614,9 @@ namespace LBM
             //     const label_t idx_in_warp = idxWarp(threadIdx.x, threadIdx.y, threadIdx.z);
 
             //     // Get 2D coordinates for each face type
-            //     const dim2 xy = ij<X, Y>(idx_in_warp + offset);
-            //     const dim2 xz = ij<X, Z>(idx_in_warp + offset);
-            //     const dim2 yz = ij<Y, Z>(idx_in_warp + offset);
+            //     const dim2 xy = ij<axis::X, axis::Y>(idx_in_warp + offset);
+            //     const dim2 xz = ij<axis::X, axis::Z>(idx_in_warp + offset);
+            //     const dim2 yz = ij<axis::Y, axis::Z>(idx_in_warp + offset);
 
             //     const label_t ID = idx_block(threadIdx.x, threadIdx.y, threadIdx.z);
 
@@ -918,7 +918,14 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool West(const label_t x) noexcept
             {
-                return (threadIdx.x == 0 && x != 0);
+                if constexpr (x_periodic)
+                {
+                    return (threadIdx.x == 0);
+                }
+                else
+                {
+                    return (threadIdx.x == 0 && x != 0);
+                }
             }
 
             /**
@@ -928,7 +935,14 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool East(const label_t x) noexcept
             {
-                return (threadIdx.x == (block::nx() - 1) && x != (device::nx - 1));
+                if constexpr (x_periodic)
+                {
+                    return (threadIdx.x == (block::nx() - 1));
+                }
+                else
+                {
+                    return (threadIdx.x == (block::nx() - 1) && x != (device::nx - 1));
+                }
             }
 
             /**
@@ -938,7 +952,14 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool South(const label_t y) noexcept
             {
-                return (threadIdx.y == 0 && y != 0);
+                if constexpr (y_periodic)
+                {
+                    return (threadIdx.y == 0);
+                }
+                else
+                {
+                    return (threadIdx.y == 0 && y != 0);
+                }
             }
 
             /**
@@ -948,7 +969,14 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool North(const label_t y) noexcept
             {
-                return (threadIdx.y == (block::ny() - 1) && y != (device::ny - 1));
+                if constexpr (y_periodic)
+                {
+                    return (threadIdx.y == (block::ny() - 1));
+                }
+                else
+                {
+                    return (threadIdx.y == (block::ny() - 1) && y != (device::ny - 1));
+                }
             }
 
             /**
@@ -1020,20 +1048,20 @@ namespace LBM
              * @param[in] I The index of a thread within a warp
              * @return Two-dimensional representation of I
              **/
-            template <const axisDirection alpha, const axisDirection beta>
+            template <const axis::type alpha, const axis::type beta>
             __device__ __host__ [[nodiscard]] static inline constexpr dim2 ij(const label_t I) noexcept
             {
-                if constexpr ((alpha == X) && (beta == Y))
+                if constexpr ((alpha == axis::X) && (beta == axis::Y))
                 {
                     return {I % (block::nx()), I / (block::nx())};
                 }
 
-                if constexpr ((alpha == X) && (beta == Z))
+                if constexpr ((alpha == axis::X) && (beta == axis::Z))
                 {
                     return {I % (block::nx()), I / (block::nx())};
                 }
 
-                if constexpr ((alpha == Y) && (beta == Z))
+                if constexpr ((alpha == axis::Y) && (beta == axis::Z))
                 {
                     return {I % (block::ny()), I / (block::ny())};
                 }

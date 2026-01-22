@@ -214,8 +214,6 @@ namespace LBM
             READ_IF_PRESENT = 2
         } type;
     }
-    // template <const ctorType::type T>
-    // using constructorType = const std::integral_constant<ctorType::type, T>;
 
     namespace time
     {
@@ -225,16 +223,47 @@ namespace LBM
             timeAverage = 1
         } type;
     }
-    // template <const time::::type T>
-    // using timeType = const std::integral_constant<time::::type, T>;
 
-    typedef enum axisDirectionEnum : label_t
+    namespace axis
     {
-        X = 0,
-        Y = 1,
-        Z = 2,
-        NO_DIRECTION = static_cast<label_t>(-1)
-    } axisDirection;
+        typedef enum Enum : label_t
+        {
+            X = 0,
+            Y = 1,
+            Z = 2,
+            NO_DIRECTION = static_cast<label_t>(-1)
+        } type;
+
+        typedef enum nullEnum : bool
+        {
+            NOT_NULL = false,
+            CAN_BE_NULL = true
+        } null;
+    }
+
+    namespace assertions
+    {
+        namespace axis
+        {
+            /**
+             * @brief Asserts that the direction alpha is a valid axis direction
+             * @tparam alpha The axis direction
+             * @tparam potentialNull Switch that determines whether alpha is allowed to be NO_DIRECTION or not
+             **/
+            template <const LBM::axis::type alpha, const LBM::axis::null null>
+            __device__ __host__ inline consteval void validate() noexcept
+            {
+                if constexpr (null == LBM::axis::CAN_BE_NULL)
+                {
+                    static_assert(((alpha == LBM::axis::X) || (alpha == LBM::axis::Y) || (alpha == LBM::axis::Z) || (alpha == LBM::axis::NO_DIRECTION)), "Axis direction must be X, Y or Z");
+                }
+                else
+                {
+                    static_assert(((alpha == LBM::axis::X) || (alpha == LBM::axis::Y) || (alpha == LBM::axis::Z)), "Axis direction must be X, Y, Z or NO_DIRECTION");
+                }
+            }
+        }
+    }
 
     struct dim2
     {
@@ -254,14 +283,15 @@ namespace LBM
         __device__ __constant__ scalar_t Re;
         __device__ __constant__ scalar_t tau;
         __device__ __constant__ scalar_t u_inf;
+        __device__ __constant__ scalar_t L_char;
         __device__ __constant__ scalar_t u_inf_sq;
 
         __device__ __constant__ scalar_t U_North[3];
         __device__ __constant__ scalar_t U_South[3];
         __device__ __constant__ scalar_t U_East[3];
         __device__ __constant__ scalar_t U_West[3];
-        __device__ __constant__ scalar_t U_Front[3];
         __device__ __constant__ scalar_t U_Back[3];
+        __device__ __constant__ scalar_t U_Front[3];
 
         __device__ __constant__ scalar_t omega;
         __device__ __constant__ scalar_t t_omegaVar;
