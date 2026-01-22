@@ -574,6 +574,19 @@ namespace LBM
         cudaDeviceSynchronize();
     }
 
+    template <typename T, const std::size_t N>
+    void copyToSymbol(const T (&symbol)[N], const T value, const label_t index)
+    {
+        if (index >= N)
+        {
+            throw std::runtime_error("Error setting device symbol index" + std::to_string(index) + " out of bounds for array of size " + std::to_string(N) + ".");
+        }
+        cudaDeviceSynchronize();
+        const T valueTemp = value;
+        checkCudaErrors(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), static_cast<std::size_t>(index) * sizeof(T), cudaMemcpyHostToDevice));
+        cudaDeviceSynchronize();
+    }
+
     /**
      * @brief Allocates a symbol of type T to the device
      * @param[in] func A pointer to the kernel to configure
