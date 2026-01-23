@@ -186,12 +186,12 @@ namespace LBM
                     const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
                     const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
 
-                    const scalar_t U_North_temp[3] = {programCtrl.u_inf(), 0, 0};
-                    const scalar_t U_South_temp[3] = {0, 0, 0};
-                    const scalar_t U_East_temp[3] = {0, 0, 0};
-                    const scalar_t U_West_temp[3] = {0, 0, 0};
-                    const scalar_t U_Front_temp[3] = {0, 0, 0};
-                    const scalar_t U_Back_temp[3] = {0, 0, 0};
+                    // const scalar_t U_North_temp[3] = {programCtrl.u_inf(), 0, 0};
+                    // const scalar_t U_South_temp[3] = {0, 0, 0};
+                    // const scalar_t U_East_temp[3] = {0, 0, 0};
+                    // const scalar_t U_West_temp[3] = {0, 0, 0};
+                    // const scalar_t U_Front_temp[3] = {0, 0, 0};
+                    // const scalar_t U_Back_temp[3] = {0, 0, 0};
 
                     copyToSymbol(device::Re, programCtrl.Re());
                     copyToSymbol(device::u_inf, programCtrl.u_inf());
