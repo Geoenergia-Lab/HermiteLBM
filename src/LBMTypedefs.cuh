@@ -274,7 +274,7 @@ namespace LBM
         {
             PAGED = 0,
             PINNED = 1
-        } type;
+        } mallocType;
     }
 
     namespace assertions
@@ -369,16 +369,15 @@ namespace LBM
                 return ptrs_[i];
             }
 
-            __host__ [[nodiscard]] constexpr std::array<T *, N> to_array() const noexcept
+            /**
+             * @brief Element access operator
+             * @param[in] i Index of element to access
+             * @return Value at index @p i
+             * @warning No bounds checking performed
+             **/
+            __device__ __host__ [[nodiscard]] inline const T *operator[](const label_t i) const noexcept
             {
-                std::array<T *, N> arr;
-
-                for (label_t i = 0; i < N; i++)
-                {
-                    arr[i] = ptrs_[i];
-                }
-
-                return arr;
+                return ptrs_[i];
             }
 
         private:

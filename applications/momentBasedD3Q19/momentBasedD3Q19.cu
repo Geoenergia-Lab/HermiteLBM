@@ -103,6 +103,9 @@ int main(const int argc, const char *const argv[])
 
     const runTimeIO IO(mesh, programCtrl);
 
+    // Allocate a buffer of pinned memory on the host for writing
+    host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.nPoints() * NUMBER_MOMENTS());
+
     for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
         // Do the run-time IO
@@ -114,11 +117,16 @@ int main(const int argc, const char *const argv[])
         // Checkpoint
         if (programCtrl.save(timeStep))
         {
+            for (label_t field = 0; field < NUMBER_MOMENTS(); field++)
+            {
+                host::to_host(devPtrs[field], hostWriteBuffer.data(), field, mesh.nPoints());
+            }
+
             fileIO::writeFile<time::instantaneous>(
                 programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
                 mesh,
                 functionObjects::solutionVariableNames,
-                host::to_host(devPtrs, mesh),
+                hostWriteBuffer,
                 timeStep);
 
             runTimeObjects.save(timeStep);

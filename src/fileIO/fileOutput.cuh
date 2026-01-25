@@ -79,19 +79,19 @@ namespace LBM
          * @param fields The solution variables encoded in interleaved AoS format
          * @param timeStep The current time step
          **/
-        template <const time::type TimeType, typename T, class M>
+        template <const time::type TimeType, class M, class F>
         __host__ void writeFile(
             const std::string &fileName,
             const M &mesh,
             const std::vector<std::string> &varNames,
-            const std::vector<T> &fields,
+            const F &fields,
             const label_t timeStep)
         {
-            static_assert(std::is_floating_point<T>::value, "T must be floating point");
+            static_assert(std::is_floating_point<scalar_t>::value, "T must be floating point");
 
             static_assert(std::endian::native == std::endian::little | std::endian::native == std::endian::big, "File system must be either little or big endian");
 
-            static_assert(sizeof(T) == 4 | sizeof(T) == 8, "Error writing file: scalar_t must be either 32 or 64 bit");
+            static_assert(sizeof(scalar_t) == 4 | sizeof(scalar_t) == 8, "Error writing file: scalar_t must be either 32 or 64 bit");
 
             static_assert((TimeType == time::instantaneous || (TimeType == time::timeAverage)), "Time type must be either instantaneous or timeAverage");
 
@@ -101,7 +101,7 @@ namespace LBM
 
             // Check if there is enough disk space to store the file
             {
-                const std::size_t expectedDiskUsage = expectedSize * sizeof(T);
+                const std::size_t expectedDiskUsage = expectedSize * sizeof(scalar_t);
                 if (!fileSystem::hasEnoughSpace(expectedDiskUsage))
                 {
                     const label_t availableSpace = fileSystem::availableDiskSpace();
@@ -132,11 +132,11 @@ namespace LBM
                 out << "\tbinaryType\tbigEndian;" << std::endl;
             }
             out << std::endl;
-            if constexpr (sizeof(T) == 4)
+            if constexpr (sizeof(scalar_t) == 4)
             {
                 out << "\tscalarType\t32 bit;" << std::endl;
             }
-            else if constexpr (sizeof(T) == 8)
+            else if constexpr (sizeof(scalar_t) == 8)
             {
                 out << "\tscalarType\t64 bit;" << std::endl;
             }
@@ -162,7 +162,7 @@ namespace LBM
             out << std::endl;
 
             // Write binary data with safe size conversion
-            const std::size_t byteSize = fields.size() * sizeof(T);
+            const std::size_t byteSize = fields.size() * sizeof(scalar_t);
 
             if (byteSize > static_cast<std::size_t>(std::numeric_limits<std::streamsize>::max()))
             {

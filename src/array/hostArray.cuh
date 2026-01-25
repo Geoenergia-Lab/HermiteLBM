@@ -57,13 +57,13 @@ namespace LBM
         /**
          * @class array
          * @brief Templated RAII wrapper for host memory management with field initialization
-         * @brief Allocates pinned memory
-         * @tparam pinned Allocate pinned or unpinned host memory
+         * @brief Allocates pinned or paged memory
+         * @tparam AllocationType Allocate pinned or unpinned host memory
          * @tparam T Data type of array elements
          * @tparam VelocitySet Velocity set configuration for LBM simulation
          * @tparam TimeType Instantaneous or time-averaged field
          **/
-        template <const bool pinned, typename T, class VelocitySet, const time::type TimeType>
+        template <const host::mallocType AllocationType, typename T, class VelocitySet, const time::type TimeType>
         class array;
 
         /**
@@ -75,7 +75,7 @@ namespace LBM
          * @tparam TimeType Instantaneous or time-averaged field
          **/
         template <typename T, class VelocitySet, const time::type TimeType>
-        class array<true, T, VelocitySet, TimeType>
+        class array<host::PINNED, T, VelocitySet, TimeType>
         {
         public:
             __host__ [[nodiscard]] array(const label_t nPoints)
@@ -133,9 +133,19 @@ namespace LBM
                 return ptr_[idx];
             }
 
-            __host__ [[nodiscard]] inline constexpr label_t nPoints() const noexcept
+            __host__ [[nodiscard]] inline constexpr label_t size() const noexcept
             {
                 return nPoints_;
+            }
+
+            __host__ [[nodiscard]] inline constexpr const T *data() const noexcept
+            {
+                return ptr_;
+            }
+
+            __host__ [[nodiscard]] inline constexpr T *data() noexcept
+            {
+                return ptr_;
             }
 
         private:
@@ -153,7 +163,7 @@ namespace LBM
          * @tparam TimeType Instantaneous or time-averaged field
          **/
         template <typename T, class VelocitySet, const time::type TimeType>
-        class array<false, T, VelocitySet, TimeType>
+        class array<host::PAGED, T, VelocitySet, TimeType>
         {
         public:
             /**

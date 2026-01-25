@@ -86,6 +86,26 @@ namespace LBM
             return ptr;
         }
 
+        template <typename T>
+        __host__ void to_host(
+            const T *const ptrRestrict devPtr,
+            T *const ptrRestrict hostPtr,
+            const label_t fieldIndex,
+            const std::size_t nPoints)
+        {
+            if (devPtr == nullptr)
+            {
+                std::cout << "Null pointer!" << std::endl;
+            }
+
+            const cudaError_t err = cudaMemcpy(hostPtr + (fieldIndex * nPoints), devPtr, nPoints * sizeof(T), cudaMemcpyDeviceToHost);
+
+            if (err != cudaSuccess)
+            {
+                throw std::runtime_error("cudaMemcpyDeviceToHost failed: " + std::string(cudaGetErrorString(err)));
+            }
+        }
+
         /**
          * @brief Copies data from device memory to host memory
          * @tparam T Data type of the elements
@@ -101,17 +121,7 @@ namespace LBM
             const label_t fieldIndex,
             const std::size_t nPoints)
         {
-            if (devPtr == nullptr)
-            {
-                std::cout << "Null pointer!" << std::endl;
-            }
-
-            const cudaError_t err = cudaMemcpy(hostFields.data() + (fieldIndex * nPoints), devPtr, nPoints * sizeof(T), cudaMemcpyDeviceToHost);
-
-            if (err != cudaSuccess)
-            {
-                throw std::runtime_error("cudaMemcpyDeviceToHost failed: " + std::string(cudaGetErrorString(err)));
-            }
+            to_host(devPtr, hostFields.data(), fieldIndex, nPoints);
         }
 
         /**
@@ -152,12 +162,9 @@ namespace LBM
             // Allocate size and all to 0
             std::vector<T> arr(mesh.nPoints() * N, 0);
 
-            // Create a run-time indexable array of pointers
-            const std::array<T *, N> ptrs = devPtrs.to_array();
-
             for (std::size_t var = 0; var < N; var++)
             {
-                to_host(ptrs[var], arr, var, mesh.nPoints());
+                to_host(devPtrs[var], arr, var, mesh.nPoints());
             }
 
             return arr;
