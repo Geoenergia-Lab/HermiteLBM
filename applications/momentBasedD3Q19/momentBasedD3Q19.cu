@@ -117,10 +117,7 @@ int main(const int argc, const char *const argv[])
         // Checkpoint
         if (programCtrl.save(timeStep))
         {
-            for (label_t field = 0; field < NUMBER_MOMENTS(); field++)
-            {
-                host::to_host(devPtrs[field], hostWriteBuffer.data(), field, mesh.nPoints());
-            }
+            hostWriteBuffer.copy_from_device(devPtrs, mesh);
 
             fileIO::writeFile<time::instantaneous>(
                 programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",

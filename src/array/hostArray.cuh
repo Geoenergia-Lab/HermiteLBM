@@ -148,6 +148,17 @@ namespace LBM
                 return ptr_;
             }
 
+            template <const label_t N>
+            __host__ void copy_from_device(const device::ptrCollection<N, T> &devPtrs, const host::latticeMesh &mesh) noexcept
+            {
+                // Should check that mesh.nPoints() * N is less than or equal to nPoints_
+
+                for (label_t field = 0; field < NUMBER_MOMENTS(); field++)
+                {
+                    host::to_host(devPtrs[field], ptr_, field, mesh.nPoints());
+                }
+            }
+
         private:
             T *const ptrRestrict ptr_;
 
