@@ -258,10 +258,12 @@ namespace LBM
                  * @param[in] streamsLBM Stream handler for CUDA operations
                  **/
                 __host__ [[nodiscard]] tensor(
+                    host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
                     const host::latticeMesh &mesh,
                     const device::ptrCollection<10, scalar_t> &devPtrs,
                     const streamHandler<N> &streamsLBM) noexcept
-                    : mesh_(mesh),
+                    : hostWriteBuffer_(hostWriteBuffer),
+                      mesh_(mesh),
                       devPtrs_(devPtrs),
                       streamsLBM_(streamsLBM),
                       calculate_(initialiserSwitch(fieldName_)),
@@ -367,16 +369,18 @@ namespace LBM
                  **/
                 __host__ void saveInstantaneous(const label_t timeStep) noexcept
                 {
+                    hostWriteBuffer_.copy_from_device(
+                        device::ptrCollection<6, scalar_t>(
+                            xx_.ptr(), xy_.ptr(),
+                            xz_.ptr(), yy_.ptr(),
+                            yz_.ptr(), zz_.ptr()),
+                        mesh_);
+
                     fileIO::writeFile<time::instantaneous>(
                         fieldName_ + "_" + std::to_string(timeStep) + ".LBMBin",
                         mesh_,
                         componentNames_,
-                        host::to_host(
-                            device::ptrCollection<6, scalar_t>(
-                                xx_.ptr(), xy_.ptr(),
-                                xz_.ptr(), yy_.ptr(),
-                                yz_.ptr(), zz_.ptr()),
-                            mesh_),
+                        hostWriteBuffer_.data(),
                         timeStep);
                 }
 
@@ -386,17 +390,31 @@ namespace LBM
                  **/
                 __host__ void saveMean(const label_t timeStep) noexcept
                 {
+                    hostWriteBuffer_.copy_from_device(
+                        device::ptrCollection<6, scalar_t>(
+                            xx_.ptr(), xy_.ptr(),
+                            xz_.ptr(), yy_.ptr(),
+                            yz_.ptr(), zz_.ptr()),
+                        mesh_);
+
                     fileIO::writeFile<time::timeAverage>(
                         fieldNameMean_ + "_" + std::to_string(timeStep) + ".LBMBin",
                         mesh_,
                         componentNamesMean_,
-                        host::to_host(
-                            device::ptrCollection<6, scalar_t>(
-                                xxMean_.ptr(), xyMean_.ptr(),
-                                xzMean_.ptr(), yyMean_.ptr(),
-                                yzMean_.ptr(), zzMean_.ptr()),
-                            mesh_),
+                        hostWriteBuffer_.data(),
                         timeStep);
+
+                    // fileIO::writeFile<time::timeAverage>(
+                    //     fieldNameMean_ + "_" + std::to_string(timeStep) + ".LBMBin",
+                    //     mesh_,
+                    //     componentNamesMean_,
+                    //     host::to_host(
+                    //         device::ptrCollection<6, scalar_t>(
+                    //             xxMean_.ptr(), xyMean_.ptr(),
+                    //             xzMean_.ptr(), yyMean_.ptr(),
+                    //             yzMean_.ptr(), zzMean_.ptr()),
+                    //         mesh_),
+                    //     timeStep);
                 }
 
                 /**
@@ -436,6 +454,8 @@ namespace LBM
                 }
 
             private:
+                host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer_;
+
                 /**
                  * @brief Field name for instantaneous components
                  **/

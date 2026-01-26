@@ -149,11 +149,16 @@ namespace LBM
             }
 
             template <const label_t N>
-            __host__ void copy_from_device(const device::ptrCollection<N, T> &devPtrs, const host::latticeMesh &mesh) noexcept
+            __host__ void copy_from_device(const device::ptrCollection<N, T> &devPtrs, const host::latticeMesh &mesh)
             {
                 // Should check that mesh.nPoints() * N is less than or equal to nPoints_
 
-                for (label_t field = 0; field < NUMBER_MOMENTS(); field++)
+                if (mesh.nPoints() * N > nPoints_)
+                {
+                    throw std::runtime_error("Insufficient host array size");
+                }
+
+                for (label_t field = 0; field < N; field++)
                 {
                     host::to_host(devPtrs[field], ptr_, field, mesh.nPoints());
                 }
