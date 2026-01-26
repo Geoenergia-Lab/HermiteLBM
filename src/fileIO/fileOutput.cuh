@@ -109,11 +109,6 @@ namespace LBM
                 }
             }
 
-            // if (nPoints != expectedSize)
-            // {
-            //     throw std::invalid_argument("Data vector size mismatch");
-            // }
-
             std::ofstream out(fileName, std::ios::binary);
             if (!out)
             {

@@ -245,25 +245,6 @@ namespace LBM
                         componentNamesMean_,
                         hostWriteBuffer_.data(),
                         timeStep);
-
-                    // fileIO::writeFile<time::timeAverage>(
-                    //     fieldNameMean_ + "_" + std::to_string(timeStep) + ".LBMBin",
-                    //     mesh_,
-                    //     componentNamesMean_,
-                    //     host::to_host(
-                    //         device::ptrCollection<10, scalar_t>(
-                    //             rhoMean_.ptr(),
-                    //             uMean_.ptr(),
-                    //             vMean_.ptr(),
-                    //             wMean_.ptr(),
-                    //             mxxMean_.ptr(),
-                    //             mxyMean_.ptr(),
-                    //             mxzMean_.ptr(),
-                    //             myyMean_.ptr(),
-                    //             myzMean_.ptr(),
-                    //             mzzMean_.ptr()),
-                    //         mesh_),
-                    //     timeStep);
                 }
 
                 /**
