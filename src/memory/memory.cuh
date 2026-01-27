@@ -110,7 +110,7 @@ namespace LBM
 
             if constexpr (verbose())
             {
-                std::cout << "Copied " << sizeof(T) * nPoints << " bytes of memory from device address " << devPtr << "to host address " << hostPtr << std::endl;
+                std::cout << "Copied " << sizeof(T) * nPoints << " bytes of memory from device address " << devPtr << " to host address " << hostPtr << std::endl;
             }
         }
 
