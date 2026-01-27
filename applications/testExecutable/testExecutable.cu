@@ -126,8 +126,14 @@ int main(const int argc, const char *const argv[])
                     [&](const label_t bx, const label_t by, const label_t bz,
                         const label_t tx, const label_t ty, const label_t tz)
                     {
+                        // Calculate the index in the temp buffer
                         const label_t I = host::idx(tx, ty, tz, bx, by, bz, nxBlocksPerGPU, nyBlocksPerGPU);
-                        temp[I] = deviceIndexArray[host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh)];
+
+                        // Calculate the index in the global buffer
+                        const label_t i = host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh);
+
+                        // Copy to temp buffer from global
+                        temp[I] = deviceIndexArray[i];
                     });
 
                 // Allocate memory on the GPU
@@ -172,8 +178,14 @@ int main(const int argc, const char *const argv[])
                     [&](const label_t bx, const label_t by, const label_t bz,
                         const label_t tx, const label_t ty, const label_t tz)
                     {
+                        // Calculate the index in the temp buffer
                         const label_t I = host::idx(tx, ty, tz, bx, by, bz, nxBlocksPerGPU, nyBlocksPerGPU);
-                        deviceIndexArray[host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh)] = temp[I];
+
+                        // Calculate the index in the global buffer
+                        const label_t i = host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh);
+
+                        // Copy from temp to global
+                        deviceIndexArray[i] = temp[I];
                     });
             }
         }
@@ -190,13 +202,9 @@ int main(const int argc, const char *const argv[])
             const label_t idx = host::idx(tx, ty, tz, bx, by, bz, mesh);
 
             // Calculate which GPU this point belongs to
-            const label_t block_x = bx;
-            const label_t block_y = by;
-            const label_t block_z = bz;
-
-            const label_t gpu_x = block_x / nxBlocksPerGPU;
-            const label_t gpu_y = block_y / nyBlocksPerGPU;
-            const label_t gpu_z = block_z / nzBlocksPerGPU;
+            const label_t gpu_x = bx / nxBlocksPerGPU;
+            const label_t gpu_y = by / nyBlocksPerGPU;
+            const label_t gpu_z = bz / nzBlocksPerGPU;
 
             // Only check if within valid GPU ranges
             if (gpu_x < nxGPUs && gpu_y < nyGPUs && gpu_z < nzGPUs)
