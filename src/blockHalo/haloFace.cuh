@@ -249,50 +249,30 @@ namespace LBM
             {
                 std::vector<scalar_t> face(nFaces<alpha>(mesh), 0);
 
-                // Loop over all blocks and threads
-                for (label_t bz = 0; bz < mesh.nzBlocks(); ++bz)
-                {
-                    for (label_t by = 0; by < mesh.nyBlocks(); ++by)
+                grid_for(
+                    mesh.nxBlocks(), mesh.nyBlocks(), mesh.nzBlocks(),
+                    [&](const label_t bx, const label_t by, const label_t bz,
+                        const label_t tx, const label_t ty, const label_t tz)
                     {
-                        for (label_t bx = 0; bx < mesh.nxBlocks(); ++bx)
-                        {
-                            for (label_t tz = 0; tz < block::nz(); ++tz)
-                            {
-                                for (label_t ty = 0; ty < block::ny(); ++ty)
-                                {
-                                    for (label_t tx = 0; tx < block::nx(); ++tx)
-                                    {
+                        const label_t base = host::idx(tx, ty, tz, bx, by, bz, mesh);
 
-                                        // Skip out-of-bounds elements (equivalent to GPU version)
-                                        if (tx >= mesh.nx() || ty >= mesh.ny() || tz >= mesh.nz())
-                                        {
-                                            continue;
-                                        }
+                        // Contiguous moment access
+                        const thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(
+                            thread::array<scalar_t, 10>{
+                                rho0<scalar_t>() + rho[base],
+                                u[base],
+                                v[base],
+                                w[base],
+                                m_xx[base],
+                                m_xy[base],
+                                m_xz[base],
+                                m_yy[base],
+                                m_yz[base],
+                                m_zz[base]});
 
-                                        const label_t base = host::idx(tx, ty, tz, bx, by, bz, mesh);
-
-                                        // Contiguous moment access
-                                        const thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(
-                                            thread::array<scalar_t, 10>{
-                                                rho0<scalar_t>() + rho[base],
-                                                u[base],
-                                                v[base],
-                                                w[base],
-                                                m_xx[base],
-                                                m_xy[base],
-                                                m_xz[base],
-                                                m_yy[base],
-                                                m_yz[base],
-                                                m_zz[base]});
-
-                                        // Handle ghost cells (equivalent to threadIdx.x/y/z checks)
-                                        handleGhostCells<alpha, side>(face, pop, tx, ty, tz, bx, by, bz, mesh);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                        // Handle ghost cells (equivalent to threadIdx.x/y/z checks)
+                        handleGhostCells<alpha, side>(face, pop, tx, ty, tz, bx, by, bz, mesh);
+                    });
 
                 return face;
             }

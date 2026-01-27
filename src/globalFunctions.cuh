@@ -108,6 +108,51 @@ namespace LBM
     }
 
     /**
+     * @brief Nested loop over block and thread indices
+     * @param nxBlocks Number of blocks in x-dimension
+     * @param nyBlocks Number of blocks in y-dimension
+     * @param nzBlocks Number of blocks in z-dimension
+     * @param f Function called for each (bx, by, bz, tx, ty, tz)
+     *
+     * Example:
+     * @code
+     * grid_for(nx, ny, nz, [&](label_t bx, by, bz, tx, ty, tz) {
+     *     data[compute_index(bx, by, bz, tx, ty, tz)] = value;
+     * });
+     * @endcode
+     **/
+    template <typename F>
+    __host__ void grid_for(
+        const label_t nxBlocks,
+        const label_t nyBlocks,
+        const label_t nzBlocks,
+        F &&f) noexcept
+    {
+        // Loops for block indices
+        for (label_t bz = 0; bz < nzBlocks; bz++)
+        {
+            for (label_t by = 0; by < nyBlocks; by++)
+            {
+                for (label_t bx = 0; bx < nxBlocks; bx++)
+                {
+                    // Loops for thread indices
+                    for (label_t tz = 0; tz < block::nz(); tz++)
+                    {
+                        for (label_t ty = 0; ty < block::ny(); ty++)
+                        {
+                            for (label_t tx = 0; tx < block::nx(); tx++)
+                            {
+                                // Execute the arbitrary loop body
+                                f(bx, by, bz, tx, ty, tz);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * @brief Number of hydrodynamic moments
      **/
     __device__ __host__ [[nodiscard]] inline consteval label_t NUMBER_MOMENTS() { return 10; }

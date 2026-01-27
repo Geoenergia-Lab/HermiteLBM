@@ -104,33 +104,48 @@ int main(const int argc, const char *const argv[])
                 // Get the device index
                 const label_t virtualDeviceIndex = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
 
-                // Define the test array for this partition of the GPU
-                for (label_t bz = 0; bz < nzBlocksPerGPU; bz++)
-                {
-                    for (label_t by = 0; by < nyBlocksPerGPU; by++)
+                grid_for(
+                    nxBlocksPerGPU, nyBlocksPerGPU, nzBlocksPerGPU,
+                    [&](const label_t bx, const label_t by, const label_t bz,
+                        const label_t tx, const label_t ty, const label_t tz)
                     {
-                        for (label_t bx = 0; bx < nxBlocksPerGPU; bx++)
-                        {
-                            for (label_t tz = 0; tz < block::nz(); tz++)
-                            {
-                                for (label_t ty = 0; ty < block::ny(); ty++)
-                                {
-                                    for (label_t tx = 0; tx < block::nx(); tx++)
-                                    {
-                                        // Global coordinates
-                                        const label_t x = tx + (block::nx() * (bx + (GPU_x * nxBlocksPerGPU)));
-                                        const label_t y = ty + (block::ny() * (by + (GPU_y * nyBlocksPerGPU)));
-                                        const label_t z = tz + (block::nz() * (bz + (GPU_z * nzBlocksPerGPU)));
+                        // Global coordinates
+                        const label_t x = tx + (block::nx() * (bx + (GPU_x * nxBlocksPerGPU)));
+                        const label_t y = ty + (block::ny() * (by + (GPU_y * nyBlocksPerGPU)));
+                        const label_t z = tz + (block::nz() * (bz + (GPU_z * nzBlocksPerGPU)));
 
-                                        // Linear index for the domain point
-                                        const label_t linearIndex = host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh);
-                                        deviceIndexArray[linearIndex] = virtualDeviceIndex;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                        // Linear index for the domain point
+                        const label_t linearIndex = host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh);
+                        deviceIndexArray[linearIndex] = virtualDeviceIndex;
+                    });
+
+                // Define the test array for this partition of the GPU
+                // for (label_t bz = 0; bz < nzBlocksPerGPU; bz++)
+                // {
+                //     for (label_t by = 0; by < nyBlocksPerGPU; by++)
+                //     {
+                //         for (label_t bx = 0; bx < nxBlocksPerGPU; bx++)
+                //         {
+                //             for (label_t tz = 0; tz < block::nz(); tz++)
+                //             {
+                //                 for (label_t ty = 0; ty < block::ny(); ty++)
+                //                 {
+                //                     for (label_t tx = 0; tx < block::nx(); tx++)
+                //                     {
+                //                         // Global coordinates
+                //                         const label_t x = tx + (block::nx() * (bx + (GPU_x * nxBlocksPerGPU)));
+                //                         const label_t y = ty + (block::ny() * (by + (GPU_y * nyBlocksPerGPU)));
+                //                         const label_t z = tz + (block::nz() * (bz + (GPU_z * nzBlocksPerGPU)));
+
+                //                         // Linear index for the domain point
+                //                         const label_t linearIndex = host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh);
+                //                         deviceIndexArray[linearIndex] = virtualDeviceIndex;
+                //                     }
+                //                 }
+                //             }
+                //         }
+                //     }
+                // }
 
                 // Load this partition of the domain into the temporary contiguous buffer
                 label_t i = 0;
@@ -192,7 +207,7 @@ int main(const int argc, const char *const argv[])
                 checkCudaErrors(cudaDeviceSynchronize());
 
                 // Place back into host buffer
-                label_t i = 0;
+                //  label_t i = 0;
                 for (label_t bz = 0; bz < nzBlocksPerGPU; bz++)
                 {
                     for (label_t by = 0; by < nyBlocksPerGPU; by++)
@@ -205,8 +220,9 @@ int main(const int argc, const char *const argv[])
                                 {
                                     for (label_t tx = 0; tx < block::nx(); tx++)
                                     {
-                                        deviceIndexArray[host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh)] = temp[i];
-                                        i++;
+                                        const label_t I = host::idx(tx, ty, tz, bx, by, bz, nxBlocksPerGPU, nyBlocksPerGPU);
+                                        deviceIndexArray[host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh)] = temp[I];
+                                        // i++;
                                     }
                                 }
                             }
