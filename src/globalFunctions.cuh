@@ -126,7 +126,7 @@ namespace LBM
         const label_t nxBlocks,
         const label_t nyBlocks,
         const label_t nzBlocks,
-        F &&f) noexcept
+        const F &&f) noexcept
     {
         // Loops for block indices
         for (label_t bz = 0; bz < nzBlocks; bz++)

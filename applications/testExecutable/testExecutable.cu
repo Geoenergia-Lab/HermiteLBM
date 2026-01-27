@@ -104,6 +104,7 @@ int main(const int argc, const char *const argv[])
                 // Get the device index
                 const label_t virtualDeviceIndex = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
 
+                // Define the test array for this partition of the GPU
                 grid_for(
                     nxBlocksPerGPU, nyBlocksPerGPU, nzBlocksPerGPU,
                     [&](const label_t bx, const label_t by, const label_t bz,
@@ -119,56 +120,15 @@ int main(const int argc, const char *const argv[])
                         deviceIndexArray[linearIndex] = virtualDeviceIndex;
                     });
 
-                // Define the test array for this partition of the GPU
-                // for (label_t bz = 0; bz < nzBlocksPerGPU; bz++)
-                // {
-                //     for (label_t by = 0; by < nyBlocksPerGPU; by++)
-                //     {
-                //         for (label_t bx = 0; bx < nxBlocksPerGPU; bx++)
-                //         {
-                //             for (label_t tz = 0; tz < block::nz(); tz++)
-                //             {
-                //                 for (label_t ty = 0; ty < block::ny(); ty++)
-                //                 {
-                //                     for (label_t tx = 0; tx < block::nx(); tx++)
-                //                     {
-                //                         // Global coordinates
-                //                         const label_t x = tx + (block::nx() * (bx + (GPU_x * nxBlocksPerGPU)));
-                //                         const label_t y = ty + (block::ny() * (by + (GPU_y * nyBlocksPerGPU)));
-                //                         const label_t z = tz + (block::nz() * (bz + (GPU_z * nzBlocksPerGPU)));
-
-                //                         // Linear index for the domain point
-                //                         const label_t linearIndex = host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh);
-                //                         deviceIndexArray[linearIndex] = virtualDeviceIndex;
-                //                     }
-                //                 }
-                //             }
-                //         }
-                //     }
-                // }
-
                 // Load this partition of the domain into the temporary contiguous buffer
-                label_t i = 0;
-                for (label_t bz = 0; bz < nzBlocksPerGPU; bz++)
-                {
-                    for (label_t by = 0; by < nyBlocksPerGPU; by++)
+                grid_for(
+                    nxBlocksPerGPU, nyBlocksPerGPU, nzBlocksPerGPU,
+                    [&](const label_t bx, const label_t by, const label_t bz,
+                        const label_t tx, const label_t ty, const label_t tz)
                     {
-                        for (label_t bx = 0; bx < nxBlocksPerGPU; bx++)
-                        {
-                            for (label_t tz = 0; tz < block::nz(); tz++)
-                            {
-                                for (label_t ty = 0; ty < block::ny(); ty++)
-                                {
-                                    for (label_t tx = 0; tx < block::nx(); tx++)
-                                    {
-                                        temp[i] = deviceIndexArray[host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh)];
-                                        i++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                        const label_t I = host::idx(tx, ty, tz, bx, by, bz, nxBlocksPerGPU, nyBlocksPerGPU);
+                        temp[I] = deviceIndexArray[host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh)];
+                    });
 
                 // Allocate memory on the GPU
                 checkCudaErrors(cudaSetDevice(static_cast<int>(programCtrl.deviceList()[virtualDeviceIndex])));
@@ -207,81 +167,56 @@ int main(const int argc, const char *const argv[])
                 checkCudaErrors(cudaDeviceSynchronize());
 
                 // Place back into host buffer
-                //  label_t i = 0;
-                for (label_t bz = 0; bz < nzBlocksPerGPU; bz++)
-                {
-                    for (label_t by = 0; by < nyBlocksPerGPU; by++)
+                grid_for(
+                    nxBlocksPerGPU, nyBlocksPerGPU, nzBlocksPerGPU,
+                    [&](const label_t bx, const label_t by, const label_t bz,
+                        const label_t tx, const label_t ty, const label_t tz)
                     {
-                        for (label_t bx = 0; bx < nxBlocksPerGPU; bx++)
-                        {
-                            for (label_t tz = 0; tz < block::nz(); tz++)
-                            {
-                                for (label_t ty = 0; ty < block::ny(); ty++)
-                                {
-                                    for (label_t tx = 0; tx < block::nx(); tx++)
-                                    {
-                                        const label_t I = host::idx(tx, ty, tz, bx, by, bz, nxBlocksPerGPU, nyBlocksPerGPU);
-                                        deviceIndexArray[host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh)] = temp[I];
-                                        // i++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                        const label_t I = host::idx(tx, ty, tz, bx, by, bz, nxBlocksPerGPU, nyBlocksPerGPU);
+                        deviceIndexArray[host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh)] = temp[I];
+                    });
             }
         }
     }
 
     // After reconstruction, verify the data
     bool verificationFailed = false;
-    for (label_t bz = 0; bz < mesh.nzBlocks(); bz++)
-    {
-        for (label_t by = 0; by < mesh.nyBlocks(); by++)
+
+    grid_for(
+        mesh.nxBlocks(), mesh.nyBlocks(), mesh.nzBlocks(),
+        [&](const label_t bx, const label_t by, const label_t bz,
+            const label_t tx, const label_t ty, const label_t tz)
         {
-            for (label_t bx = 0; bx < mesh.nxBlocks(); bx++)
+            const label_t idx = host::idx(tx, ty, tz, bx, by, bz, mesh);
+
+            // Calculate which GPU this point belongs to
+            const label_t block_x = bx;
+            const label_t block_y = by;
+            const label_t block_z = bz;
+
+            const label_t gpu_x = block_x / nxBlocksPerGPU;
+            const label_t gpu_y = block_y / nyBlocksPerGPU;
+            const label_t gpu_z = block_z / nzBlocksPerGPU;
+
+            // Only check if within valid GPU ranges
+            if (gpu_x < nxGPUs && gpu_y < nyGPUs && gpu_z < nzGPUs)
             {
-                for (label_t tz = 0; tz < block::nz(); tz++)
+                const label_t expectedGPU = gpu_x + gpu_y * nxGPUs + gpu_z * nxGPUs * nyGPUs;
+                const label_t expectedValue = expectedGPU + 100;
+
+                if (deviceIndexArray[idx] != expectedValue)
                 {
-                    for (label_t ty = 0; ty < block::ny(); ty++)
-                    {
-                        for (label_t tx = 0; tx < block::nx(); tx++)
-                        {
-                            const label_t idx = host::idx(tx, ty, tz, bx, by, bz, mesh);
-
-                            // Calculate which GPU this point belongs to
-                            const label_t block_x = bx;
-                            const label_t block_y = by;
-                            const label_t block_z = bz;
-
-                            const label_t gpu_x = block_x / nxBlocksPerGPU;
-                            const label_t gpu_y = block_y / nyBlocksPerGPU;
-                            const label_t gpu_z = block_z / nzBlocksPerGPU;
-
-                            // Only check if within valid GPU ranges
-                            if (gpu_x < nxGPUs && gpu_y < nyGPUs && gpu_z < nzGPUs)
-                            {
-                                const label_t expectedGPU = gpu_x + gpu_y * nxGPUs + gpu_z * nxGPUs * nyGPUs;
-                                const label_t expectedValue = expectedGPU + 100;
-
-                                if (deviceIndexArray[idx] != expectedValue)
-                                {
-                                    std::cout << "Verification failed at ("
-                                              << tx << "," << ty << "," << tz
-                                              << ") in block ("
-                                              << bx << "," << by << "," << bz
-                                              << "): expected " << expectedValue
-                                              << ", got " << deviceIndexArray[idx]
-                                              << std::endl;
-                                    verificationFailed = true;
-                                }
-                            }
-                        }
-                    }
+                    std::cout << "Verification failed at ("
+                              << tx << "," << ty << "," << tz
+                              << ") in block ("
+                              << bx << "," << by << "," << bz
+                              << "): expected " << expectedValue
+                              << ", got " << deviceIndexArray[idx]
+                              << std::endl;
+                    verificationFailed = true;
                 }
             }
-        }
-    }
+        });
 
     if (!verificationFailed)
     {
