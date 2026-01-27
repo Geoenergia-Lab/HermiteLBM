@@ -121,10 +121,7 @@ namespace LBM
 
         if ((threadIdx.x == 0) && (threadIdx.y == 0) && (threadIdx.z == 0))
         {
-            printf("deviceID: %lu\n", deviceID);
-            printf("{\n");
-            printf("    blockIdx [%lu, %lu, %lu]\n", bx + GLOBAL_X_BLOCK_OFFSET, by + GLOBAL_Y_BLOCK_OFFSET, bz + GLOBAL_Z_BLOCK_OFFSET);
-            printf("};\n");
+            printf("deviceID: %lu\n{\n    blockIdx {%lu, %lu, %lu};\n};\n\n", deviceID, bx + GLOBAL_X_BLOCK_OFFSET, by + GLOBAL_Y_BLOCK_OFFSET, bz + GLOBAL_Z_BLOCK_OFFSET);
         }
     }
 }

@@ -88,13 +88,22 @@ int main(const int argc, const char *const argv[])
     // Create a host array corresponding to the deviceID
     host::array<host::PINNED, label_t, VelocitySet, time::instantaneous> deviceIndexArray(mesh.nPoints());
 
+    // Vector of pointers to device memory
+    std::vector<label_t *> devicePtrs(nxGPUs * nyGPUs * nzGPUs, nullptr);
+
+    // Temporary vector used for partitioning the domain
+    std::vector<label_t> temp(nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU, 0);
+
     for (label_t GPU_z = 0; GPU_z < nzGPUs; GPU_z++)
     {
         for (label_t GPU_y = 0; GPU_y < nyGPUs; GPU_y++)
         {
             for (label_t GPU_x = 0; GPU_x < nxGPUs; GPU_x++)
             {
-                const label_t correctDevice = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
+                // Get the device index
+                const label_t virtualDeviceIndex = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
+
+                // Define the test array for this partition of the GPU
                 for (label_t bz = 0; bz < nzBlocksPerGPU; bz++)
                 {
                     for (label_t by = 0; by < nyBlocksPerGPU; by++)
@@ -107,21 +116,14 @@ int main(const int argc, const char *const argv[])
                                 {
                                     for (label_t tx = 0; tx < block::nx(); tx++)
                                     {
+                                        // Global coordinates
                                         const label_t x = tx + (block::nx() * (bx + (GPU_x * nxBlocksPerGPU)));
                                         const label_t y = ty + (block::ny() * (by + (GPU_y * nyBlocksPerGPU)));
                                         const label_t z = tz + (block::nz() * (bz + (GPU_z * nzBlocksPerGPU)));
 
-                                        // Determine which partition this point belongs to
-                                        const label_t partitionX = x / nxPointsPerGPU;
-                                        const label_t partitionY = y / nyPointsPerGPU;
-                                        const label_t partitionZ = z / nzPointsPerGPU;
-
-                                        // Calculate device ID for this partition
-                                        const label_t deviceID = partitionX + partitionY * nxGPUs + partitionZ * nxGPUs * nyGPUs;
-
                                         // Linear index for the domain point
                                         const label_t linearIndex = host::idx(tx, ty, tz, bx + (GPU_x * nxBlocksPerGPU), by + (GPU_y * nyBlocksPerGPU), bz + (GPU_z * nzBlocksPerGPU), mesh);
-                                        deviceIndexArray[linearIndex] = deviceID;
+                                        deviceIndexArray[linearIndex] = virtualDeviceIndex;
                                     }
                                 }
                             }
@@ -129,8 +131,7 @@ int main(const int argc, const char *const argv[])
                     }
                 }
 
-                // Construct a temporary vector
-                std::vector<label_t> temp(nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU, 0);
+                // Load this partition of the domain into the temporary contiguous buffer
                 label_t i = 0;
                 for (label_t bz = 0; bz < nzBlocksPerGPU; bz++)
                 {
@@ -153,17 +154,31 @@ int main(const int argc, const char *const argv[])
                     }
                 }
 
-                label_t *ptr_0;
-
-                checkCudaErrors(cudaMalloc(&ptr_0, nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU * sizeof(label_t)));
+                // Allocate memory on the GPU
+                checkCudaErrors(cudaSetDevice(static_cast<int>(programCtrl.deviceList()[virtualDeviceIndex])));
+                checkCudaErrors(cudaMalloc(&(devicePtrs[virtualDeviceIndex]), nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU * sizeof(label_t)));
                 std::cout << "Allocated " << nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU << " elements of size " << sizeof(label_t) << std::endl;
-                device::copy(ptr_0, temp);
 
+                // Copy the temporary buffer to the GPU
+                device::copy((devicePtrs[virtualDeviceIndex]), temp);
+
+                // Create stream and launch test kernel
                 const streamHandler<1> streamsLBM;
+                testKernel<<<gridBlock, mesh.threadBlock(), 0, streamsLBM.streams()[0]>>>((devicePtrs[virtualDeviceIndex]), nxBlocksPerGPU, nyBlocksPerGPU, (GPU_x * nxBlocksPerGPU), (GPU_y * nyBlocksPerGPU), (GPU_z * nzBlocksPerGPU), virtualDeviceIndex);
+            }
+        }
+    }
 
-                testKernel<<<gridBlock, mesh.threadBlock(), 0, streamsLBM.streams()[0]>>>(ptr_0, nxBlocksPerGPU, nyBlocksPerGPU, (GPU_x * nxBlocksPerGPU), (GPU_y * nyBlocksPerGPU), (GPU_z * nzBlocksPerGPU), correctDevice);
-
-                checkCudaErrors(cudaFree(ptr_0));
+    // Clean up memory used for testing
+    for (label_t GPU_z = 0; GPU_z < nzGPUs; GPU_z++)
+    {
+        for (label_t GPU_y = 0; GPU_y < nyGPUs; GPU_y++)
+        {
+            for (label_t GPU_x = 0; GPU_x < nxGPUs; GPU_x++)
+            {
+                const label_t virtualDeviceIndex = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
+                std::cout << "Freeing memory from address " << devicePtrs[virtualDeviceIndex] << " on device " << virtualDeviceIndex << std::endl;
+                checkCudaErrors(cudaFree(devicePtrs[virtualDeviceIndex]));
             }
         }
     }
