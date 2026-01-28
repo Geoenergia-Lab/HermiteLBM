@@ -85,7 +85,8 @@ namespace LBM
                   L_(
                       {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
                        string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")})
+                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
+                  nDevices_(initialise_device_list("deviceDecomposition"))
             {
                 std::cout << "latticeMesh:" << std::endl;
                 std::cout << "{" << std::endl;
@@ -202,7 +203,8 @@ namespace LBM
                   L_(
                       {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
                        string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}){};
+                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
+                  nDevices_(initialise_device_list("deviceDecomposition")){};
 
             __host__ [[nodiscard]] latticeMesh(const blockLabel_t meshDimensions) noexcept
                 : nx_(meshDimensions.nx),
@@ -212,21 +214,24 @@ namespace LBM
                   L_(
                       {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
                        string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}){};
+                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
+                  nDevices_(initialise_device_list("deviceDecomposition")){};
 
             __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const blockLabel_t meshDimensions) noexcept
                 : nx_(meshDimensions.nx),
                   ny_(meshDimensions.ny),
                   nz_(meshDimensions.nz),
                   nPoints_(nx_ * ny_ * nz_),
-                  L_(mesh.L()){};
+                  L_(mesh.L()),
+                  nDevices_(initialise_device_list("deviceDecomposition")){};
 
             __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh) noexcept
                 : nx_(mesh.nx()),
                   ny_(mesh.ny()),
                   nz_(mesh.nz()),
                   nPoints_(nx_ * ny_ * nz_),
-                  L_(mesh.L()){};
+                  L_(mesh.L()),
+                  nDevices_(initialise_device_list("deviceDecomposition")){};
 
             /**
              * @name Grid Dimension Accessors
@@ -338,6 +343,25 @@ namespace LBM
                 return (z == nz_ - 1);
             }
 
+            template <const axis::type alpha>
+            __host__ [[nodiscard]] inline constexpr label_t nDevices() const noexcept
+            {
+                if constexpr (alpha == axis::X)
+                {
+                    return nDevices_.nx;
+                }
+
+                if constexpr (alpha == axis::Y)
+                {
+                    return nDevices_.ny;
+                }
+
+                if constexpr (alpha == axis::Z)
+                {
+                    return nDevices_.nz;
+                }
+            }
+
         private:
             /**
              * @brief The number of lattices in the x, y and z directions
@@ -351,6 +375,18 @@ namespace LBM
              * @brief Physical dimensions of the domain
              **/
             const pointVector L_;
+
+            /**
+             * @brief Number of devices in the x, y and z directions
+             **/
+            const blockLabel_t nDevices_;
+
+            __host__ [[nodiscard]] static blockLabel_t initialise_device_list(const std::string &fileName) noexcept
+            {
+                return {string::extractParameter<label_t>(string::readFile(fileName), "nx"),
+                        string::extractParameter<label_t>(string::readFile(fileName), "ny"),
+                        string::extractParameter<label_t>(string::readFile(fileName), "nz")};
+            }
         };
     }
 }
