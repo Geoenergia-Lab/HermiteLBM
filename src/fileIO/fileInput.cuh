@@ -797,6 +797,7 @@ namespace LBM
                     const label_t y = (by * block::ny()) + ty;
                     const label_t z = (bz * block::nz()) + tz;
 
+                    // MODIFY FOR MULTI GPU: idx must be multi GPU aware
                     const label_t idxGlobal = host::idxScalarGlobal(x, y, z, mesh.nx(), mesh.ny());
                     const label_t idx = host::idx(tx, ty, tz, bx, by, bz, mesh);
 

@@ -189,6 +189,7 @@ namespace LBM
                 const label_t tzp1 = (tz + 1 + block::nz()) % block::nz();
                 const label_t tzm1 = (tz - 1 + block::nz()) % block::nz();
 
+                // MODIFY FOR MULTI GPU: NUM_BLOCK_X, Y and Z
                 const label_t bxm1 = (bx - 1 + device::NUM_BLOCK_X) % device::NUM_BLOCK_X;
                 const label_t bxp1 = (bx + 1 + device::NUM_BLOCK_X) % device::NUM_BLOCK_X;
 
@@ -198,6 +199,7 @@ namespace LBM
                 const label_t bzm1 = (bz - 1 + device::NUM_BLOCK_Z) % device::NUM_BLOCK_Z;
                 const label_t bzp1 = (bz + 1 + device::NUM_BLOCK_Z) % device::NUM_BLOCK_Z;
 
+                // MODIFY FOR MULTI GPU: idxPopX, Y and Z
                 if (tx == 0)
                 { // w
                     pop[q_i<1>()] = __ldg(&fGhost.ptr<1>()[idxPopX<0, VelocitySet::QF()>(ty, tz, bxm1, by, bz)]);
@@ -509,6 +511,7 @@ namespace LBM
                 const label_t y = threadIdx.y + blockDim.y * blockIdx.y;
                 const label_t z = threadIdx.z + blockDim.z * blockIdx.z;
 
+                // MODIFY FOR MULTI GPU: idxPopX, Y and Z
                 /* write to global pop **/
                 if (West(x))
                 {

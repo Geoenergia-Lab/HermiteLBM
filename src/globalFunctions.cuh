@@ -153,6 +153,39 @@ namespace LBM
     }
 
     /**
+     * @brief Nested loop over global grid indices
+     * @param nx Number of points in x-dimension
+     * @param ny Number of points in y-dimension
+     * @param nz Number of points in z-dimension
+     * @param f Function called for each (bx, by, bz, tx, ty, tz)
+     *
+     * Example:
+     * @code
+     * global_for(nx, ny, nz, [&](label_t x, y, z) {
+     *     data[compute_index(bx, by, bz, tx, ty, tz)] = value;
+     * });
+     * @endcode
+     **/
+    template <const pointLabel_t Indent, typename F>
+    __host__ void global_for(
+        const label_t nx,
+        const label_t ny,
+        const label_t nz,
+        const F &&f) noexcept
+    {
+        for (label_t z = 0; z < nz - Indent.z; z++)
+        {
+            for (label_t y = 0; y < ny - Indent.y; y++)
+            {
+                for (label_t x = 0; x < nx - Indent.x; x++)
+                {
+                    f(x, y, z);
+                }
+            }
+        }
+    }
+
+    /**
      * @brief Number of hydrodynamic moments
      **/
     __device__ __host__ [[nodiscard]] inline consteval label_t NUMBER_MOMENTS() { return 10; }

@@ -387,6 +387,7 @@ namespace LBM
                         const label_t y = (by * block::ny()) + ty;
                         const label_t z = (bz * block::nz()) + tz;
 
+                        // MODIFY FOR MULTI GPU
                         const label_t index = host::idx(tx, ty, tz, bx, by, bz, mesh);
 
                         const bool is_west = mesh.West(x);

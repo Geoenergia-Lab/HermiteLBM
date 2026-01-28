@@ -73,6 +73,7 @@ namespace LBM
                     const scalar_t invNewCount)
                 {
                     // Calculate the index
+                    // MODIFY FOR MULTI GPU: idx must be multi GPU aware
                     const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
 
                     // Read from global memory
