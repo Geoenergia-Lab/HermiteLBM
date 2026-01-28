@@ -183,6 +183,25 @@ namespace LBM
          * @brief Memory index (host version)
          * @param tx,ty,tz Thread-local coordinates
          * @param bx,by,bz Block indices
+         * @param gpuX,gpuY,gpuZ GPU indices
+         * @param nxBlocks,nyBlocks Number of blocks in the x and y directions
+         * @param[in] XBLOCKS_PER_GPU,YBLOCKS_PER_GPU,ZBLOCKS_PER_GPU Number of blocks per GPU in x, y and z directions
+         * @return Linearized index using mesh constants
+         **/
+        __host__ [[nodiscard]] inline constexpr label_t idx(
+            const label_t tx, const label_t ty, const label_t tz,
+            const label_t bx, const label_t by, const label_t bz,
+            const label_t gpuX, const label_t gpuY, const label_t gpuZ,
+            const label_t nxBlocks, const label_t nyBlocks,
+            const label_t XBLOCKS_PER_GPU, const label_t YBLOCKS_PER_GPU, const label_t ZBLOCKS_PER_GPU) noexcept
+        {
+            return (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * ((gpuX * XBLOCKS_PER_GPU + bx) + nxBlocks * ((gpuY * YBLOCKS_PER_GPU + by) + nyBlocks * (gpuZ * ZBLOCKS_PER_GPU + bz))))));
+        }
+
+        /**
+         * @brief Memory index (host version)
+         * @param tx,ty,tz Thread-local coordinates
+         * @param bx,by,bz Block indices
          * @param mesh The mesh
          * @return Linearized index using mesh constants
          *
