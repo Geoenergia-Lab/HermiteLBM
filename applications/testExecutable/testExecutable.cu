@@ -64,6 +64,7 @@ int main(const int argc, const char *const argv[])
     const label_t nxGPUs = string::extractParameter<label_t>(string::readFile("deviceDecomposition"), "nx");
     const label_t nyGPUs = string::extractParameter<label_t>(string::readFile("deviceDecomposition"), "ny");
     const label_t nzGPUs = string::extractParameter<label_t>(string::readFile("deviceDecomposition"), "nz");
+    const label_t nGPUs = nxGPUs * nyGPUs * nzGPUs;
 
     // Set cuda device
     checkCudaErrors(cudaDeviceSynchronize());
@@ -137,7 +138,7 @@ int main(const int argc, const char *const argv[])
                     });
 
                 // Allocate memory on the GPU
-                checkCudaErrors(cudaSetDevice(static_cast<int>(programCtrl.deviceList()[virtualDeviceIndex])));
+                checkCudaErrors(cudaSetDevice(static_cast<int>(programCtrl.deviceList()[std::min(virtualDeviceIndex, programCtrl.deviceList().size() - 1)])));
                 checkCudaErrors(cudaMalloc(&(devicePtrs[virtualDeviceIndex]), nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU * sizeof(label_t)));
                 std::cout << "Allocated " << nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU << " elements of size " << sizeof(label_t) << std::endl;
 
@@ -163,7 +164,7 @@ int main(const int argc, const char *const argv[])
                 const label_t virtualDeviceIndex = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
 
                 // Set the active device
-                checkCudaErrors(cudaSetDevice(static_cast<int>(programCtrl.deviceList()[virtualDeviceIndex])));
+                checkCudaErrors(cudaSetDevice(static_cast<int>(programCtrl.deviceList()[std::min(virtualDeviceIndex, programCtrl.deviceList().size() - 1)])));
 
                 checkCudaErrors(cudaDeviceSynchronize());
 
