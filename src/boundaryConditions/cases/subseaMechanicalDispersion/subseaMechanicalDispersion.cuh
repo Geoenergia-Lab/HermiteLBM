@@ -159,11 +159,11 @@ namespace LBM
 // Periodic
 #include "include/periodic.cuh"
 
-// Outflow (zero-gradient) at front face
-#include "include/IRBCNeumann.cuh"
-
 // Static boundaries
 #include "include/static.cuh"
+
+// Outflow (zero-gradient) at front face
+#include "include/IRBCNeumann.cuh"
             }
         }
 
@@ -192,7 +192,7 @@ namespace LBM
                 const scalar_t mxz_I = BACK_mxz_I(pop);
                 const scalar_t myz_I = BACK_myz_I(pop);
 
-                const scalar_t p = static_cast<scalar_t>(0);
+                const scalar_t p = static_cast<scalar_t>(1);
                 const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I;
                 const scalar_t myz = static_cast<scalar_t>(2) * myz_I;
 
@@ -221,7 +221,7 @@ namespace LBM
                 const scalar_t mxy_I = SOUTH_mxy_I(pop);
                 const scalar_t myz_I = SOUTH_myz_I(pop);
 
-                const scalar_t p = static_cast<scalar_t>(0);
+                const scalar_t p = static_cast<scalar_t>(1);
                 const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I;
                 const scalar_t myz = static_cast<scalar_t>(2) * myz_I;
 
@@ -240,14 +240,14 @@ namespace LBM
                 return;
             }
 
+// Static boundaries
+#include "include/static.cuh"
+
 // Periodic
 #include "include/periodic.cuh"
 
 // Outflow (zero-gradient) at front face
-#include "include/IRBCNeumann.cuh"
-
-// Static boundaries
-#include "include/static.cuh"
+#include "include/IRBCgenerate.cuh"
             }
         }
 

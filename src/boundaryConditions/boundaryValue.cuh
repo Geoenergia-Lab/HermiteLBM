@@ -184,6 +184,7 @@ namespace LBM
                     if (fieldName == "rho")
                     {
                         return string::extractParameter<scalar_t>(regionFieldBlock, "value");
+                        // return static_cast<scalar_t>(1);
                     }
                     if ((fieldName == "u") | (fieldName == "v") | (fieldName == "w"))
                     {
