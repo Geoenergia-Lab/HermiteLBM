@@ -202,7 +202,7 @@ namespace LBM
     template <const axis::type dir>
     __host__ [[nodiscard]] std::vector<std::vector<scalar_t>> initialiseSlice(
         const host::latticeMesh &mesh,
-        const label_t nFields)
+        const std::size_t nFields)
     {
         static_assert((dir == axis::X) | (dir == axis::Y) | (dir == axis::Z), "Bad direction");
 
@@ -265,14 +265,14 @@ namespace LBM
 
         if constexpr (dir == axis::X)
         {
-            for (std::size_t field = 0; field < fields.size(); field++)
+            for (label_t field = 0; field < fields.size(); field++)
             {
-                for (std::size_t z = 0; z < mesh.nz(); z++)
+                for (label_t z = 0; z < mesh.nz(); z++)
                 {
-                    for (std::size_t y = 0; y < mesh.ny(); y++)
+                    for (label_t y = 0; y < mesh.ny(); y++)
                     {
-                        const scalar_t f0 = fields[field][host::idxScalarGlobal(i_0, y, z, mesh.nx(), mesh.ny())];
-                        const scalar_t f1 = fields[field][host::idxScalarGlobal(i_1, y, z, mesh.nx(), mesh.ny())];
+                        const scalar_t f0 = fields[field][static_cast<std::size_t>(host::idxScalarGlobal(i_0, y, z, mesh.nx(), mesh.ny()))];
+                        const scalar_t f1 = fields[field][static_cast<std::size_t>(host::idxScalarGlobal(i_1, y, z, mesh.nx(), mesh.ny()))];
 
                         cutPlane[field][y + (z * mesh.ny())] = linearInterpolate(f0, f1, weight);
                     }
@@ -282,14 +282,14 @@ namespace LBM
         }
         if constexpr (dir == axis::Y)
         {
-            for (std::size_t field = 0; field < fields.size(); field++)
+            for (label_t field = 0; field < fields.size(); field++)
             {
-                for (std::size_t z = 0; z < mesh.nz(); z++)
+                for (label_t z = 0; z < mesh.nz(); z++)
                 {
-                    for (std::size_t x = 0; x < mesh.nx(); x++)
+                    for (label_t x = 0; x < mesh.nx(); x++)
                     {
-                        const scalar_t f0 = fields[field][host::idxScalarGlobal(x, i_0, z, mesh.nx(), mesh.ny())];
-                        const scalar_t f1 = fields[field][host::idxScalarGlobal(x, i_1, z, mesh.nx(), mesh.ny())];
+                        const scalar_t f0 = fields[field][static_cast<std::size_t>(host::idxScalarGlobal(x, i_0, z, mesh.nx(), mesh.ny()))];
+                        const scalar_t f1 = fields[field][static_cast<std::size_t>(host::idxScalarGlobal(x, i_1, z, mesh.nx(), mesh.ny()))];
                         cutPlane[field][x + (z * mesh.nx())] = linearInterpolate(f0, f1, weight);
                     }
                 }
@@ -298,14 +298,14 @@ namespace LBM
         }
         if constexpr (dir == axis::Z)
         {
-            for (std::size_t field = 0; field < fields.size(); field++)
+            for (label_t field = 0; field < fields.size(); field++)
             {
-                for (std::size_t y = 0; y < mesh.ny(); y++)
+                for (label_t y = 0; y < mesh.ny(); y++)
                 {
-                    for (std::size_t x = 0; x < mesh.nx(); x++)
+                    for (label_t x = 0; x < mesh.nx(); x++)
                     {
-                        const scalar_t f0 = fields[field][host::idxScalarGlobal(x, y, i_0, mesh.nx(), mesh.ny())];
-                        const scalar_t f1 = fields[field][host::idxScalarGlobal(x, y, i_1, mesh.nx(), mesh.ny())];
+                        const scalar_t f0 = fields[field][static_cast<std::size_t>(host::idxScalarGlobal(x, y, i_0, mesh.nx(), mesh.ny()))];
+                        const scalar_t f1 = fields[field][static_cast<std::size_t>(host::idxScalarGlobal(x, y, i_1, mesh.nx(), mesh.ny()))];
                         cutPlane[field][x + (y * mesh.nx())] = linearInterpolate(f0, f1, weight);
                     }
                 }

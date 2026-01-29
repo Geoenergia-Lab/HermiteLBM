@@ -188,7 +188,8 @@ namespace LBM
     /**
      * @brief Number of hydrodynamic moments
      **/
-    __device__ __host__ [[nodiscard]] inline consteval label_t NUMBER_MOMENTS() { return 10; }
+    template <typename T = label_t>
+    __device__ __host__ [[nodiscard]] inline consteval T NUMBER_MOMENTS() { return 10; }
 
     /**
      * @brief Host-side indexing operations
@@ -358,7 +359,7 @@ namespace LBM
          **/
         __device__ [[nodiscard]] inline bool out_of_bounds() noexcept
         {
-            return ((threadIdx.x + blockDim.x * blockIdx.x >= device::nx) || (threadIdx.y + blockDim.y * blockIdx.y >= device::ny) || (threadIdx.z + blockDim.z * blockIdx.z >= device::nz));
+            return ((threadIdx.x + block::nx() * blockIdx.x >= device::nx) || (threadIdx.y + block::ny() * blockIdx.y >= device::ny) || (threadIdx.z + block::nz() * blockIdx.z >= device::nz));
         }
 
         /**
