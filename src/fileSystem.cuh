@@ -228,8 +228,8 @@ namespace LBM
          * @param[in] nVars Number of field variables
          * @return The total estimated disk space required in bytes
          */
-        template <const fileFormat_t fileFormat, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets, class Mesh>
-        __host__ [[nodiscard]] inline constexpr std::size_t expectedDiskUsage(const Mesh &mesh, const label_t nVars) noexcept
+        template <const fileFormat_t fileFormat, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets, class LatticeMesh>
+        __host__ [[nodiscard]] inline constexpr std::size_t expectedDiskUsage(const LatticeMesh &mesh, const label_t nVars) noexcept
         {
             return expectedDiskUsage<fileFormat, hasFields, hasPoints, hasElements, hasOffsets>(mesh.nx(), mesh.ny(), mesh.nz(), nVars);
         }
@@ -246,8 +246,8 @@ namespace LBM
          * @param[in] nVars Number of field variables
          * @return True if sufficient disk space is available, false otherwise
          */
-        template <const fileFormat_t fileFormat, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets, class Mesh>
-        __host__ [[nodiscard]] bool diskSpaceCheck(const Mesh &mesh, const label_t nVars)
+        template <const fileFormat_t fileFormat, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets, class LatticeMesh>
+        __host__ [[nodiscard]] bool diskSpaceCheck(const LatticeMesh &mesh, const label_t nVars)
         {
             // Calculated the approximate required space
             const label_t requiredDiskSpace = expectedDiskUsage<fileFormat, hasFields, hasPoints, hasElements, hasOffsets>(mesh.nx(), mesh.ny(), mesh.nz(), nVars);
@@ -269,8 +269,8 @@ namespace LBM
          * @param[in] fileName Name of the file being written (for error message)
          * @throws std::runtime_error if insufficient disk space is available
          */
-        template <const fileFormat_t fileFormat, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets, class Mesh>
-        __host__ void diskSpaceAssertion(const Mesh &mesh, const label_t nVars, const std::string &fileName)
+        template <const fileFormat_t fileFormat, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets, class LatticeMesh>
+        __host__ void diskSpaceAssertion(const LatticeMesh &mesh, const label_t nVars, const std::string &fileName)
         {
             const label_t requiredDiskSpace = expectedDiskUsage<fileFormat, hasFields, hasPoints, hasElements, hasOffsets>(mesh.nx(), mesh.ny(), mesh.nz(), nVars);
 

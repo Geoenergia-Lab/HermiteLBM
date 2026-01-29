@@ -61,10 +61,10 @@ namespace LBM
      * @note This function uses the cumulative trapezoidal rule. The integration constant is set by
      * assuming the integral is zero at x=0 for each (y, z) line.
      **/
-    template <const label_t order_, typename TReturn, typename T, class M>
+    template <const label_t order_, typename TReturn, typename T, class LatticeMesh>
     __host__ [[nodiscard]] const std::vector<TReturn> integrate_x(
         const std::vector<T> &f,
-        const M &mesh)
+        const LatticeMesh &mesh)
     {
         static_assert(order_ == 2, "Invalid integration scheme order: only 2nd order (Trapezoidal Rule) is currently implemented.");
 
@@ -98,10 +98,10 @@ namespace LBM
     /**
      * @brief Calculates the integral of a scalar field along the y-axis.
      **/
-    template <const label_t order_, typename TReturn, typename T, class M>
+    template <const label_t order_, typename TReturn, typename T, class LatticeMesh>
     __host__ [[nodiscard]] const std::vector<TReturn> integrate_y(
         const std::vector<T> &f,
-        const M &mesh)
+        const LatticeMesh &mesh)
     {
         static_assert(order_ == 2, "Invalid integration scheme order: only 2nd order (Trapezoidal Rule) is currently implemented.");
 
@@ -135,10 +135,10 @@ namespace LBM
     /**
      * @brief Calculates the integral of a scalar field along the z-axis.
      **/
-    template <const label_t order_, typename TReturn, typename T, class M>
+    template <const label_t order_, typename TReturn, typename T, class LatticeMesh>
     __host__ [[nodiscard]] const std::vector<TReturn> integrate_z(
         const std::vector<T> &f,
-        const M &mesh)
+        const LatticeMesh &mesh)
     {
         static_assert(order_ == 2, "Invalid integration scheme order: only 2nd order (Trapezoidal Rule) is currently implemented.");
 

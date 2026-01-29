@@ -74,7 +74,7 @@ namespace LBM
                 {
                     // Calculate the index
                     // MODIFY FOR MULTI GPU: idx must be multi GPU aware
-                    const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+                    const label_t idx = device::idx();
 
                     // Read from global memory
                     thread::array<scalar_t, NUMBER_MOMENTS()> m;
