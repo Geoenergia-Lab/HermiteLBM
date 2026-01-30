@@ -168,16 +168,16 @@ namespace LBM
      **/
     template <const pointLabel_t Indent, typename F>
     __host__ void global_for(
-        const label_t nx,
-        const label_t ny,
-        const label_t nz,
+        const std::size_t nx,
+        const std::size_t ny,
+        const std::size_t nz,
         const F &&f) noexcept
     {
-        for (label_t z = 0; z < nz - Indent.z; z++)
+        for (std::size_t z = 0; z < nz - static_cast<std::size_t>(Indent.z); z++)
         {
-            for (label_t y = 0; y < ny - Indent.y; y++)
+            for (std::size_t y = 0; y < ny - static_cast<std::size_t>(Indent.y); y++)
             {
-                for (label_t x = 0; x < nx - Indent.x; x++)
+                for (std::size_t x = 0; x < nx - static_cast<std::size_t>(Indent.x); x++)
                 {
                     f(x, y, z);
                 }
@@ -256,9 +256,10 @@ namespace LBM
          * @param nx,ny Global dimensions
          * @return Linearized index: x + nx*(y + ny*z)
          **/
-        __host__ [[nodiscard]] inline label_t idxScalarGlobal(
-            const label_t x, const label_t y, const label_t z,
-            const label_t nx, const label_t ny) noexcept
+        template <typename T = label_t>
+        __host__ [[nodiscard]] inline T idxScalarGlobal(
+            const T x, const T y, const T z,
+            const T nx, const T ny) noexcept
         {
             return x + (nx * (y + (ny * z)));
         }
@@ -359,6 +360,7 @@ namespace LBM
          **/
         __device__ [[nodiscard]] inline bool out_of_bounds() noexcept
         {
+            // MODIFY THIS FOR MULTI GPU
             return ((threadIdx.x + block::nx() * blockIdx.x >= device::nx) || (threadIdx.y + block::ny() * blockIdx.y >= device::ny) || (threadIdx.z + block::nz() * blockIdx.z >= device::nz));
         }
 

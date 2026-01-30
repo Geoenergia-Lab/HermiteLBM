@@ -250,21 +250,25 @@ namespace LBM
              * @brief Provide access to grid dimensions
              * @return Dimension value in specified direction
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr label_t nx() const noexcept
+            template <typename T = label_t>
+            __device__ __host__ [[nodiscard]] inline constexpr T nx() const noexcept
             {
-                return nx_;
+                return static_cast<T>(nx_);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr label_t ny() const noexcept
+            template <typename T = label_t>
+            __device__ __host__ [[nodiscard]] inline constexpr T ny() const noexcept
             {
-                return ny_;
+                return static_cast<T>(ny_);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr label_t nz() const noexcept
+            template <typename T = label_t>
+            __device__ __host__ [[nodiscard]] inline constexpr T nz() const noexcept
             {
-                return nz_;
+                return static_cast<T>(nz_);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr label_t nPoints() const noexcept
+            template <typename T = label_t>
+            __device__ __host__ [[nodiscard]] inline constexpr T nPoints() const noexcept
             {
-                return nPoints_;
+                return static_cast<T>(nPoints_);
             }
 
             /**
@@ -272,21 +276,25 @@ namespace LBM
              * @brief Provide access to CUDA block decomposition
              * @return Number of blocks in specified direction
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr label_t nxBlocks() const noexcept
+            template <typename T = label_t>
+            __device__ __host__ [[nodiscard]] inline constexpr T nxBlocks() const noexcept
             {
                 return nx_ / block::nx();
             }
-            __device__ __host__ [[nodiscard]] inline constexpr label_t nyBlocks() const noexcept
+            template <typename T = label_t>
+            __device__ __host__ [[nodiscard]] inline constexpr T nyBlocks() const noexcept
             {
                 return ny_ / block::ny();
             }
-            __device__ __host__ [[nodiscard]] inline constexpr label_t nzBlocks() const noexcept
+            template <typename T = label_t>
+            __device__ __host__ [[nodiscard]] inline constexpr T nzBlocks() const noexcept
             {
                 return nz_ / block::nz();
             }
-            __device__ __host__ [[nodiscard]] inline constexpr label_t nBlocks() const noexcept
+            template <typename T = label_t>
+            __device__ __host__ [[nodiscard]] inline constexpr T nBlocks() const noexcept
             {
-                return (nx_ / block::nx()) * (ny_ / block::ny()) * (nz_ / block::nz());
+                return (nx<T>() / block::nx<T>()) * (ny<T>() / block::ny<T>()) * (nz<T>() / block::nz<T>());
             }
 
             /**
@@ -295,7 +303,7 @@ namespace LBM
              **/
             __device__ __host__ [[nodiscard]] static inline consteval dim3 threadBlock() noexcept
             {
-                return {block::nx(), block::ny(), block::nz()};
+                return {block::nx<uint32_t>(), block::ny<uint32_t>(), block::nz<uint32_t>()};
             }
 
             /**

@@ -776,7 +776,7 @@ namespace LBM
         template <typename T, class LatticeMesh>
         __host__ [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoS(const std::vector<T> &fMom, const LatticeMesh &mesh)
         {
-            const std::size_t nNodes = static_cast<std::size_t>(mesh.nx()) * mesh.ny() * mesh.nz();
+            const std::size_t nNodes = mesh.template nx<std::size_t>() * mesh.template ny<std::size_t>() * mesh.template nz<std::size_t>();
 
             // Safety check for the size of fMom and nPoints
             if (fMom.size() % nNodes != 0)
