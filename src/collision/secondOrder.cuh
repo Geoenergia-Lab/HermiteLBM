@@ -117,19 +117,19 @@ namespace LBM
          * @note This implementation is based on the Guo forcing scheme
          * @note Uses device-level relaxation parameters (device::t_omegaVar, device::omegaVar_d2, device::omega, device::tt_omegaVar_t3)
          **/
-        __device__ static inline void collide(thread::array<scalar_t, 11> &moments, const scalar_t forceX, const scalar_t forceY, const scalar_t forceZ, const scalar_t rho) noexcept
+        __device__ static inline void collide(thread::array<scalar_t, 11> &moments, const scalar_t forceX, const scalar_t forceY, const scalar_t forceZ) noexcept
         {
-            const scalar_t invRho = static_cast<scalar_t>(1) / rho;
+            const scalar_t invRho = static_cast<scalar_t>(1) / moments[m_i<0>()];
 
-            // Get pre-update velocities (half-step)
-            const scalar_t uxEq = moments[m_i<1>()];
-            const scalar_t uyEq = moments[m_i<2>()];
-            const scalar_t uzEq = moments[m_i<3>()];
+            // Half-step velocities
+            const scalar_t uxEq = moments[m_i<1>()] + static_cast<scalar_t>(1.5) * invRho * forceX;
+            const scalar_t uyEq = moments[m_i<2>()] + static_cast<scalar_t>(1.5) * invRho * forceY;
+            const scalar_t uzEq = moments[m_i<3>()] + static_cast<scalar_t>(1.5) * invRho * forceZ;
 
             // Velocity updates
-            moments[m_i<1>()] = device::t_omegaVar * (uxEq - static_cast<scalar_t>(1.5) * invRho * forceX) + device::omega * uxEq + device::tt_omegaVar_t3 * invRho * forceX; // ux
-            moments[m_i<2>()] = device::t_omegaVar * (uyEq - static_cast<scalar_t>(1.5) * invRho * forceY) + device::omega * uyEq + device::tt_omegaVar_t3 * invRho * forceY; // uy
-            moments[m_i<3>()] = device::t_omegaVar * (uzEq - static_cast<scalar_t>(1.5) * invRho * forceZ) + device::omega * uzEq + device::tt_omegaVar_t3 * invRho * forceZ; // uz
+            moments[m_i<1>()] = moments[m_i<1>()] + static_cast<scalar_t>(3) * invRho * forceX; // ux
+            moments[m_i<2>()] = moments[m_i<2>()] + static_cast<scalar_t>(3) * invRho * forceY; // uy
+            moments[m_i<3>()] = moments[m_i<3>()] + static_cast<scalar_t>(3) * invRho * forceZ; // uz
 
             // Diagonal moment updates
             moments[m_i<4>()] = device::t_omegaVar * moments[m_i<4>()] + device::omegaVar_d2 * uxEq * uxEq + static_cast<scalar_t>(1.5) * device::tt_omegaVar * invRho * (forceX * uxEq + forceX * uxEq); // mxx

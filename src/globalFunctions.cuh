@@ -85,7 +85,7 @@ namespace LBM
                 f(std::integral_constant<label_t, Start>());
                 if constexpr (Start + 1 < End)
                 {
-                    constexpr_for<Start + 1, End>(std::forward<F>(f));
+                    host::constexpr_for<Start + 1, End>(std::forward<F>(f));
                 }
             }
         }
@@ -101,7 +101,7 @@ namespace LBM
                 f(integralConstant<label_t, Start>());
                 if constexpr (Start + 1 < End)
                 {
-                    constexpr_for<Start + 1, End>(std::forward<F>(f));
+                    device::constexpr_for<Start + 1, End>(std::forward<F>(f));
                 }
             }
         }

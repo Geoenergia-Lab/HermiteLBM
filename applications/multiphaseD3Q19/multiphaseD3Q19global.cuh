@@ -74,12 +74,10 @@ namespace LBM
     using HydroHalo = device::halo<VelocitySet, multiphase::periodicX(), multiphase::periodicY()>;
     using PhaseHalo = device::halo<PhaseVelocitySet, multiphase::periodicX(), multiphase::periodicY()>;
 
-    // Density configuration
-    __device__ __host__ [[nodiscard]] inline consteval scalar_t rho_oil() noexcept { return static_cast<scalar_t>(0.852); }
-    __device__ __host__ [[nodiscard]] inline consteval scalar_t rho_water() noexcept { return static_cast<scalar_t>(1); }
-    __device__ __host__ [[nodiscard]] inline consteval scalar_t delta_rho() noexcept { return rho_oil() - rho_water(); }
-
-    __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept { return block::sharedMemoryBufferSize<VelocitySet, 11>(sizeof(scalar_t)); }
+    __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept
+    {
+        return block::sharedMemoryBufferSize<VelocitySet, 11>(sizeof(scalar_t));
+    }
 
     __device__ __host__ [[nodiscard]] inline consteval bool out_of_bounds_check() noexcept
     {
@@ -146,7 +144,14 @@ namespace LBM
             {
                 const label_t ID = tid * m_i<NUMBER_MOMENTS<true>() + 1>() + m_i<moment>();
                 shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
-                moments[moment] = shared_buffer[ID];
+                if constexpr (moment == index::rho())
+                {
+                    moments[moment] = shared_buffer[ID] + rho0<scalar_t>();
+                }
+                else
+                {
+                    moments[moment] = shared_buffer[ID];
+                }
             });
 
         __syncthreads();
@@ -205,6 +210,7 @@ namespace LBM
         }
 
         // Coalesced write to global memory
+        moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
             [&](const auto moment)
             {
@@ -372,7 +378,14 @@ namespace LBM
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
             [&](const auto moment)
             {
-                moments[moment] = devPtrs.ptr<moment>()[idx];
+                if constexpr (moment == index::rho())
+                {
+                    moments[moment] = devPtrs.ptr<moment>()[idx] + rho0<scalar_t>();
+                }
+                else
+                {
+                    moments[moment] = devPtrs.ptr<moment>()[idx];
+                }
             });
 
         // Read normals from global memory
@@ -384,19 +397,6 @@ namespace LBM
         scalar_t Fsx = static_cast<scalar_t>(0);
         scalar_t Fsy = static_cast<scalar_t>(0);
         scalar_t Fsz = static_cast<scalar_t>(0);
-        scalar_t Fpx = static_cast<scalar_t>(0);
-        scalar_t Fpy = static_cast<scalar_t>(0);
-        scalar_t Fpz = static_cast<scalar_t>(0);
-        scalar_t Fnx = static_cast<scalar_t>(0);
-        scalar_t Fny = static_cast<scalar_t>(0);
-        scalar_t Fnz = static_cast<scalar_t>(0);
-        scalar_t Fx = static_cast<scalar_t>(0);
-        scalar_t Fy = static_cast<scalar_t>(0);
-        scalar_t Fz = static_cast<scalar_t>(0);
-
-        // Fallback to unitary density contrast at bulk
-        scalar_t rho_ = static_cast<scalar_t>(1);
-
         if (isInterior)
         {
             // Block volume and block-to-block strides
@@ -465,83 +465,13 @@ namespace LBM
             Fsx = stCurv * normx[idx];
             Fsy = stCurv * normy[idx];
             Fsz = stCurv * normz[idx];
-
-            // Build stress tensor
-            const scalar_t pxx = moments[m_i<4>()] - moments[m_i<1>()] * moments[m_i<1>()];
-            const scalar_t pxy = moments[m_i<5>()] - moments[m_i<1>()] * moments[m_i<2>()];
-            const scalar_t pxz = moments[m_i<6>()] - moments[m_i<1>()] * moments[m_i<3>()];
-            const scalar_t pyy = moments[m_i<7>()] - moments[m_i<2>()] * moments[m_i<2>()];
-            const scalar_t pyz = moments[m_i<8>()] - moments[m_i<2>()] * moments[m_i<3>()];
-            const scalar_t pzz = moments[m_i<9>()] - moments[m_i<3>()] * moments[m_i<3>()];
-
-            // Load the neighbor phi values
-            const scalar_t phi_xp1_yp1_z = phi[xp1_yp1_z];
-            const scalar_t phi_xp1_ym1_z = phi[xp1_ym1_z];
-            const scalar_t phi_xm1_yp1_z = phi[xm1_yp1_z];
-            const scalar_t phi_xm1_ym1_z = phi[xm1_ym1_z];
-            const scalar_t phi_xp1_y_zp1 = phi[xp1_y_zp1];
-            const scalar_t phi_xp1_y_zm1 = phi[xp1_y_zm1];
-            const scalar_t phi_xm1_y_zp1 = phi[xm1_y_zp1];
-            const scalar_t phi_xm1_y_zm1 = phi[xm1_y_zm1];
-            const scalar_t phi_x_yp1_zp1 = phi[x_yp1_zp1];
-            const scalar_t phi_x_yp1_zm1 = phi[x_yp1_zm1];
-            const scalar_t phi_x_ym1_zp1 = phi[x_ym1_zp1];
-            const scalar_t phi_x_ym1_zm1 = phi[x_ym1_zm1];
-
-            // Compute gradients
-            const scalar_t sgx =
-                VelocitySet::w_1<scalar_t>() * (phi[i_xp] - phi[i_xm]) +
-                VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
-                                                phi_xp1_y_zp1 - phi_xm1_y_zm1 +
-                                                phi_xp1_ym1_z - phi_xm1_yp1_z +
-                                                phi_xp1_y_zm1 - phi_xm1_y_zp1);
-
-            const scalar_t sgy =
-                VelocitySet::w_1<scalar_t>() * (phi[i_yp] - phi[i_ym]) +
-                VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
-                                                phi_x_yp1_zp1 - phi_x_ym1_zm1 +
-                                                phi_xm1_yp1_z - phi_xp1_ym1_z +
-                                                phi_x_yp1_zm1 - phi_x_ym1_zp1);
-
-            const scalar_t sgz =
-                VelocitySet::w_1<scalar_t>() * (phi[i_zp] - phi[i_zm]) +
-                VelocitySet::w_2<scalar_t>() * (phi_xp1_y_zp1 - phi_xm1_y_zm1 +
-                                                phi_x_yp1_zp1 - phi_x_ym1_zm1 +
-                                                phi_xm1_y_zp1 - phi_xp1_y_zm1 +
-                                                phi_x_ym1_zp1 - phi_x_yp1_zm1);
-
-            rho_ = static_cast<scalar_t>(1) + delta_rho() * moments[m_i<10>()];
-
-            const scalar_t drhox = delta_rho() * velocitySet::as2<scalar_t>() * sgx;
-            const scalar_t drhoy = delta_rho() * velocitySet::as2<scalar_t>() * sgy;
-            const scalar_t drhoz = delta_rho() * velocitySet::as2<scalar_t>() * sgz;
-
-            // Compute pressure force
-            Fpx = -moments[m_i<0>()] * (velocitySet::cs2<scalar_t>() * drhox);
-            Fpy = -moments[m_i<0>()] * (velocitySet::cs2<scalar_t>() * drhoy);
-            Fpz = -moments[m_i<0>()] * (velocitySet::cs2<scalar_t>() * drhoz);
-
-            // Compute viscous correction force
-            Fnx = -device::tt_omegaVar * (pxx * drhox + pxy * drhoy + pxz * drhoz);
-            Fny = -device::tt_omegaVar * (pxy * drhox + pyy * drhoy + pyz * drhoz);
-            Fnz = -device::tt_omegaVar * (pxz * drhox + pyz * drhoy + pzz * drhoz);
-
-            // Build force density
-            Fx = Fsx + Fpx + Fnx;
-            Fy = Fsy + Fpy + Fny;
-            Fz = Fsz + Fpz + Fnz;
         }
-
-        // Perform velocity half-step
-        moments[m_i<1>()] += 0.5 * Fx / rho_;
-        moments[m_i<2>()] += 0.5 * Fy / rho_;
-        moments[m_i<3>()] += 0.5 * Fz / rho_;
 
         // Scale the moments correctly
         velocitySet::scale(moments);
 
         // Collide
-        Collision::collide(moments, Fx, Fy, Fz, rho_);
+        Collision::collide(moments, Fsx, Fsy, Fsz);
 
         // Calculate post collision populations
         thread::array<scalar_t, VelocitySet::Q()> pop;
@@ -556,6 +486,7 @@ namespace LBM
         PhaseVelocitySet::sharpen(pop_g, phi_, normx_, normy_, normz_);
 
         // Coalesced write to global memory
+        moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
             [&](const auto moment)
             {
