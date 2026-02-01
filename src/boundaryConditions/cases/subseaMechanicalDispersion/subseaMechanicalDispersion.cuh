@@ -95,7 +95,7 @@ namespace LBM
             static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculate_moments only supports D3Q19 and D3Q27.");
             static_assert((PhaseVelocitySet::Q() == 7), "Error: boundaryConditions::calculate_moments only supports D3Q7 for phase field.");
 
-            const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
+            const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 
             switch (boundaryNormal.nodeType())
@@ -108,24 +108,24 @@ namespace LBM
 
                 const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(y) - y_pos()) * (static_cast<scalar_t>(y) - y_pos()) < r2());
 
-                const scalar_t mxz_I = velocitySet::calculate_moment<VelocitySet, X, Z>(pop, boundaryNormal) * inv_rho_I;
-                const scalar_t myz_I = velocitySet::calculate_moment<VelocitySet, Y, Z>(pop, boundaryNormal) * inv_rho_I;
+                const scalar_t mxz_I = velocitySet::calculate_moment<VelocitySet, axis::X, axis::Z>(pop, boundaryNormal) * inv_rho_I;
+                const scalar_t myz_I = velocitySet::calculate_moment<VelocitySet, axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
 
                 const scalar_t rho = static_cast<scalar_t>(1);
                 const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
                 const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
 
-                moments[m_i<0>()] = rho;                                // rho
-                moments[m_i<1>()] = static_cast<scalar_t>(0);           // ux
-                moments[m_i<2>()] = static_cast<scalar_t>(0);           // uy
-                moments[m_i<3>()] = is_jet * 0.016;                     // uz
-                moments[m_i<4>()] = static_cast<scalar_t>(0);           // mxx
-                moments[m_i<5>()] = static_cast<scalar_t>(0);           // mxy
-                moments[m_i<6>()] = mxz;                                // mxz
-                moments[m_i<7>()] = static_cast<scalar_t>(0);           // myy
-                moments[m_i<8>()] = myz;                                // myz
-                moments[m_i<9>()] = is_jet * (0.016 * 0.016);           // mzz
-                moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1); // phi
+                moments[m_i<0>()] = rho;                                                                    // rho
+                moments[m_i<1>()] = static_cast<scalar_t>(0);                                               // ux
+                moments[m_i<2>()] = static_cast<scalar_t>(0);                                               // uy
+                moments[m_i<3>()] = is_jet * static_cast<scalar_t>(0.016);                                  // uz
+                moments[m_i<4>()] = static_cast<scalar_t>(0);                                               // mxx
+                moments[m_i<5>()] = static_cast<scalar_t>(0);                                               // mxy
+                moments[m_i<6>()] = mxz;                                                                    // mxz
+                moments[m_i<7>()] = static_cast<scalar_t>(0);                                               // myy
+                moments[m_i<8>()] = myz;                                                                    // myz
+                moments[m_i<9>()] = is_jet * (static_cast<scalar_t>(0.016) * static_cast<scalar_t>(0.016)); // mzz
+                moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1);                                     // phi
 
                 return;
             }
@@ -137,24 +137,24 @@ namespace LBM
 
                 const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(z) - z_pos()) * (static_cast<scalar_t>(z) - z_pos()) < r2());
 
-                const scalar_t mxy_I = velocitySet::calculate_moment<VelocitySet, X, Y>(pop, boundaryNormal) * inv_rho_I;
-                const scalar_t myz_I = velocitySet::calculate_moment<VelocitySet, Y, Z>(pop, boundaryNormal) * inv_rho_I;
+                const scalar_t mxy_I = velocitySet::calculate_moment<VelocitySet, axis::X, axis::Y>(pop, boundaryNormal) * inv_rho_I;
+                const scalar_t myz_I = velocitySet::calculate_moment<VelocitySet, axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
 
                 const scalar_t rho = static_cast<scalar_t>(1);
                 const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
                 const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
 
-                moments[m_i<0>()] = rho;                                // rho
-                moments[m_i<1>()] = static_cast<scalar_t>(0);           // ux
-                moments[m_i<2>()] = is_jet * 0.016;                     // uy
-                moments[m_i<3>()] = static_cast<scalar_t>(0);           // uz
-                moments[m_i<4>()] = static_cast<scalar_t>(0);           // mxx
-                moments[m_i<5>()] = mxy;                                // mxy
-                moments[m_i<6>()] = static_cast<scalar_t>(0);           // mxz
-                moments[m_i<7>()] = is_jet * (0.016 * 0.016);           // myy
-                moments[m_i<8>()] = myz;                                // myz
-                moments[m_i<9>()] = static_cast<scalar_t>(0);           // mzz
-                moments[m_i<10>()] = is_jet * static_cast<scalar_t>(0); // phi
+                moments[m_i<0>()] = rho;                                                                    // rho
+                moments[m_i<1>()] = static_cast<scalar_t>(0);                                               // ux
+                moments[m_i<2>()] = is_jet * static_cast<scalar_t>(0.016);                                  // uy
+                moments[m_i<3>()] = static_cast<scalar_t>(0);                                               // uz
+                moments[m_i<4>()] = static_cast<scalar_t>(0);                                               // mxx
+                moments[m_i<5>()] = mxy;                                                                    // mxy
+                moments[m_i<6>()] = static_cast<scalar_t>(0);                                               // mxz
+                moments[m_i<7>()] = is_jet * (static_cast<scalar_t>(0.016) * static_cast<scalar_t>(0.016)); // myy
+                moments[m_i<8>()] = myz;                                                                    // myz
+                moments[m_i<9>()] = static_cast<scalar_t>(0);                                               // mzz
+                moments[m_i<10>()] = is_jet * static_cast<scalar_t>(0);                                     // phi
 
                 return;
             }
@@ -200,17 +200,17 @@ namespace LBM
                 const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
                 const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
 
-                moments[m_i<0>()] = rho;                                // rho
-                moments[m_i<1>()] = static_cast<scalar_t>(0);           // ux
-                moments[m_i<2>()] = static_cast<scalar_t>(0);           // uy
-                moments[m_i<3>()] = is_jet * 0.016;                     // uz
-                moments[m_i<4>()] = static_cast<scalar_t>(0);           // mxx
-                moments[m_i<5>()] = static_cast<scalar_t>(0);           // mxy
-                moments[m_i<6>()] = mxz;                                // mxz
-                moments[m_i<7>()] = static_cast<scalar_t>(0);           // myy
-                moments[m_i<8>()] = myz;                                // myz
-                moments[m_i<9>()] = is_jet * (0.016 * 0.016);           // mzz
-                moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1); // phi
+                moments[m_i<0>()] = rho;                                                                    // rho
+                moments[m_i<1>()] = static_cast<scalar_t>(0);                                               // ux
+                moments[m_i<2>()] = static_cast<scalar_t>(0);                                               // uy
+                moments[m_i<3>()] = is_jet * static_cast<scalar_t>(0.016);                                  // uz
+                moments[m_i<4>()] = static_cast<scalar_t>(0);                                               // mxx
+                moments[m_i<5>()] = static_cast<scalar_t>(0);                                               // mxy
+                moments[m_i<6>()] = mxz;                                                                    // mxz
+                moments[m_i<7>()] = static_cast<scalar_t>(0);                                               // myy
+                moments[m_i<8>()] = myz;                                                                    // myz
+                moments[m_i<9>()] = is_jet * (static_cast<scalar_t>(0.016) * static_cast<scalar_t>(0.016)); // mzz
+                moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1);                                     // phi
 
                 return;
             }
@@ -229,17 +229,17 @@ namespace LBM
                 const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
                 const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
 
-                moments[m_i<0>()] = rho;                                // rho
-                moments[m_i<1>()] = static_cast<scalar_t>(0);           // ux
-                moments[m_i<2>()] = is_jet * 0.016;                     // uy
-                moments[m_i<3>()] = static_cast<scalar_t>(0);           // uz
-                moments[m_i<4>()] = static_cast<scalar_t>(0);           // mxx
-                moments[m_i<5>()] = mxy;                                // mxy
-                moments[m_i<6>()] = static_cast<scalar_t>(0);           // mxz
-                moments[m_i<7>()] = is_jet * (0.016 * 0.016);           // myy
-                moments[m_i<8>()] = myz;                                // myz
-                moments[m_i<9>()] = static_cast<scalar_t>(0);           // mzz
-                moments[m_i<10>()] = is_jet * static_cast<scalar_t>(0); // phi
+                moments[m_i<0>()] = rho;                                                                    // rho
+                moments[m_i<1>()] = static_cast<scalar_t>(0);                                               // ux
+                moments[m_i<2>()] = is_jet * static_cast<scalar_t>(0.016);                                  // uy
+                moments[m_i<3>()] = static_cast<scalar_t>(0);                                               // uz
+                moments[m_i<4>()] = static_cast<scalar_t>(0);                                               // mxx
+                moments[m_i<5>()] = mxy;                                                                    // mxy
+                moments[m_i<6>()] = static_cast<scalar_t>(0);                                               // mxz
+                moments[m_i<7>()] = is_jet * (static_cast<scalar_t>(0.016) * static_cast<scalar_t>(0.016)); // myy
+                moments[m_i<8>()] = myz;                                                                    // myz
+                moments[m_i<9>()] = static_cast<scalar_t>(0);                                               // mzz
+                moments[m_i<10>()] = is_jet * static_cast<scalar_t>(0);                                     // phi
 
                 return;
             }

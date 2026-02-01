@@ -84,15 +84,23 @@ namespace LBM
             /**
              * @brief Fill constructor
              * @param value Initial value for all array elements
-             **/
-            template <std::enable_if_t<(N != 1), bool> = true>
+             *
+             * @details Handles both N == 1 and N > 1 cases at compile time.
+             */
             __device__ __host__ [[nodiscard]] inline consteval array(const T value) noexcept
             {
-                device::constexpr_for<0, N>(
-                    [&](const auto i)
-                    {
-                        data_[q_i<i>()] = value;
-                    });
+                if constexpr (N == 1)
+                {
+                    data_[0] = value;
+                }
+                else
+                {
+                    device::constexpr_for<0, N>(
+                        [&](const auto i)
+                        {
+                            data_[q_i<i>()] = value;
+                        });
+                }
             }
 
             /**

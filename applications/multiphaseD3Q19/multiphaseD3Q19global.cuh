@@ -61,8 +61,6 @@ SourceFiles
 #include "../../src/array/array.cuh"
 #include "../../src/boundaryConditions/boundaryConditions.cuh"
 
-#include <assert.h>
-
 namespace LBM
 {
     /**
@@ -91,15 +89,6 @@ namespace LBM
     __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept
     {
         return block::sharedMemoryBufferSize<VelocitySet, 11>(sizeof(scalar_t));
-    }
-
-    __device__ __host__ [[nodiscard]] inline consteval bool out_of_bounds_check() noexcept
-    {
-#ifdef OOB_CHECK
-        return true;
-#else
-        return false;
-#endif
     }
 
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }

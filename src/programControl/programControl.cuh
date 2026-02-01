@@ -181,8 +181,8 @@ namespace LBM
         }
 
         /**
-         * @brief Returns the characteristic velocity
-         * @return The characteristic velocity
+         * @brief Returns the characteristic length
+         * @return The characteristic length
          **/
         __device__ __host__ [[nodiscard]] inline constexpr scalar_t L_char() const noexcept
         {

@@ -179,6 +179,7 @@ namespace LBM
                 const label_t bzm1 = (bz - 1 + device::NUM_BLOCK_Z) % device::NUM_BLOCK_Z;
                 const label_t bzp1 = (bz + 1 + device::NUM_BLOCK_Z) % device::NUM_BLOCK_Z;
 
+                // MODIFY FOR MULTI GPU: idxPopX, Y and Z
                 if constexpr (VelocitySet::Q() == 7)
                 {
                     if (tx == 0)

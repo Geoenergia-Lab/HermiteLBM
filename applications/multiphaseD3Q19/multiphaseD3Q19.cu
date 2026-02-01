@@ -61,6 +61,8 @@ __host__ [[nodiscard]] inline consteval label_t NStreams() noexcept { return 1; 
 
 int main(const int argc, const char *const argv[])
 {
+    static_assert((std::is_same<BoundaryConditions, multiphaseJet>::value) || std::is_same<BoundaryConditions, subseaMechanicalDispersion>::value);
+
     const programControl programCtrl(argc, argv);
 
     // Set cuda device
@@ -72,27 +74,25 @@ int main(const int argc, const char *const argv[])
 
     VelocitySet::print();
 
-    // Remember to compile host code with -fsanitize=address to catch dangling reference; device::array has a possible candidate at const std::string &name_;
-
     // Allocate the arrays on the device
-    device::array<scalar_t, VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl); // This represents pressure but is kept as rho for compatibility
-    device::array<scalar_t, VelocitySet, time::instantaneous> u("u", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, time::instantaneous> v("v", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, time::instantaneous> w("w", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, time::instantaneous> mxx("m_xx", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, time::instantaneous> mxy("m_xy", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, time::instantaneous> mxz("m_xz", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, time::instantaneous> myy("m_yy", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> u("u", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> v("v", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> w("w", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxx("m_xx", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxy("m_xy", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxz("m_xz", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> myy("m_yy", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
 
     // Phase field arrays
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("phi", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, PhaseVelocitySet, time::instantaneous> phi("phi", mesh, programCtrl);
 #if defined(MULTIPHASE_GLOBAL)
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> normx("normx", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> normy("normy", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> normz("normz", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> ind("ind", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, PhaseVelocitySet, time::instantaneous> normx("normx", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, PhaseVelocitySet, time::instantaneous> normy("normy", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, PhaseVelocitySet, time::instantaneous> normz("normz", mesh, programCtrl);
+    device::array<field::FULL_FIELD, scalar_t, PhaseVelocitySet, time::instantaneous> ind("ind", mesh, programCtrl);
 #endif
 
     const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs(
@@ -123,7 +123,10 @@ int main(const int argc, const char *const argv[])
     // Setup Streams
     const streamHandler<NStreams()> streamsLBM;
 
-    objectRegistry<VelocitySet, NStreams()> runTimeObjects(mesh, hydroPtrs, streamsLBM);
+    // Allocate a buffer of pinned memory on the host for writing
+    host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.nPoints() * NUMBER_MOMENTS<true>());
+
+    objectRegistry<VelocitySet, NStreams()> runTimeObjects(hostWriteBuffer, mesh, hydroPtrs, streamsLBM);
 
     device::haloSingle<VelocitySet, periodicX(), periodicY()> fBlockHalo(mesh, programCtrl);      // Hydrodynamic halo
     device::haloSingle<PhaseVelocitySet, periodicX(), periodicY()> gBlockHalo(mesh, programCtrl); // Phase field halo
@@ -143,11 +146,13 @@ int main(const int argc, const char *const argv[])
         // Checkpoint
         if (programCtrl.save(timeStep))
         {
+            hostWriteBuffer.copy_from_device(devPtrs, mesh);
+
             fileIO::writeFile<time::instantaneous>(
                 programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
                 mesh,
                 functionObjects::solutionVariableNames(true),
-                host::toHost(devPtrs, mesh),
+                hostWriteBuffer.data(),
                 timeStep);
 
             runTimeObjects.save(timeStep);

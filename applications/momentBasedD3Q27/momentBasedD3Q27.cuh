@@ -78,18 +78,6 @@ namespace LBM
     __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
 #endif
 
-#ifdef JETFLOW
-    using BoundaryConditions = jetFlow;
-    __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
-    __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
-#endif
-
-#ifdef LIDDRIVENCAVITY
-    using BoundaryConditions = lidDrivenCavity;
-    __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return false; }
-    __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
-#endif
-
     using VelocitySet = D3Q27;
     using Collision = secondOrder;
     using BlockHalo = device::halo<VelocitySet, periodicX(), periodicY()>;

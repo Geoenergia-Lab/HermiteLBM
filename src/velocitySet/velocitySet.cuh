@@ -57,6 +57,7 @@ SourceFiles
 
 namespace LBM
 {
+    class D3Q7;
     class D3Q19;
     class D3Q27;
 
@@ -71,7 +72,7 @@ namespace LBM
             template <class VelocitySet>
             __device__ __host__ inline consteval void validate() noexcept
             {
-                static_assert(((std::is_same<VelocitySet, D3Q19>::value) || (std::is_same<VelocitySet, D3Q27>::value)), "VelocitySet must be D3Q19 or D3Q27.");
+                static_assert(((std::is_same<VelocitySet, D3Q7>::value) || (std::is_same<VelocitySet, D3Q19>::value) || (std::is_same<VelocitySet, D3Q27>::value)), "VelocitySet must be D3Q7, D3Q19 or D3Q27.");
             }
         }
     }

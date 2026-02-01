@@ -86,15 +86,9 @@ namespace LBM
     using HydroHalo = device::halo<VelocitySet, periodicX(), periodicY()>;
     using PhaseHalo = device::halo<PhaseVelocitySet, periodicX(), periodicY()>;
 
-    __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept { return block::sharedMemoryBufferSize<VelocitySet, 11>(sizeof(scalar_t)); }
-
-    __device__ __host__ [[nodiscard]] inline consteval bool out_of_bounds_check() noexcept
+    __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept
     {
-#ifdef OOB_CHECK
-        return true;
-#else
-        return false;
-#endif
+        return block::sharedMemoryBufferSize<VelocitySet, 11>(sizeof(scalar_t));
     }
 
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }

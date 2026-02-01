@@ -44,17 +44,14 @@ build
 cases/*/*/*.dat
 cases/*/*/*.vtu
 cases/*/*/*.vts
-cases/*/*/*.vti
 cases/*/*/*.LBMBin
 cases/*/*/*/*.dat
 cases/*/*/*/*.vtu
 cases/*/*/*/*.vts
-cases/*/*/*/*.vti
 
 # Unit test directory ignores
 unitTests/ComputeSanitizerTest/*.dat
 unitTests/ComputeSanitizerTest/*.vtu
 unitTests/ComputeSanitizerTest/*.vts
-unitTests/ComputeSanitizerTest/*.vti
 unitTests/ComputeSanitizerTest/*.LBMBin
 unitTests/ComputeSanitizerTest/logs

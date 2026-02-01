@@ -216,7 +216,6 @@ namespace LBM
 #include "Tecplot.cuh"
 #include "VTU.cuh"
 #include "VTS.cuh"
-#include "VTI.cuh"
 #include "writerFunction.cuh"
 
 #endif
