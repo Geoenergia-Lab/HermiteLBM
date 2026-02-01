@@ -100,7 +100,7 @@ namespace LBM
             return fMean + (f - fMean) * invNewCount;
         }
 
-        template <typename T, const label_t N>
+        template <typename T, const std::size_t N>
         __device__ [[nodiscard]] inline constexpr const thread::array<T, N> timeAverage(const thread::array<T, N> &fMean, const thread::array<T, N> &f, const T invNewCount) noexcept
         {
             thread::array<T, N> newMean;
@@ -132,24 +132,24 @@ namespace LBM
          * @param[in] allocate Determines whether or not to allocate the variable
          **/
         template <class VelocitySet, const time::type TimeType>
-        __host__ [[nodiscard]] device::array<scalar_t, VelocitySet, TimeType> objectAllocator(
+        __host__ [[nodiscard]] device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType> objectAllocator(
             const std::string &name,
             const host::latticeMesh &mesh)
         {
             // If we wish to allocate the array, do so
             if (initialiserSwitch(name))
             {
-                return device::array<scalar_t, VelocitySet, TimeType>(name, mesh, 0);
+                return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh, 0);
             }
             // Otherwise, just create the array without initializing it
             else
             {
-                return device::array<scalar_t, VelocitySet, TimeType>(name, mesh);
+                return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh);
             }
         }
 
         template <class VelocitySet, const time::type TimeType>
-        __host__ [[nodiscard]] device::array<scalar_t, VelocitySet, TimeType> objectAllocator(
+        __host__ [[nodiscard]] device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType> objectAllocator(
             const std::string &name,
             const host::latticeMesh &mesh,
             const bool allocate)
@@ -157,12 +157,12 @@ namespace LBM
             // If we wish to allocate the array, do so
             if (allocate)
             {
-                return device::array<scalar_t, VelocitySet, TimeType>(name, mesh, 0);
+                return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh, 0);
             }
             // Otherwise, just create the array without initializing it
             else
             {
-                return device::array<scalar_t, VelocitySet, TimeType>(name, mesh);
+                return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh);
             }
         }
     }

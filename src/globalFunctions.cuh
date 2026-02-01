@@ -108,6 +108,84 @@ namespace LBM
     }
 
     /**
+     * @brief Nested loop over block and thread indices
+     * @param nxBlocks Number of blocks in x-dimension
+     * @param nyBlocks Number of blocks in y-dimension
+     * @param nzBlocks Number of blocks in z-dimension
+     * @param f Function called for each (bx, by, bz, tx, ty, tz)
+     *
+     * Example:
+     * @code
+     * grid_for(nx, ny, nz, [&](label_t bx, by, bz, tx, ty, tz) {
+     *     data[compute_index(bx, by, bz, tx, ty, tz)] = value;
+     * });
+     * @endcode
+     **/
+    template <typename F, typename T>
+    __host__ void grid_for(
+        const T nxBlocks,
+        const T nyBlocks,
+        const T nzBlocks,
+        const F &&f) noexcept
+    {
+        // Loops for block indices
+        for (T bz = 0; bz < nzBlocks; bz++)
+        {
+            for (T by = 0; by < nyBlocks; by++)
+            {
+                for (T bx = 0; bx < nxBlocks; bx++)
+                {
+                    // Loops for thread indices
+                    for (T tz = 0; tz < block::nz<T>(); tz++)
+                    {
+                        for (T ty = 0; ty < block::ny<T>(); ty++)
+                        {
+                            for (T tx = 0; tx < block::nx<T>(); tx++)
+                            {
+                                // Execute the arbitrary loop body
+                                f(bx, by, bz, tx, ty, tz);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @brief Nested loop over global grid indices
+     * @param nx Number of points in x-dimension
+     * @param ny Number of points in y-dimension
+     * @param nz Number of points in z-dimension
+     * @param f Function called for each (bx, by, bz, tx, ty, tz)
+     *
+     * Example:
+     * @code
+     * global_for(nx, ny, nz, [&](label_t x, y, z) {
+     *     data[compute_index(bx, by, bz, tx, ty, tz)] = value;
+     * });
+     * @endcode
+     **/
+    template <const pointLabel_t Indent, typename F, typename T>
+    __host__ void global_for(
+        const T nx,
+        const T ny,
+        const T nz,
+        const F &&f) noexcept
+    {
+        for (T z = 0; z < nz - static_cast<T>(Indent.z); z++)
+        {
+            for (T y = 0; y < ny - static_cast<T>(Indent.y); y++)
+            {
+                for (T x = 0; x < nx - static_cast<T>(Indent.x); x++)
+                {
+                    f(x, y, z);
+                }
+            }
+        }
+    }
+
+    /**
      * @brief Number of moments
      **/
     template <bool isMultiphase, typename T = label_t>
@@ -122,86 +200,6 @@ namespace LBM
     namespace host
     {
         /**
-         * @brief Compute moment memory index
-         * @tparam mom Moment index [0, NUMBER_MOMENTS())
-         * @param tx,ty,tz Thread-local coordinates
-         * @param bx,by,bz Block indices
-         * @param nxBlocks Number of blocks in x-direction
-         * @param nyBlocks Number of blocks in y-direction
-         * @return Linearized index in moment array
-         *
-         * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
-         **/
-        template <const label_t mom, bool isMultiphase>
-        __host__ [[nodiscard]] inline label_t idxMom(
-            const label_t tx, const label_t ty, const label_t tz,
-            const label_t bx, const label_t by, const label_t bz,
-            const label_t nxBlocks, const label_t nyBlocks) noexcept
-        {
-            return mom + NUMBER_MOMENTS<isMultiphase>() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nxBlocks * (by + nyBlocks * bz)))));
-        }
-
-        /**
-         * @overload Compute moment memory index
-         * @tparam mom Moment index [0, NUMBER_MOMENTS())
-         * @param tx,ty,tz Thread-local coordinates
-         * @param bx,by,bz Block indices
-         * @param nxBlocks Number of blocks in x-direction
-         * @param nyBlocks Number of blocks in y-direction
-         * @return Linearized index in moment array
-         *
-         * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
-         **/
-        template <const label_t mom, class M>
-        __host__ [[nodiscard]] inline label_t idxMom(
-            const label_t tx, const label_t ty, const label_t tz,
-            const label_t bx, const label_t by, const label_t bz,
-            const M &mesh) noexcept
-        {
-            return idxMom<mom>(tx, ty, tz, bx, by, bz, mesh.nxBlocks(), mesh.nyBlocks());
-        }
-
-        /**
-         * @overload Run-time indexing for the moment variable
-         * @param mom Moment index [0, NUMBER_MOMENTS())
-         * @param tx,ty,tz Thread-local coordinates
-         * @param bx,by,bz Block indices
-         * @param nxBlocks Number of blocks in x-direction
-         * @param nyBlocks Number of blocks in y-direction
-         * @return Linearized index in moment array
-         *
-         * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
-         **/
-        template <bool isMultiphase>
-        __host__ [[nodiscard]] inline label_t idxMom(
-            const label_t tx, const label_t ty, const label_t tz,
-            const label_t bx, const label_t by, const label_t bz,
-            const label_t mom, const label_t nxBlocks, const label_t nyBlocks) noexcept
-        {
-            return mom + NUMBER_MOMENTS<isMultiphase>() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nxBlocks * (by + nyBlocks * bz)))));
-        }
-
-        /**
-         * @overload Run-time indexing for the moment variable
-         * @param mom Moment index [0, NUMBER_MOMENTS())
-         * @param tx,ty,tz Thread-local coordinates
-         * @param bx,by,bz Block indices
-         * @param nxBlocks Number of blocks in x-direction
-         * @param nyBlocks Number of blocks in y-direction
-         * @return Linearized index in moment array
-         *
-         * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
-         **/
-        template <class M>
-        __host__ [[nodiscard]] inline label_t idxMom(
-            const label_t tx, const label_t ty, const label_t tz,
-            const label_t bx, const label_t by, const label_t bz,
-            const label_t mom, const M &mesh) noexcept
-        {
-            return idxMom(tx, ty, tz, bx, by, bz, mom, mesh.nxBlocks(), mesh.nyBlocks());
-        }
-
-        /**
          * @brief Memory index (host version)
          * @param tx,ty,tz Thread-local coordinates
          * @param bx,by,bz Block indices
@@ -210,12 +208,32 @@ namespace LBM
          *
          * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)
          **/
-        __host__ [[nodiscard]] inline label_t idx(
+        template <typename T = label_t>
+        __host__ [[nodiscard]] inline constexpr T idx(
+            const T tx, const T ty, const T tz,
+            const T bx, const T by, const T bz,
+            const T nxBlocks, const T nyBlocks) noexcept
+        {
+            return (tx + block::nx<T>() * (ty + block::ny<T>() * (tz + block::nz<T>() * (bx + nxBlocks * (by + nyBlocks * bz)))));
+        }
+
+        /**
+         * @brief Memory index (host version)
+         * @param tx,ty,tz Thread-local coordinates
+         * @param bx,by,bz Block indices
+         * @param gpuX,gpuY,gpuZ GPU indices
+         * @param nxBlocks,nyBlocks Number of blocks in the x and y directions
+         * @param[in] XBLOCKS_PER_GPU,YBLOCKS_PER_GPU,ZBLOCKS_PER_GPU Number of blocks per GPU in x, y and z directions
+         * @return Linearized index using mesh constants
+         **/
+        __host__ [[nodiscard]] inline constexpr label_t idx(
             const label_t tx, const label_t ty, const label_t tz,
             const label_t bx, const label_t by, const label_t bz,
-            const label_t nxBlocks, const label_t nyBlocks) noexcept
+            const label_t gpuX, const label_t gpuY, const label_t gpuZ,
+            const label_t nxBlocks, const label_t nyBlocks,
+            const label_t XBLOCKS_PER_GPU, const label_t YBLOCKS_PER_GPU, const label_t ZBLOCKS_PER_GPU) noexcept
         {
-            return (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nxBlocks * (by + nyBlocks * bz)))));
+            return (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * ((gpuX * XBLOCKS_PER_GPU + bx) + nxBlocks * ((gpuY * YBLOCKS_PER_GPU + by) + nyBlocks * (gpuZ * ZBLOCKS_PER_GPU + bz))))));
         }
 
         /**
@@ -227,11 +245,11 @@ namespace LBM
          *
          * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)
          **/
-        template <class M>
+        template <class LatticeMesh>
         __host__ [[nodiscard]] inline label_t idx(
             const label_t tx, const label_t ty, const label_t tz,
             const label_t bx, const label_t by, const label_t bz,
-            const M &mesh) noexcept
+            const LatticeMesh &mesh) noexcept
         {
             return idx(tx, ty, tz, bx, by, bz, mesh.nxBlocks(), mesh.nyBlocks());
         }
@@ -242,9 +260,10 @@ namespace LBM
          * @param nx,ny Global dimensions
          * @return Linearized index: x + nx*(y + ny*z)
          **/
-        __host__ [[nodiscard]] inline label_t idxScalarGlobal(
-            const label_t x, const label_t y, const label_t z,
-            const label_t nx, const label_t ny) noexcept
+        template <typename T = label_t>
+        __host__ [[nodiscard]] inline T idxScalarGlobal(
+            const T x, const T y, const T z,
+            const T nx, const T ny) noexcept
         {
             return x + (nx * (y + (ny * z)));
         }
@@ -298,6 +317,39 @@ namespace LBM
         {
             return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
         }
+
+        /**
+         * @brief Index for arbitrarily aligned population arrays
+         * @tparam pop Population index
+         * @tparam QF Number of populations
+         * @tparam alpha The axis direction
+         * @param tx,ty,tz Thread-local x/y/z coordinates
+         * @param bx,by,bz Block indices
+         * @param nxBlocks Number of blocks in x-direction
+         * @param nyBlocks Number of blocks in y-direction
+         * @return Linearized index: idxPopX, idxPopY, idxPopZ
+         **/
+        template <const axis::type alpha, const label_t pop, const label_t QF>
+        __host__ [[nodiscard]] inline label_t idxPop(
+            const label_t tx, const label_t ty, const label_t tz,
+            const label_t bx, const label_t by, const label_t bz,
+            const label_t nxBlocks, const label_t nyBlocks)
+        {
+            if constexpr (alpha == axis::X)
+            {
+                return idxPopX<pop, QF>(ty, tz, bx, by, bz, nxBlocks, nyBlocks);
+            }
+
+            if constexpr (alpha == axis::Y)
+            {
+                return idxPopY<pop, QF>(tx, tz, bx, by, bz, nxBlocks, nyBlocks);
+            }
+
+            if constexpr (alpha == axis::Z)
+            {
+                return idxPopZ<pop, QF>(tx, ty, bx, by, bz, nxBlocks, nyBlocks);
+            }
+        }
     }
 
     /**
@@ -312,43 +364,8 @@ namespace LBM
          **/
         __device__ [[nodiscard]] inline bool out_of_bounds() noexcept
         {
-            return ((threadIdx.x + blockDim.x * blockIdx.x >= device::nx) || (threadIdx.y + blockDim.y * blockIdx.y >= device::ny) || (threadIdx.z + blockDim.z * blockIdx.z >= device::nz));
-        }
-
-        /**
-         * @brief Check whether the current thread exceeds internal domain bounds
-         * @note Uses device constants device::nx, device::ny, device::nz
-         * @return True if thread is outside intenal domain boundaries
-         **/
-        __device__ [[nodiscard]] inline bool out_of_inner_bounds() noexcept
-        {
-            return ((threadIdx.x + blockDim.x * blockIdx.x >= device::nx - 1) || (threadIdx.y + blockDim.y * blockIdx.y >= device::ny - 1) || (threadIdx.z + blockDim.z * blockIdx.z >= device::nz - 1));
-        }
-
-        /**
-         * @brief Moment memory index (device version)
-         * @tparam mom Moment index [0, NUMBER_MOMENTS())
-         * @param tx,ty,tz Thread-local coordinates
-         * @param bx,by,bz Block indices
-         * @return Linearized index using device constants device::NUM_BLOCK_X/Y
-         *
-         * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
-         **/
-        template <const label_t mom, bool isMultiphase>
-        __device__ [[nodiscard]] inline label_t idxMom(const label_t tx, const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
-        {
-            return mom + NUMBER_MOMENTS<isMultiphase>() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz)))));
-        }
-
-        /**
-         * @overload
-         * @param tx Thread coordinates (dim3)
-         * @param bx Block indices (dim3)
-         **/
-        template <const label_t mom>
-        __device__ [[nodiscard]] inline label_t idxMom(const dim3 &tx, const dim3 &bx) noexcept
-        {
-            return idxMom<mom>(tx.x, tx.y, tx.z, bx.x, bx.y, bx.z);
+            // MODIFY THIS FOR MULTI GPU
+            return ((threadIdx.x + block::nx() * blockIdx.x >= device::nx) || (threadIdx.y + block::ny() * blockIdx.y >= device::ny) || (threadIdx.z + block::nz() * blockIdx.z >= device::nz));
         }
 
         /**
@@ -603,6 +620,19 @@ namespace LBM
     {
         cudaDeviceSynchronize();
         checkCudaErrors(cudaMemcpyToSymbol(symbol, value, N * sizeof(T), 0, cudaMemcpyHostToDevice));
+        cudaDeviceSynchronize();
+    }
+
+    template <typename T, const std::size_t N>
+    void copyToSymbol(const T (&symbol)[N], const T value, const label_t index)
+    {
+        if (index >= N)
+        {
+            throw std::runtime_error("Error setting device symbol index" + std::to_string(index) + " out of bounds for array of size " + std::to_string(N) + ".");
+        }
+        cudaDeviceSynchronize();
+        const T valueTemp = value;
+        checkCudaErrors(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), static_cast<std::size_t>(index) * sizeof(T), cudaMemcpyHostToDevice));
         cudaDeviceSynchronize();
     }
 

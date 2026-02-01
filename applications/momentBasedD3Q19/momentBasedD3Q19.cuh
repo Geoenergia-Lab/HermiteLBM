@@ -78,20 +78,23 @@ namespace LBM
     __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
 #endif
 
+#ifdef JETFLOW
+    using BoundaryConditions = jetFlow;
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
+#endif
+
+#ifdef LIDDRIVENCAVITY
+    using BoundaryConditions = lidDrivenCavity;
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return false; }
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
+#endif
+
     using VelocitySet = D3Q19;
     using Collision = secondOrder;
     using BlockHalo = device::halo<VelocitySet, periodicX(), periodicY()>;
 
     __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept { return 0; }
-
-    __device__ __host__ [[nodiscard]] inline consteval bool out_of_bounds_check() noexcept
-    {
-#ifdef OOB_CHECK
-        return true;
-#else
-        return false;
-#endif
-    }
 
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
 #define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
@@ -115,6 +118,7 @@ namespace LBM
             }
         }
 
+        // MODIFY FOR MULTI GPU
         const label_t idx = device::idx();
 
         // Prefetch devPtrs into L2
@@ -168,7 +172,8 @@ namespace LBM
             fGhost);
 
         if constexpr (std::is_same<BoundaryConditions, lidDrivenCavity>::value)
-        { // Calculate the moments either at the boundary or interior
+        {
+            // Calculate the moments either at the boundary or interior
             {
                 const normalVector boundaryNormal;
 
@@ -188,13 +193,15 @@ namespace LBM
             // Compute post-stream moments
             velocitySet::calculate_moments<VelocitySet>(pop, moments);
 
-            // Update the shared buffer with the refreshed moments
-            device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
-                [&](const auto moment)
-                {
-                    const label_t ID = tid * label_constant<NUMBER_MOMENTS<false>() + 1>() + label_constant<moment>();
-                    shared_buffer[ID] = moments[moment];
-                });
+            {
+                // Update the shared buffer with the refreshed moments
+                device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
+                    [&](const auto moment)
+                    {
+                        const label_t ID = tid * label_constant<NUMBER_MOMENTS<false>() + 1>() + label_constant<moment>();
+                        shared_buffer[ID] = moments[moment];
+                    });
+            }
 
             __syncthreads();
 
@@ -217,7 +224,7 @@ namespace LBM
 
         // Calculate post collision populations
         VelocitySet::reconstruct(pop, moments);
-        BlockHalo::transpose_to_shared(pop, shared_buffer);
+        // BlockHalo::transpose_to_shared(pop, shared_buffer);
 
         // Coalesced write to global memory
         moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
@@ -228,8 +235,8 @@ namespace LBM
             });
 
         // Save the populations to the block halo
-        BlockHalo::save_from_shared(shared_buffer, gGhost);
-        // BlockHalo::save(pop, gGhost);
+        // BlockHalo::save_from_shared(shared_buffer, gGhost);
+        BlockHalo::save(pop, gGhost);
     }
 }
 

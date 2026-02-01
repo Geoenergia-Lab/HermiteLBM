@@ -124,16 +124,16 @@ namespace LBM
             makeHydroHalo(const host::latticeMesh &mesh, const programControl &programCtrl) noexcept
             {
                 return haloFace<VelocitySet>(
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
+                    host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
+                    host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
+                    host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
+                    host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
+                    host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
+                    host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
+                    host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
+                    host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
+                    host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
+                    host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
                     mesh);
             }
 
@@ -143,17 +143,17 @@ namespace LBM
             __host__ [[nodiscard]] static inline haloFace<VelocitySet>
             makePhaseHalo(const host::latticeMesh &mesh, const programControl &programCtrl) noexcept
             {
-                auto rho = host::array<false, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl);
-                auto u = host::array<false, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl);
-                auto v = host::array<false, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl);
-                auto w = host::array<false, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl);
-                auto m_xx = host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl);
-                auto m_xy = host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl);
-                auto m_xz = host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl);
-                auto m_yy = host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl);
-                auto m_yz = host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl);
-                auto m_zz = host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl);
-                auto phi = host::array<false, scalar_t, D3Q7, time::instantaneous>("phi", mesh, programCtrl);
+                auto rho = host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl);
+                auto u = host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl);
+                auto v = host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl);
+                auto w = host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl);
+                auto m_xx = host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl);
+                auto m_xy = host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl);
+                auto m_xz = host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl);
+                auto m_yy = host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl);
+                auto m_yz = host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl);
+                auto m_zz = host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl);
+                auto phi = host::array<host::PAGED, scalar_t, D3Q7, time::instantaneous>("phi", mesh, programCtrl);
 
                 return haloFace<VelocitySet>(
                     rho,

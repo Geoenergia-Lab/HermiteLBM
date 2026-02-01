@@ -95,7 +95,8 @@ namespace LBM
                     const scalar_t invNewCount)
                 {
                     // Calculate the index
-                    const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+                    // MODIFY FOR MULTI GPU: idx must be multi GPU aware
+                    const label_t idx = device::idx();
 
                     // Read from global memory
                     const scalar_t u = devPtrs.ptr<1>()[idx];
@@ -153,7 +154,8 @@ namespace LBM
                     const scalar_t invNewCount)
                 {
                     // Calculate the index
-                    const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+                    // MODIFY FOR MULTI GPU: idx must be multi GPU aware
+                    const label_t idx = device::idx();
 
                     // Read from global memory
                     const scalar_t u = devPtrs.ptr<1>()[idx];
@@ -213,7 +215,8 @@ namespace LBM
                     const device::ptrCollection<6, scalar_t> SPtrs)
                 {
                     // Calculate the index
-                    const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+                    // MODIFY FOR MULTI GPU: idx must be multi GPU aware
+                    const label_t idx = device::idx();
 
                     // Read from global memory
                     const scalar_t u = devPtrs.ptr<1>()[idx];
@@ -258,10 +261,12 @@ namespace LBM
                  * @param[in] streamsLBM Stream handler for CUDA operations
                  **/
                 __host__ [[nodiscard]] tensor(
+                    host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
                     const host::latticeMesh &mesh,
                     const device::ptrCollection<10, scalar_t> &devPtrs,
                     const streamHandler<N> &streamsLBM) noexcept
-                    : mesh_(mesh),
+                    : hostWriteBuffer_(hostWriteBuffer),
+                      mesh_(mesh),
                       devPtrs_(devPtrs),
                       streamsLBM_(streamsLBM),
                       calculate_(initialiserSwitch(fieldName_)),
@@ -367,16 +372,18 @@ namespace LBM
                  **/
                 __host__ void saveInstantaneous(const label_t timeStep) noexcept
                 {
+                    hostWriteBuffer_.copy_from_device(
+                        device::ptrCollection<6, scalar_t>(
+                            xx_.ptr(), xy_.ptr(),
+                            xz_.ptr(), yy_.ptr(),
+                            yz_.ptr(), zz_.ptr()),
+                        mesh_);
+
                     fileIO::writeFile<time::instantaneous>(
                         fieldName_ + "_" + std::to_string(timeStep) + ".LBMBin",
                         mesh_,
                         componentNames_,
-                        host::toHost(
-                            device::ptrCollection<6, scalar_t>(
-                                xx_.ptr(), xy_.ptr(),
-                                xz_.ptr(), yy_.ptr(),
-                                yz_.ptr(), zz_.ptr()),
-                            mesh_),
+                        hostWriteBuffer_.data(),
                         timeStep);
                 }
 
@@ -386,16 +393,18 @@ namespace LBM
                  **/
                 __host__ void saveMean(const label_t timeStep) noexcept
                 {
+                    hostWriteBuffer_.copy_from_device(
+                        device::ptrCollection<6, scalar_t>(
+                            xx_.ptr(), xy_.ptr(),
+                            xz_.ptr(), yy_.ptr(),
+                            yz_.ptr(), zz_.ptr()),
+                        mesh_);
+
                     fileIO::writeFile<time::timeAverage>(
                         fieldNameMean_ + "_" + std::to_string(timeStep) + ".LBMBin",
                         mesh_,
                         componentNamesMean_,
-                        host::toHost(
-                            device::ptrCollection<6, scalar_t>(
-                                xxMean_.ptr(), xyMean_.ptr(),
-                                xzMean_.ptr(), yyMean_.ptr(),
-                                yzMean_.ptr(), zzMean_.ptr()),
-                            mesh_),
+                        hostWriteBuffer_.data(),
                         timeStep);
                 }
 
@@ -436,6 +445,8 @@ namespace LBM
                 }
 
             private:
+                host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer_;
+
                 /**
                  * @brief Field name for instantaneous components
                  **/
@@ -484,22 +495,22 @@ namespace LBM
                 /**
                  * @brief Instantaneous strain rate tensor components
                  **/
-                device::array<scalar_t, VelocitySet, time::instantaneous> xx_;
-                device::array<scalar_t, VelocitySet, time::instantaneous> xy_;
-                device::array<scalar_t, VelocitySet, time::instantaneous> xz_;
-                device::array<scalar_t, VelocitySet, time::instantaneous> yy_;
-                device::array<scalar_t, VelocitySet, time::instantaneous> yz_;
-                device::array<scalar_t, VelocitySet, time::instantaneous> zz_;
+                device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> xx_;
+                device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> xy_;
+                device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> xz_;
+                device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> yy_;
+                device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> yz_;
+                device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> zz_;
 
                 /**
                  * @brief Time-averaged strain rate tensor components
                  **/
-                device::array<scalar_t, VelocitySet, time::timeAverage> xxMean_;
-                device::array<scalar_t, VelocitySet, time::timeAverage> xyMean_;
-                device::array<scalar_t, VelocitySet, time::timeAverage> xzMean_;
-                device::array<scalar_t, VelocitySet, time::timeAverage> yyMean_;
-                device::array<scalar_t, VelocitySet, time::timeAverage> yzMean_;
-                device::array<scalar_t, VelocitySet, time::timeAverage> zzMean_;
+                device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> xxMean_;
+                device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> xyMean_;
+                device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> xzMean_;
+                device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> yyMean_;
+                device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> yzMean_;
+                device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> zzMean_;
             };
         }
     }

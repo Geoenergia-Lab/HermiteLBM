@@ -11,7 +11,7 @@
 
 caseName        jetFlow;
 
-Re              3000;
+Re              1000;
 
 u_inf           0.016;
 

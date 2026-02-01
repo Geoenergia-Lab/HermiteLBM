@@ -149,58 +149,47 @@ namespace LBM
         return it->second;
     }
 
-    namespace direction
-    {
-        typedef enum Enum : label_t
-        {
-            x = 0,
-            y = 1,
-            z = 2,
-            UNDEFINED = 3
-        } cardinal;
-    }
-
-    __host__ [[nodiscard]] direction::cardinal cutPlaneDirection(const programControl &programCtrl) noexcept
+    __host__ [[nodiscard]] axis::type cutPlaneDirection(const programControl &programCtrl) noexcept
     {
         const std::string cutPlanePrefix = programCtrl.getArgument("-cutPlane");
 
         // Need to check that j = 1 because the first character before the = symbol should be x, y or z and nothing else
         if (!(string::findCharPosition(cutPlanePrefix, "=") == 1))
         {
-            return direction::UNDEFINED;
+            return axis::NO_DIRECTION;
         }
 
         if (cutPlanePrefix[0] == "x"[0])
         {
-            return direction::x;
+            return axis::X;
         }
 
         if (cutPlanePrefix[0] == "y"[0])
         {
-            return direction::y;
+            return axis::Y;
         }
 
         if (cutPlanePrefix[0] == "z"[0])
         {
-            return direction::z;
+            return axis::Z;
         }
 
-        return direction::UNDEFINED;
+        return axis::NO_DIRECTION;
     }
 
-    __host__ [[nodiscard]] inline host::latticeMesh meshSlice(const host::latticeMesh &mesh, const direction::cardinal dir) noexcept
+    __host__ [[nodiscard]] inline host::latticeMesh meshSlice(const host::latticeMesh &mesh, const axis::type dir) noexcept
     {
-        if (dir == direction::x)
+        if (dir == axis::X)
         {
             return host::latticeMesh(mesh, {1, mesh.ny(), mesh.nz()});
         }
 
-        if (dir == direction::y)
+        if (dir == axis::Y)
         {
             return host::latticeMesh(mesh, {mesh.nx(), 1, mesh.nz()});
         }
 
-        if (dir == direction::z)
+        if (dir == axis::Z)
         {
             return host::latticeMesh(mesh, {mesh.nx(), mesh.ny(), 1});
         }
@@ -208,43 +197,43 @@ namespace LBM
         return host::latticeMesh(mesh, {1, 1, 1});
     }
 
-    template <const direction::cardinal dir>
+    template <const axis::type dir>
     __host__ [[nodiscard]] std::vector<std::vector<scalar_t>> initialiseSlice(
         const host::latticeMesh &mesh,
-        const label_t nFields)
+        const std::size_t nFields)
     {
-        static_assert((dir == direction::x) | (dir == direction::y) | (dir == direction::z), "Bad direction");
+        static_assert((dir == axis::X) | (dir == axis::Y) | (dir == axis::Z), "Bad direction");
 
-        if constexpr (dir == direction::x)
+        if constexpr (dir == axis::X)
         {
-            return std::vector<std::vector<scalar_t>>(nFields, std::vector<scalar_t>(mesh.ny() * mesh.nz(), 0));
+            return std::vector<std::vector<scalar_t>>(nFields, std::vector<scalar_t>(mesh.ny<std::size_t>() * mesh.nz<std::size_t>(), 0));
         }
 
-        if constexpr (dir == direction::y)
+        if constexpr (dir == axis::Y)
         {
-            return std::vector<std::vector<scalar_t>>(nFields, std::vector<scalar_t>(mesh.nx() * mesh.nz(), 0));
+            return std::vector<std::vector<scalar_t>>(nFields, std::vector<scalar_t>(mesh.nx<std::size_t>() * mesh.nz<std::size_t>(), 0));
         }
 
-        if constexpr (dir == direction::z)
+        if constexpr (dir == axis::Z)
         {
-            return std::vector<std::vector<scalar_t>>(nFields, std::vector<scalar_t>(mesh.nx() * mesh.ny(), 0));
+            return std::vector<std::vector<scalar_t>>(nFields, std::vector<scalar_t>(mesh.nx<std::size_t>() * mesh.ny<std::size_t>(), 0));
         }
     }
 
-    template <const direction::cardinal dir>
+    template <const axis::type dir>
     __host__ [[nodiscard]] scalar_t indexCoordinate(const host::latticeMesh &mesh, const scalar_t pointCoordinate)
     {
-        static_assert((dir == direction::x) | (dir == direction::y) | (dir == direction::z), "Bad direction");
+        static_assert((dir == axis::X) | (dir == axis::Y) | (dir == axis::Z), "Bad direction");
 
-        if constexpr (dir == direction::x)
+        if constexpr (dir == axis::X)
         {
             return static_cast<scalar_t>(mesh.nx() - 1) * (pointCoordinate * mesh.L().x);
         }
-        if constexpr (dir == direction::y)
+        if constexpr (dir == axis::Y)
         {
             return static_cast<scalar_t>(mesh.ny() - 1) * (pointCoordinate * mesh.L().y);
         }
-        if constexpr (dir == direction::z)
+        if constexpr (dir == axis::Z)
         {
             return static_cast<scalar_t>(mesh.nz() - 1) * (pointCoordinate * mesh.L().z);
         }
@@ -256,65 +245,65 @@ namespace LBM
         return ((static_cast<T>(1) - weight) * f0) + (weight * f1);
     }
 
-    template <const direction::cardinal dir>
+    template <const axis::type dir>
     __host__ [[nodiscard]] const std::vector<std::vector<scalar_t>> extractCutPlane(
         const std::vector<std::vector<scalar_t>> &fields,
         const host::latticeMesh &mesh,
         const scalar_t pointCoordinate)
     {
-        static_assert((dir == direction::x) | (dir == direction::y) | (dir == direction::z), "Bad direction");
+        static_assert((dir == axis::X) | (dir == axis::Y) | (dir == axis::Z), "Bad direction");
 
         // Get the "index" coordinate
         const scalar_t i = indexCoordinate<dir>(mesh, pointCoordinate);
-        const label_t i_0 = static_cast<label_t>(std::floor(i));
-        const label_t i_1 = static_cast<label_t>(std::ceil(i));
+        const std::size_t i_0 = static_cast<std::size_t>(std::floor(i));
+        const std::size_t i_1 = static_cast<std::size_t>(std::ceil(i));
         const scalar_t weight = pointCoordinate - static_cast<scalar_t>(i_0);
 
         std::vector<std::vector<scalar_t>> cutPlane = initialiseSlice<dir>(mesh, fields.size());
 
-        if constexpr (dir == direction::x)
+        if constexpr (dir == axis::X)
         {
             for (std::size_t field = 0; field < fields.size(); field++)
             {
-                for (std::size_t z = 0; z < mesh.nz(); z++)
+                for (std::size_t z = 0; z < mesh.nz<std::size_t>(); z++)
                 {
-                    for (std::size_t y = 0; y < mesh.ny(); y++)
+                    for (std::size_t y = 0; y < mesh.ny<std::size_t>(); y++)
                     {
-                        const scalar_t f0 = fields[field][host::idxScalarGlobal(i_0, y, z, mesh.nx(), mesh.ny())];
-                        const scalar_t f1 = fields[field][host::idxScalarGlobal(i_1, y, z, mesh.nx(), mesh.ny())];
+                        const scalar_t f0 = fields[field][(host::idxScalarGlobal<std::size_t>(i_0, y, z, mesh.nx<std::size_t>(), mesh.ny<std::size_t>()))];
+                        const scalar_t f1 = fields[field][(host::idxScalarGlobal<std::size_t>(i_1, y, z, mesh.nx<std::size_t>(), mesh.ny<std::size_t>()))];
 
-                        cutPlane[field][y + (z * mesh.ny())] = linearInterpolate(f0, f1, weight);
+                        cutPlane[field][y + (z * mesh.ny<std::size_t>())] = linearInterpolate(f0, f1, weight);
                     }
                 }
             }
             return cutPlane;
         }
-        if constexpr (dir == direction::y)
+        if constexpr (dir == axis::Y)
         {
             for (std::size_t field = 0; field < fields.size(); field++)
             {
-                for (std::size_t z = 0; z < mesh.nz(); z++)
+                for (std::size_t z = 0; z < mesh.nz<std::size_t>(); z++)
                 {
-                    for (std::size_t x = 0; x < mesh.nx(); x++)
+                    for (std::size_t x = 0; x < mesh.nx<std::size_t>(); x++)
                     {
-                        const scalar_t f0 = fields[field][host::idxScalarGlobal(x, i_0, z, mesh.nx(), mesh.ny())];
-                        const scalar_t f1 = fields[field][host::idxScalarGlobal(x, i_1, z, mesh.nx(), mesh.ny())];
+                        const scalar_t f0 = fields[field][(host::idxScalarGlobal<std::size_t>(x, i_0, z, (mesh.nx()), (mesh.ny())))];
+                        const scalar_t f1 = fields[field][(host::idxScalarGlobal<std::size_t>(x, i_1, z, (mesh.nx()), (mesh.ny())))];
                         cutPlane[field][x + (z * mesh.nx())] = linearInterpolate(f0, f1, weight);
                     }
                 }
             }
             return cutPlane;
         }
-        if constexpr (dir == direction::z)
+        if constexpr (dir == axis::Z)
         {
             for (std::size_t field = 0; field < fields.size(); field++)
             {
-                for (std::size_t y = 0; y < mesh.ny(); y++)
+                for (std::size_t y = 0; y < mesh.ny<std::size_t>(); y++)
                 {
-                    for (std::size_t x = 0; x < mesh.nx(); x++)
+                    for (std::size_t x = 0; x < mesh.nx<std::size_t>(); x++)
                     {
-                        const scalar_t f0 = fields[field][host::idxScalarGlobal(x, y, i_0, mesh.nx(), mesh.ny())];
-                        const scalar_t f1 = fields[field][host::idxScalarGlobal(x, y, i_1, mesh.nx(), mesh.ny())];
+                        const scalar_t f0 = fields[field][(host::idxScalarGlobal<std::size_t>(x, y, i_0, mesh.nx<std::size_t>(), mesh.ny<std::size_t>()))];
+                        const scalar_t f1 = fields[field][(host::idxScalarGlobal<std::size_t>(x, y, i_1, mesh.nx<std::size_t>(), mesh.ny<std::size_t>()))];
                         cutPlane[field][x + (y * mesh.nx())] = linearInterpolate(f0, f1, weight);
                     }
                 }
@@ -326,22 +315,22 @@ namespace LBM
     __host__ [[nodiscard]] const std::vector<std::vector<scalar_t>> extractCutPlane(
         const std::vector<std::vector<scalar_t>> &fields,
         const host::latticeMesh &mesh,
-        const direction::cardinal dir,
+        const axis::type dir,
         const scalar_t pointCoordinate)
     {
         switch (dir)
         {
-        case direction::x:
+        case axis::X:
         {
-            return extractCutPlane<direction::x>(fields, mesh, pointCoordinate);
+            return extractCutPlane<axis::X>(fields, mesh, pointCoordinate);
         }
-        case direction::y:
+        case axis::Y:
         {
-            return extractCutPlane<direction::y>(fields, mesh, pointCoordinate);
+            return extractCutPlane<axis::Y>(fields, mesh, pointCoordinate);
         }
-        case direction::z:
+        case axis::Z:
         {
-            return extractCutPlane<direction::z>(fields, mesh, pointCoordinate);
+            return extractCutPlane<axis::Z>(fields, mesh, pointCoordinate);
         }
         default:
         {
@@ -363,7 +352,7 @@ namespace LBM
             // Check that size() - 1 isn't = 2
             const scalar_t planeCoordinate = static_cast<scalar_t>(std::stold(cutPlanePrefix.substr(2, cutPlanePrefix.size() - 1)));
 
-            const direction::cardinal dir = cutPlaneDirection(programCtrl);
+            const axis::type dir = cutPlaneDirection(programCtrl);
 
             return extractCutPlane(
                 fileIO::deinterleaveAoS(hostMoments.arr(), mesh),
@@ -384,7 +373,7 @@ namespace LBM
     {
         if (cutPlane)
         {
-            const direction::cardinal dir = cutPlaneDirection(programCtrl);
+            const axis::type dir = cutPlaneDirection(programCtrl);
 
             return meshSlice(mesh, dir);
         }

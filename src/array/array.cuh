@@ -71,5 +71,6 @@ namespace LBM
 
 #include "hostArray.cuh"
 #include "deviceArray.cuh"
+#include "hostArrayCollection.cuh"
 
 #endif

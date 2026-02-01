@@ -96,4 +96,7 @@ SourceFiles
 // #define MULTIPHASEJET
 #define SUBSEAMECHANICALDISPERSION
 
+// Multi GPU define
+// #define MULTI_GPU
+
 #endif
