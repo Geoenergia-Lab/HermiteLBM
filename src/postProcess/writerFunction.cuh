@@ -70,6 +70,7 @@ namespace LBM
         const std::unordered_map<std::string, writerFunction> writers = {
             {"vtu", VTU::write},
             {"vts", VTS::write},
+            {"vti", VTI::write},
             {"tecplot", Tecplot::write}};
     }
 }

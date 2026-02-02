@@ -90,16 +90,16 @@ case normalVector::BACK():
         const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
         const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
 
-        moments[m_i<0>()] = rho;                                                    // rho
-        moments[m_i<1>()] = is_jet * device::U_Back[0];                             // ux
-        moments[m_i<2>()] = is_jet * device::U_Back[1];                             // uy
-        moments[m_i<3>()] = is_jet * device::U_Back[2];                             // uz
-        moments[m_i<4>()] = static_cast<scalar_t>(0);                               // mxx
-        moments[m_i<5>()] = static_cast<scalar_t>(0);                               // mxy
-        moments[m_i<6>()] = mxz;                                                    // mxz
-        moments[m_i<7>()] = static_cast<scalar_t>(0);                               // myy
-        moments[m_i<8>()] = myz;                                                    // myz
-        moments[m_i<9>()] = is_jet * (rho * device::U_Back[2] * device::U_Back[2]); // mzz
+        moments[m_i<0>()] = rho;                                                                          // rho
+        moments[m_i<1>()] = static_cast<scalar_t>(0);                                                     // ux
+        moments[m_i<2>()] = static_cast<scalar_t>(0);                                                     // uy
+        moments[m_i<3>()] = is_jet * static_cast<scalar_t>(0.016);                                        // uz
+        moments[m_i<4>()] = static_cast<scalar_t>(0);                                                     // mxx
+        moments[m_i<5>()] = static_cast<scalar_t>(0);                                                     // mxy
+        moments[m_i<6>()] = mxz;                                                                          // mxz
+        moments[m_i<7>()] = static_cast<scalar_t>(0);                                                     // myy
+        moments[m_i<8>()] = myz;                                                                          // myz
+        moments[m_i<9>()] = is_jet * (rho * static_cast<scalar_t>(0.016) * static_cast<scalar_t>(0.016)); // mzz
     }
 
     return;
