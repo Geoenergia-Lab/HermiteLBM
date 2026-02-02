@@ -78,7 +78,7 @@ namespace LBM
     namespace host
     {
         template <const label_t Start, const label_t End, typename F>
-        __host__ inline constexpr void constexpr_for(F &&f)
+        __host__ inline constexpr void constexpr_for(F &&f) noexcept
         {
             if constexpr (Start < End)
             {
@@ -94,7 +94,7 @@ namespace LBM
     namespace device
     {
         template <const label_t Start, const label_t End, typename F>
-        __device__ inline constexpr void constexpr_for(F &&f)
+        __device__ inline constexpr void constexpr_for(F &&f) noexcept
         {
             if constexpr (Start < End)
             {
