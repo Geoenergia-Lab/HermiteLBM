@@ -91,7 +91,7 @@ int main(const int argc, const char *const argv[])
     host::array<host::PINNED, label_t, VelocitySet, time::instantaneous> deviceIndexArray(mesh.nPoints(), mesh);
 
     // Vector of pointers to device memory
-    host::array<host::PINNED, label_t *, VelocitySet, time::instantaneous> devicePtrs(nxGPUs * nyGPUs * nzGPUs, nullptr, mesh);
+    // host::array<host::PINNED, label_t *, VelocitySet, time::instantaneous> devicePtrs(nxGPUs * nyGPUs * nzGPUs, nullptr, mesh);
 
     device::array<field::FULL_FIELD, label_t, VelocitySet, time::instantaneous> testArray(deviceIndexArray);
 
@@ -159,7 +159,7 @@ int main(const int argc, const char *const argv[])
 
                 // Create stream and launch test kernel
                 const streamHandler<1> streamsLBM;
-                testKernel<<<gridBlock, mesh.threadBlock(), 0, streamsLBM.streams()[0]>>>(devicePtrs[virtualDeviceIndex], nxBlocksPerGPU, nyBlocksPerGPU, (GPU_x * nxBlocksPerGPU), (GPU_y * nyBlocksPerGPU), (GPU_z * nzBlocksPerGPU), virtualDeviceIndex);
+                testKernel<<<gridBlock, mesh.threadBlock(), 0, streamsLBM.streams()[0]>>>(testArray.ptr(virtualDeviceIndex), nxBlocksPerGPU, nyBlocksPerGPU, (GPU_x * nxBlocksPerGPU), (GPU_y * nyBlocksPerGPU), (GPU_z * nzBlocksPerGPU), virtualDeviceIndex);
                 checkCudaErrors(cudaDeviceSynchronize());
             }
         }
@@ -180,7 +180,7 @@ int main(const int argc, const char *const argv[])
                 checkCudaErrors(cudaDeviceSynchronize());
 
                 // Copy back from device to the contiguous segment
-                checkCudaErrors(cudaMemcpy(&(deviceIndexArray[startIndex]), devicePtrs[virtualDeviceIndex], nPointsPerGPU * sizeof(label_t), cudaMemcpyDeviceToHost));
+                checkCudaErrors(cudaMemcpy(&(deviceIndexArray[startIndex]), testArray.ptr(virtualDeviceIndex), nPointsPerGPU * sizeof(label_t), cudaMemcpyDeviceToHost));
 
                 checkCudaErrors(cudaDeviceSynchronize());
             }
@@ -301,18 +301,18 @@ int main(const int argc, const char *const argv[])
     std::cout << std::endl;
 
     // Clean up memory used for testing
-    for (label_t GPU_z = 0; GPU_z < nzGPUs; GPU_z++)
-    {
-        for (label_t GPU_y = 0; GPU_y < nyGPUs; GPU_y++)
-        {
-            for (label_t GPU_x = 0; GPU_x < nxGPUs; GPU_x++)
-            {
-                const label_t virtualDeviceIndex = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
-                std::cout << "Freeing memory from address " << devicePtrs[virtualDeviceIndex] << " on device " << virtualDeviceIndex << std::endl;
-                checkCudaErrors(cudaFree(devicePtrs[virtualDeviceIndex]));
-            }
-        }
-    }
+    // for (label_t GPU_z = 0; GPU_z < nzGPUs; GPU_z++)
+    // {
+    //     for (label_t GPU_y = 0; GPU_y < nyGPUs; GPU_y++)
+    //     {
+    //         for (label_t GPU_x = 0; GPU_x < nxGPUs; GPU_x++)
+    //         {
+    //             const label_t virtualDeviceIndex = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
+    //             std::cout << "Freeing memory from address " << devicePtrs[virtualDeviceIndex] << " on device " << virtualDeviceIndex << std::endl;
+    //             checkCudaErrors(cudaFree(devicePtrs[virtualDeviceIndex]));
+    //         }
+    //     }
+    // }
 
     return 0;
 }
