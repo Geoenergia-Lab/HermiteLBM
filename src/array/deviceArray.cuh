@@ -117,19 +117,38 @@ namespace LBM
         {
         public:
 #ifdef MULTI_GPU
-            __host__ [[nodiscard]] array(const host::array<host::PAGED, T, VelocitySet, TimeType> &hostArray)
-                : ptr_(allocate_on_devices(hostArray.mesh(), hostArray.arr())),
-                  name_(hostArray.name()),
-                  mesh_(hostArray.mesh()){
-                      // initialise_boundary_condition(name_);
-                  };
-
-            __host__ [[nodiscard]] array(const host::array<host::PINNED, T, VelocitySet, TimeType> &hostArray)
+            template <const host::mallocType MallocType>
+            __host__ [[nodiscard]] array(const host::array<MallocType, T, VelocitySet, TimeType> &hostArray)
                 : ptr_(allocate_on_devices(hostArray.mesh(), hostArray.data())),
                   name_(hostArray.name()),
                   mesh_(hostArray.mesh()){
                       // initialise_boundary_condition(name_);
                   };
+
+            __host__ [[nodiscard]] array(
+                const std::string &name,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl)
+                : ptr_(allocate_on_devices(host::array<host::PAGED, T, VelocitySet, TimeType>(name, mesh, programCtrl))),
+                  name_(name),
+                  mesh_(mesh){
+                      // initialise_boundary_condition(name_);
+                  };
+
+            __host__ [[nodiscard]] array(
+                const std::string &name,
+                const host::latticeMesh &mesh,
+                const T value)
+                : ptr_(allocate_on_devices(mesh.nPoints(), value)),
+                  name_(name),
+                  mesh_(mesh){
+                      // initialise_boundary_condition(name_);
+                  };
+
+            __host__ [[nodiscard]] array(const std::string &name, const host::latticeMesh &mesh)
+                : ptr_(nullptr),
+                  name_(name),
+                  mesh_(mesh){};
 
             /**
              * @brief Destructor - automatically releases device memory
@@ -146,26 +165,32 @@ namespace LBM
                     [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
                     {
                         const label_t virtualDeviceIndex = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
-                        if constexpr (verbose())
+                        if (!(ptr_[virtualDeviceIndex] == nullptr))
                         {
-                            std::cout << "Freeing ptr[" << virtualDeviceIndex << "];" << std::endl;
-                        }
-                        checkCudaErrors(cudaFree(ptr_[virtualDeviceIndex]));
-                        if constexpr (verbose())
-                        {
-                            std::cout << "Freed ptr[" << virtualDeviceIndex << "];" << std::endl;
+                            if constexpr (verbose())
+                            {
+                                std::cout << "Freeing ptr[" << virtualDeviceIndex << "];" << std::endl;
+                            }
+                            checkCudaErrors(cudaFree(ptr_[virtualDeviceIndex]));
+                            if constexpr (verbose())
+                            {
+                                std::cout << "Freed ptr[" << virtualDeviceIndex << "];" << std::endl;
+                            }
                         }
                     });
 
                 // Now free the host memory allocated to store the pointers
-                if constexpr (verbose())
+                if (!(ptr_ == nullptr))
                 {
-                    std::cout << "Freeing host pointer collection" << std::endl;
-                }
-                checkCudaErrors(cudaFreeHost(ptr_));
-                if constexpr (verbose())
-                {
-                    std::cout << "Freed host pointer collection" << std::endl;
+                    if constexpr (verbose())
+                    {
+                        std::cout << "Freeing host pointer collection" << std::endl;
+                    }
+                    checkCudaErrors(cudaFreeHost(ptr_));
+                    if constexpr (verbose())
+                    {
+                        std::cout << "Freed host pointer collection" << std::endl;
+                    }
                 }
             }
 
@@ -355,9 +380,7 @@ namespace LBM
 #ifdef MULTI_GPU
             T **const ptrRestrict ptr_;
 
-            __host__ [[nodiscard]] static T **allocate_on_devices(
-                const host::latticeMesh &mesh,
-                const T *hostArrayGlobal)
+            __host__ [[nodiscard]] static T **allocate_on_devices(const host::latticeMesh &mesh, const T *hostArrayGlobal)
             {
                 const label_t nxGPUs = mesh.nDevices<axis::X>();
                 const label_t nyGPUs = mesh.nDevices<axis::Y>();
@@ -378,11 +401,22 @@ namespace LBM
                 return hostPtrsToDevice;
             }
 
-            __host__ [[nodiscard]] static T **allocate_on_devices(
-                const host::latticeMesh &mesh,
-                const std::vector<T> &hostArrayGlobal)
+            __host__ [[nodiscard]] static T **allocate_on_devices(const std::vector<T> &hostArrayGlobal)
             {
-                allocate_on_devices(mesh, hostArrayGlobal.data());
+                allocate_on_devices(hostArrayGlobal.mesh(), hostArrayGlobal.data());
+            }
+
+            template <const host::mallocType MallocType>
+            __host__ [[nodiscard]] T **allocate_on_devices(const host::array<MallocType, T, VelocitySet, TimeType> &hostArrayGlobal)
+            {
+                return allocate_on_devices(hostArrayGlobal.mesh(), hostArrayGlobal.data());
+            }
+
+            template <const host::mallocType MallocType>
+            __host__ [[nodiscard]] T **allocate_on_devices(const label_t N, const T val)
+            {
+                const std::vector<T> toAllocate(N, val);
+                return allocate_on_devices(toAllocate);
             }
 
             // Creates a partition of the mesh and allocates it to a particular GPU
@@ -412,13 +446,12 @@ namespace LBM
 
             // Creates a partition of the mesh and allocates it to a particular GPU
             __host__ [[nodiscard]] static T *allocate_device_segment(
-                const host::latticeMesh &mesh,
                 const std::vector<T> &hostArrayGlobal,
                 const label_t GPU_x,
                 const label_t GPU_y,
                 const label_t GPU_z)
             {
-                return allocate_device_segment(mesh, hostArrayGlobal.data(), GPU_x, GPU_y, GPU_z);
+                return allocate_device_segment(hostArrayGlobal.mesh(), hostArrayGlobal.data(), GPU_x, GPU_y, GPU_z);
             }
 #else
             /**

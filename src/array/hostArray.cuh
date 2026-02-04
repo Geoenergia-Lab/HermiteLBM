@@ -308,6 +308,10 @@ namespace LBM
             {
                 return arr_;
             }
+            __host__ [[nodiscard]] inline constexpr const T *data() const noexcept
+            {
+                return arr_.data();
+            }
 
             /**
              * @brief Get field name identifier

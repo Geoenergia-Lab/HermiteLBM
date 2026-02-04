@@ -119,22 +119,6 @@ int main(const int argc, const char *const argv[])
 
     streamHandler streams(programCtrl);
 
-    // std::vector<cudaStream_t> streams(nxGPUs * nyGPUs * nzGPUs);
-    // for (label_t GPU_z = 0; GPU_z < nzGPUs; GPU_z++)
-    // {
-    //     for (label_t GPU_y = 0; GPU_y < nyGPUs; GPU_y++)
-    //     {
-    //         for (label_t GPU_x = 0; GPU_x < nxGPUs; GPU_x++)
-    //         {
-    //             const label_t virtualDeviceIndex = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
-    //             checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
-    //             checkCudaErrors(cudaDeviceSynchronize());
-    //             checkCudaErrors(cudaStreamCreate(&streams[virtualDeviceIndex]));
-    //             checkCudaErrors(cudaDeviceSynchronize());
-    //         }
-    //     }
-    // }
-
     for (label_t GPU_z = 0; GPU_z < nzGPUs; GPU_z++)
     {
         for (label_t GPU_y = 0; GPU_y < nyGPUs; GPU_y++)
