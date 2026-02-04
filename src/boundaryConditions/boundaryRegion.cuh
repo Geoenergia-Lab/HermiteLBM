@@ -61,24 +61,24 @@ namespace LBM
      * This struct aggregates all field values (density, velocity components, and moments)
      * for a specific boundary region, providing convenient access to individual components.
      **/
-    template <class VelocitySet>
+    template <class VelocitySet, const bool Scaled>
     class boundaryRegion
     {
     public:
         __host__ [[nodiscard]] boundaryRegion(const std::string &regionName)
             : values_{
-                  boundaryValue("rho", regionName),
-                  boundaryValue("u", regionName),
-                  boundaryValue("v", regionName),
-                  boundaryValue("w", regionName),
-                  boundaryValue("m_xx", regionName),
-                  boundaryValue("m_xy", regionName),
-                  boundaryValue("m_xz", regionName),
-                  boundaryValue("m_yy", regionName),
-                  boundaryValue("m_yz", regionName),
-                  boundaryValue("m_zz", regionName),
+                  boundaryValue<VelocitySet, Scaled>("rho", regionName),
+                  boundaryValue<VelocitySet, Scaled>("u", regionName),
+                  boundaryValue<VelocitySet, Scaled>("v", regionName),
+                  boundaryValue<VelocitySet, Scaled>("w", regionName),
+                  boundaryValue<VelocitySet, Scaled>("m_xx", regionName),
+                  boundaryValue<VelocitySet, Scaled>("m_xy", regionName),
+                  boundaryValue<VelocitySet, Scaled>("m_xz", regionName),
+                  boundaryValue<VelocitySet, Scaled>("m_yy", regionName),
+                  boundaryValue<VelocitySet, Scaled>("m_yz", regionName),
+                  boundaryValue<VelocitySet, Scaled>("m_zz", regionName),
 #if isMultiphase
-                  boundaryValue("phi", regionName)
+                  boundaryValue<VelocitySet, Scaled>("phi", regionName)
 #endif
               }
         {
@@ -164,7 +164,7 @@ namespace LBM
         /**
          * @brief Array of boundary values for all fields
          **/
-        const boundaryValue<VelocitySet> values_[N_FIELDS];
+        const boundaryValue<VelocitySet, Scaled> values_[N_FIELDS];
     };
 }
 
