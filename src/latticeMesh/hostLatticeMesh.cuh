@@ -148,7 +148,40 @@ namespace LBM
 
 #ifdef MULTI_GPU
 
-                    // static_assert(false, "host::latticeMesh constructor not implemented for multi GPU yet");
+                    static_assert(MULTI_GPU_ASSERTION(), "host::latticeMesh constructor not implemented for multi GPU yet");
+
+                    // Check that the mesh dimensions are not too large for GPU memory
+                    for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < programCtrl.deviceList().size(); virtualDeviceIndex++)
+                    {
+                        // Calculate the per-GPU allocation size
+                        const label_t nxPointsPerGPU = nx_ / nDevices_.nx;
+                        const label_t nyPointsPerGPU = ny_ / nDevices_.ny;
+                        const label_t nzPointsPerGPU = nz_ / nDevices_.nz;
+                        const label_t nPointsPerGPU = nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU;
+
+                        const cudaDeviceProp props = getDeviceProperties(programCtrl.deviceList()[virtualDeviceIndex]);
+                        const uintmax_t totalMemTemp = static_cast<uintmax_t>(props.totalGlobalMem);
+                        const uintmax_t allocationSize = nPointsPerGPU * static_cast<uintmax_t>(sizeof(scalar_t)) * (NUMBER_MOMENTS<uintmax_t>());
+
+                        if (allocationSize >= totalMemTemp)
+                        {
+                            const double gbAllocation = static_cast<double>(allocationSize / (1024 * 1024 * 1024));
+                            const double gbAvailable = static_cast<double>(totalMemTemp / (1024 * 1024 * 1024));
+
+                            errorHandler(
+                                ERR_SIZE,
+                                "\nInsufficient GPU memory:\nAttempted to allocate: " +
+                                    std::to_string(allocationSize) +
+                                    " bytes (" +
+                                    std::to_string(gbAllocation) +
+                                    " GB)\n"
+                                    "Available GPU memory: " +
+                                    std::to_string(totalMemTemp) +
+                                    " bytes (" +
+                                    std::to_string(gbAvailable) +
+                                    " GB)");
+                        }
+                    }
 
 #else
                     // Check that the mesh dimensions are not too large for GPU memory
@@ -162,14 +195,18 @@ namespace LBM
                             const double gbAllocation = static_cast<double>(allocationSize / (1024 * 1024 * 1024));
                             const double gbAvailable = static_cast<double>(totalMemTemp / (1024 * 1024 * 1024));
 
-                            errorHandler(ERR_SIZE,
-                                         "\nInsufficient GPU memory:\n"
-                                         "Attempted to allocate: " +
-                                             std::to_string(allocationSize) +
-                                             " bytes (" + std::to_string(gbAllocation) + " GB)\n"
-                                                                                         "Available GPU memory: " +
-                                             std::to_string(totalMemTemp) +
-                                             " bytes (" + std::to_string(gbAvailable) + " GB)");
+                            errorHandler(
+                                ERR_SIZE,
+                                "\nInsufficient GPU memory:\nAttempted to allocate: " +
+                                    std::to_string(allocationSize) +
+                                    " bytes (" +
+                                    std::to_string(gbAllocation) +
+                                    " GB)\n"
+                                    "Available GPU memory: " +
+                                    std::to_string(totalMemTemp) +
+                                    " bytes (" +
+                                    std::to_string(gbAvailable) +
+                                    " GB)");
                         }
                     }
 #endif
@@ -177,7 +214,40 @@ namespace LBM
 
 #ifdef MULTI_GPU
 
-                // static_assert(false, "host::latticeMesh constructor not implemented for multi GPU yet");
+                static_assert(MULTI_GPU_ASSERTION(), "host::latticeMesh constructor not implemented for multi GPU yet");
+
+                for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < programCtrl.deviceList().size(); virtualDeviceIndex++)
+                {
+                    checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
+
+                    // Allocate programControl symbols on the GPU (clean up later)
+                    {
+                        const scalar_t viscosityTemp = programCtrl.u_inf() * programCtrl.L_char() / programCtrl.Re();
+                        const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
+                        const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTemp;
+                        const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
+                        const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
+
+                        copyToSymbol(device::L_char, programCtrl.L_char());
+                        copyToSymbol(device::Re, programCtrl.Re());
+                        copyToSymbol(device::tau, tauTemp);
+                        copyToSymbol(device::omega, omegaTemp);
+                        copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
+                        copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
+                    }
+
+                    const label_t nxBlocksPerGPU = nxBlocks() / nDevices_.nx;
+                    const label_t nyBlocksPerGPU = nyBlocks() / nDevices_.ny;
+                    const label_t nzBlocksPerGPU = nzBlocks() / nDevices_.nz;
+
+                    // Allocate mesh symbols on the GPU
+                    copyToSymbol(device::nx, nx_);
+                    copyToSymbol(device::ny, ny_);
+                    copyToSymbol(device::nz, nz_);
+                    copyToSymbol(device::NUM_BLOCK_X, nxBlocksPerGPU);
+                    copyToSymbol(device::NUM_BLOCK_Y, nyBlocksPerGPU);
+                    copyToSymbol(device::NUM_BLOCK_Z, nzBlocksPerGPU);
+                }
 
 #else
                 // Allocate programControl symbols on the GPU (clean up later)

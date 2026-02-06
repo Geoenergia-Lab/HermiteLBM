@@ -192,15 +192,16 @@ namespace LBM
                     host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
                     const host::latticeMesh &mesh,
                     const device::ptrCollection<10, scalar_t> &devPtrs,
-                    const streamHandler &streamsLBM) noexcept
+                    const streamHandler &streamsLBM,
+                    const programControl &programCtrl) noexcept
                     : hostWriteBuffer_(hostWriteBuffer),
                       mesh_(mesh),
                       devPtrs_(devPtrs),
                       streamsLBM_(streamsLBM),
                       calculate_(initialiserSwitch(fieldName_)),
                       calculateMean_(initialiserSwitch(fieldNameMean_)),
-                      k_(objectAllocator<VelocitySet, time::instantaneous>(fieldName_, mesh)),
-                      kMean_(objectAllocator<VelocitySet, time::timeAverage>(fieldNameMean_, mesh))
+                      k_(objectAllocator<VelocitySet, time::instantaneous>(fieldName_, mesh, programCtrl)),
+                      kMean_(objectAllocator<VelocitySet, time::timeAverage>(fieldNameMean_, mesh, programCtrl))
                 {
                     // std::cout << fieldNameMean_ << std::endl;
                     // Set the cache config to prefer L1
@@ -243,7 +244,7 @@ namespace LBM
                     {
                         kineticEnergy::kernel::instantaneous<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
                             devPtrs_,
-                            {k_.ptr()});
+                            {k_.ptr(0)});
                     }
                     // });
                 }
@@ -264,7 +265,7 @@ namespace LBM
                     {
                         kineticEnergy::kernel::mean<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
                             devPtrs_,
-                            {kMean_.ptr()},
+                            {kMean_.ptr(0)},
                             invNewCount);
                     }
                     //});
@@ -285,8 +286,8 @@ namespace LBM
                     {
                         kineticEnergy::kernel::instantaneousAndMean<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
                             devPtrs_,
-                            {k_.ptr()},
-                            {kMean_.ptr()},
+                            {k_.ptr(0)},
+                            {kMean_.ptr(0)},
                             invNewCount);
                     }
                     //  });
@@ -298,7 +299,7 @@ namespace LBM
                  **/
                 __host__ void saveInstantaneous(const label_t timeStep) noexcept
                 {
-                    hostWriteBuffer_.copy_from_device(device::ptrCollection<1, scalar_t>(k_.ptr()), mesh_);
+                    hostWriteBuffer_.copy_from_device(device::ptrCollection<1, scalar_t>(k_.ptr(0)), mesh_);
 
                     fileIO::writeFile<time::instantaneous>(
                         fieldName_ + "_" + std::to_string(timeStep) + ".LBMBin",
@@ -314,7 +315,7 @@ namespace LBM
                  **/
                 __host__ void saveMean(const label_t timeStep) noexcept
                 {
-                    hostWriteBuffer_.copy_from_device(device::ptrCollection<1, scalar_t>(kMean_.ptr()), mesh_);
+                    hostWriteBuffer_.copy_from_device(device::ptrCollection<1, scalar_t>(kMean_.ptr(0)), mesh_);
 
                     fileIO::writeFile<time::timeAverage>(
                         fieldNameMean_ + "_" + std::to_string(timeStep) + ".LBMBin",

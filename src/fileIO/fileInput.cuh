@@ -789,7 +789,51 @@ namespace LBM
             std::vector<std::vector<T>> soa(nFields, std::vector<scalar_t>(nNodes, 0));
 
 #ifdef MULTI_GPU
-            // static_assert(false, "deinterleaveAoS not implemented for multi GPU yet");
+            static_assert(MULTI_GPU_ASSERTION(), "deinterleaveAoS not implemented for multi GPU yet: index offsets to idxScalarGlobal potentially incorrect");
+
+            const label_t nxGPUs = mesh.template nDevices<axis::X>();
+            const label_t nyGPUs = mesh.template nDevices<axis::Y>();
+            const label_t nzGPUs = mesh.template nDevices<axis::Z>();
+
+            const label_t nxBlocksPerGPU = (mesh.nxBlocks()) / nxGPUs;
+            const label_t nyBlocksPerGPU = (mesh.nyBlocks()) / nyGPUs;
+            const label_t nzBlocksPerGPU = (mesh.nzBlocks()) / nzGPUs;
+
+            gpu_for(
+                nxGPUs, nyGPUs, nzGPUs,
+                [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
+                {
+                    const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+
+                    // This is potentially incorrect but I don't think so.
+                    // I think it is correct for this to be per-GPU because we are looping over all GPUs and unpacking to global
+                    const label_t nPointsPerGPU = (nxBlocksPerGPU * nyBlocksPerGPU * nzBlocksPerGPU) * (block::nx() * block::ny() * block::nz());
+
+                    // Fill this GPU's contiguous segment
+                    grid_for(
+                        nxBlocksPerGPU, nyBlocksPerGPU, nzBlocksPerGPU,
+                        [&](const label_t bx, const label_t by, const label_t bz,
+                            const label_t tx, const label_t ty, const label_t tz)
+                        {
+                            const label_t bx_true = bx + (GPU_x * nxBlocksPerGPU);
+                            const label_t by_true = by + (GPU_y * nyBlocksPerGPU);
+                            const label_t bz_true = bz + (GPU_z * nzBlocksPerGPU);
+
+                            const label_t x = (bx_true * block::nx()) + tx;
+                            const label_t y = (by_true * block::ny()) + ty;
+                            const label_t z = (bz_true * block::nz()) + tz;
+
+                            // MODIFY FOR MULTI GPU: idx must be multi GPU aware
+                            const label_t idxGlobal = host::idxScalarGlobal(x, y, z, mesh.nx(), mesh.ny());
+                            const label_t idx = host::idx(tx, ty, tz, bx_true, by_true, bz_true, mesh);
+
+                            for (label_t field = 0; field < nFields; field++)
+                            {
+                                soa[field][idxGlobal] = fMom[idx + (field * nPointsPerGPU)];
+                            }
+                        });
+                });
+
 #else
             grid_for(
                 mesh.nxBlocks(), mesh.nyBlocks(), mesh.nzBlocks(),

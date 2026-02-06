@@ -106,20 +106,20 @@ namespace LBM
              * @param[in] rho,u,v,w,m_xx,m_xy,m_xz,m_yy,m_yz,m_zz Moment representation of distribution functions
              * @param[in] mesh Lattice mesh defining simulation domain
              **/
-            __host__ [[nodiscard]] halo(
-                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &rho,
-                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &u,
-                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &v,
-                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &w,
-                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xx,
-                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xy,
-                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xz,
-                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_yy,
-                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_yz,
-                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_zz,
-                const host::latticeMesh &mesh) noexcept
-                : fGhost_(haloFace<VelocitySet>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
-                  gGhost_(haloFace<VelocitySet>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)){};
+            // __host__ [[nodiscard]] halo(
+            //     const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &rho,
+            //     const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &u,
+            //     const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &v,
+            //     const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &w,
+            //     const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xx,
+            //     const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xy,
+            //     const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xz,
+            //     const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_yy,
+            //     const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_yz,
+            //     const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_zz,
+            //     const host::latticeMesh &mesh) noexcept
+            //     : fGhost_(haloFace<VelocitySet>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
+            //       gGhost_(haloFace<VelocitySet>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)){};
 
             /**
              * @brief Default destructor

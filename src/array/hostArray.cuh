@@ -424,8 +424,6 @@ namespace LBM
                     {
                         for (label_t GPU_x = 0; GPU_x < mesh.nDevices<axis::X>(); GPU_x++)
                         {
-                            // const label_t virtualDeviceIndex = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
-                            // const label_t startIndex = virtualDeviceIndex * nPointsPerGPU;
                             // Fill this GPU's contiguous segment
                             grid_for(
                                 nxBlocksPerGPU, nyBlocksPerGPU, nzBlocksPerGPU,

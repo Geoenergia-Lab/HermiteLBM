@@ -236,6 +236,12 @@ namespace LBM
         }
     }
 
+    template <typename T = label_t>
+    __device__ __host__ [[nodiscard]] inline constexpr T deviceIdx(const T dx, const T dy, const T dz, const T ndx, const T ndy) noexcept
+    {
+        return dx + (dy * ndx) + (dz * ndx * ndy);
+    }
+
     /**
      * @brief Number of hydrodynamic moments
      **/

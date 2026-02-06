@@ -79,12 +79,13 @@ namespace LBM
             host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
             const host::latticeMesh &mesh,
             const device::ptrCollection<10, scalar_t> &devPtrs,
-            const streamHandler &streamsLBM)
+            const streamHandler &streamsLBM,
+            const programControl &programCtrl)
             : hostWriteBuffer_(hostWriteBuffer),
               mesh_(mesh),
-              M_(hostWriteBuffer, mesh, devPtrs, streamsLBM),
-              S_(hostWriteBuffer, mesh, devPtrs, streamsLBM),
-              k_(hostWriteBuffer, mesh, devPtrs, streamsLBM),
+              M_(hostWriteBuffer, mesh, devPtrs, streamsLBM, programCtrl),
+              S_(hostWriteBuffer, mesh, devPtrs, streamsLBM, programCtrl),
+              k_(hostWriteBuffer, mesh, devPtrs, streamsLBM, programCtrl),
               functionVector_(functionObjectCallInitialiser(M_, S_, k_)),
               saveVector_(functionObjectSaveInitialiser(M_, S_, k_)) {};
 

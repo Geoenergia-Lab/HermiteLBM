@@ -118,12 +118,15 @@ namespace LBM
         public:
 #ifdef MULTI_GPU
             template <const host::mallocType MallocType>
-            __host__ [[nodiscard]] array(const host::array<MallocType, T, VelocitySet, TimeType> &hostArray)
+            __host__ [[nodiscard]] array(
+                const host::array<MallocType, T, VelocitySet, TimeType> &hostArray,
+                const programControl &programCtrl)
                 : ptr_(allocate_on_devices(hostArray.mesh(), hostArray.data())),
                   name_(hostArray.name()),
-                  mesh_(hostArray.mesh()){
-                      // initialise_boundary_condition(name_);
-                  };
+                  mesh_(hostArray.mesh())
+            {
+                initialise_boundary_condition(name_, programCtrl.deviceList());
+            };
 
             __host__ [[nodiscard]] array(
                 const std::string &name,
@@ -131,21 +134,26 @@ namespace LBM
                 const programControl &programCtrl)
                 : ptr_(allocate_on_devices(host::array<host::PAGED, T, VelocitySet, TimeType>(name, mesh, programCtrl))),
                   name_(name),
-                  mesh_(mesh){
-                      // initialise_boundary_condition(name_);
-                  };
+                  mesh_(mesh)
+            {
+                initialise_boundary_condition(name_, programCtrl.deviceList());
+            };
 
             __host__ [[nodiscard]] array(
                 const std::string &name,
                 const host::latticeMesh &mesh,
-                const T value)
-                : ptr_(allocate_on_devices(mesh.nPoints(), value)),
+                const T value,
+                const programControl &programCtrl)
+                : ptr_(allocate_on_devices(mesh, mesh.nPoints(), value)),
                   name_(name),
-                  mesh_(mesh){
-                      // initialise_boundary_condition(name_);
-                  };
+                  mesh_(mesh)
+            {
+                initialise_boundary_condition(name_, programCtrl.deviceList());
+            };
 
-            __host__ [[nodiscard]] array(const std::string &name, const host::latticeMesh &mesh)
+            __host__ [[nodiscard]] array(
+                const std::string &name,
+                const host::latticeMesh &mesh)
                 : ptr_(nullptr),
                   name_(name),
                   mesh_(mesh){};
@@ -164,7 +172,8 @@ namespace LBM
                     nxGPUs, nyGPUs, nzGPUs,
                     [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
                     {
-                        const label_t virtualDeviceIndex = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
+                        const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+
                         if (!(ptr_[virtualDeviceIndex] == nullptr))
                         {
                             if constexpr (verbose())
@@ -394,16 +403,18 @@ namespace LBM
                     nxGPUs, nyGPUs, nzGPUs,
                     [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
                     {
-                        const label_t virtualDeviceIndex = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
+                        const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+
                         hostPtrsToDevice[virtualDeviceIndex] = allocate_device_segment(mesh, hostArrayGlobal, GPU_x, GPU_y, GPU_z);
                     });
 
                 return hostPtrsToDevice;
             }
 
-            __host__ [[nodiscard]] static T **allocate_on_devices(const std::vector<T> &hostArrayGlobal)
+            // This is the problematic function
+            __host__ [[nodiscard]] static T **allocate_on_devices(const host::latticeMesh &mesh, const std::vector<T> &hostArrayGlobal)
             {
-                allocate_on_devices(hostArrayGlobal.mesh(), hostArrayGlobal.data());
+                return allocate_on_devices(mesh, hostArrayGlobal.data());
             }
 
             template <const host::mallocType MallocType>
@@ -412,11 +423,11 @@ namespace LBM
                 return allocate_on_devices(hostArrayGlobal.mesh(), hostArrayGlobal.data());
             }
 
-            template <const host::mallocType MallocType>
-            __host__ [[nodiscard]] T **allocate_on_devices(const label_t N, const T val)
+            // template <const host::mallocType MallocType>
+            __host__ [[nodiscard]] T **allocate_on_devices(const host::latticeMesh &mesh, const label_t N, const T val)
             {
                 const std::vector<T> toAllocate(N, val);
-                return allocate_on_devices(toAllocate);
+                return allocate_on_devices(mesh, toAllocate);
             }
 
             // Creates a partition of the mesh and allocates it to a particular GPU
@@ -434,7 +445,7 @@ namespace LBM
                 const label_t nyPointsPerGPU = mesh.ny() / nyGPUs;
                 const label_t nzPointsPerGPU = mesh.nz() / nzGPUs;
                 const label_t nPointsPerGPU = nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU;
-                const label_t virtualDeviceIndex = GPU_x + GPU_y * nxGPUs + GPU_z * nxGPUs * nyGPUs;
+                const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
                 const label_t startIndex = virtualDeviceIndex * nPointsPerGPU;
 
                 T *devPtr = device::allocate<T>(nPointsPerGPU, static_cast<deviceIndex_t>(virtualDeviceIndex));
@@ -507,11 +518,34 @@ namespace LBM
              * @brief Initialises boundary condition values on the GPU for a given variable name
              * @param name The name of the variable to initialise boundary conditions for
              **/
-            __host__ static void initialise_boundary_condition(const std::string &name) noexcept
+            __host__ static void initialise_boundary_condition(const std::string &name, const std::vector<deviceIndex_t> &deviceList) noexcept
             {
 #ifdef MULTI_GPU
 
-                // static_assert(false, "device::array::initialise_boundary_condition not implemented for multi GPU yet");
+                static_assert(MULTI_GPU_ASSERTION(), "device::array::initialise_boundary_condition not implemented for multi GPU yet");
+
+                if ((name == "u") || (name == "v") || (name == "w"))
+                {
+                    const label_t i = name_to_index(name);
+
+                    const boundaryValue<VelocitySet, false> North(name, "North");
+                    const boundaryValue<VelocitySet, false> South(name, "South");
+                    const boundaryValue<VelocitySet, false> East(name, "East");
+                    const boundaryValue<VelocitySet, false> West(name, "West");
+                    const boundaryValue<VelocitySet, false> Back(name, "Back");
+                    const boundaryValue<VelocitySet, false> Front(name, "Front");
+
+                    for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList.size(); virtualDeviceIndex++)
+                    {
+                        checkCudaErrors(cudaSetDevice(deviceList[virtualDeviceIndex]));
+                        copyToSymbol(device::U_North, North(), i);
+                        copyToSymbol(device::U_South, South(), i);
+                        copyToSymbol(device::U_East, East(), i);
+                        copyToSymbol(device::U_West, West(), i);
+                        copyToSymbol(device::U_Back, Back(), i);
+                        copyToSymbol(device::U_Front, Front(), i);
+                    }
+                }
 
 #else
                 if ((name == "u") || (name == "v") || (name == "w"))
@@ -535,19 +569,19 @@ namespace LBM
 #endif
             }
 
-            __host__ static void initialise_boundary_condition(const std::string &name, const deviceIndex_t deviceID) noexcept
-            {
-                // Set the device and synchronise
-                checkCudaErrors(cudaDeviceSynchronize());
-                checkCudaErrors(cudaSetDevice(deviceID));
-                checkCudaErrors(cudaDeviceSynchronize());
+            // __host__ static void initialise_boundary_condition(const std::string &name, const deviceIndex_t deviceID) noexcept
+            // {
+            //     // Set the device and synchronise
+            //     checkCudaErrors(cudaDeviceSynchronize());
+            //     checkCudaErrors(cudaSetDevice(deviceID));
+            //     checkCudaErrors(cudaDeviceSynchronize());
 
-                // Set the boundary conditions
-                initialise_boundary_condition(name);
+            //     // Set the boundary conditions
+            //     initialise_boundary_condition(name);
 
-                // Synchronise and return
-                checkCudaErrors(cudaDeviceSynchronize());
-            }
+            //     // Synchronise and return
+            //     checkCudaErrors(cudaDeviceSynchronize());
+            // }
         };
     }
 }
