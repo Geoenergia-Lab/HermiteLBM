@@ -104,8 +104,15 @@ namespace LBM
             }
         }
 
+        const pointLabel_t Tx(threadIdx);
+        const pointLabel_t Bx(blockIdx);
+        const pointLabel_t X(
+            Tx.x + block::nx() * (Bx.x + device::BLOCK_OFFSET_X),
+            Tx.y + block::ny() * (Bx.y + device::BLOCK_OFFSET_Y),
+            Tx.z + block::nz() * (Bx.z + device::BLOCK_OFFSET_Z));
+
         // MODIFY FOR MULTI GPU
-        const label_t idx = device::idx();
+        const label_t idx = device::idx(Tx, Bx);
 
         // Prefetch devPtrs into L2
         device::constexpr_for<0, NUMBER_MOMENTS()>(
@@ -117,7 +124,7 @@ namespace LBM
         // Declare shared memory (flattened)
         extern __shared__ scalar_t shared_buffer[];
 
-        const label_t tid = device::idxBlock();
+        const label_t tid = device::idxBlock(Tx);
 
         // Coalesced read from global memory
         thread::array<scalar_t, NUMBER_MOMENTS()> moments;
@@ -149,21 +156,21 @@ namespace LBM
             __syncthreads();
 
             // Pull from shared memory
-            streaming::pull<VelocitySet>(pop, shared_buffer);
+            streaming::pull<VelocitySet>(pop, shared_buffer, Tx);
         }
 
         // Load pop from global memory in cover nodes
-        BlockHalo::load(pop, fGhost);
+        BlockHalo::load(pop, fGhost, Tx, Bx);
 
         if constexpr (std::is_same<BoundaryConditions, lidDrivenCavity>::value)
         {
             // Calculate the moments either at the boundary or interior
             {
-                const normalVector boundaryNormal;
+                const normalVector boundaryNormal(X);
 
                 if (boundaryNormal.isBoundary())
                 {
-                    BoundaryConditions::calculate_moments<VelocitySet>(pop, moments, boundaryNormal, &(shared_buffer[0]));
+                    BoundaryConditions::calculate_moments<VelocitySet>(pop, moments, boundaryNormal, shared_buffer, Tx, X);
                 }
                 else
                 {
@@ -190,11 +197,11 @@ namespace LBM
 
             // Calculate the moments at the boundary
             {
-                const normalVector boundaryNormal;
+                const normalVector boundaryNormal(X);
 
                 if (boundaryNormal.isBoundary())
                 {
-                    BoundaryConditions::calculate_moments<VelocitySet>(pop, moments, boundaryNormal, &(shared_buffer[0]));
+                    BoundaryConditions::calculate_moments<VelocitySet>(pop, moments, boundaryNormal, shared_buffer, Tx, X);
                 }
             }
         }
@@ -217,7 +224,7 @@ namespace LBM
             });
 
         // Save the populations to the block halo
-        BlockHalo::save(pop, gGhost);
+        BlockHalo::save(pop, gGhost, Tx, Bx, X);
     }
 }
 

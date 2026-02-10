@@ -217,18 +217,18 @@ namespace LBM
      * });
      * @endcode
      **/
-    template <const pointLabel_t Indent, typename F, typename T>
+    template <const blockLabel_t Indent, typename F, typename T>
     __host__ void global_for(
         const T nx,
         const T ny,
         const T nz,
         const F &&f) noexcept
     {
-        for (T z = 0; z < nz - static_cast<T>(Indent.z); z++)
+        for (T z = 0; z < nz - static_cast<T>(Indent.nz); z++)
         {
-            for (T y = 0; y < ny - static_cast<T>(Indent.y); y++)
+            for (T y = 0; y < ny - static_cast<T>(Indent.ny); y++)
             {
-                for (T x = 0; x < nx - static_cast<T>(Indent.x); x++)
+                for (T x = 0; x < nx - static_cast<T>(Indent.nx); x++)
                 {
                     f(x, y, z);
                 }
@@ -439,12 +439,13 @@ namespace LBM
 
         /**
          * @overload
-         * @param tx Thread coordinates (dim3)
-         * @param bx Block indices (dim3)
+         * @param tx Thread coordinates (Dim3)
+         * @param bx Block indices (Dim3)
          **/
-        __device__ [[nodiscard]] inline label_t idx(const dim3 tx, const dim3 bx) noexcept
+        template <class Dim3>
+        __device__ [[nodiscard]] inline label_t idx(const Dim3 &Tx, const Dim3 &Bx) noexcept
         {
-            return idx(tx.x, tx.y, tx.z, bx.x, bx.y, bx.z);
+            return idx(static_cast<label_t>(Tx.x), static_cast<label_t>(Tx.y), static_cast<label_t>(Tx.z), static_cast<label_t>(Bx.x), static_cast<label_t>(Bx.y), static_cast<label_t>(Bx.z));
         }
 
         /**
@@ -452,7 +453,7 @@ namespace LBM
          **/
         __device__ [[nodiscard]] inline label_t idx() noexcept
         {
-            return idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+            return idx(threadIdx, blockIdx);
         }
 
         /**
@@ -475,11 +476,12 @@ namespace LBM
 
         /**
          * @overload
-         * @param tx Thread coordinates (dim3)
+         * @param tx Thread coordinates (Dim3)
          **/
-        __device__ [[nodiscard]] inline label_t idxBlock(const dim3 &tx) noexcept
+        template <class Dim3>
+        __device__ [[nodiscard]] inline label_t idxBlock(const Dim3 &Tx) noexcept
         {
-            return idxBlock(tx.x, tx.y, tx.z);
+            return idxBlock(static_cast<label_t>(Tx.x), static_cast<label_t>(Tx.y), static_cast<label_t>(Tx.z));
         }
 
         /**
@@ -487,7 +489,7 @@ namespace LBM
          **/
         __device__ [[nodiscard]] inline label_t idxBlock() noexcept
         {
-            return idxBlock(threadIdx.x, threadIdx.y, threadIdx.z);
+            return idxBlock(threadIdx);
         }
 
         /**
@@ -507,12 +509,12 @@ namespace LBM
         /**
          * @overload
          * @param ty,tz Thread-local y/z coordinates
-         * @param bx Block indices (dim3)
+         * @param bx Block indices (Dim3)
          **/
-        template <const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPopX(const label_t ty, const label_t tz, const dim3 &bx) noexcept
+        template <const label_t pop, const label_t QF, class Dim3>
+        __device__ [[nodiscard]] inline label_t idxPopX(const label_t ty, const label_t tz, const Dim3 &Bx) noexcept
         {
-            return idxPopX<pop, QF>(ty, tz, bx.x, bx.y, bx.z);
+            return idxPopX<pop, QF>(ty, tz, static_cast<label_t>(Bx.x), static_cast<label_t>(Bx.y), static_cast<label_t>(Bx.z));
         }
 
         /**
@@ -530,12 +532,12 @@ namespace LBM
         /**
          * @overload
          * @param tx,tz Thread-local x/z coordinates
-         * @param bx Block indices (dim3)
+         * @param bx Block indices (Dim3)
          **/
-        template <const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPopY(const label_t tx, const label_t tz, const dim3 &bx) noexcept
+        template <const label_t pop, const label_t QF, class Dim3>
+        __device__ [[nodiscard]] inline label_t idxPopY(const label_t tx, const label_t tz, const Dim3 &Bx) noexcept
         {
-            return idxPopY<pop, QF>(tx, tz, bx.x, bx.y, bx.z);
+            return idxPopY<pop, QF>(tx, tz, static_cast<label_t>(Bx.x), static_cast<label_t>(Bx.y), static_cast<label_t>(Bx.z));
         }
 
         /**
@@ -553,12 +555,12 @@ namespace LBM
         /**
          * @overload
          * @param tx,ty Thread-local x/y coordinates
-         * @param bx Block indices (dim3)
+         * @param bx Block indices (Dim3)
          **/
-        template <const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPopZ(const label_t tx, const label_t ty, const dim3 &bx) noexcept
+        template <const label_t pop, const label_t QF, class Dim3>
+        __device__ [[nodiscard]] inline label_t idxPopZ(const label_t tx, const label_t ty, const Dim3 &Bx) noexcept
         {
-            return idxPopZ<pop, QF>(tx, ty, bx.x, bx.y, bx.z);
+            return idxPopZ<pop, QF>(tx, ty, static_cast<label_t>(Bx.x), static_cast<label_t>(Bx.y), static_cast<label_t>(Bx.z));
         }
     }
 

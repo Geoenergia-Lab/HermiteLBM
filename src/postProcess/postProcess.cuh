@@ -75,7 +75,7 @@ namespace LBM
         {
             std::vector<T> coords(mesh.nx<std::size_t>() * mesh.ny<std::size_t>() * mesh.nz<std::size_t>() * 3, 0);
 
-            global_for<pointLabel_t{0, 0, 0}>(
+            global_for<blockLabel_t{0, 0, 0}>(
                 mesh.nx<std::size_t>(), mesh.ny<std::size_t>(), mesh.nz<std::size_t>(),
                 [&](const std::size_t x, const std::size_t y, const std::size_t z)
                 {
@@ -101,7 +101,7 @@ namespace LBM
         {
             std::vector<IndexType> connectivity((mesh.nx<std::size_t>() - 1) * (mesh.ny<std::size_t>() - 1) * (mesh.nz<std::size_t>() - 1) * 8);
             constexpr const label_t offset = one_based ? 1 : 0;
-            global_for<pointLabel_t{1, 1, 1}>(
+            global_for<blockLabel_t{1, 1, 1}>(
                 mesh.nx<std::size_t>(), mesh.ny<std::size_t>(), mesh.nz<std::size_t>(),
                 [&](const std::size_t x, const std::size_t y, const std::size_t z)
                 {

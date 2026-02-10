@@ -88,15 +88,15 @@ namespace LBM
          * moments from available population information, ensuring mass conservation
          * and appropriate stress conditions at boundaries.
          **/
-        template <class VelocitySet>
+        template <class VelocitySet, class Dim3>
         __device__ static inline constexpr void calculate_moments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
             const normalVector &boundaryNormal,
-            [[maybe_unused]] const scalar_t *const ptrRestrict shared_buffer) noexcept
+            [[maybe_unused]] const scalar_t *const ptrRestrict shared_buffer,
+            [[maybe_unused]] const Dim3 &Tx,
+            [[maybe_unused]] const Dim3 &X) noexcept
         {
-            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: lidDrivenCavity::calculate_moments only supports D3Q19 and D3Q27.");
-
             const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 

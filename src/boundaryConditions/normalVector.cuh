@@ -76,19 +76,11 @@ namespace LBM
         /**
          * @brief Constructs a normalVector from current thread indices
          * @return normalVector for the current thread's position
+         * @param[in] Tx Thread coordinates
+         * @param[in] Bx Block coordinates
          **/
-        __device__ [[nodiscard]] inline normalVector() noexcept
-            : bitmask_(computeBitmask()){};
-
-        /**
-         * @brief Constructs a normalVector from specific coordinates
-         * @param[in] x X-coordinate in the lattice
-         * @param[in] y Y-coordinate in the lattice
-         * @param[in] z Z-coordinate in the lattice
-         * @return normalVector for the specified position
-         **/
-        __device__ [[nodiscard]] inline normalVector(const label_t x, const label_t y, const label_t z) noexcept
-            : bitmask_(computeBitmask(x, y, z)){};
+        __device__ [[nodiscard]] inline normalVector(const pointLabel_t &X) noexcept
+            : bitmask_(computeBitmask(X)){};
 
         /**
          * @name Basic Boundary Flags
@@ -297,16 +289,11 @@ namespace LBM
          * @brief Compute bitmask from current thread indices
          * @return Bitmask representing boundary configuration
          **/
-        __device__ [[nodiscard]] inline static uint8_t computeBitmask() noexcept
+        __device__ [[nodiscard]] inline static uint8_t computeBitmask(const pointLabel_t &X) noexcept
         {
-            constexpr const blockLabel_t blockOffset{0, 0, 0};
+            static_assert(MULTI_GPU_ASSERTION(), "normalVector::computeBitmask not implemented for multi GPU yet");
 
-            // This is correct. Just need to make blockOffset a per-GPU constant
-            const label_t x = threadIdx.x + (block::nx() * (blockIdx.x + blockOffset.nx));
-            const label_t y = threadIdx.y + (block::ny() * (blockIdx.y + blockOffset.ny));
-            const label_t z = threadIdx.z + (block::nz() * (blockIdx.z + blockOffset.nz));
-
-            return computeBitmask(x, y, z);
+            return computeBitmask(X.x, X.y, X.z);
         }
 
         /**

@@ -97,24 +97,28 @@ namespace LBM
          * moments from available population information, ensuring mass conservation
          * and appropriate stress conditions at boundaries.
          **/
-        template <class VelocitySet>
+        template <class VelocitySet, class Dim3>
         __device__ static inline constexpr void calculate_moments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
             const normalVector &boundaryNormal,
-            const scalar_t *const ptrRestrict shared_buffer) noexcept
+            const scalar_t *const ptrRestrict shared_buffer,
+            const Dim3 &Tx,
+            const Dim3 &X) noexcept
         {
 #include "jetBoundaryCondition.cuh"
         }
 
-        template <class VelocitySet, const label_t N>
+        template <class VelocitySet, const label_t N, class Dim3>
         __device__ static inline constexpr void calculate_moments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
             const normalVector &boundaryNormal,
-            const thread::array<scalar_t, N> &shared_buffer) noexcept
+            const thread::array<scalar_t, N> &shared_buffer,
+            const Dim3 &Tx,
+            const Dim3 &X) noexcept
         {
-#include "jetBoundaryCondition.cuh"
+            calculate_moments<VelocitySet>(pop, moments, boundaryNormal, shared_buffer.data(), Tx, X);
         }
 
     private:

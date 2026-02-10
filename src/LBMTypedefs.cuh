@@ -153,41 +153,19 @@ namespace LBM
      **/
     struct pointLabel_t
     {
-        const label_t x; // < Lattice point in x-direction
-        const label_t y; // < Lattice point in y-direction
-        const label_t z; // < Lattice point in z-direction
-    };
+        __device__ [[nodiscard]] inline pointLabel_t(const dim3 &label) noexcept
+            : x(static_cast<label_t>(label.x)),
+              y(static_cast<label_t>(label.y)),
+              z(static_cast<label_t>(label.z)){};
 
-    /**
-     * @brief 1D range descriptor [begin, end)
-     **/
-    struct blockPartitionRange_t
-    {
-        const label_t begin; // < Inclusive start index
-        const label_t end;   // < Exclusive end index
-    };
+        __device__ [[nodiscard]] inline pointLabel_t(const label_t X, const label_t Y, const label_t Z) noexcept
+            : x(X),
+              y(Y),
+              z(Z){};
 
-    /**
-     * @brief 3D block range descriptor
-     * @details Defines a rectangular region in lattice space
-     **/
-    struct blockRange_t
-    {
-        const blockPartitionRange_t xRange; // < X-dimension range
-        const blockPartitionRange_t yRange; // < Y-dimension range
-        const blockPartitionRange_t zRange; // < Z-dimension range
-    };
-
-    /**
-     * @brief Type used to contain a variable or variables over a block of shared memory
-     * @param T The type of variable
-     * @param N The number of variables
-     * @param blockSize The number of lattice points in the shared memory block
-     **/
-    template <typename T, const label_t N, const label_t blockSize>
-    struct sharedArray
-    {
-        T arr[N][blockSize];
+        const label_t x;
+        const label_t y;
+        const label_t z;
     };
 
     /**

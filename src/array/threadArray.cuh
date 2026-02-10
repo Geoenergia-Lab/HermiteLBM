@@ -241,6 +241,19 @@ namespace LBM
             }
 
             /**
+             * @brief Returns a pointer to the first element of the array
+             * @return Pointer to data_[0]
+             **/
+            __device__ __host__ [[nodiscard]] inline constexpr const T *data() __restrict__ const noexcept
+            {
+                return &data_[0];
+            }
+            __device__ __host__ [[nodiscard]] inline constexpr T *data() __restrict__ noexcept
+            {
+                return &data_[0];
+            }
+
+            /**
              * @brief Returns the number of elements in the array
              * @return Compile-time constant number of elements (N)
              **/

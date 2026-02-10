@@ -52,6 +52,7 @@ assertions::velocitySet::validate<VelocitySet>();
 
 const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
 const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+const label_t tid = device::idxBlock(Tx.x, Tx.y, Tx.z - 1);
 
 switch (boundaryNormal.nodeType())
 {
@@ -59,11 +60,13 @@ switch (boundaryNormal.nodeType())
 case normalVector::BACK():
 {
     // MODIFY THIS FOR MULTI GPU
-    const label_t x = threadIdx.x + block::nx() * blockIdx.x;
-    const label_t y = threadIdx.y + block::ny() * blockIdx.y;
+    static_assert(MULTI_GPU_ASSERTION(), "jetBoundaryCondition::calculate_moments not implemented for multi GPU yet");
 
-    const scalar_t dx = static_cast<scalar_t>(x) - center_x();
-    const scalar_t dy = static_cast<scalar_t>(y) - center_y();
+    // const label_t x = X.x;
+    // const label_t y = X.y;
+
+    const scalar_t dx = static_cast<scalar_t>(X.x) - center_x();
+    const scalar_t dy = static_cast<scalar_t>(X.y) - center_y();
 
     if constexpr (new_inlet())
     {
@@ -82,7 +85,7 @@ case normalVector::BACK():
     }
     else
     {
-        const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(y) - center_y()) * (static_cast<scalar_t>(y) - center_y()) < r2());
+        const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(X.x) - center_x()) * (static_cast<scalar_t>(X.x) - center_x()) + (static_cast<scalar_t>(X.y) - center_y()) * (static_cast<scalar_t>(X.y) - center_y()) < r2());
         const scalar_t mxz_I = velocitySet::calculate_moment<VelocitySet, axis::X, axis::Z>(pop, boundaryNormal) * inv_rho_I;
         const scalar_t myz_I = velocitySet::calculate_moment<VelocitySet, axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
 
