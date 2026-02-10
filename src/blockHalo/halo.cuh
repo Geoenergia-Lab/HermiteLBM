@@ -309,13 +309,11 @@ namespace LBM
 
 #ifdef MULTI_GPU
 
-                constexpr const blockLabel_t blockOffset{0, 0, 0};
                 static_assert(MULTI_GPU_ASSERTION(), "halo::save function not implemented for multi GPU yet");
 
-                // This is correct. Just need to make blockOffset a per-GPU constant
-                const label_t x = threadIdx.x + (block::nx() * (blockIdx.x + blockOffset.nx));
-                const label_t y = threadIdx.y + (block::ny() * (blockIdx.y + blockOffset.ny));
-                const label_t z = threadIdx.z + (block::nz() * (blockIdx.z + blockOffset.nz));
+                const label_t x = threadIdx.x + (block::nx() * (blockIdx.x + BLOCK_OFFSET_X));
+                const label_t y = threadIdx.y + (block::ny() * (blockIdx.y + BLOCK_OFFSET_Y));
+                const label_t z = threadIdx.z + (block::nz() * (blockIdx.z + BLOCK_OFFSET_Z));
 
 #else
 

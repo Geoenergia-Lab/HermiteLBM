@@ -353,6 +353,10 @@ namespace LBM
         __device__ __constant__ label_t NUM_BLOCK_Y;
         __device__ __constant__ label_t NUM_BLOCK_Z;
 
+        __device__ __constant__ label_t BLOCK_OFFSET_X;
+        __device__ __constant__ label_t BLOCK_OFFSET_Y;
+        __device__ __constant__ label_t BLOCK_OFFSET_Z;
+
         /**
          * @brief Class holding N device pointers of type T
          **/
