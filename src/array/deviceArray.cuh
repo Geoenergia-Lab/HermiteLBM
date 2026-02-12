@@ -117,6 +117,12 @@ namespace LBM
         {
         public:
 #ifdef MULTI_GPU
+            /**
+             * @brief Constructs a device array from host data
+             * @tparam VelocitySet Template parameter for velocity set configuration
+             * @param[in] hostArray Source data allocated on host memory
+             * @post Device memory is allocated and initialized with host data
+             **/
             template <const host::mallocType MallocType>
             __host__ [[nodiscard]] array(
                 const host::array<MallocType, T, VelocitySet, TimeType> &hostArray,
@@ -225,86 +231,6 @@ namespace LBM
 #else
 
             /**
-             * @brief Constructs a device array from host data
-             * @tparam VelocitySet Template parameter for velocity set configuration
-             * @param[in] hostArray Source data allocated on host memory
-             * @post Device memory is allocated and initialized with host data
-             **/
-            template <const host::mallocType MallocType>
-            __host__ [[nodiscard]] array(const host::array<MallocType, T, VelocitySet, TimeType> &hostArray)
-                : ptr_(device::allocateArray<T>(hostArray.arr())),
-                  name_(hostArray.name()),
-                  mesh_(hostArray.mesh())
-            {
-                initialise_boundary_condition(name_);
-            };
-
-            /**
-             * @brief Constructs a device array on a particular device from host data
-             * @tparam VelocitySet Template parameter for velocity set configuration
-             * @param[in] hostArray Source data allocated on host memory
-             * @param[in] deviceID The index of the device
-             * @post Device memory is allocated and initialized with host data
-             **/
-            template <const host::mallocType MallocType>
-            __host__ [[nodiscard]] array(const host::array<MallocType, T, VelocitySet, TimeType> &hostArray, const deviceIndex_t deviceID)
-                : ptr_(device::allocateArray<T>(hostArray.arr(), deviceID)),
-                  name_(hostArray.name()),
-                  mesh_(hostArray.mesh())
-            {
-                initialise_boundary_condition(name_, deviceID);
-            };
-
-            /**
-             * @brief Constructs a device array with field initialization
-             * @param[in] name Name identifier for the field
-             * @param[in] mesh Lattice mesh defining array dimensions
-             * @param[in] programCtrl Program control parameters
-             * @post Array is initialized from latest time step or initial conditions
-             **/
-            __host__ [[nodiscard]] array(
-                const std::string &name,
-                const host::latticeMesh &mesh,
-                const programControl &programCtrl)
-                : ptr_(to_device(host::array<host::PAGED, T, VelocitySet, TimeType>(name, mesh, programCtrl))),
-                  name_(name),
-                  mesh_(mesh)
-            {
-                initialise_boundary_condition(name_);
-            };
-
-            /**
-             * @brief Constructs a device array with field initialization
-             * @param[in] name Name identifier for the field
-             * @param[in] mesh Lattice mesh defining array dimensions
-             * @param[in] value The uniform value to initialise the array to
-             * @post Array is initialized from latest time step or initial conditions
-             **/
-            __host__ [[nodiscard]] array(
-                const std::string &name,
-                const host::latticeMesh &mesh,
-                const T value)
-                : ptr_(device::allocateArray<T>(mesh.nPoints(), value)),
-                  name_(name),
-                  mesh_(mesh)
-            {
-                initialise_boundary_condition(name_);
-            };
-
-            __host__ [[nodiscard]] array(
-                const std::string &name,
-                const host::latticeMesh &mesh,
-                const T value,
-                const deviceIndex_t deviceID)
-                : ptr_(device::allocateArray<T>(mesh.nPoints(), value, deviceID)),
-                  name_(name),
-                  mesh_(mesh)
-            {
-                std::cout << "Allocating uniform " << value << " on GPU " << deviceID << std::endl;
-                // initialise_boundary_condition(name_);
-            };
-
-            /**
              * @brief Allocates no memory on the device
              **/
             __host__ [[nodiscard]] array(const std::string &name, const host::latticeMesh &mesh)
@@ -373,9 +299,10 @@ namespace LBM
              * @return Number of elements in array
              * @note Returns mesh point count - assumes 1:1 element-to-point mapping
              **/
-            __host__ [[nodiscard]] inline constexpr label_t size() const noexcept
+            template <typename T = label_t>
+            __host__ [[nodiscard]] inline constexpr T size() const noexcept
             {
-                return mesh_.nPoints();
+                return mesh_.nPoints<T>();
             }
 
             __host__ [[nodiscard]] inline consteval time::type timeType() const noexcept
@@ -386,7 +313,6 @@ namespace LBM
 #endif
 
         private:
-#ifdef MULTI_GPU
             T **const ptrRestrict ptr_;
 
             __host__ [[nodiscard]] static T **allocate_on_devices(const host::latticeMesh &mesh, const T *hostArrayGlobal)
@@ -464,12 +390,6 @@ namespace LBM
             {
                 return allocate_device_segment(hostArrayGlobal.mesh(), hostArrayGlobal.data(), GPU_x, GPU_y, GPU_z);
             }
-#else
-            /**
-             * @brief Pointer to the data
-             **/
-            T *const ptrRestrict ptr_;
-#endif
 
             /**
              * @brief Names of the solution variables
@@ -516,13 +436,14 @@ namespace LBM
 
             /**
              * @brief Initialises boundary condition values on the GPU for a given variable name
-             * @param name The name of the variable to initialise boundary conditions for
+             * @param[in] name The name of the variable to initialise boundary conditions for
+             * @param[in] devicelist List of devices to allocate the constants over
              **/
             __host__ static void initialise_boundary_condition(const std::string &name, const std::vector<deviceIndex_t> &deviceList) noexcept
             {
 #ifdef MULTI_GPU
 
-                static_assert(MULTI_GPU_ASSERTION(), "device::array::initialise_boundary_condition not implemented for multi GPU yet");
+                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(device::array::initialise_boundary_condition));
 
                 if ((name == "u") || (name == "v") || (name == "w"))
                 {
@@ -568,20 +489,6 @@ namespace LBM
                 }
 #endif
             }
-
-            // __host__ static void initialise_boundary_condition(const std::string &name, const deviceIndex_t deviceID) noexcept
-            // {
-            //     // Set the device and synchronise
-            //     checkCudaErrors(cudaDeviceSynchronize());
-            //     checkCudaErrors(cudaSetDevice(deviceID));
-            //     checkCudaErrors(cudaDeviceSynchronize());
-
-            //     // Set the boundary conditions
-            //     initialise_boundary_condition(name);
-
-            //     // Synchronise and return
-            //     checkCudaErrors(cudaDeviceSynchronize());
-            // }
         };
     }
 }

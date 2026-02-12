@@ -72,9 +72,8 @@ namespace LBM
                     const device::ptrCollection<NUMBER_MOMENTS(), scalar_t> devMeanPtrs,
                     const scalar_t invNewCount)
                 {
-                    // Calculate the index
-                    // MODIFY FOR MULTI GPU: idx must be multi GPU aware
-                    const label_t idx = device::idx();
+                    // Index into global arrays
+                    const label_t idx = device::idx(device::threadCoordinate(), device::blockCoordinate());
 
                     // Read from global memory
                     thread::array<scalar_t, NUMBER_MOMENTS<std::size_t>()> m;

@@ -88,14 +88,14 @@ namespace LBM
          * moments from available population information, ensuring mass conservation
          * and appropriate stress conditions at boundaries.
          **/
-        template <class VelocitySet, class Dim3>
+        template <class VelocitySet>
         __device__ static inline constexpr void calculate_moments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
             const normalVector &boundaryNormal,
             [[maybe_unused]] const scalar_t *const ptrRestrict shared_buffer,
-            [[maybe_unused]] const Dim3 &Tx,
-            [[maybe_unused]] const Dim3 &X) noexcept
+            [[maybe_unused]] const device::threadCoordinate &Tx,
+            [[maybe_unused]] const device::pointCoordinate &point) noexcept
         {
             const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;

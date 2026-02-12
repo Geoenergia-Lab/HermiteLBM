@@ -64,7 +64,7 @@ namespace LBM
          * CUDA blocks during LBM simulations. It maintains double-buffered halo regions
          * to support efficient ping-pong swapping between computation steps.
          **/
-        template <class VelocitySet, const bool x_periodic, const bool y_periodic>
+        template <class VelocitySet, const bool x_periodic, const bool y_periodic, const bool z_periodic = false>
         class halo
         {
         public:
@@ -143,130 +143,49 @@ namespace LBM
              * @brief Loads halo population data from neighboring blocks
              * @param[out] pop Array to store loaded population values
              * @param[in] fGhost Collection of pointers to the halo faces
-             *
-             * This device function loads population values from neighboring blocks'
-             * halo regions based on the current thread's position within its block.
-             * It handles all 18 directions of the D3Q19 lattice model.
+             * @param[in] Tx Three-dimensional thread coordinates
+             * @param[in] Bx Three-dimensional block coordinates
              **/
             __device__ static inline void load(
                 thread::array<scalar_t, VelocitySet::Q()> &pop,
                 const device::ptrCollection<6, const scalar_t> &fGhost,
-                const pointLabel_t &Tx,
-                const pointLabel_t &Bx) noexcept
+                const device::threadCoordinate &Tx,
+                const device::blockCoordinate &Bx) noexcept
             {
-                static_assert(MULTI_GPU_ASSERTION(), "device::halo::load not implemented for multi GPU yet");
 
-                const label_t txp1 = (Tx.x + 1 + block::nx()) % block::nx();
-                const label_t txm1 = (Tx.x - 1 + block::nx()) % block::nx();
+                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(device::halo::load));
 
-                const label_t typ1 = (Tx.y + 1 + block::ny()) % block::ny();
-                const label_t tym1 = (Tx.y - 1 + block::ny()) % block::ny();
-
-                const label_t tzp1 = (Tx.z + 1 + block::nz()) % block::nz();
-                const label_t tzm1 = (Tx.z - 1 + block::nz()) % block::nz();
-
-                // MODIFY FOR MULTI GPU: NUM_BLOCK_X, Y and Z
-                const label_t bxm1 = (Bx.x - 1 + device::NUM_BLOCK_X) % device::NUM_BLOCK_X;
-                const label_t bxp1 = (Bx.x + 1 + device::NUM_BLOCK_X) % device::NUM_BLOCK_X;
-
-                const label_t bym1 = (Bx.y - 1 + device::NUM_BLOCK_Y) % device::NUM_BLOCK_Y;
-                const label_t byp1 = (Bx.y + 1 + device::NUM_BLOCK_Y) % device::NUM_BLOCK_Y;
-
-                const label_t bzm1 = (Bx.z - 1 + device::NUM_BLOCK_Z) % device::NUM_BLOCK_Z;
-                const label_t bzp1 = (Bx.z + 1 + device::NUM_BLOCK_Z) % device::NUM_BLOCK_Z;
-
-                // MODIFY FOR MULTI GPU: idxPopX, Y and Z
-                if (Tx.x == 0)
-                { // w
-                    pop[q_i<1>()] = __ldg(&fGhost.ptr<1>()[idxPopX<0, VelocitySet::QF()>(Tx.y, Tx.z, bxm1, Bx.y, Bx.z)]);
-                    pop[q_i<7>()] = __ldg(&fGhost.ptr<1>()[idxPopX<1, VelocitySet::QF()>(tym1, Tx.z, bxm1, ((Tx.y == 0) ? bym1 : Bx.y), Bx.z)]);
-                    pop[q_i<9>()] = __ldg(&fGhost.ptr<1>()[idxPopX<2, VelocitySet::QF()>(Tx.y, tzm1, bxm1, Bx.y, ((Tx.z == 0) ? bzm1 : Bx.z))]);
-                    pop[q_i<13>()] = __ldg(&fGhost.ptr<1>()[idxPopX<3, VelocitySet::QF()>(typ1, Tx.z, bxm1, ((Tx.y == (block::ny() - 1)) ? byp1 : Bx.y), Bx.z)]);
-                    pop[q_i<15>()] = __ldg(&fGhost.ptr<1>()[idxPopX<4, VelocitySet::QF()>(Tx.y, tzp1, bxm1, Bx.y, ((Tx.z == (block::nz() - 1)) ? bzp1 : Bx.z))]);
-                    if constexpr (VelocitySet::Q() == 27)
-                    {
-                        pop[q_i<19>()] = __ldg(&fGhost.ptr<1>()[idxPopX<5, VelocitySet::QF()>(tym1, tzm1, bxm1, ((Tx.y == 0) ? bym1 : Bx.y), ((Tx.z == 0) ? bzm1 : Bx.z))]);
-                        pop[q_i<21>()] = __ldg(&fGhost.ptr<1>()[idxPopX<6, VelocitySet::QF()>(tym1, tzp1, bxm1, ((Tx.y == 0) ? bym1 : Bx.y), ((Tx.z == (block::nz() - 1)) ? bzp1 : Bx.z))]);
-                        pop[q_i<23>()] = __ldg(&fGhost.ptr<1>()[idxPopX<7, VelocitySet::QF()>(typ1, tzm1, bxm1, ((Tx.y == (block::ny() - 1)) ? byp1 : Bx.y), ((Tx.z == 0) ? bzm1 : Bx.z))]);
-                        pop[q_i<26>()] = __ldg(&fGhost.ptr<1>()[idxPopX<8, VelocitySet::QF()>(typ1, tzp1, bxm1, ((Tx.y == (block::ny() - 1)) ? byp1 : Bx.y), ((Tx.z == (block::nz() - 1)) ? bzp1 : Bx.z))]);
-                    }
+                if (Tx.value<axis::X>() == 0)
+                {
+                    // West
+                    load_face<axis::X, +1, 1>(pop, fGhost, Tx, Bx);
                 }
-                else if (Tx.x == (block::nx() - 1))
-                { // e
-                    pop[q_i<2>()] = __ldg(&fGhost.ptr<0>()[idxPopX<0, VelocitySet::QF()>(Tx.y, Tx.z, bxp1, Bx.y, Bx.z)]);
-                    pop[q_i<8>()] = __ldg(&fGhost.ptr<0>()[idxPopX<1, VelocitySet::QF()>(typ1, Tx.z, bxp1, ((Tx.y == (block::ny() - 1)) ? byp1 : Bx.y), Bx.z)]);
-                    pop[q_i<10>()] = __ldg(&fGhost.ptr<0>()[idxPopX<2, VelocitySet::QF()>(Tx.y, tzp1, bxp1, Bx.y, ((Tx.z == (block::nz() - 1)) ? bzp1 : Bx.z))]);
-                    pop[q_i<14>()] = __ldg(&fGhost.ptr<0>()[idxPopX<3, VelocitySet::QF()>(tym1, Tx.z, bxp1, ((Tx.y == 0) ? bym1 : Bx.y), Bx.z)]);
-                    pop[q_i<16>()] = __ldg(&fGhost.ptr<0>()[idxPopX<4, VelocitySet::QF()>(Tx.y, tzm1, bxp1, Bx.y, ((Tx.z == 0) ? bzm1 : Bx.z))]);
-                    if constexpr (VelocitySet::Q() == 27)
-                    {
-                        pop[q_i<20>()] = __ldg(&fGhost.ptr<0>()[idxPopX<5, VelocitySet::QF()>(typ1, tzp1, bxp1, ((Tx.y == (block::ny() - 1)) ? byp1 : Bx.y), ((Tx.z == (block::nz() - 1)) ? bzp1 : Bx.z))]);
-                        pop[q_i<22>()] = __ldg(&fGhost.ptr<0>()[idxPopX<6, VelocitySet::QF()>(typ1, tzm1, bxp1, ((Tx.y == (block::ny() - 1)) ? byp1 : Bx.y), ((Tx.z == 0) ? bzm1 : Bx.z))]);
-                        pop[q_i<24>()] = __ldg(&fGhost.ptr<0>()[idxPopX<7, VelocitySet::QF()>(tym1, tzp1, bxp1, ((Tx.y == 0) ? bym1 : Bx.y), ((Tx.z == (block::nz() - 1)) ? bzp1 : Bx.z))]);
-                        pop[q_i<25>()] = __ldg(&fGhost.ptr<0>()[idxPopX<8, VelocitySet::QF()>(tym1, tzm1, bxp1, ((Tx.y == 0) ? bym1 : Bx.y), ((Tx.z == 0) ? bzm1 : Bx.z))]);
-                    }
+                else if (Tx.value<axis::X>() == (block::n<axis::X>() - 1))
+                {
+                    // East
+                    load_face<axis::X, -1, 0>(pop, fGhost, Tx, Bx);
                 }
 
-                if (Tx.y == 0)
-                { // s
-                    pop[q_i<3>()] = __ldg(&fGhost.ptr<3>()[idxPopY<0, VelocitySet::QF()>(Tx.x, Tx.z, Bx.x, bym1, Bx.z)]);
-                    pop[q_i<7>()] = __ldg(&fGhost.ptr<3>()[idxPopY<1, VelocitySet::QF()>(txm1, Tx.z, ((Tx.x == 0) ? bxm1 : Bx.x), bym1, Bx.z)]);
-                    pop[q_i<11>()] = __ldg(&fGhost.ptr<3>()[idxPopY<2, VelocitySet::QF()>(Tx.x, tzm1, Bx.x, bym1, ((Tx.z == 0) ? bzm1 : Bx.z))]);
-                    pop[q_i<14>()] = __ldg(&fGhost.ptr<3>()[idxPopY<3, VelocitySet::QF()>(txp1, Tx.z, ((Tx.x == (block::nx() - 1)) ? bxp1 : Bx.x), bym1, Bx.z)]);
-                    pop[q_i<17>()] = __ldg(&fGhost.ptr<3>()[idxPopY<4, VelocitySet::QF()>(Tx.x, tzp1, Bx.x, bym1, ((Tx.z == (block::nz() - 1)) ? bzp1 : Bx.z))]);
-                    if constexpr (VelocitySet::Q() == 27)
-                    {
-                        pop[q_i<19>()] = __ldg(&fGhost.ptr<3>()[idxPopY<5, VelocitySet::QF()>(txm1, tzm1, ((Tx.x == 0) ? bxm1 : Bx.x), bym1, ((Tx.z == 0) ? bzm1 : Bx.z))]);
-                        pop[q_i<21>()] = __ldg(&fGhost.ptr<3>()[idxPopY<6, VelocitySet::QF()>(txm1, tzp1, ((Tx.x == 0) ? bxm1 : Bx.x), bym1, ((Tx.z == (block::nz() - 1)) ? bzp1 : Bx.z))]);
-                        pop[q_i<24>()] = __ldg(&fGhost.ptr<3>()[idxPopY<7, VelocitySet::QF()>(txp1, tzp1, ((Tx.x == (block::nx() - 1)) ? bxp1 : Bx.x), bym1, ((Tx.z == (block::nz() - 1)) ? bzp1 : Bx.z))]);
-                        pop[q_i<25>()] = __ldg(&fGhost.ptr<3>()[idxPopY<8, VelocitySet::QF()>(txp1, tzm1, ((Tx.x == (block::nx() - 1)) ? bxp1 : Bx.x), bym1, ((Tx.z == 0) ? bzm1 : Bx.z))]);
-                    }
+                if (Tx.value<axis::Y>() == 0)
+                {
+                    // South
+                    load_face<axis::Y, +1, 3>(pop, fGhost, Tx, Bx);
                 }
-                else if (Tx.y == (block::ny() - 1))
-                { // n
-                    pop[q_i<4>()] = __ldg(&fGhost.ptr<2>()[idxPopY<0, VelocitySet::QF()>(Tx.x, Tx.z, Bx.x, byp1, Bx.z)]);
-                    pop[q_i<8>()] = __ldg(&fGhost.ptr<2>()[idxPopY<1, VelocitySet::QF()>(txp1, Tx.z, ((Tx.x == (block::nx() - 1)) ? bxp1 : Bx.x), byp1, Bx.z)]);
-                    pop[q_i<12>()] = __ldg(&fGhost.ptr<2>()[idxPopY<2, VelocitySet::QF()>(Tx.x, tzp1, Bx.x, byp1, ((Tx.z == (block::nz() - 1)) ? bzp1 : Bx.z))]);
-                    pop[q_i<13>()] = __ldg(&fGhost.ptr<2>()[idxPopY<3, VelocitySet::QF()>(txm1, Tx.z, ((Tx.x == 0) ? bxm1 : Bx.x), byp1, Bx.z)]);
-                    pop[q_i<18>()] = __ldg(&fGhost.ptr<2>()[idxPopY<4, VelocitySet::QF()>(Tx.x, tzm1, Bx.x, byp1, ((Tx.z == 0) ? bzm1 : Bx.z))]);
-                    if constexpr (VelocitySet::Q() == 27)
-                    {
-                        pop[q_i<20>()] = __ldg(&fGhost.ptr<2>()[idxPopY<5, VelocitySet::QF()>(txp1, tzp1, ((Tx.x == (block::nx() - 1)) ? bxp1 : Bx.x), byp1, ((Tx.z == (block::nz() - 1)) ? bzp1 : Bx.z))]);
-                        pop[q_i<22>()] = __ldg(&fGhost.ptr<2>()[idxPopY<6, VelocitySet::QF()>(txp1, tzm1, ((Tx.x == (block::nx() - 1)) ? bxp1 : Bx.x), byp1, ((Tx.z == 0) ? bzm1 : Bx.z))]);
-                        pop[q_i<23>()] = __ldg(&fGhost.ptr<2>()[idxPopY<7, VelocitySet::QF()>(txm1, tzm1, ((Tx.x == 0) ? bxm1 : Bx.x), byp1, ((Tx.z == 0) ? bzm1 : Bx.z))]);
-                        pop[q_i<26>()] = __ldg(&fGhost.ptr<2>()[idxPopY<8, VelocitySet::QF()>(txm1, tzp1, ((Tx.x == 0) ? bxm1 : Bx.x), byp1, ((Tx.z == (block::nz() - 1)) ? bzp1 : Bx.z))]);
-                    }
+                else if (Tx.value<axis::Y>() == (block::n<axis::Y>() - 1))
+                {
+                    // North
+                    load_face<axis::Y, -1, 2>(pop, fGhost, Tx, Bx);
                 }
 
-                if (Tx.z == 0)
-                { // b
-                    pop[q_i<5>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<0, VelocitySet::QF()>(Tx.x, Tx.y, Bx.x, Bx.y, bzm1)]);
-                    pop[q_i<9>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<1, VelocitySet::QF()>(txm1, Tx.y, ((Tx.x == 0) ? bxm1 : Bx.x), Bx.y, bzm1)]);
-                    pop[q_i<11>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<2, VelocitySet::QF()>(Tx.x, tym1, Bx.x, ((Tx.y == 0) ? bym1 : Bx.y), bzm1)]);
-                    pop[q_i<16>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<3, VelocitySet::QF()>(txp1, Tx.y, ((Tx.x == (block::nx() - 1)) ? bxp1 : Bx.x), Bx.y, bzm1)]);
-                    pop[q_i<18>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<4, VelocitySet::QF()>(Tx.x, typ1, Bx.x, ((Tx.y == (block::ny() - 1)) ? byp1 : Bx.y), bzm1)]);
-                    if constexpr (VelocitySet::Q() == 27)
-                    {
-                        pop[q_i<19>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<5, VelocitySet::QF()>(txm1, tym1, ((Tx.x == 0) ? bxm1 : Bx.x), ((Tx.y == 0) ? bym1 : Bx.y), bzm1)]);
-                        pop[q_i<22>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<6, VelocitySet::QF()>(txp1, typ1, ((Tx.x == (block::nx() - 1)) ? bxp1 : Bx.x), ((Tx.y == (block::ny() - 1)) ? byp1 : Bx.y), bzm1)]);
-                        pop[q_i<23>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<7, VelocitySet::QF()>(txm1, typ1, ((Tx.x == 0) ? bxm1 : Bx.x), ((Tx.y == (block::ny() - 1)) ? byp1 : Bx.y), bzm1)]);
-                        pop[q_i<25>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<8, VelocitySet::QF()>(txp1, tym1, ((Tx.x == (block::nx() - 1)) ? bxp1 : Bx.x), ((Tx.y == 0) ? bym1 : Bx.y), bzm1)]);
-                    }
+                if (Tx.value<axis::Z>() == 0)
+                {
+                    // Back
+                    load_face<axis::Z, +1, 5>(pop, fGhost, Tx, Bx);
                 }
-                else if (Tx.z == (block::nz() - 1))
-                { // f
-                    pop[q_i<6>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<0, VelocitySet::QF()>(Tx.x, Tx.y, Bx.x, Bx.y, bzp1)]);
-                    pop[q_i<10>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<1, VelocitySet::QF()>(txp1, Tx.y, ((Tx.x == (block::nx() - 1)) ? bxp1 : Bx.x), Bx.y, bzp1)]);
-                    pop[q_i<12>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<2, VelocitySet::QF()>(Tx.x, typ1, Bx.x, ((Tx.y == (block::ny() - 1)) ? byp1 : Bx.y), bzp1)]);
-                    pop[q_i<15>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<3, VelocitySet::QF()>(txm1, Tx.y, ((Tx.x == 0) ? bxm1 : Bx.x), Bx.y, bzp1)]);
-                    pop[q_i<17>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<4, VelocitySet::QF()>(Tx.x, tym1, Bx.x, ((Tx.y == 0) ? bym1 : Bx.y), bzp1)]);
-                    if constexpr (VelocitySet::Q() == 27)
-                    {
-                        pop[q_i<20>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<5, VelocitySet::QF()>(txp1, typ1, ((Tx.x == (block::nx() - 1)) ? bxp1 : Bx.x), ((Tx.y == (block::ny() - 1)) ? byp1 : Bx.y), bzp1)]);
-                        pop[q_i<21>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<6, VelocitySet::QF()>(txm1, tym1, ((Tx.x == 0) ? bxm1 : Bx.x), ((Tx.y == 0) ? bym1 : Bx.y), bzp1)]);
-                        pop[q_i<24>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<7, VelocitySet::QF()>(txp1, tym1, ((Tx.x == (block::nx() - 1)) ? bxp1 : Bx.x), ((Tx.y == 0) ? bym1 : Bx.y), bzp1)]);
-                        pop[q_i<26>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<8, VelocitySet::QF()>(txm1, typ1, ((Tx.x == 0) ? bxm1 : Bx.x), ((Tx.y == (block::ny() - 1)) ? byp1 : Bx.y), bzp1)]);
-                    }
+                else if (Tx.value<axis::Z>() == (block::n<axis::Z>() - 1))
+                {
+                    // Front
+                    load_face<axis::Z, -1, 4>(pop, fGhost, Tx, Bx);
                 }
             }
 
@@ -281,78 +200,44 @@ namespace LBM
             __device__ static inline void save(
                 const thread::array<scalar_t, VelocitySet::Q()> &pop,
                 const device::ptrCollection<6, scalar_t> &gGhost,
-                const pointLabel_t &Tx,
-                const pointLabel_t &Bx,
-                const pointLabel_t &X) noexcept
+                const device::threadCoordinate &Tx,
+                const device::blockCoordinate &Bx,
+                const device::pointCoordinate &point) noexcept
             {
 
-#ifdef MULTI_GPU
+                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(device::halo::save));
 
-                static_assert(MULTI_GPU_ASSERTION(), "device::halo::save function not implemented for multi GPU yet");
-
-                // const label_t x = Tx.x + (block::nx() * (Bx.x + BLOCK_OFFSET_X));
-                // const label_t y = Tx.y + (block::ny() * (Bx.y + BLOCK_OFFSET_Y));
-                // const label_t z = Tx.z + (block::nz() * (Bx.z + BLOCK_OFFSET_Z));
-
-#else
-
-                const label_t x = threadIdx.x + (block::nx() * blockIdx.x);
-                const label_t y = threadIdx.y + (block::ny() * blockIdx.y);
-                const label_t z = threadIdx.z + (block::nz() * blockIdx.z);
-
-#endif
-
-                // MODIFY FOR MULTI GPU: idxPopX, Y and Z
-                /* write to global pop **/
-                if (West(X.x, Tx))
+                if (West(point.value<axis::X>(), Tx))
                 {
-                    device::constexpr_for<0, VelocitySet::QF()>(
-                        [&](const auto i)
-                        {
-                            gGhost.ptr<0>()[idxPopX<i, VelocitySet::QF()>(Tx.y, Tx.z, Bx)] = pop[q_i<streaming_index<axis::X, -1>(i)>()];
-                        });
+                    // West
+                    save_face<axis::X, 0, -1>(pop, gGhost, Tx, Bx);
                 }
-                else if (East(X.x, Tx))
+                else if (East(point.value<axis::X>(), Tx))
                 {
-                    device::constexpr_for<0, VelocitySet::QF()>(
-                        [&](const auto i)
-                        {
-                            gGhost.ptr<1>()[idxPopX<i, VelocitySet::QF()>(Tx.y, Tx.z, Bx)] = pop[q_i<streaming_index<axis::X, 1>(i)>()];
-                        });
+                    // East
+                    save_face<axis::X, 1, 1>(pop, gGhost, Tx, Bx);
                 }
 
-                if (South(X.y, Tx))
+                if (South(point.value<axis::Y>(), Tx))
                 {
-                    device::constexpr_for<0, VelocitySet::QF()>(
-                        [&](const auto i)
-                        {
-                            gGhost.ptr<2>()[idxPopY<i, VelocitySet::QF()>(Tx.x, Tx.z, Bx)] = pop[q_i<streaming_index<axis::Y, -1>(i)>()];
-                        });
+                    // South
+                    save_face<axis::Y, 2, -1>(pop, gGhost, Tx, Bx);
                 }
-                else if (North(X.y, Tx))
+                else if (North(point.value<axis::Y>(), Tx))
                 {
-                    device::constexpr_for<0, VelocitySet::QF()>(
-                        [&](const auto i)
-                        {
-                            gGhost.ptr<3>()[idxPopY<i, VelocitySet::QF()>(Tx.x, Tx.z, Bx)] = pop[q_i<streaming_index<axis::Y, 1>(i)>()];
-                        });
+                    // North
+                    save_face<axis::Y, 3, 1>(pop, gGhost, Tx, Bx);
                 }
 
-                if (Back(X.z, Tx))
+                if (Back(point.value<axis::Z>(), Tx))
                 {
-                    device::constexpr_for<0, VelocitySet::QF()>(
-                        [&](const auto i)
-                        {
-                            gGhost.ptr<4>()[idxPopZ<i, VelocitySet::QF()>(Tx.x, Tx.y, Bx)] = pop[q_i<streaming_index<axis::Z, -1>(i)>()];
-                        });
+                    // Back
+                    save_face<axis::Z, 4, -1>(pop, gGhost, Tx, Bx);
                 }
-                else if (Front(X.z, Tx))
+                else if (Front(point.value<axis::Z>(), Tx))
                 {
-                    device::constexpr_for<0, VelocitySet::QF()>(
-                        [&](const auto i)
-                        {
-                            gGhost.ptr<5>()[idxPopZ<i, VelocitySet::QF()>(Tx.x, Tx.y, Bx)] = pop[q_i<streaming_index<axis::Z, 1>(i)>()];
-                        });
+                    // Front
+                    save_face<axis::Z, 5, 1>(pop, gGhost, Tx, Bx);
                 }
             }
 
@@ -383,16 +268,15 @@ namespace LBM
              * @param[in] x Global x-coordinate
              * @return True if at western boundary but not domain edge
              **/
-            template <class Dim3>
-            __device__ [[nodiscard]] static inline bool West(const label_t x, const Dim3 &Tx) noexcept
+            __device__ [[nodiscard]] static inline bool West(const label_t x, const device::threadCoordinate &Tx) noexcept
             {
                 if constexpr (x_periodic)
                 {
-                    return (Tx.x == 0);
+                    return (Tx.value<axis::X>() == 0);
                 }
                 else
                 {
-                    return (Tx.x == 0 && x != 0);
+                    return (Tx.value<axis::X>() == 0 && x != 0);
                 }
             }
 
@@ -401,16 +285,15 @@ namespace LBM
              * @param[in] x Global x-coordinate
              * @return True if at eastern boundary but not domain edge
              **/
-            template <class Dim3>
-            __device__ [[nodiscard]] static inline bool East(const label_t x, const Dim3 &Tx) noexcept
+            __device__ [[nodiscard]] static inline bool East(const label_t x, const device::threadCoordinate &Tx) noexcept
             {
                 if constexpr (x_periodic)
                 {
-                    return (Tx.x == (block::nx() - 1));
+                    return (Tx.value<axis::X>() == (block::n<axis::X>() - 1));
                 }
                 else
                 {
-                    return (Tx.x == (block::nx() - 1) && x != (device::nx - 1));
+                    return (Tx.value<axis::X>() == (block::n<axis::X>() - 1) && x != (device::n<axis::X>() - 1));
                 }
             }
 
@@ -419,16 +302,15 @@ namespace LBM
              * @param[in] y Global y-coordinate
              * @return True if at southern boundary but not domain edge
              **/
-            template <class Dim3>
-            __device__ [[nodiscard]] static inline bool South(const label_t y, const Dim3 &Tx) noexcept
+            __device__ [[nodiscard]] static inline bool South(const label_t y, const device::threadCoordinate &Tx) noexcept
             {
                 if constexpr (y_periodic)
                 {
-                    return (Tx.y == 0);
+                    return (Tx.value<axis::Y>() == 0);
                 }
                 else
                 {
-                    return (Tx.y == 0 && y != 0);
+                    return (Tx.value<axis::Y>() == 0 && y != 0);
                 }
             }
 
@@ -437,16 +319,15 @@ namespace LBM
              * @param[in] y Global y-coordinate
              * @return True if at northern boundary but not domain edge
              **/
-            template <class Dim3>
-            __device__ [[nodiscard]] static inline bool North(const label_t y, const Dim3 &Tx) noexcept
+            __device__ [[nodiscard]] static inline bool North(const label_t y, const device::threadCoordinate &Tx) noexcept
             {
                 if constexpr (y_periodic)
                 {
-                    return (Tx.y == (block::ny() - 1));
+                    return (Tx.value<axis::Y>() == (block::n<axis::Y>() - 1));
                 }
                 else
                 {
-                    return (Tx.y == (block::ny() - 1) && y != (device::ny - 1));
+                    return (Tx.value<axis::Y>() == (block::n<axis::Y>() - 1) && y != (device::n<axis::Y>() - 1));
                 }
             }
 
@@ -455,10 +336,16 @@ namespace LBM
              * @param[in] z Global z-coordinate
              * @return True if at back boundary but not domain edge
              **/
-            template <class Dim3>
-            __device__ [[nodiscard]] static inline bool Back(const label_t z, const Dim3 &Tx) noexcept
+            __device__ [[nodiscard]] static inline bool Back(const label_t z, const device::threadCoordinate &Tx) noexcept
             {
-                return (Tx.z == 0 && z != 0);
+                if constexpr (z_periodic)
+                {
+                    return (Tx.value<axis::Z>() == 0);
+                }
+                else
+                {
+                    return (Tx.value<axis::Z>() == 0 && z != 0);
+                }
             }
 
             /**
@@ -466,10 +353,16 @@ namespace LBM
              * @param[in] z Global z-coordinate
              * @return True if at front boundary but not domain edge
              **/
-            template <class Dim3>
-            __device__ [[nodiscard]] static inline bool Front(const label_t z, const Dim3 &Tx) noexcept
+            __device__ [[nodiscard]] static inline bool Front(const label_t z, const device::threadCoordinate &Tx) noexcept
             {
-                return (Tx.z == (block::nz() - 1) && z != (device::nz - 1));
+                if constexpr (z_periodic)
+                {
+                    return (Tx.value<axis::Z>() == (block::n<axis::Z>() - 1));
+                }
+                else
+                {
+                    return (Tx.value<axis::Z>() == (block::n<axis::Z>() - 1) && z != (device::n<axis::Z>() - 1));
+                }
             }
 
             /**
@@ -524,20 +417,140 @@ namespace LBM
             template <const axis::type alpha, const axis::type beta>
             __device__ __host__ [[nodiscard]] static inline constexpr dim2 ij(const label_t I) noexcept
             {
-                if constexpr ((alpha == axis::X) && (beta == axis::Y))
+                static_assert(!(alpha == beta));
+
+                return {I % (block::n<alpha>()), I / (block::n<alpha>())};
+            }
+
+            /**
+             * @brief Selects between shifted or central thread coordinates based upon a coefficient
+             * @tparam coeff The velocity set coefficient (-1, 0, +1)
+             * @param[in] dt The left and right hand side shifted thread coordinates
+             * @param[in] t The thread coordinate
+             **/
+            template <const int coeff>
+            __device__ [[nodiscard]] static inline constexpr label_t thread_stencil(
+                const thread::array<label_t, 2> &dt,
+                const label_t t) noexcept
+            {
+                if constexpr (coeff == -1)
                 {
-                    return {I % (block::nx()), I / (block::nx())};
+                    return dt[0];
                 }
 
-                if constexpr ((alpha == axis::X) && (beta == axis::Z))
+                if constexpr (coeff == 0)
                 {
-                    return {I % (block::nx()), I / (block::nx())};
+                    return t;
                 }
 
-                if constexpr ((alpha == axis::Y) && (beta == axis::Z))
+                if constexpr (coeff == 1)
                 {
-                    return {I % (block::ny()), I / (block::ny())};
+                    return dt[1];
                 }
+            }
+
+            /**
+             * @brief Selects between shifted or central block coordinates based upon a coefficient
+             * @tparam alpha The axis (X, Y or Z)
+             * @tparam coeff The velocity set coefficient (-1, 0, +1)
+             * @param[in] t The thread coordinate
+             * @param[in] b_shifted The shifted block
+             * @param[in] b The current block
+             **/
+            template <const axis::type alpha, const int coeff>
+            __device__ [[nodiscard]] static inline constexpr label_t block_stencil(const label_t t, const label_t b_shifted, const label_t b) noexcept
+            {
+                if constexpr (coeff == -1)
+                {
+                    return (t == 0) ? (b_shifted) : (b);
+                }
+
+                if constexpr (coeff == 0)
+                {
+                    return b;
+                }
+
+                if constexpr (coeff == 1)
+                {
+                    return (t == block::n<alpha>() - 1) ? (b_shifted) : (b);
+                }
+            }
+
+            /**
+             * @brief Loads the populations from the halo into the pop array for a particular face
+             * @tparam alpha The axis direction
+             * @tparam PtrIndex The index of the pointer corresponding to the halo face
+             * @tparam coeff The normal direction; -1 or +1
+             * @param[out] pop Array to store loaded population values
+             * @param[in] fGhost Collection of pointers to the halo faces
+             * @param[in] Tx Three-dimensional thread coordinates
+             * @param[in] Bx Three-dimensional block coordinates
+             **/
+            template <const axis::type alpha, const int coeff, const label_t PtrIndex>
+            __device__ static inline void load_face(
+                thread::array<scalar_t, VelocitySet::Q()> &pop,
+                const device::ptrCollection<6, const scalar_t> &fGhost,
+                const device::threadCoordinate &Tx,
+                const device::blockCoordinate &Bx) noexcept
+            {
+                const thread::array<label_t, 2> dBx{Bx.shifted_block<axis::X, -1>(), Bx.shifted_block<axis::X, +1>()};
+                const thread::array<label_t, 2> dBy{Bx.shifted_block<axis::Y, -1>(), Bx.shifted_block<axis::Y, +1>()};
+                const thread::array<label_t, 2> dBz{Bx.shifted_block<axis::Z, -1>(), Bx.shifted_block<axis::Z, +1>()};
+
+                const thread::array<label_t, 2> da{Tx.shifted_coordinate<axis::orthogonal<alpha, 0>(), -1>(), Tx.shifted_coordinate<axis::orthogonal<alpha, 0>(), +1>()};
+                const thread::array<label_t, 2> db{Tx.shifted_coordinate<axis::orthogonal<alpha, 1>(), -1>(), Tx.shifted_coordinate<axis::orthogonal<alpha, 1>(), +1>()};
+
+                device::constexpr_for<0, VelocitySet::QF()>(
+                    [&](const auto i)
+                    {
+                        const label_t t_a = thread_stencil<-VelocitySet::template c<int, axis::orthogonal<alpha, 0>()>()[streaming_index<alpha, coeff>(i)]>(da, Tx.value<axis::orthogonal<alpha, 0>()>());
+                        const label_t t_b = thread_stencil<-VelocitySet::template c<int, axis::orthogonal<alpha, 1>()>()[streaming_index<alpha, coeff>(i)]>(db, Tx.value<axis::orthogonal<alpha, 1>()>());
+
+                        // Then we should select the true block based on the thread
+                        const label_t b_x = block_stencil<axis::X, -VelocitySet::template c<int, axis::X>()[streaming_index<alpha, coeff>(i)]>(
+                            Tx.value<axis::X>(),
+                            thread_stencil<-VelocitySet::template c<int, axis::X>()[streaming_index<alpha, coeff>(i)]>(
+                                dBx, Bx.value<axis::X>()),
+                            Bx.value<axis::X>());
+
+                        const label_t b_y = block_stencil<axis::Y, -VelocitySet::template c<int, axis::Y>()[streaming_index<alpha, coeff>(i)]>(
+                            Tx.value<axis::Y>(),
+                            thread_stencil<-VelocitySet::template c<int, axis::Y>()[streaming_index<alpha, coeff>(i)]>(
+                                dBy, Bx.value<axis::Y>()),
+                            Bx.value<axis::Y>());
+
+                        const label_t b_z = block_stencil<axis::Z, -VelocitySet::template c<int, axis::Z>()[streaming_index<alpha, coeff>(i)]>(
+                            Tx.value<axis::Z>(),
+                            thread_stencil<-VelocitySet::template c<int, axis::Z>()[streaming_index<alpha, coeff>(i)]>(
+                                dBz, Bx.value<axis::Z>()),
+                            Bx.value<axis::Z>());
+
+                        pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&fGhost.ptr<PtrIndex>()[idxPop<alpha, i, VelocitySet::QF()>(t_a, t_b, b_x, b_y, b_z)]);
+                    });
+            }
+
+            /**
+             * @brief Saves population data to halo regions for neighboring blocks
+             * @tparam alpha The axis direction
+             * @tparam PtrIndex The index of the pointer corresponding to the halo face
+             * @tparam coeff The normal direction; -1 or +1
+             * @param[out] pop Array to store loaded population values
+             * @param[in] fGhost Collection of pointers to the halo faces
+             * @param[in] Tx Three-dimensional thread coordinates
+             * @param[in] Bx Three-dimensional block coordinates
+             **/
+            template <const axis::type alpha, const label_t PtrIndex, const int coeff>
+            __device__ inline static void save_face(
+                const thread::array<scalar_t, VelocitySet::Q()> &pop,
+                const device::ptrCollection<6, scalar_t> &gGhost,
+                const device::threadCoordinate &Tx,
+                const device::blockCoordinate &Bx) noexcept
+            {
+                device::constexpr_for<0, VelocitySet::QF()>(
+                    [&](const auto i)
+                    {
+                        gGhost.ptr<PtrIndex>()[idxPop<alpha, i, VelocitySet::QF()>(Tx.value<axis::orthogonal<alpha, 0>()>(), Tx.value<axis::orthogonal<alpha, 1>()>(), Bx)] = pop[q_i<streaming_index<alpha, coeff>(i)>()];
+                    });
             }
         };
     }

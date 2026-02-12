@@ -411,15 +411,186 @@ namespace LBM
      **/
     namespace device
     {
+        class threadCoordinate
+        {
+        public:
+            /**
+             * @brief Constructs from threadIdx
+             **/
+            __device__ [[nodiscard]] inline explicit threadCoordinate() noexcept
+                : x(static_cast<label_t>(threadIdx.x)),
+                  y(static_cast<label_t>(threadIdx.y)),
+                  z(static_cast<label_t>(threadIdx.z)){};
+
+            /**
+             * @brief Returns the ordinate in a particular axis
+             * @tparam alpha The axis
+             **/
+            template <axis::type alpha>
+            __device__ __host__ [[nodiscard]] inline constexpr label_t value() const noexcept
+            {
+                if constexpr (alpha == axis::X)
+                {
+                    return x;
+                }
+                if constexpr (alpha == axis::Y)
+                {
+                    return y;
+                }
+                if constexpr (alpha == axis::Z)
+                {
+                    return z;
+                }
+            }
+
+            /**
+             * @brief Shifts the coordinate along a particular axis by a coefficient
+             * @tparam alpha The axis
+             * @tparam coeff The coefficient to shift by (-1, 0 or +1)
+             **/
+            template <axis::type alpha, const int coeff>
+            __device__ [[nodiscard]] inline constexpr label_t shifted_coordinate() const noexcept
+            {
+                if constexpr (coeff == -1)
+                {
+                    return (value<alpha>() - 1 + block::n<alpha>()) % block::n<alpha>();
+                }
+                if constexpr (coeff == 0)
+                {
+                    return value<alpha>();
+                }
+                if constexpr (coeff == 1)
+                {
+                    return (value<alpha>() + 1 + block::n<alpha>()) % block::n<alpha>();
+                }
+            }
+
+        private:
+            /**
+             * @brief The underlying thread coordinates
+             **/
+            const label_t x;
+            const label_t y;
+            const label_t z;
+        };
+
+        class blockCoordinate
+        {
+        public:
+            /**
+             * @brief Constructs from blockIdx
+             **/
+            __device__ [[nodiscard]] inline explicit blockCoordinate() noexcept
+                : x(static_cast<label_t>(blockIdx.x)),
+                  y(static_cast<label_t>(blockIdx.y)),
+                  z(static_cast<label_t>(blockIdx.z)){};
+
+            /**
+             * @brief Returns the ordinate in a particular axis
+             * @tparam alpha The axis
+             **/
+            template <axis::type alpha>
+            __device__ __host__ [[nodiscard]] inline constexpr label_t value() const noexcept
+            {
+                if constexpr (alpha == axis::X)
+                {
+                    return x;
+                }
+                if constexpr (alpha == axis::Y)
+                {
+                    return y;
+                }
+                if constexpr (alpha == axis::Z)
+                {
+                    return z;
+                }
+            }
+
+            /**
+             * @brief Shifts the coordinate along a particular axis by a coefficient
+             * @tparam alpha The axis
+             * @tparam coeff The coefficient to shift by (-1, 0 or +1)
+             **/
+            template <const axis::type alpha, const int coeff>
+            __device__ [[nodiscard]] inline constexpr label_t shifted_block() const noexcept
+            {
+                if constexpr (coeff == -1)
+                {
+                    return (value<alpha>() - 1 + device::NUM_BLOCK<alpha>()) % device::NUM_BLOCK<alpha>();
+                }
+                if constexpr (coeff == 0)
+                {
+                    return value<alpha>();
+                }
+                if constexpr (coeff == 1)
+                {
+                    return (value<alpha>() + 1 + device::NUM_BLOCK<alpha>()) % device::NUM_BLOCK<alpha>();
+                }
+            }
+
+        private:
+            /**
+             * @brief The underlying block coordinates
+             **/
+            const label_t x;
+            const label_t y;
+            const label_t z;
+        };
+
+        class pointCoordinate
+        {
+        public:
+            /**
+             * @brief Constructs from thread and block coordinates
+             * @param[in] Tx The thread coordinates
+             * @param[in] Bx The block coordinates
+             **/
+            __device__ [[nodiscard]] inline explicit pointCoordinate(
+                const device::threadCoordinate &Tx,
+                const device::blockCoordinate &Bx) noexcept
+                : x(Tx.value<axis::X>() + block::nx<label_t>() * (Bx.value<axis::X>() + device::BLOCK_OFFSET_X)),
+                  y(Tx.value<axis::Y>() + block::ny<label_t>() * (Bx.value<axis::Y>() + device::BLOCK_OFFSET_Y)),
+                  z(Tx.value<axis::Z>() + block::nz<label_t>() * (Bx.value<axis::Z>() + device::BLOCK_OFFSET_Z)){};
+
+            /**
+             * @brief Returns the ordinate in a particular axis
+             * @tparam alpha The axis
+             **/
+            template <axis::type alpha>
+            __device__ __host__ [[nodiscard]] inline constexpr label_t value() const noexcept
+            {
+                if constexpr (alpha == axis::X)
+                {
+                    return x;
+                }
+                if constexpr (alpha == axis::Y)
+                {
+                    return y;
+                }
+                if constexpr (alpha == axis::Z)
+                {
+                    return z;
+                }
+            }
+
+        private:
+            /**
+             * @brief The underlying point coordinates
+             **/
+            const label_t x;
+            const label_t y;
+            const label_t z;
+        };
+
         /**
          * @brief Check if current thread exceeds global bounds
          * @note Uses device constants device::nx, device::ny, device::nz
          * @return True if thread is outside domain boundaries
          **/
-        __device__ [[nodiscard]] inline bool out_of_bounds() noexcept
+        __device__ [[nodiscard]] inline bool out_of_bounds(const device::pointCoordinate &point) noexcept
         {
             // MODIFY THIS FOR MULTI GPU
-            return ((threadIdx.x + block::nx() * blockIdx.x >= device::nx) || (threadIdx.y + block::ny() * blockIdx.y >= device::ny) || (threadIdx.z + block::nz() * blockIdx.z >= device::nz));
+            return ((point.value<axis::X>() >= device::n<axis::X>()) || (point.value<axis::Y>() >= device::n<axis::Y>()) || (point.value<axis::Z>() >= device::n<axis::Z>()));
         }
 
         /**
@@ -439,21 +610,12 @@ namespace LBM
 
         /**
          * @overload
-         * @param tx Thread coordinates (Dim3)
-         * @param bx Block indices (Dim3)
+         * @param tx Thread coordinates (device::threadCoordinate)
+         * @param bx Block indices (device::threadCoordinate)
          **/
-        template <class Dim3>
-        __device__ [[nodiscard]] inline label_t idx(const Dim3 &Tx, const Dim3 &Bx) noexcept
+        __device__ [[nodiscard]] inline label_t idx(const threadCoordinate &Tx, const blockCoordinate &Bx) noexcept
         {
-            return idx(static_cast<label_t>(Tx.x), static_cast<label_t>(Tx.y), static_cast<label_t>(Tx.z), static_cast<label_t>(Bx.x), static_cast<label_t>(Bx.y), static_cast<label_t>(Bx.z));
-        }
-
-        /**
-         * @overload
-         **/
-        __device__ [[nodiscard]] inline label_t idx() noexcept
-        {
-            return idx(threadIdx, blockIdx);
+            return idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>(), Bx.value<axis::X>(), Bx.value<axis::Y>(), Bx.value<axis::Z>());
         }
 
         /**
@@ -476,22 +638,12 @@ namespace LBM
 
         /**
          * @overload
-         * @param tx Thread coordinates (Dim3)
+         * @param tx Thread coordinates (device::threadCoordinate)
          **/
-        template <class Dim3>
-        __device__ [[nodiscard]] inline label_t idxBlock(const Dim3 &Tx) noexcept
+        __device__ [[nodiscard]] inline label_t idxBlock(const device::threadCoordinate &Tx) noexcept
         {
-            return idxBlock(static_cast<label_t>(Tx.x), static_cast<label_t>(Tx.y), static_cast<label_t>(Tx.z));
+            return idxBlock(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
         }
-
-        /**
-         * @overload
-         **/
-        __device__ [[nodiscard]] inline label_t idxBlock() noexcept
-        {
-            return idxBlock(threadIdx);
-        }
-
         /**
          * @brief Population index for X-aligned arrays (device version)
          * @tparam pop Population index
@@ -507,17 +659,6 @@ namespace LBM
         }
 
         /**
-         * @overload
-         * @param ty,tz Thread-local y/z coordinates
-         * @param bx Block indices (Dim3)
-         **/
-        template <const label_t pop, const label_t QF, class Dim3>
-        __device__ [[nodiscard]] inline label_t idxPopX(const label_t ty, const label_t tz, const Dim3 &Bx) noexcept
-        {
-            return idxPopX<pop, QF>(ty, tz, static_cast<label_t>(Bx.x), static_cast<label_t>(Bx.y), static_cast<label_t>(Bx.z));
-        }
-
-        /**
          * @brief Population index for Y-aligned arrays (device version)
          * @copydetails idxPopX
          * @param tx,tz Thread-local x/z coordinates
@@ -527,17 +668,6 @@ namespace LBM
         __device__ [[nodiscard]] inline label_t idxPopY(const label_t tx, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
         {
             return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz))));
-        }
-
-        /**
-         * @overload
-         * @param tx,tz Thread-local x/z coordinates
-         * @param bx Block indices (Dim3)
-         **/
-        template <const label_t pop, const label_t QF, class Dim3>
-        __device__ [[nodiscard]] inline label_t idxPopY(const label_t tx, const label_t tz, const Dim3 &Bx) noexcept
-        {
-            return idxPopY<pop, QF>(tx, tz, static_cast<label_t>(Bx.x), static_cast<label_t>(Bx.y), static_cast<label_t>(Bx.z));
         }
 
         /**
@@ -553,14 +683,43 @@ namespace LBM
         }
 
         /**
-         * @overload
-         * @param tx,ty Thread-local x/y coordinates
-         * @param bx Block indices (Dim3)
+         * @brief Selects between idxPopX, idxPopY and idxPopZ based on the axis
+         * @tparam pop Population index
+         * @tparam QF Number of populations
+         * @param[in] ta,tb Thread coordinate in the two directions perpendicular to alpha
+         * @param[in] bx,by,bz Block indices
          **/
-        template <const label_t pop, const label_t QF, class Dim3>
-        __device__ [[nodiscard]] inline label_t idxPopZ(const label_t tx, const label_t ty, const Dim3 &Bx) noexcept
+        template <const axis::type alpha, const label_t pop, const label_t QF>
+        __device__ [[nodiscard]] inline label_t idxPop(
+            const label_t ta, const label_t tb,
+            const label_t bx, const label_t by, const label_t bz)
         {
-            return idxPopZ<pop, QF>(tx, ty, static_cast<label_t>(Bx.x), static_cast<label_t>(Bx.y), static_cast<label_t>(Bx.z));
+            if constexpr (alpha == axis::X)
+            {
+                return idxPopX<pop, QF>(ta, tb, bx, by, bz);
+            }
+
+            if constexpr (alpha == axis::Y)
+            {
+                return idxPopY<pop, QF>(ta, tb, bx, by, bz);
+            }
+
+            if constexpr (alpha == axis::Z)
+            {
+                return idxPopZ<pop, QF>(ta, tb, bx, by, bz);
+            }
+        }
+
+        /**
+         * @overload
+         * @param Bx The block coordinate
+         */
+        template <const axis::type alpha, const label_t pop, const label_t QF>
+        __device__ [[nodiscard]] inline label_t idxPop(
+            const label_t talpha, const label_t tbeta,
+            const blockCoordinate &Bx)
+        {
+            return idxPop<alpha, pop, QF>(talpha, tbeta, Bx.value<axis::X>(), Bx.value<axis::Y>(), Bx.value<axis::Z>());
         }
     }
 

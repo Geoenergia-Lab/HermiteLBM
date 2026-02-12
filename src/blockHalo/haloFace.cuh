@@ -301,6 +301,12 @@ namespace LBM
             {
                 constexpr const thread::array<label_t, VelocitySet::QF()> indices = velocitySet::template indices_on_face<VelocitySet, alpha, side>();
 
+#ifdef MULTI_GPU
+
+                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(haloFace::handleGhostCells));
+
+#endif
+
                 // MODIFY FOR MULTI GPU: idxPop must be multi GPU aware
                 host::constexpr_for<0, VelocitySet::QF()>(
                     [&](const auto q)

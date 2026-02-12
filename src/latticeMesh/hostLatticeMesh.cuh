@@ -148,7 +148,7 @@ namespace LBM
 
 #ifdef MULTI_GPU
 
-                    static_assert(MULTI_GPU_ASSERTION(), "host::latticeMesh constructor not implemented for multi GPU yet");
+                    static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(host::latticeMesh));
 
                     // Check that the mesh dimensions are not too large for GPU memory
                     for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < programCtrl.deviceList().size(); virtualDeviceIndex++)
@@ -214,7 +214,7 @@ namespace LBM
 
 #ifdef MULTI_GPU
 
-                static_assert(MULTI_GPU_ASSERTION(), "host::latticeMesh constructor not implemented for multi GPU yet");
+                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(host::latticeMesh));
 
                 {
                     const label_t nxGPUs = nDevices<axis::X>();

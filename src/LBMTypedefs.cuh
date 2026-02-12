@@ -228,7 +228,7 @@ namespace LBM
     {
         /**
          * @brief Cardinal axis directions: X, Y, Z or NO_DIRECTION
-         */
+         **/
         typedef enum Enum : label_t
         {
             X = 0,
@@ -236,6 +236,54 @@ namespace LBM
             Z = 2,
             NO_DIRECTION = static_cast<label_t>(-1)
         } type;
+
+        /**
+         * @brief Returns axis directions orthogonal to alpha
+         * @tparam alpha The axis direction
+         * @tparam i The index of the orthogonal axis (must be 0 or 1)
+         * @returns One of two axis directions orthogonal to alpha
+         **/
+        template <const axis::type alpha, const label_t i>
+        __device__ __host__ [[nodiscard]] inline consteval axis::type orthogonal() noexcept
+        {
+            static_assert(i < 2);
+
+            if constexpr (alpha == axis::X)
+            {
+                if constexpr (i == 0)
+                {
+                    return axis::Y;
+                }
+                if constexpr (i == 1)
+                {
+                    return axis::Z;
+                }
+            }
+
+            if constexpr (alpha == axis::Y)
+            {
+                if constexpr (i == 0)
+                {
+                    return axis::X;
+                }
+                if constexpr (i == 1)
+                {
+                    return axis::Z;
+                }
+            }
+
+            if constexpr (alpha == axis::Z)
+            {
+                if constexpr (i == 0)
+                {
+                    return axis::X;
+                }
+                if constexpr (i == 1)
+                {
+                    return axis::Y;
+                }
+            }
+        }
 
         /**
          * @brief Enumerated type for axes: The axis either can or cannot be null
@@ -330,6 +378,44 @@ namespace LBM
         __device__ __constant__ label_t NUM_BLOCK_X;
         __device__ __constant__ label_t NUM_BLOCK_Y;
         __device__ __constant__ label_t NUM_BLOCK_Z;
+
+        template <axis::type alpha>
+        __device__ [[nodiscard]] inline constexpr label_t n() noexcept
+        {
+            if constexpr (alpha == axis::X)
+            {
+                return nx;
+            }
+
+            if constexpr (alpha == axis::Y)
+            {
+                return ny;
+            }
+
+            if constexpr (alpha == axis::Z)
+            {
+                return nz;
+            }
+        }
+
+        template <axis::type alpha>
+        __device__ [[nodiscard]] inline constexpr label_t NUM_BLOCK() noexcept
+        {
+            if constexpr (alpha == axis::X)
+            {
+                return NUM_BLOCK_X;
+            }
+
+            if constexpr (alpha == axis::Y)
+            {
+                return NUM_BLOCK_Y;
+            }
+
+            if constexpr (alpha == axis::Z)
+            {
+                return NUM_BLOCK_Z;
+            }
+        }
 
         __device__ __constant__ label_t BLOCK_OFFSET_X;
         __device__ __constant__ label_t BLOCK_OFFSET_Y;

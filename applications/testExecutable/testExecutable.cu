@@ -53,8 +53,6 @@ SourceFiles
 
 using namespace LBM;
 
-using VelocitySet = D3Q19;
-
 int main(const int argc, const char *const argv[])
 {
     static_assert((std::is_same<BoundaryConditions, lidDrivenCavity>::value) || std::is_same<BoundaryConditions, jetFlow>::value);
@@ -111,7 +109,7 @@ int main(const int argc, const char *const argv[])
                 });
         });
 
-    device::array<field::FULL_FIELD, label_t, VelocitySet, time::instantaneous> testArray(deviceIndexArray);
+    device::array<field::FULL_FIELD, label_t, VelocitySet, time::instantaneous> testArray(deviceIndexArray, programCtrl);
 
     streamHandler streams(programCtrl);
 

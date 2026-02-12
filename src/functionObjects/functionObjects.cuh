@@ -127,7 +127,7 @@ namespace LBM
             // Otherwise, just create the array without initializing it
             else
             {
-                return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh, programCtrl);
+                return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh);
             }
         }
 
@@ -146,7 +146,7 @@ namespace LBM
             // Otherwise, just create the array without initializing it
             else
             {
-                return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh, programCtrl);
+                return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh);
             }
         }
     }

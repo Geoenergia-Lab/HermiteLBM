@@ -79,8 +79,8 @@ namespace LBM
          * @param[in] Tx Thread coordinates
          * @param[in] Bx Block coordinates
          **/
-        __device__ [[nodiscard]] inline normalVector(const pointLabel_t &X) noexcept
-            : bitmask_(computeBitmask(X)){};
+        __device__ [[nodiscard]] inline normalVector(const device::pointCoordinate &point) noexcept
+            : bitmask_(computeBitmask(point)){};
 
         /**
          * @name Basic Boundary Flags
@@ -289,11 +289,11 @@ namespace LBM
          * @brief Compute bitmask from current thread indices
          * @return Bitmask representing boundary configuration
          **/
-        __device__ [[nodiscard]] inline static uint8_t computeBitmask(const pointLabel_t &X) noexcept
+        __device__ [[nodiscard]] inline static uint8_t computeBitmask(const device::pointCoordinate &point) noexcept
         {
-            static_assert(MULTI_GPU_ASSERTION(), "normalVector::computeBitmask not implemented for multi GPU yet");
+            static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(normalVector::computeBitmask));
 
-            return computeBitmask(X.x, X.y, X.z);
+            return computeBitmask(point.value<axis::X>(), point.value<axis::Y>(), point.value<axis::Z>());
         }
 
         /**
@@ -315,16 +315,16 @@ namespace LBM
         __device__ [[nodiscard]] inline static uint8_t computeBitmask(const label_t x, const label_t y, const label_t z) noexcept
         {
             return static_cast<uint8_t>(
-                (x == 0) << 0 |                      // West (bit0)
-                (x == device::nx - 1) << 1 |         // East (bit1)
-                (y == 0) << 2 |                      // South (bit2)
-                (y == device::ny - 1) << 3 |         // North (bit3)
-                (z == 0) << 4 |                      // Back (bit4)
-                (z == device::nz - 1) << 5 |         // Front (bit5)
-                (!!(x == 0 || x == device::nx - 1 || //
-                    y == 0 || y == device::ny - 1 || //
-                    z == 0 || z == device::nz - 1))  //
-                    << 6);                           // Any boundary (bit6)
+                (x == 0) << 0 |                                // West (bit0)
+                (x == device::n<axis::X>() - 1) << 1 |         // East (bit1)
+                (y == 0) << 2 |                                // South (bit2)
+                (y == device::n<axis::Y>() - 1) << 3 |         // North (bit3)
+                (z == 0) << 4 |                                // Back (bit4)
+                (z == device::n<axis::Z>() - 1) << 5 |         // Front (bit5)
+                (!!(x == 0 || x == device::n<axis::X>() - 1 || //
+                    y == 0 || y == device::n<axis::Y>() - 1 || //
+                    z == 0 || z == device::n<axis::Z>() - 1))  //
+                    << 6);                                     // Any boundary (bit6)
         }
     };
 }

@@ -789,7 +789,8 @@ namespace LBM
             std::vector<std::vector<T>> soa(nFields, std::vector<scalar_t>(nNodes, 0));
 
 #ifdef MULTI_GPU
-            static_assert(MULTI_GPU_ASSERTION(), "deinterleaveAoS not implemented for multi GPU yet: index offsets to idxScalarGlobal potentially incorrect");
+
+            static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(fileIO::deinterleaveAoS));
 
             const label_t nxGPUs = mesh.template nDevices<axis::X>();
             const label_t nyGPUs = mesh.template nDevices<axis::Y>();
