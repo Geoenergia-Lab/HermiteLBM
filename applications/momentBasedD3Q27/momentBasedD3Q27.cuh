@@ -63,7 +63,7 @@ SourceFiles
 
 namespace LBM
 {
-    using BoundaryConditions = typename boundaryConditions::traits<boundaryConditions::caseName()>::type;
+    using BoundaryConditions = boundaryConditions::traits<boundaryConditions::caseName()>::type;
     using VelocitySet = D3Q27;
     using Collision = secondOrder;
     using BlockHalo = device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>;

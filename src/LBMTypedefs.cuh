@@ -104,10 +104,18 @@ namespace LBM
      * @note Types are either 32 bit or 64 bit floating point numbers
      * @note These types are supplied via command line defines during compilation
      **/
-#ifdef SCALAR_PRECISION_32
+#ifdef SCALAR_PRECISION
+#if SCALAR_PRECISION == 32
     typedef float scalar_t;
-#elif SCALAR_PRECISION_64
+#elif SCALAR_PRECISION == 64
     typedef double scalar_t;
+#else
+    static_assert(false, "Unsupported SCALAR_PRECISION value (must be 32 or 64)");
+    typedef float scalar_t;
+#endif
+#else
+    static_assert(false, "SCALAR_PRECISION not defined");
+    typedef float scalar_t;
 #endif
 
     /**
@@ -125,9 +133,17 @@ namespace LBM
      * @note Types are either 32 bit or 64 bit unsigned integers
      * @note These types are supplied via command line defines during compilation
      **/
-#ifdef LABEL_SIZE_32
+#ifdef LABEL_SIZE
+#if LABEL_SIZE == 32
     typedef uint32_t label_t;
-#elif LABEL_SIZE_64
+#elif LABEL_SIZE == 64
+    typedef uint64_t label_t;
+#else
+    static_assert(false, "Unsupported LABEL_SIZE value (must be 32 or 64)");
+    typedef uint64_t label_t;
+#endif
+#else
+    static_assert(false, "LABEL_SIZE not defined");
     typedef uint64_t label_t;
 #endif
 

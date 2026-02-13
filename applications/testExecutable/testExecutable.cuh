@@ -63,7 +63,7 @@ SourceFiles
 
 namespace LBM
 {
-    using BoundaryConditions = typename boundaryConditions::traits<boundaryConditions::caseName()>::type;
+    using BoundaryConditions = boundaryConditions::traits<boundaryConditions::caseName()>::type;
     using VelocitySet = D3Q27;
     using Collision = secondOrder;
     using BlockHalo = device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>;
@@ -128,7 +128,7 @@ namespace LBM
 
         if ((threadIdx.x == 0) && (threadIdx.y == 0) && (threadIdx.z == 0))
         {
-            print(deviceID, Bx.value<axis::X>(), GLOBAL_X_BLOCK_OFFSET, Bx.value<axis::Y>(), GLOBAL_Y_BLOCK_OFFSET, Bx.value<axis::Z>(), GLOBAL_Z_BLOCK_OFFSET);
+            print(deviceID, Bx.value<axis::X>(), device::BLOCK_OFFSET_X, Bx.value<axis::Y>(), device::BLOCK_OFFSET_Y, Bx.value<axis::Z>(), device::BLOCK_OFFSET_Z);
         }
 
         deviceIDPtr[idx] = deviceID + 100;

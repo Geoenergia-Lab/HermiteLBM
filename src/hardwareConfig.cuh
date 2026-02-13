@@ -64,10 +64,12 @@ namespace LBM
         template <typename T = label_t>
         __device__ __host__ [[nodiscard]] inline consteval T nx() noexcept
         {
-#ifdef SCALAR_PRECISION_32
+#ifdef SCALAR_PRECISION
+            static_assert((sizeof(scalar_t) == (sizeof(float))) || (sizeof(scalar_t) == (sizeof(double))), "Unsupported SCALAR_PRECISION value (must be 32 or 64)");
+
+            return 8 * sizeof(float) / (sizeof(scalar_t));
+#else
             return 8;
-#elif SCALAR_PRECISION_64
-            return 4;
 #endif
         }
 
@@ -77,10 +79,12 @@ namespace LBM
         template <typename T = label_t>
         __device__ __host__ [[nodiscard]] inline consteval T ny() noexcept
         {
-#ifdef SCALAR_PRECISION_32
+#ifdef SCALAR_PRECISION
+            static_assert((sizeof(scalar_t) == (sizeof(float))) || (sizeof(scalar_t) == (sizeof(double))), "Unsupported SCALAR_PRECISION value (must be 32 or 64)");
+
+            return 8 * sizeof(float) / (sizeof(scalar_t));
+#else
             return 8;
-#elif SCALAR_PRECISION_64
-            return 4;
 #endif
         }
 
@@ -90,10 +94,12 @@ namespace LBM
         template <typename T = label_t>
         __device__ __host__ [[nodiscard]] inline consteval T nz() noexcept
         {
-#ifdef SCALAR_PRECISION_32
+#ifdef SCALAR_PRECISION
+            static_assert((sizeof(scalar_t) == (sizeof(float))) || (sizeof(scalar_t) == (sizeof(double))), "Unsupported SCALAR_PRECISION value (must be 32 or 64)");
+
+            return 8 * sizeof(float) / (sizeof(scalar_t));
+#else
             return 8;
-#elif SCALAR_PRECISION_64
-            return 4;
 #endif
         }
 

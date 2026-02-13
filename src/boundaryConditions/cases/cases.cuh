@@ -50,29 +50,19 @@ SourceFiles
 #ifndef __MBLBM_CASES_CUH
 #define __MBLBM_CASES_CUH
 
+#include "invalidBoundaryCondition.cuh"
 #include "jetFlow/jetFlow.cuh"
 #include "lidDrivenCavity/lidDrivenCavity.cuh"
 
 #define BOUNDARY_CONDITION JET_FLOW
 // #define BOUNDARY_CONDITION LID_DRIVEN_CAVITY
 
+#ifndef BOUNDARY_CONDITION
+#define BOUNDARY_CONDITION INVALID
+#endif
+
 namespace LBM
 {
-    namespace assertions
-    {
-        namespace boundaryConditions
-        {
-            __device__ __host__ inline consteval void validate() noexcept
-            {
-#ifndef BOUNDARY_CONDITION
-                static_assert(false, "BOUNDARY_CONDITION must be defined to a valid boundaryCondition_t enumerator");
-#else
-                static_assert(true, "BOUNDARY_CONDITION must be defined to a valid boundaryCondition_t enumerator");
-#endif
-            }
-        }
-    }
-
     namespace boundaryConditions
     {
         /**
@@ -90,8 +80,9 @@ namespace LBM
          */
         typedef enum Enum : int
         {
-            JET_FLOW,
-            LID_DRIVEN_CAVITY
+            INVALID = 0,
+            JET_FLOW = 1,
+            LID_DRIVEN_CAVITY = 2
         } boundaryCondition_t;
 
         /**
@@ -101,9 +92,9 @@ namespace LBM
          * non‑type template parameter) to a concrete type that implements or represents
          * that boundary condition. Specializations are provided for each known enumerator.
          *
-         * @tparam BC A compile‑time constant of type `boundaryCondition_t`.
+         * @tparam BoundaryCondition A compile‑time constant of type `boundaryCondition_t`.
          */
-        template <const boundaryCondition_t BC>
+        template <const boundaryCondition_t BoundaryCondition>
         class traits;
 
         /**
@@ -137,6 +128,29 @@ namespace LBM
         };
 
         /**
+         * @brief Specialization of traits for the JET_FLOW case.
+         *
+         * Provides the type alias `type` defined as `invalid`.
+         */
+        template <>
+        class traits<boundaryCondition_t::INVALID>
+        {
+        public:
+            /**
+             * @brief Concrete type associated with the INVALID boundary condition.
+             **/
+            using type = invalidBoundaryCondition;
+        };
+
+        /**
+         * @brief Asserts that the boundary condition type is valid
+         **/
+        __device__ __host__ inline consteval void validate() noexcept
+        {
+            static_assert(!(BOUNDARY_CONDITION == INVALID), "BOUNDARY_CONDITION must be defined to a valid boundaryCondition_t enumerator");
+        }
+
+        /**
          * @brief Compile‑time evaluation of the active boundary condition.
          *
          * This function uses preprocessor macros (`JETFLOW` or `LIDDRIVENCAVITY`) to
@@ -150,13 +164,11 @@ namespace LBM
          * @return The boundary condition enumerator corresponding to the defined macro.
          * @note Exactly one of `JETFLOW` or `LIDDRIVENCAVITY` should be defined;
          *       if neither is defined, the function falls back to `JET_FLOW` (or could
-         *       trigger a compile‑time error). The current implementation returns
-         *       `JET_FLOW` if neither macro is set – consider adding a `#error` directive
-         *       to enforce a choice.
+         *       trigger a compile‑time error).
          */
         __device__ __host__ [[nodiscard]] inline consteval boundaryCondition_t caseName() noexcept
         {
-            assertions::boundaryConditions::validate();
+            validate();
 
             return boundaryCondition_t::BOUNDARY_CONDITION;
         }
