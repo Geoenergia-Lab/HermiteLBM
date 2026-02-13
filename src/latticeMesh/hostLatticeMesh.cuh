@@ -240,7 +240,7 @@ namespace LBM
                        string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
                   nDevices_(initialise_device_list("deviceDecomposition")){};
 
-            __host__ [[nodiscard]] latticeMesh(const blockLabel_t meshDimensions) noexcept
+            __host__ [[nodiscard]] latticeMesh(const blockLabel_t &meshDimensions) noexcept
                 : nx_(meshDimensions.nx),
                   ny_(meshDimensions.ny),
                   nz_(meshDimensions.nz),
@@ -251,7 +251,7 @@ namespace LBM
                        string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
                   nDevices_(initialise_device_list("deviceDecomposition")){};
 
-            __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const blockLabel_t meshDimensions) noexcept
+            __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const blockLabel_t &meshDimensions) noexcept
                 : nx_(meshDimensions.nx),
                   ny_(meshDimensions.ny),
                   nz_(meshDimensions.nz),

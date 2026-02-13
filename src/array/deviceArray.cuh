@@ -269,11 +269,41 @@ namespace LBM
                 return TimeType;
             }
 
+            // Should copy all pointers in ptr_ to hostPtr
+            __host__ void copy_to_host(T *const ptrRestrict hostPtr)
+            {
+                constexpr const std::size_t N = 1;
+
+                const std::size_t nDevices = mesh_.nDevices<axis::X>() * mesh_.nDevices<axis::Y>() * mesh_.nDevices<axis::Z>();
+
+                const std::size_t nxPointsPerGPU = mesh_.nx<std::size_t>() / mesh_.nDevices<axis::X, std::size_t>();
+                const std::size_t nyPointsPerGPU = mesh_.ny<std::size_t>() / mesh_.nDevices<axis::Y, std::size_t>();
+                const std::size_t nzPointsPerGPU = mesh_.nz<std::size_t>() / mesh_.nDevices<axis::Z, std::size_t>();
+                const std::size_t nPointsPerGPU = nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU;
+
+                for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < nDevices; virtualDeviceIndex++)
+                {
+                    const label_t startIndex = virtualDeviceIndex * nPointsPerGPU;
+
+                    checkCudaErrors(cudaMemcpy(&(hostPtr[startIndex]), ptr_[virtualDeviceIndex], nPointsPerGPU * sizeof(T), cudaMemcpyDeviceToHost));
+                }
+            }
+
         private:
             /**
              * @brief The underlying pointers to device memory
              **/
             T **const ptrRestrict ptr_;
+
+            /**
+             * @brief Names of the solution variables
+             **/
+            const std::string &name_;
+
+            /**
+             * @brief Reference to the mesh
+             **/
+            const host::latticeMesh &mesh_;
 
             /**
              * @brief Allocates all partitions of the array to the devices
@@ -361,16 +391,6 @@ namespace LBM
 
                 return devPtr;
             }
-
-            /**
-             * @brief Names of the solution variables
-             **/
-            const std::string &name_;
-
-            /**
-             * @brief Reference to the mesh
-             **/
-            const host::latticeMesh &mesh_;
 
             /**
              * @brief Copies the underlying std::vector of a host::array type to the device
