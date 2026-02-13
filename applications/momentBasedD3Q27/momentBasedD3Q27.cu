@@ -96,7 +96,7 @@ int main(const int argc, const char *const argv[])
     // Allocate a buffer of pinned memory on the host for writing
     host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.nPoints() * NUMBER_MOMENTS(), mesh);
 
-    // objectRegistry<VelocitySet, NStreams()> runTimeObjects(hostWriteBuffer, mesh, devPtrs, streamsLBM, programCtrl);
+    objectRegistry<VelocitySet, NStreams()> runTimeObjects(hostWriteBuffer, mesh, devPtrs, streamsLBM, programCtrl);
 
     BlockHalo blockHalo(mesh, programCtrl);
 
@@ -124,7 +124,7 @@ int main(const int argc, const char *const argv[])
                 hostWriteBuffer.data(),
                 timeStep);
 
-            // runTimeObjects.save(timeStep);
+            runTimeObjects.save(timeStep);
         }
 
         // Main kernel
@@ -135,7 +135,7 @@ int main(const int argc, const char *const argv[])
             });
 
         // Calculate S kernel
-        // runTimeObjects.calculate(timeStep);
+        runTimeObjects.calculate(timeStep);
 
         // Halo pointer swap
         blockHalo.swap();
