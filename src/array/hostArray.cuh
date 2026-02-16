@@ -109,7 +109,7 @@ namespace LBM
                 {
                     std::cout << "Freeing ptr" << std::endl;
                 }
-                checkCudaErrors(cudaFreeHost(ptr_));
+                errorHandler::check(cudaFreeHost(ptr_));
                 if constexpr (verbose())
                 {
                     std::cout << "Freed ptr" << std::endl;
@@ -194,8 +194,6 @@ namespace LBM
                 const label_t GPU_y = 0,
                 const label_t GPU_z = 0)
             {
-                // Should check that mesh.nPoints() * N is less than or equal to nPoints_
-
                 const label_t nxGPUs = mesh.nDevices<axis::X>();
                 const label_t nyGPUs = mesh.nDevices<axis::Y>();
                 const label_t nzGPUs = mesh.nDevices<axis::Z>();
@@ -213,18 +211,7 @@ namespace LBM
 
                 for (label_t field = 0; field < N; field++)
                 {
-                    checkCudaErrors(
-                        cudaMemcpy(
-                            &(ptr_[(field * mesh.nPoints()) + (virtualDeviceIndex * nPointsPerGPU)]),
-                            devPtrs[field],
-                            nPointsPerGPU * sizeof(T),
-                            cudaMemcpyDeviceToHost));
-
-                    // host::to_host(
-                    //     devPtrs[field],
-                    //     &(ptr_[startIndex]),
-                    //     field,
-                    //     mesh.nPoints());
+                    errorHandler::check(cudaMemcpy(&(ptr_[(field * mesh.nPoints()) + (virtualDeviceIndex * nPointsPerGPU)]), devPtrs[field], nPointsPerGPU * sizeof(T), cudaMemcpyDeviceToHost));
                 }
             }
 
@@ -262,6 +249,9 @@ namespace LBM
              **/
             const host::latticeMesh &mesh_;
 
+            /**
+             * @brief Names of the solution variable
+             **/
             const name_t name_;
         };
 

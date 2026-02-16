@@ -233,7 +233,7 @@ namespace LBM
         __host__ [[nodiscard]] deviceIndex_t nAvailableDevices() const noexcept
         {
             deviceIndex_t deviceCount = -1;
-            cudaGetDeviceCount(&deviceCount);
+            errorHandler::check(cudaGetDeviceCount(&deviceCount));
             return deviceCount;
         }
     };

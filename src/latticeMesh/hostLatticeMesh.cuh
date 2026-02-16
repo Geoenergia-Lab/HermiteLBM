@@ -77,7 +77,7 @@ namespace LBM
              * - Calculation of LBM relaxation parameters
              * - Initialization of device constants for GPU execution
              **/
-            __host__ [[nodiscard]] latticeMesh([[maybe_unused]] const programControl &programCtrl) noexcept
+            __host__ [[nodiscard]] latticeMesh([[maybe_unused]] const programControl &programCtrl)
                 : nx_(string::extractParameter<label_t>(string::readFile("latticeMesh"), "nx")),
                   ny_(string::extractParameter<label_t>(string::readFile("latticeMesh"), "ny")),
                   nz_(string::extractParameter<label_t>(string::readFile("latticeMesh"), "nz")),
@@ -88,6 +88,8 @@ namespace LBM
                        string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
                   nDevices_(initialise_device_list("deviceDecomposition"))
             {
+                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(host::latticeMesh));
+
                 std::cout << "latticeMesh:" << std::endl;
                 std::cout << "{" << std::endl;
                 std::cout << "    nx = " << nx_ << ";" << std::endl;
@@ -111,19 +113,19 @@ namespace LBM
                 {
                     if (!(block::nx() * nxBlocks() == nx_))
                     {
-                        errorHandler(ERR_SIZE, "block::nx() * mesh.nxBlocks() not equal to mesh.nx()\nMesh dimensions should be multiples of 8");
+                        throw std::runtime_error("block::nx() * mesh.nxBlocks() not equal to mesh.nx()\nMesh dimensions should be multiples of 8");
                     }
                     if (!(block::ny() * nyBlocks() == ny_))
                     {
-                        errorHandler(ERR_SIZE, "block::ny() * mesh.nyBlocks() not equal to mesh.ny()\nMesh dimensions should be multiples of 8");
+                        throw std::runtime_error("block::ny() * mesh.nyBlocks() not equal to mesh.ny()\nMesh dimensions should be multiples of 8");
                     }
                     if (!(block::nz() * nzBlocks() == nz_))
                     {
-                        errorHandler(ERR_SIZE, "block::nz() * mesh.nzBlocks() not equal to mesh.nz()\nMesh dimensions should be multiples of 8");
+                        throw std::runtime_error("block::nz() * mesh.nzBlocks() not equal to mesh.nz()\nMesh dimensions should be multiples of 8");
                     }
                     if (!(block::nx() * nxBlocks() * block::ny() * nyBlocks() * block::nz() * nzBlocks() == nx_ * ny_ * nz_))
                     {
-                        errorHandler(ERR_SIZE, "block::nx() * nxBlocks() * block::ny() * nyBlocks() * block::nz() * nzBlocks() not equal to mesh.nPoints()\nMesh dimensions should be multiples of 8");
+                        throw std::runtime_error("block::nx() * nxBlocks() * block::ny() * nyBlocks() * block::nz() * nzBlocks() not equal to mesh.nPoints()\nMesh dimensions should be multiples of 8");
                     }
                 }
 
@@ -138,15 +140,13 @@ namespace LBM
                     // Check that the mesh dimensions won't overflow the type limit for label_t
                     if (nPointsTemp >= typeLimit)
                     {
-                        errorHandler(ERR_SIZE,
-                                     "\nMesh size exceeds maximum allowed value:\n"
-                                     "Number of mesh points: " +
-                                         std::to_string(nPointsTemp) +
-                                         "\nLimit of label_t: " +
-                                         std::to_string(typeLimit));
+                        throw std::runtime_error(
+                            "\nMesh size exceeds maximum allowed value:\n"
+                            "Number of mesh points: " +
+                            std::to_string(nPointsTemp) +
+                            "\nLimit of label_t: " +
+                            std::to_string(typeLimit));
                     }
-
-                    static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(host::latticeMesh));
 
                     // Check that the mesh dimensions are not too large for GPU memory
                     for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < programCtrl.deviceList().size(); virtualDeviceIndex++)
@@ -166,18 +166,17 @@ namespace LBM
                             const double gbAllocation = static_cast<double>(allocationSize / (1024 * 1024 * 1024));
                             const double gbAvailable = static_cast<double>(totalMemTemp / (1024 * 1024 * 1024));
 
-                            errorHandler(
-                                ERR_SIZE,
+                            throw std::runtime_error(
                                 "\nInsufficient GPU memory:\nAttempted to allocate: " +
-                                    std::to_string(allocationSize) +
-                                    " bytes (" +
-                                    std::to_string(gbAllocation) +
-                                    " GB)\n"
-                                    "Available GPU memory: " +
-                                    std::to_string(totalMemTemp) +
-                                    " bytes (" +
-                                    std::to_string(gbAvailable) +
-                                    " GB)");
+                                std::to_string(allocationSize) +
+                                " bytes (" +
+                                std::to_string(gbAllocation) +
+                                " GB)\n"
+                                "Available GPU memory: " +
+                                std::to_string(totalMemTemp) +
+                                " bytes (" +
+                                std::to_string(gbAvailable) +
+                                " GB)");
                         }
                     }
                 }
@@ -192,7 +191,7 @@ namespace LBM
                         {
                             const label_t virtualDeviceIndex = deviceIdx(dx, dy, dz, nxGPUs, nyGPUs);
 
-                            checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
+                            errorHandler::check(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
 
                             // Allocate programControl symbols on the GPU (clean up later)
                             {

@@ -65,7 +65,7 @@ namespace LBM
             /**
              * @brief Auxiliary template function that performs the VTU file writing.
              * @tparam indexType The data type for the mesh indices (uint32_t or uint64_t).
-             */
+             **/
             template <typename indexType>
             __host__ void VTUWriter(
                 const std::vector<std::vector<scalar_t>> &solutionVars,
@@ -140,26 +140,26 @@ namespace LBM
              * @brief Writes solution variables to an unstructured grid VTU file (.vtu)
              * This function checks the mesh size and dispatches to the implementation with
              * the appropriate index type (32-bit or 64-bit).
-             */
+             **/
             __host__ void write(
                 const std::vector<std::vector<scalar_t>> &solutionVars,
                 const name_t &fileName,
                 const host::latticeMesh &mesh,
                 const words_t &solutionVarNames)
             {
-                const uint64_t numNodes = static_cast<uint64_t>(mesh.nx()) * static_cast<uint64_t>(mesh.ny()) * static_cast<uint64_t>(mesh.nz());
+                const uint64_t numNodes = mesh.nx<uint64_t>() * mesh.ny<uint64_t>() * mesh.nz<uint64_t>();
                 const std::size_t numVars = solutionVars.size();
 
                 if (numVars != solutionVarNames.size())
                 {
-                    errorHandler(-1, "Error: The number of solution (" + std::to_string(numVars) + ") does not match the count of variable names (" + std::to_string(solutionVarNames.size()));
+                    throw std::runtime_error("Error: The number of solution (" + std::to_string(numVars) + ") does not match the count of variable names (" + std::to_string(solutionVarNames.size()));
                 }
 
                 for (std::size_t i = 0; i < numVars; i++)
                 {
                     if (solutionVars[i].size() != numNodes)
                     {
-                        errorHandler(-1, "Error: The solution variable " + std::to_string(i) + " has " + std::to_string(solutionVars[i].size()) + " elements, expected " + std::to_string(numNodes));
+                        throw std::runtime_error("Error: The solution variable " + std::to_string(i) + " has " + std::to_string(solutionVars[i].size()) + " elements, expected " + std::to_string(numNodes));
                     }
                 }
 
@@ -174,7 +174,7 @@ namespace LBM
                         std::cout << "    directoryStatus: Unable to create directory" << directoryPrefix() << ";" << std::endl;
                         std::cout << "    writeStatus: Fail (unable to create directory)" << ";" << std::endl;
                         std::cout << "};" << std::endl;
-                        errorHandler(-1, "Error: Unable to create directory" + name_t(directoryPrefix()));
+                        throw std::runtime_error("Error: Unable to create directory" + name_t(directoryPrefix()));
                     }
                 }
                 else
@@ -190,7 +190,7 @@ namespace LBM
                     std::cout << "    diskSpace: Insufficient (" << fileSystem::to_mebibytes<double>(fileSystem::availableDiskSpace()) << " MiB);" << std::endl;
                     std::cout << "    writeStatus: Fail (insufficient disk space)" << ";" << std::endl;
                     std::cout << "};" << std::endl;
-                    errorHandler(-1, "Error: Insufficient disk space on drive " + fileSystem::diskName());
+                    throw std::runtime_error("Error: Insufficient disk space on drive " + fileSystem::diskName());
                 }
                 else
                 {
@@ -215,7 +215,7 @@ namespace LBM
                 {
                     std::cout << "    ofstreamStatus: Fail" << std::endl;
                     std::cout << "};" << std::endl;
-                    errorHandler(-1, "Error opening file: " + trueFileName);
+                    throw std::runtime_error("Error opening file: " + trueFileName);
                 }
 
                 if (numNodes >= limit32)

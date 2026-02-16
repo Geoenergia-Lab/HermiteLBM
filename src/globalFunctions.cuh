@@ -731,7 +731,7 @@ namespace LBM
         /**
          * @overload
          * @param Bx The block coordinate
-         */
+         **/
         template <const axis::type alpha, const label_t pop, const label_t QF>
         __device__ [[nodiscard]] inline label_t idxPop(
             const label_t talpha, const label_t tbeta,
@@ -778,10 +778,7 @@ namespace LBM
     {
         cudaDeviceProp props;
 
-        if (cudaGetDeviceProperties(&props, deviceID) != cudaSuccess)
-        {
-            throw std::runtime_error("Failed to get CUDA device properties");
-        }
+        errorHandler::check(cudaGetDeviceProperties(&props, deviceID));
 
         return props;
     }
@@ -794,18 +791,18 @@ namespace LBM
     template <typename T>
     void copyToSymbol(const T &symbol, const T value)
     {
-        cudaDeviceSynchronize();
+        errorHandler::check(cudaDeviceSynchronize());
         const T valueTemp = value;
-        checkCudaErrors(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), 0, cudaMemcpyHostToDevice));
-        cudaDeviceSynchronize();
+        errorHandler::check(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), 0, cudaMemcpyHostToDevice));
+        errorHandler::check(cudaDeviceSynchronize());
     }
 
     template <typename T, const std::size_t N>
     void copyToSymbol(const T (&symbol)[N], const T (&value)[N])
     {
-        cudaDeviceSynchronize();
-        checkCudaErrors(cudaMemcpyToSymbol(symbol, value, N * sizeof(T), 0, cudaMemcpyHostToDevice));
-        cudaDeviceSynchronize();
+        errorHandler::check(cudaDeviceSynchronize());
+        errorHandler::check(cudaMemcpyToSymbol(symbol, value, N * sizeof(T), 0, cudaMemcpyHostToDevice));
+        errorHandler::check(cudaDeviceSynchronize());
     }
 
     template <typename T, const std::size_t N>
@@ -815,10 +812,10 @@ namespace LBM
         {
             throw std::runtime_error("Error setting device symbol index" + std::to_string(index) + " out of bounds for array of size " + std::to_string(N) + ".");
         }
-        cudaDeviceSynchronize();
+        errorHandler::check(cudaDeviceSynchronize());
         const T valueTemp = value;
-        checkCudaErrors(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), static_cast<std::size_t>(index) * sizeof(T), cudaMemcpyHostToDevice));
-        cudaDeviceSynchronize();
+        errorHandler::check(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), static_cast<std::size_t>(index) * sizeof(T), cudaMemcpyHostToDevice));
+        errorHandler::check(cudaDeviceSynchronize());
     }
 
     /**
@@ -829,8 +826,8 @@ namespace LBM
     template <const label_t smem_alloc_size, class T>
     __host__ void kernelSetup(T *func, const name_t &functionName) noexcept
     {
-        checkCudaErrors(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
-        checkCudaErrors(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
+        errorHandler::check(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
+        errorHandler::check(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
         std::cout << "Allocating " << smem_alloc_size << " bytes of dynamic shared memory to " << functionName << " kernel" << std::endl;
         std::cout << std::endl;
     }
@@ -842,8 +839,8 @@ namespace LBM
     template <const label_t smem_alloc_size, class T>
     __host__ void kernelSetup(T *func) noexcept
     {
-        checkCudaErrors(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
-        checkCudaErrors(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
+        errorHandler::check(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
+        errorHandler::check(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
     }
 }
 

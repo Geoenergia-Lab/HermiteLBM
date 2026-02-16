@@ -121,7 +121,7 @@ namespace LBM
             std::cout << "};" << std::endl;
             std::cout << std::endl;
 
-            cudaDeviceSynchronize();
+            errorHandler::check(cudaDeviceSynchronize());
         };
 
         /**
@@ -178,9 +178,10 @@ namespace LBM
          * @brief Returns the total number of simulation time steps
          * @return The total number of simulation time steps
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr label_t nt() const noexcept
+        template <typename T = label_t>
+        __device__ __host__ [[nodiscard]] inline constexpr T nt() const noexcept
         {
-            return nTimeSteps_;
+            return static_cast<T>(nTimeSteps_);
         }
 
         /**
@@ -205,9 +206,10 @@ namespace LBM
          * @brief Returns the latest time step of the solution files contained within the current directory
          * @return The latest time step as a label_t
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr label_t latestTime() const noexcept
+        template <typename T = label_t>
+        __device__ __host__ [[nodiscard]] inline constexpr T latestTime() const noexcept
         {
-            return latestTime_;
+            return static_cast<T>(latestTime_);
         }
 
         /**

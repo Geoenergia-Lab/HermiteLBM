@@ -64,7 +64,7 @@ namespace LBM
 
             /**
              * @brief Auxiliary template function that performs the VTU file writing.
-             */
+             **/
             __host__ void VTSWriter(
                 const std::vector<std::vector<scalar_t>> &solutionVars,
                 std::ofstream &outFile,
@@ -132,7 +132,7 @@ namespace LBM
              * @brief Writes solution variables to an unstructured grid VTU file (.vtu)
              * This function checks the mesh size and dispatches to the implementation with
              * the appropriate index type (32-bit or 64-bit).
-             */
+             **/
             __host__ void write(
                 const std::vector<std::vector<scalar_t>> &solutionVars,
                 const name_t &fileName,
@@ -144,14 +144,14 @@ namespace LBM
 
                 if (numVars != solutionVarNames.size())
                 {
-                    errorHandler(-1, "Error: The number of solution (" + std::to_string(numVars) + ") does not match the count of variable names (" + std::to_string(solutionVarNames.size()));
+                    throw std::runtime_error("Error: The number of solution (" + std::to_string(numVars) + ") does not match the count of variable names (" + std::to_string(solutionVarNames.size()));
                 }
 
                 for (std::size_t i = 0; i < numVars; i++)
                 {
                     if (solutionVars[i].size() != numNodes)
                     {
-                        errorHandler(-1, "Error: The solution variable " + std::to_string(i) + " has " + std::to_string(solutionVars[i].size()) + " elements, expected " + std::to_string(numNodes));
+                        throw std::runtime_error("Error: The solution variable " + std::to_string(i) + " has " + std::to_string(solutionVars[i].size()) + " elements, expected " + std::to_string(numNodes));
                     }
                 }
 
@@ -166,7 +166,7 @@ namespace LBM
                         std::cout << "    directoryStatus: unable to create directory" << directoryPrefix() << ";" << std::endl;
                         std::cout << "    writeStatus: fail (unable to create directory)" << ";" << std::endl;
                         std::cout << "};" << std::endl;
-                        errorHandler(-1, "Error: unable to create directory" + name_t(directoryPrefix()));
+                        throw std::runtime_error("Error: unable to create directory" + name_t(directoryPrefix()));
                     }
                 }
                 else
@@ -182,7 +182,7 @@ namespace LBM
                     std::cout << "    diskSpace: insufficient (" << fileSystem::to_mebibytes<double>(fileSystem::availableDiskSpace()) << " MiB);" << std::endl;
                     std::cout << "    writeStatus: fail (insufficient disk space)" << ";" << std::endl;
                     std::cout << "};" << std::endl;
-                    errorHandler(-1, "Error: Insufficient disk space on drive " + fileSystem::diskName());
+                    throw std::runtime_error("Error: Insufficient disk space on drive " + fileSystem::diskName());
                 }
                 else
                 {
@@ -203,7 +203,7 @@ namespace LBM
                 {
                     std::cout << "    ofstreamStatus: Fail" << std::endl;
                     std::cout << "};" << std::endl;
-                    errorHandler(-1, "Error opening file: " + trueFileName);
+                    throw std::runtime_error("Error opening file: " + trueFileName);
                 }
 
                 VTSWriter(solutionVars, outFile, mesh, solutionVarNames);

@@ -141,24 +141,24 @@ namespace LBM
          * @throws std::runtime_error if the input vector has 2 or fewer lines.
          * @note This function is useful for removing enclosing braces from blocks of text.
          **/
-        __host__ [[nodiscard]] const words_t eraseBraces(const words_t &lines) noexcept
+        __host__ [[nodiscard]] const words_t eraseBraces(const words_t &lines)
         {
             // Check minimum size requirement
             if (lines.size() < 3)
             {
-                errorHandler(-1, "Lines must have at least 3 entries: opening bracket, content, and closing bracket. Problematic entry: " + catenate(lines));
+                throw std::runtime_error("Lines must have at least 3 entries: opening bracket, content, and closing bracket. Problematic entry: " + catenate(lines));
             }
 
             // Check that first element is exactly "{"
             if (lines.front() != "{")
             {
-                errorHandler(-1, "First element must be opening brace '{'. Problematic entry: " + catenate(lines));
+                throw std::runtime_error("First element must be opening brace '{'. Problematic entry: " + catenate(lines));
             }
 
             // Check that last element is exactly "};"
             if (lines.back() != "};")
             {
-                errorHandler(-1, "Last element must be closing brace with semicolon '};'. Problematic entry: " + catenate(lines));
+                throw std::runtime_error("Last element must be closing brace with semicolon '};'. Problematic entry: " + catenate(lines));
             }
 
             // Create new vector without the braces

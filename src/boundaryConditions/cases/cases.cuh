@@ -77,7 +77,7 @@ namespace LBM
          *      Represents a jet inflow boundary condition.
          * @var Enum::LID_DRIVEN_CAVITY
          *      Represents the lid‑driven cavity boundary condition.
-         */
+         **/
         typedef enum Enum : int
         {
             INVALID = 0,
@@ -93,7 +93,7 @@ namespace LBM
          * that boundary condition. Specializations are provided for each known enumerator.
          *
          * @tparam BoundaryCondition A compile‑time constant of type `boundaryCondition_t`.
-         */
+         **/
         template <const boundaryCondition_t BoundaryCondition>
         class traits;
 
@@ -101,7 +101,7 @@ namespace LBM
          * @brief Specialization of traits for the JET_FLOW case.
          *
          * Provides the type alias `type` defined as `jetFlow`.
-         */
+         **/
         template <>
         class traits<boundaryCondition_t::JET_FLOW>
         {
@@ -116,7 +116,7 @@ namespace LBM
          * @brief Specialization of traits for the LID_DRIVEN_CAVITY case.
          *
          * Provides the type alias `type` defined as `lidDrivenCavity`.
-         */
+         **/
         template <>
         class traits<boundaryCondition_t::LID_DRIVEN_CAVITY>
         {
@@ -131,7 +131,7 @@ namespace LBM
          * @brief Specialization of traits for the JET_FLOW case.
          *
          * Provides the type alias `type` defined as `invalid`.
-         */
+         **/
         template <>
         class traits<boundaryCondition_t::INVALID>
         {
@@ -165,7 +165,7 @@ namespace LBM
          * @note Exactly one of `JETFLOW` or `LIDDRIVENCAVITY` should be defined;
          *       if neither is defined, the function falls back to `JET_FLOW` (or could
          *       trigger a compile‑time error).
-         */
+         **/
         __device__ __host__ [[nodiscard]] inline consteval boundaryCondition_t caseName() noexcept
         {
             validate();

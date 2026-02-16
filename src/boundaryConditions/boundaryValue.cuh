@@ -99,7 +99,7 @@ namespace LBM
          * @return The extracted parameter value
          * @throws std::runtime_error if the parameter is not found or is invalid
          * @note This function is used to extract values that MUST be numeric
-         */
+         **/
         template <const bool safety_check>
         __host__ [[nodiscard]] static scalar_t extractParameter(const name_t &fieldName, const name_t &regionName, const name_t &initialConditionsName)
         {

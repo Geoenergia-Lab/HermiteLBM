@@ -235,7 +235,7 @@ namespace LBM
 
     /**
      * @brief Time stepping types: instantaneous or time-averaged
-     */
+     **/
     namespace time
     {
         typedef enum Enum : int
@@ -257,6 +257,16 @@ namespace LBM
             Z = 2,
             NO_DIRECTION = static_cast<label_t>(-1)
         } type;
+
+        /**
+         * @brief Axis velocity coefficient: -1, 0 or + 1
+         **/
+        typedef enum coeffEnum : int
+        {
+            NEGATIVE = -1,
+            REST = 0,
+            POSITIVE = 1
+        } coeff_t;
 
         /**
          * @brief Returns axis directions orthogonal to alpha
@@ -308,7 +318,7 @@ namespace LBM
 
         /**
          * @brief Enumerated type for axes: The axis either can or cannot be null
-         */
+         **/
         typedef enum nullEnum : bool
         {
             NOT_NULL = false,
@@ -322,7 +332,7 @@ namespace LBM
          * @brief Type of field to be allocated
          * @note The skeleton type contains only a pointer;
          * FULL_FIELD contains a pointer, name and a reference to the mesh
-         */
+         **/
         typedef enum Enum : bool
         {
             SKELETON = 0,
@@ -335,7 +345,7 @@ namespace LBM
         /**
          * @brief Type of memory allocation on the host:
          * The memory is either pageable or pinned
-         */
+         **/
         typedef enum Enum : bool
         {
             PAGED = 0,
@@ -370,7 +380,7 @@ namespace LBM
         {
             /**
              * @brief Enumerated type for velocity coefficients: The coefficient either can or cannot be null
-             */
+             **/
             typedef enum nullEnum : bool
             {
                 NOT_NULL = false,

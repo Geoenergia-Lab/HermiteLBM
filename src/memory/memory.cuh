@@ -67,7 +67,7 @@ namespace LBM
         template <typename T>
         __host__ void allocateMemory(T **ptr, const std::size_t nPoints) noexcept
         {
-            checkCudaErrors(cudaMallocHost(ptr, sizeof(T) * nPoints));
+            errorHandler::check(cudaMallocHost(ptr, sizeof(T) * nPoints));
         }
 
         /**
@@ -106,24 +106,13 @@ namespace LBM
         template <typename T>
         __host__ void to_host(const T *const ptrRestrict devPtr, T *const ptrRestrict hostPtr, const label_t fieldIndex, const std::size_t nPoints) noexcept
         {
-            checkCudaErrors(cudaMemcpy(hostPtr + (fieldIndex * nPoints), devPtr, nPoints * sizeof(T), cudaMemcpyDeviceToHost));
+            errorHandler::check(cudaMemcpy(hostPtr + (fieldIndex * nPoints), devPtr, nPoints * sizeof(T), cudaMemcpyDeviceToHost));
 
             if constexpr (verbose())
             {
                 std::cout << "Copied " << sizeof(T) * nPoints << " bytes of memory from device address " << devPtr << " to host address " << hostPtr << std::endl;
             }
         }
-
-        // template <typename T>
-        // __host__ void to_host(const T *const ptrRestrict devPtr, T *const ptrRestrict hostPtr, const label_t fieldIndex, const std::size_t nPointsGlobal, const std::size_t nPointsSegment) noexcept
-        // {
-        //     checkCudaErrors(cudaMemcpy(hostPtr + (fieldIndex * nPointsGlobal), devPtr, nPointsSegment * sizeof(T), cudaMemcpyDeviceToHost));
-
-        //     if constexpr (verbose())
-        //     {
-        //         std::cout << "Copied " << sizeof(T) * nPointsSegment << " bytes of memory from device address " << devPtr << " to host address " << hostPtr << std::endl;
-        //     }
-        // }
 
         /**
          * @brief Copies data from device memory to host memory
@@ -156,7 +145,7 @@ namespace LBM
         template <typename T>
         __host__ void allocateMemory(T **ptr, const std::size_t nPoints) noexcept
         {
-            checkCudaErrors(cudaMalloc(ptr, sizeof(T) * nPoints));
+            errorHandler::check(cudaMalloc(ptr, sizeof(T) * nPoints));
         }
 
         /**
@@ -190,7 +179,7 @@ namespace LBM
         template <typename T>
         __host__ [[nodiscard]] T *allocate(const std::size_t nPoints, const deviceIndex_t deviceID) noexcept
         {
-            checkCudaErrors(cudaSetDevice(deviceID));
+            errorHandler::check(cudaSetDevice(deviceID));
 
             if constexpr (verbose())
             {
@@ -212,7 +201,7 @@ namespace LBM
         template <typename T>
         __host__ void copy(T *const devicePtr, const T *const ptrRestrict hostPtr, const std::size_t nPoints) noexcept
         {
-            checkCudaErrors(cudaMemcpy(devicePtr, hostPtr, nPoints * sizeof(T), cudaMemcpyHostToDevice));
+            errorHandler::check(cudaMemcpy(devicePtr, hostPtr, nPoints * sizeof(T), cudaMemcpyHostToDevice));
 
             if constexpr (verbose())
             {
@@ -243,7 +232,7 @@ namespace LBM
         template <typename T>
         __host__ void copy(T *const ptr, const std::vector<T> &f, const deviceIndex_t deviceID) noexcept
         {
-            checkCudaErrors(cudaSetDevice(deviceID));
+            errorHandler::check(cudaSetDevice(deviceID));
             copy(ptr, f.data(), f.size());
         }
 
@@ -272,7 +261,7 @@ namespace LBM
         template <typename T>
         __host__ [[nodiscard]] T *allocateArray(const std::vector<T> &f, const deviceIndex_t deviceID) noexcept
         {
-            checkCudaErrors(cudaSetDevice(deviceID));
+            errorHandler::check(cudaSetDevice(deviceID));
             return allocateArray(f);
         }
 
@@ -303,7 +292,7 @@ namespace LBM
         template <typename T>
         __host__ [[nodiscard]] T *allocateArray(const label_t nPoints, const T val, const deviceIndex_t deviceID) noexcept
         {
-            checkCudaErrors(cudaSetDevice(deviceID));
+            errorHandler::check(cudaSetDevice(deviceID));
             return allocateArray(nPoints, val);
         }
     }

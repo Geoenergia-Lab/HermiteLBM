@@ -58,9 +58,9 @@ int main(const int argc, const char *const argv[])
     const programControl programCtrl(argc, argv);
 
     // Set cuda device
-    checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[0]));
-    checkCudaErrors(cudaDeviceSynchronize());
+    errorHandler::check(cudaDeviceSynchronize());
+    errorHandler::check(cudaSetDevice(programCtrl.deviceList()[0]));
+    errorHandler::check(cudaDeviceSynchronize());
 
     const host::latticeMesh mesh(programCtrl);
 

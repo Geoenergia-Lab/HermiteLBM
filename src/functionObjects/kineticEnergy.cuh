@@ -200,9 +200,8 @@ namespace LBM
                       k_(objectAllocator<VelocitySet, time::instantaneous>(fieldName_, mesh, programCtrl)),
                       kMean_(objectAllocator<VelocitySet, time::timeAverage>(fieldNameMean_, mesh, programCtrl))
                 {
-                    // std::cout << fieldNameMean_ << std::endl;
                     // Set the cache config to prefer L1
-                    checkCudaErrors(cudaFuncSetCacheConfig(kernel::instantaneous, cudaFuncCachePreferL1));
+                    errorHandler::check(cudaFuncSetCacheConfig(kernel::instantaneous, cudaFuncCachePreferL1));
                 };
 
                 /**

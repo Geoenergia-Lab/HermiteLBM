@@ -153,9 +153,9 @@ namespace LBM
                 return 0;
             }
 
-            const uint64_t nPoints = static_cast<uint64_t>(mesh.nx()) * static_cast<uint64_t>(mesh.ny()) * static_cast<uint64_t>(mesh.nz());
+            const uint64_t nPoints = mesh.nx<uint64_t>() * mesh.ny<uint64_t>() * mesh.nz<uint64_t>();
 
-            const uint64_t nTime = static_cast<uint64_t>(programCtrl.nt()) - static_cast<uint64_t>(programCtrl.latestTime()) - 1;
+            const uint64_t nTime = programCtrl.nt<uint64_t>() - programCtrl.latestTime<uint64_t>() - 1;
 
             const uint64_t numerator = nPoints * nTime;
 
@@ -165,10 +165,19 @@ namespace LBM
         }
 
     private:
+        /**
+         * @brief Reference to the mesh
+         **/
         const host::latticeMesh &mesh_;
 
+        /**
+         * @brief Reference to the program control
+         **/
         const programControl &programCtrl_;
 
+        /**
+         * @brief Start point
+         **/
         const std::chrono::high_resolution_clock::time_point start_;
     };
 }

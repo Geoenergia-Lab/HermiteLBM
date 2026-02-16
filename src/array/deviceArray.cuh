@@ -54,7 +54,7 @@ namespace LBM
 {
     namespace device
     {
-        template <const field::type FullField, typename T, class VelocitySet, const time::type TimeType>
+        template <const field::type FieldType, typename T, class VelocitySet, const time::type TimeType>
         class array;
 
         /**
@@ -80,7 +80,7 @@ namespace LBM
             ~array() noexcept
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::array::<field::SKELETON>, "Need to free all pointers"));
-                checkCudaErrors(cudaFree(ptr_));
+                errorHandler::check(cudaFree(ptr_));
             }
 
             /**
@@ -125,9 +125,10 @@ namespace LBM
         public:
             /**
              * @brief Constructs a device array from host data
-             * @tparam VelocitySet Template parameter for velocity set configuration
+             * @tparam MallocType Template parameter for the type of host memory allocation
              * @param[in] hostArray Source data allocated on host memory
-             * @post Device memory is allocated and initialized with host data
+             * @param[in] programCtrl The program control object
+             * @param[in] allocate Defines whether the object is to be allocated or not
              **/
             template <const host::mallocType MallocType>
             __host__ [[nodiscard]] array(
@@ -142,6 +143,14 @@ namespace LBM
                 initialise_boundary_condition(name_, programCtrl.deviceList());
             };
 
+            /**
+             * @brief Constructs a device array from a uniform value
+             * @param[in] name Name of the field
+             * @param[in] mesh The lattice mesh
+             * @param[in] value The uniform value to initialise the array to
+             * @param[in] programCtrl The program control object
+             * @param[in] allocate Defines whether the object is to be allocated or not
+             **/
             __host__ [[nodiscard]] array(
                 const name_t &name,
                 const host::latticeMesh &mesh,
@@ -156,6 +165,13 @@ namespace LBM
                 initialise_boundary_condition(name_, programCtrl.deviceList());
             };
 
+            /**
+             * @brief Constructs a device array from a checkpoint or initial conditions
+             * @param[in] name Name of the field
+             * @param[in] mesh The lattice mesh
+             * @param[in] programCtrl The program control object
+             * @param[in] allocate Defines whether the object is to be allocated or not
+             **/
             __host__ [[nodiscard]] array(
                 const name_t &name,
                 const host::latticeMesh &mesh,
@@ -199,10 +215,10 @@ namespace LBM
                                     std::cout << "Freeing ptr[" << virtualDeviceIndex << "];" << std::endl;
                                 }
 
-                                cudaDeviceSynchronize();
-                                cudaSetDevice(programCtrl_.deviceList()[virtualDeviceIndex]);
-                                checkCudaErrors(cudaFree(ptr_[virtualDeviceIndex]));
-                                cudaDeviceSynchronize();
+                                errorHandler::check(cudaDeviceSynchronize());
+                                errorHandler::check(cudaSetDevice(programCtrl_.deviceList()[virtualDeviceIndex]));
+                                errorHandler::check(cudaFree(ptr_[virtualDeviceIndex]));
+                                errorHandler::check(cudaDeviceSynchronize());
 
                                 if constexpr (verbose())
                                 {
@@ -211,13 +227,13 @@ namespace LBM
                             }
                         });
 
-                    cudaSetDevice(programCtrl_.deviceList()[0]);
+                    errorHandler::check(cudaSetDevice(programCtrl_.deviceList()[0]));
 
                     if constexpr (verbose())
                     {
                         std::cout << "Freeing host pointer collection" << std::endl;
                     }
-                    checkCudaErrors(cudaFreeHost(ptr_));
+                    errorHandler::check(cudaFreeHost(ptr_));
                     if constexpr (verbose())
                     {
                         std::cout << "Freed host pointer collection" << std::endl;
@@ -281,14 +297,22 @@ namespace LBM
                 return mesh_.nPoints<SizeType>();
             }
 
+            /**
+             * @brief Returns the time type of the array
+             **/
             __host__ [[nodiscard]] inline consteval time::type timeType() const noexcept
             {
                 return TimeType;
             }
 
-            // Should copy all pointers in ptr_ to hostPtr
+            /**
+             * @brief Copies the array to a host pointer
+             * @param hostPtr Pointer to memory allocated on the host
+             **/
             __host__ void copy_to_host(T *const ptrRestrict hostPtr)
             {
+                static_assert(MULTI_GPU_ASSERTION());
+
                 constexpr const std::size_t N = 1;
 
                 const std::size_t nDevices = mesh_.nDevices<axis::X>() * mesh_.nDevices<axis::Y>() * mesh_.nDevices<axis::Z>();
@@ -302,7 +326,7 @@ namespace LBM
                 {
                     const label_t startIndex = virtualDeviceIndex * nPointsPerGPU;
 
-                    checkCudaErrors(cudaMemcpy(&(hostPtr[startIndex]), ptr_[virtualDeviceIndex], nPointsPerGPU * sizeof(T), cudaMemcpyDeviceToHost));
+                    errorHandler::check(cudaMemcpy(&(hostPtr[startIndex]), ptr_[virtualDeviceIndex], nPointsPerGPU * sizeof(T), cudaMemcpyDeviceToHost));
                 }
             }
 
@@ -322,6 +346,9 @@ namespace LBM
              **/
             const host::latticeMesh &mesh_;
 
+            /**
+             * @brief Reference to the program control
+             **/
             const programControl &programCtrl_;
 
             /**
@@ -458,7 +485,6 @@ namespace LBM
              **/
             __host__ static void initialise_boundary_condition(const name_t &name, const std::vector<deviceIndex_t> &deviceList) noexcept
             {
-
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::array::initialise_boundary_condition, "Believed to be correct"));
 
                 if ((name == "u") || (name == "v") || (name == "w"))
@@ -474,7 +500,7 @@ namespace LBM
 
                     for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList.size(); virtualDeviceIndex++)
                     {
-                        checkCudaErrors(cudaSetDevice(deviceList[virtualDeviceIndex]));
+                        errorHandler::check(cudaSetDevice(deviceList[virtualDeviceIndex]));
                         copyToSymbol(device::U_North, North(), i);
                         copyToSymbol(device::U_South, South(), i);
                         copyToSymbol(device::U_East, East(), i);

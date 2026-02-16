@@ -58,9 +58,9 @@ int main(const int argc, const char *const argv[])
     const programControl programCtrl(argc, argv);
 
     // Set cuda device
-    checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[0]));
-    checkCudaErrors(cudaDeviceSynchronize());
+    errorHandler::check(cudaDeviceSynchronize());
+    errorHandler::check(cudaSetDevice(programCtrl.deviceList()[0]));
+    errorHandler::check(cudaDeviceSynchronize());
 
     const host::latticeMesh mesh(programCtrl);
 
@@ -120,7 +120,7 @@ int main(const int argc, const char *const argv[])
 
             // Launch test kernel
             std::cout << "Launching testKernel on address " << (testArray.ptr(virtualDeviceIndex)) << " on device " << programCtrl.deviceList()[virtualDeviceIndex] << std::endl;
-            checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
+            errorHandler::check(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
             testKernel<<<gridBlock, mesh.threadBlock(), 0, streams.streams()[virtualDeviceIndex]>>>(testArray.ptr(virtualDeviceIndex), nxBlocksPerGPU, nyBlocksPerGPU, (GPU_x * nxBlocksPerGPU), (GPU_y * nyBlocksPerGPU), (GPU_z * nzBlocksPerGPU), virtualDeviceIndex);
         });
 
@@ -129,8 +129,8 @@ int main(const int argc, const char *const argv[])
         [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
         {
             const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
-            checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
-            checkCudaErrors(cudaDeviceSynchronize());
+            errorHandler::check(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
+            errorHandler::check(cudaDeviceSynchronize());
         });
 
     gpu_for(
@@ -141,13 +141,13 @@ int main(const int argc, const char *const argv[])
             const label_t startIndex = virtualDeviceIndex * nPointsPerGPU;
 
             // Set the active device
-            checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
-            checkCudaErrors(cudaDeviceSynchronize());
+            errorHandler::check(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
+            errorHandler::check(cudaDeviceSynchronize());
 
             // Copy back from device to the contiguous segment
-            checkCudaErrors(cudaMemcpy(&(deviceIndexArray[startIndex]), testArray.ptr(virtualDeviceIndex), nPointsPerGPU * sizeof(label_t), cudaMemcpyDeviceToHost));
+            errorHandler::check(cudaMemcpy(&(deviceIndexArray[startIndex]), testArray.ptr(virtualDeviceIndex), nPointsPerGPU * sizeof(label_t), cudaMemcpyDeviceToHost));
 
-            checkCudaErrors(cudaDeviceSynchronize());
+            errorHandler::check(cudaDeviceSynchronize());
         });
 
     constexpr const bool do_verification = false;
