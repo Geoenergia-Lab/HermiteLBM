@@ -116,7 +116,7 @@ namespace LBM
             std::cout << "    saveInterval = " << saveInterval_ << ";" << std::endl;
             std::cout << "    infoInterval = " << infoInterval_ << ";" << std::endl;
             std::cout << "    latestTime = " << latestTime_ << ";" << std::endl;
-            std::cout << "    scalarType: " << ((sizeof(scalar_t) == 4) ? "32 bit" : "64 bit") << ";" << std::endl;
+            std::cout << "    scalarSize: " << ((sizeof(scalar_t) == 4) ? "32" : "64") << ";" << std::endl;
             std::cout << "    labelType: " << ((sizeof(label_t) == 4) ? "uint32_t" : "uint64_t") << ";" << std::endl;
             std::cout << "};" << std::endl;
             std::cout << std::endl;

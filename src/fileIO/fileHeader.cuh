@@ -54,6 +54,47 @@ namespace LBM
 {
     namespace fileIO
     {
+        class systemInformation
+        {
+        public:
+            /**
+             * @brief Constructs from text lines
+             * @param[in] systemInfoLines Text lines read from the file
+             **/
+            __host__ [[nodiscard]] systemInformation(const words_t &systemInfoLines)
+                : endianType(readBinaryType(systemInfoLines)),
+                  scalarSize(readScalarSize(systemInfoLines)){};
+
+        private:
+            /**
+             * @brief Endianness
+             **/
+            const endian_t endianType;
+
+            /**
+             * @brief Read the endian type
+             * @param[in] systemInfoLines Text lines read from the file
+             **/
+            __host__ [[nodiscard]] static endian_t readBinaryType(const words_t &systemInfoLines)
+            {
+                return (string::extractParameterLine(systemInfoLines, "binaryType") == "littleEndian") ? LITTLE : BIG;
+            }
+
+            /**
+             * @brief Size of the floating point type
+             **/
+            const std::size_t scalarSize;
+
+            /**
+             * @brief Read the size of the floating point type
+             * @param[in] systemInfoLines Text lines read from the file
+             **/
+            __host__ [[nodiscard]] static std::size_t readScalarSize(const words_t &systemInfoLines)
+            {
+                return string::extractParameter<std::size_t>(string::extractParameterLine(systemInfoLines, "scalarSize"));
+            }
+        };
+
         /**
          * @struct fieldFileHeader
          * @brief Contains metadata extracted from field file headers
@@ -79,7 +120,8 @@ namespace LBM
          * @param[in] str The input string to trim
          * @return The trimmed string
          **/
-        __host__ [[nodiscard]] const name_t filestring_trim(const name_t &str)
+        __host__ [[nodiscard]] const name_t
+        filestring_trim(const name_t &str)
         {
             const std::size_t start = str.find_first_not_of(" \t\r\n");
             const std::size_t end = str.find_last_not_of(" \t\r\n;");
@@ -210,19 +252,19 @@ namespace LBM
                     {
                         isLittleEndian = (line.find("littleEndian") != name_t::npos);
                     }
-                    else if (line.find("scalarType") != name_t::npos)
+                    else if (line.find("scalarSize") != name_t::npos)
                     {
-                        if (line.find("32 bit") != name_t::npos)
+                        if (line.find("32") != name_t::npos)
                         {
                             scalarSize = 4;
                         }
-                        else if (line.find("64 bit") != name_t::npos)
+                        else if (line.find("64") != name_t::npos)
                         {
                             scalarSize = 8;
                         }
                         else
                         {
-                            throw std::runtime_error("Invalid scalarType at line " + std::to_string(lineNumber));
+                            throw std::runtime_error("Invalid scalarSize at line " + std::to_string(lineNumber));
                         }
                     }
                 }
@@ -459,7 +501,7 @@ namespace LBM
 
             if (scalarSize == 0)
             {
-                throw std::runtime_error("Missing or invalid scalarType in systemInformation");
+                throw std::runtime_error("Missing or invalid scalarSize in systemInformation");
             }
 
             if (fieldNamesVec.size() != nVars)
@@ -488,7 +530,7 @@ namespace LBM
             return {isLittleEndian, scalarSize, nx, ny, nz, nVars, dataStartPos, fieldNamesVec};
         }
 
-      }
+    }
 
 }
 

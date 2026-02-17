@@ -129,11 +129,11 @@ namespace LBM
             out << std::endl;
             if constexpr (sizeof(scalar_t) == 4)
             {
-                out << "\tscalarType\t32 bit;" << std::endl;
+                out << "\tscalarSize\t32;" << std::endl;
             }
             else if constexpr (sizeof(scalar_t) == 8)
             {
-                out << "\tscalarType\t64 bit;" << std::endl;
+                out << "\tscalarSize\t64;" << std::endl;
             }
             out << "};" << std::endl;
             out << std::endl;

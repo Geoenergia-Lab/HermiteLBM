@@ -66,6 +66,15 @@ namespace LBM
     typedef std::vector<name_t> words_t;
 
     /**
+     * @brief Endianness of the system: big or little
+     **/
+    typedef enum endianEnum : bool
+    {
+        BIG = false,
+        LITTLE = true
+    } endian_t;
+
+    /**
      * @brief Time stepping types: instantaneous or time-averaged
      **/
     namespace time

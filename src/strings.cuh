@@ -172,6 +172,19 @@ namespace LBM
             return newLines;
         }
 
+        __host__ [[nodiscard]] const std::vector<std::string> splitByWhitespace(const std::string &str)
+        {
+            std::istringstream iss(str);
+            std::vector<std::string> tokens;
+            std::string token;
+            while (iss >> token)
+            {
+                // operator>> skips leading whitespace and stops at whitespace
+                tokens.push_back(token);
+            }
+            return tokens;
+        }
+
         /**
          * @brief Trims leading and trailing whitespace from a string.
          * @param str The input string to trim.
@@ -531,8 +544,8 @@ namespace LBM
          * @return A std::vector of std::string_view objects split from s by delim
          * @note This function can be used to, for example, split a string by commas, spaces, etc
          **/
-        template <const char delim>
-        __host__ [[nodiscard]] const words_t split(const std::string_view &s, const bool removeWhitespace = true) noexcept
+        template <const char delim, const bool removeWhitespace>
+        __host__ [[nodiscard]] const words_t split(const std::string_view &s) noexcept
         {
             words_t result;
             const char *left = s.begin();
@@ -550,9 +563,9 @@ namespace LBM
             }
 
             // Remove whitespace from the returned vector
-            if (removeWhitespace)
+            if constexpr (removeWhitespace)
             {
-                result.erase(std::remove(result.begin(), result.end(), ""), result.end());
+                result.erase(std::remove(result.begin(), result.end(), " "), result.end());
             }
 
             return result;
@@ -567,7 +580,8 @@ namespace LBM
                 if (S[i].find(name) != name_t::npos)
                 {
                     // Split by space and remove whitespace
-                    const words_t s = split<" "[0]>(S[i], true);
+                    const words_t s = splitByWhitespace(S[i]);
+                    // const words_t s = split<" "[0], true>(S[i]);
 
                     // Check that the last char is ;
                     // Perform the exit here if the above string is not equal to ;
@@ -705,7 +719,7 @@ namespace LBM
         template <typename T>
         __host__ [[nodiscard]] const std::vector<T> parseValue(const words_t &args, const name_t &name)
         {
-            const words_t s_v = string::split<","[0]>(parseNameValuePair(args, name), true);
+            const words_t s_v = string::split<","[0], true>(parseNameValuePair(args, name));
 
             std::vector<T> arr;
             label_t arrLength = 0;

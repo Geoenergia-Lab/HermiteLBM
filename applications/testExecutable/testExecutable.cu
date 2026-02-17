@@ -53,64 +53,50 @@ SourceFiles
 
 using namespace LBM;
 
-int main(const int argc, const char *const argv[])
+/**
+ * Reads the first N lines from a file.
+ * @param filename Path to the file.
+ * @param n Number of lines to read (non‑negative).
+ * @return A vector containing the first N lines (or fewer if the file ends).
+ */
+__host__ [[nodiscard]] const std::vector<std::string> read_first_n_lines(const std::string &filename, const std::size_t n)
 {
-    const programControl programCtrl(argc, argv);
+    std::vector<std::string> lines;
+    if (n <= 0)
+    {
+        return lines;
+    } // nothing to read
 
-    // Set cuda device
-    errorHandler::check(cudaDeviceSynchronize());
-    errorHandler::check(cudaSetDevice(programCtrl.deviceList()[0]));
-    errorHandler::check(cudaDeviceSynchronize());
+    std::ifstream file(filename);
+    if (!file.is_open())
+    {
+        std::cerr << "Error: Could not open file " << filename << std::endl;
+        return lines; // return empty vector
+    }
 
-    const host::latticeMesh mesh(programCtrl);
+    std::string line;
+    std::size_t count = 0;
+    while (count < n && std::getline(file, line))
+    {
+        lines.push_back(line);
+        ++count;
+    }
 
-    VelocitySet::print();
+    file.close();
+    return lines;
+}
 
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> u("u", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> v("v", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> w("w", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxx("m_xx", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxy("m_xy", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxz("m_xz", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> myy("m_yy", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
+int main()
+{
 
-    host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.nPoints() * NUMBER_MOMENTS(), mesh);
+    const name_t fileName = "jetFlow_20000.LBMBin";
 
-    const label_t nxGPUs = mesh.nDevices<axis::X>();
-    const label_t nyGPUs = mesh.nDevices<axis::Y>();
-    const label_t nzGPUs = mesh.nDevices<axis::Z>();
+    const words_t lines = read_first_n_lines(fileName, 30);
 
-    gpu_for(
-        nxGPUs, nyGPUs, nzGPUs,
-        [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
-        {
-            const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+    const words_t systemInfoLines = string::extractBlock(lines, "systemInformation", 0);
 
-            hostWriteBuffer.copy_from_device(
-                device::ptrCollection<10, scalar_t>{
-                    rho.ptr(virtualDeviceIndex),
-                    u.ptr(virtualDeviceIndex),
-                    v.ptr(virtualDeviceIndex),
-                    w.ptr(virtualDeviceIndex),
-                    mxx.ptr(virtualDeviceIndex),
-                    mxy.ptr(virtualDeviceIndex),
-                    mxz.ptr(virtualDeviceIndex),
-                    myy.ptr(virtualDeviceIndex),
-                    myz.ptr(virtualDeviceIndex),
-                    mzz.ptr(virtualDeviceIndex)},
-                mesh,
-                virtualDeviceIndex);
-        });
-
-    fileIO::writeFile<time::instantaneous>(
-        programCtrl.caseName() + "_" + std::to_string(0) + ".LBMBin",
-        mesh,
-        functionObjects::solutionVariableNames,
-        hostWriteBuffer.data(),
-        0);
+    std::cout << systemInformation::readBinaryType(systemInfoLines) << std::endl;
+    std::cout << systemInformation::readScalarSize(systemInfoLines) << std::endl;
 
     return 0;
 }
