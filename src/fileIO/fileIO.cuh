@@ -275,6 +275,7 @@ namespace LBM
 }
 
 #include "fileOutput.cuh"
+#include "fileHeader.cuh"
 #include "fileInput.cuh"
 
 #endif
