@@ -124,7 +124,7 @@ int main(const int argc, const char *const argv[])
 
         for (deviceIndex_t i = 0; i < deviceCount; ++i)
         {
-            const cudaDeviceProp props = getDeviceProperties(i);
+            const cudaDeviceProp props = GPU::properties(i);
 
             const name_t current_arch_flag =
                 "-gencode arch=compute_" +

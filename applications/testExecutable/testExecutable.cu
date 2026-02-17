@@ -90,7 +90,7 @@ int main(const int argc, const char *const argv[])
         nxGPUs, nyGPUs, nzGPUs,
         [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
         {
-            const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+            const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
 
             const label_t startIndex = virtualDeviceIndex * nPointsPerGPU;
 
@@ -116,7 +116,7 @@ int main(const int argc, const char *const argv[])
         nxGPUs, nyGPUs, nzGPUs,
         [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
         {
-            const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+            const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
 
             // Launch test kernel
             std::cout << "Launching testKernel on address " << (testArray.ptr(virtualDeviceIndex)) << " on device " << programCtrl.deviceList()[virtualDeviceIndex] << std::endl;
@@ -128,7 +128,7 @@ int main(const int argc, const char *const argv[])
         nxGPUs, nyGPUs, nzGPUs,
         [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
         {
-            const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+            const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
             errorHandler::check(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
             errorHandler::check(cudaDeviceSynchronize());
         });
@@ -137,7 +137,7 @@ int main(const int argc, const char *const argv[])
         nxGPUs, nyGPUs, nzGPUs,
         [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
         {
-            const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+            const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
             const label_t startIndex = virtualDeviceIndex * nPointsPerGPU;
 
             // Set the active device
@@ -164,7 +164,7 @@ int main(const int argc, const char *const argv[])
             {
                 for (label_t GPU_x = 0; GPU_x < nxGPUs; GPU_x++)
                 {
-                    const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+                    const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
                     const label_t expectedValue = virtualDeviceIndex + 100;
                     const label_t startIndex = virtualDeviceIndex * nPointsPerGPU;
 
@@ -232,7 +232,7 @@ int main(const int argc, const char *const argv[])
             {
                 for (label_t GPU_x = 0; GPU_x < nxGPUs; GPU_x++)
                 {
-                    const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+                    const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
                     const label_t startIndex = virtualDeviceIndex * nPointsPerGPU;
 
                     grid_for(

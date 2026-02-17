@@ -54,7 +54,7 @@ static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(jetBoundaryCondition::ca
 
 const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
 const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
-const label_t tid = device::idxBlock(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>() - 1);
+const label_t tid = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>() - 1);
 
 switch (boundaryNormal.nodeType())
 {

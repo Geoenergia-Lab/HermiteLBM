@@ -63,7 +63,7 @@ template <const label_t N>
 __device__ static inline void transpose_to_shared(
     const thread::array<scalar_t, VelocitySet::Q()> &pop,
     thread::array<scalar_t, N> &s_buffer,
-    const device::threadCoordinate &Tx,
+    const thread::coordinate &Tx,
     const device::pointCoordinate &point) noexcept
 {
     // Currently only works for D3Q19
@@ -169,9 +169,9 @@ __device__ static inline void save_from_shared(
     const label_t idx_in_warp = idxWarp(threadIdx.x, threadIdx.y, threadIdx.z);
 
     // Equivalent of threadIdx.alpha, threadIdx.beta
-    const dim2 xy = ij<axis::X, axis::Y>(idx_in_warp + offset);
-    const dim2 xz = ij<axis::X, axis::Z>(idx_in_warp + offset);
-    const dim2 yz = ij<axis::Y, axis::Z>(idx_in_warp + offset);
+    const dim2<axis::Z> xy(idx_in_warp + offset);
+    const dim2<axis::Y> xz(idx_in_warp + offset);
+    const dim2<axis::X> yz(idx_in_warp + offset);
 
     const label_t ID = idx_block(threadIdx.x, threadIdx.y, threadIdx.z);
 
@@ -185,71 +185,71 @@ __device__ static inline void save_from_shared(
     {
     case 0:
     {
-        gGhost.ptr<0>()[idxPop<axis::X, 0, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = val0;
-        gGhost.ptr<1>()[idxPop<axis::X, 3, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = val1;
-        gGhost.ptr<3>()[idxPop<axis::Y, 1, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = val2;
-        gGhost.ptr<4>()[idxPop<axis::Z, 4, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = val3;
+        gGhost.ptr<0>()[idxPop<axis::X, 0, VelocitySet::QF()>(yz, blockIdx)] = val0;
+        gGhost.ptr<1>()[idxPop<axis::X, 3, VelocitySet::QF()>(yz, blockIdx)] = val1;
+        gGhost.ptr<3>()[idxPop<axis::Y, 1, VelocitySet::QF()>(xz, blockIdx)] = val2;
+        gGhost.ptr<4>()[idxPop<axis::Z, 4, VelocitySet::QF()>(xy, blockIdx)] = val3;
 
         break;
     }
     case 1:
     {
-        gGhost.ptr<0>()[idxPop<axis::X, 1, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = val0;
-        gGhost.ptr<1>()[idxPop<axis::X, 4, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = val1;
-        gGhost.ptr<3>()[idxPop<axis::Y, 2, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = val2;
-        gGhost.ptr<5>()[idxPop<axis::Z, 0, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = val3;
+        gGhost.ptr<0>()[idxPop<axis::X, 1, VelocitySet::QF()>(yz, blockIdx)] = val0;
+        gGhost.ptr<1>()[idxPop<axis::X, 4, VelocitySet::QF()>(yz, blockIdx)] = val1;
+        gGhost.ptr<3>()[idxPop<axis::Y, 2, VelocitySet::QF()>(xz, blockIdx)] = val2;
+        gGhost.ptr<5>()[idxPop<axis::Z, 0, VelocitySet::QF()>(xy, blockIdx)] = val3;
 
         break;
     }
     case 2:
     {
-        gGhost.ptr<0>()[idxPop<axis::X, 2, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = val0;
-        gGhost.ptr<2>()[idxPop<axis::Y, 0, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = val1;
-        gGhost.ptr<3>()[idxPop<axis::Y, 3, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = val2;
-        gGhost.ptr<5>()[idxPop<axis::Z, 1, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = val3;
+        gGhost.ptr<0>()[idxPop<axis::X, 2, VelocitySet::QF()>(yz, blockIdx)] = val0;
+        gGhost.ptr<2>()[idxPop<axis::Y, 0, VelocitySet::QF()>(xz, blockIdx)] = val1;
+        gGhost.ptr<3>()[idxPop<axis::Y, 3, VelocitySet::QF()>(xz, blockIdx)] = val2;
+        gGhost.ptr<5>()[idxPop<axis::Z, 1, VelocitySet::QF()>(xy, blockIdx)] = val3;
 
         break;
     }
     case 3:
     {
-        gGhost.ptr<0>()[idxPop<axis::X, 3, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = val0;
-        gGhost.ptr<2>()[idxPop<axis::Y, 1, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = val1;
-        gGhost.ptr<3>()[idxPop<axis::Y, 4, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = val2;
-        gGhost.ptr<5>()[idxPop<axis::Z, 2, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = val3;
+        gGhost.ptr<0>()[idxPop<axis::X, 3, VelocitySet::QF()>(yz, blockIdx)] = val0;
+        gGhost.ptr<2>()[idxPop<axis::Y, 1, VelocitySet::QF()>(xz, blockIdx)] = val1;
+        gGhost.ptr<3>()[idxPop<axis::Y, 4, VelocitySet::QF()>(xz, blockIdx)] = val2;
+        gGhost.ptr<5>()[idxPop<axis::Z, 2, VelocitySet::QF()>(xy, blockIdx)] = val3;
 
         break;
     }
     case 4:
     {
-        gGhost.ptr<0>()[idxPop<axis::X, 4, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = val0;
-        gGhost.ptr<2>()[idxPop<axis::Y, 2, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = val1;
-        gGhost.ptr<4>()[idxPop<axis::Z, 0, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = val2;
-        gGhost.ptr<5>()[idxPop<axis::Z, 3, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = val3;
+        gGhost.ptr<0>()[idxPop<axis::X, 4, VelocitySet::QF()>(yz, blockIdx)] = val0;
+        gGhost.ptr<2>()[idxPop<axis::Y, 2, VelocitySet::QF()>(xz, blockIdx)] = val1;
+        gGhost.ptr<4>()[idxPop<axis::Z, 0, VelocitySet::QF()>(xy, blockIdx)] = val2;
+        gGhost.ptr<5>()[idxPop<axis::Z, 3, VelocitySet::QF()>(xy, blockIdx)] = val3;
 
         break;
     }
     case 5:
     {
-        gGhost.ptr<1>()[idxPop<axis::X, 0, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = val0;
-        gGhost.ptr<2>()[idxPop<axis::Y, 3, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = val1;
-        gGhost.ptr<4>()[idxPop<axis::Z, 1, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = val2;
-        gGhost.ptr<5>()[idxPop<axis::Z, 4, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = val3;
+        gGhost.ptr<1>()[idxPop<axis::X, 0, VelocitySet::QF()>(yz, blockIdx)] = val0;
+        gGhost.ptr<2>()[idxPop<axis::Y, 3, VelocitySet::QF()>(xz, blockIdx)] = val1;
+        gGhost.ptr<4>()[idxPop<axis::Z, 1, VelocitySet::QF()>(xy, blockIdx)] = val2;
+        gGhost.ptr<5>()[idxPop<axis::Z, 4, VelocitySet::QF()>(xy, blockIdx)] = val3;
 
         break;
     }
     case 6:
     {
-        gGhost.ptr<1>()[idxPop<axis::X, 1, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = val0;
-        gGhost.ptr<2>()[idxPop<axis::Y, 4, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = val1;
-        gGhost.ptr<4>()[idxPop<axis::Z, 2, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = val2;
+        gGhost.ptr<1>()[idxPop<axis::X, 1, VelocitySet::QF()>(yz, blockIdx)] = val0;
+        gGhost.ptr<2>()[idxPop<axis::Y, 4, VelocitySet::QF()>(xz, blockIdx)] = val1;
+        gGhost.ptr<4>()[idxPop<axis::Z, 2, VelocitySet::QF()>(xy, blockIdx)] = val2;
 
         break;
     }
     case 7:
     {
-        gGhost.ptr<1>()[idxPop<axis::X, 2, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = val0;
-        gGhost.ptr<3>()[idxPop<axis::Y, 0, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = val1;
-        gGhost.ptr<4>()[idxPop<axis::Z, 3, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = val2;
+        gGhost.ptr<1>()[idxPop<axis::X, 2, VelocitySet::QF()>(yz, blockIdx)] = val0;
+        gGhost.ptr<3>()[idxPop<axis::Y, 0, VelocitySet::QF()>(xz, blockIdx)] = val1;
+        gGhost.ptr<4>()[idxPop<axis::Z, 3, VelocitySet::QF()>(xy, blockIdx)] = val2;
 
         break;
     }

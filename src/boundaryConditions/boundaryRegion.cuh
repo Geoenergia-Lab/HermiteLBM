@@ -92,43 +92,43 @@ namespace LBM
          **/
         __host__ [[nodiscard]] inline constexpr scalar_t rho() const noexcept
         {
-            return values_[index::rho()]();
+            return values_[index::rho]();
         }
         __host__ [[nodiscard]] inline constexpr scalar_t u() const noexcept
         {
-            return values_[index::u()]();
+            return values_[index::u]();
         }
         __host__ [[nodiscard]] inline constexpr scalar_t v() const noexcept
         {
-            return values_[index::v()]();
+            return values_[index::v]();
         }
         __host__ [[nodiscard]] inline constexpr scalar_t w() const noexcept
         {
-            return values_[index::w()]();
+            return values_[index::w]();
         }
         __host__ [[nodiscard]] inline constexpr scalar_t m_xx() const noexcept
         {
-            return values_[index::xx()]();
+            return values_[index::xx]();
         }
         __host__ [[nodiscard]] inline constexpr scalar_t m_xy() const noexcept
         {
-            return values_[index::xy()]();
+            return values_[index::xy]();
         }
         __host__ [[nodiscard]] inline constexpr scalar_t m_xz() const noexcept
         {
-            return values_[index::xz()]();
+            return values_[index::xz]();
         }
         __host__ [[nodiscard]] inline constexpr scalar_t m_yy() const noexcept
         {
-            return values_[index::yy()]();
+            return values_[index::yy]();
         }
         __host__ [[nodiscard]] inline constexpr scalar_t m_yz() const noexcept
         {
-            return values_[index::yz()]();
+            return values_[index::yz]();
         }
         __host__ [[nodiscard]] inline constexpr scalar_t m_zz() const noexcept
         {
-            return values_[index::zz()]();
+            return values_[index::zz]();
         }
 
         /**

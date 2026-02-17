@@ -197,7 +197,7 @@ namespace LBM
                 const label_t nxGPUs = mesh.nDevices<axis::X>();
                 const label_t nyGPUs = mesh.nDevices<axis::Y>();
                 const label_t nzGPUs = mesh.nDevices<axis::Z>();
-                const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+                const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
 
                 const label_t nxPointsPerGPU = mesh.nx() / nxGPUs;
                 const label_t nyPointsPerGPU = mesh.ny() / nyGPUs;

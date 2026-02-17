@@ -802,7 +802,7 @@ namespace LBM
                 nxGPUs, nyGPUs, nzGPUs,
                 [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
                 {
-                    const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+                    const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
 
                     // This is potentially incorrect but I don't think so.
                     // I think it is correct for this to be per-GPU because we are looping over all GPUs and unpacking to global
@@ -822,7 +822,7 @@ namespace LBM
                             const label_t y = (by_true * block::ny()) + ty;
                             const label_t z = (bz_true * block::nz()) + tz;
 
-                            const label_t idxGlobal = host::idxScalarGlobal(x, y, z, mesh.nx(), mesh.ny());
+                            const label_t idxGlobal = global::idx(x, y, z, mesh.nx(), mesh.ny());
                             const label_t idx = host::idx(tx, ty, tz, bx_true, by_true, bz_true, mesh);
 
                             for (label_t field = 0; field < nFields; field++)

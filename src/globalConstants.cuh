@@ -52,6 +52,24 @@ SourceFiles
 
 namespace LBM
 {
+    /**
+     * @brief Number of hydrodynamic moments
+     **/
+    template <typename T = label_t>
+    __device__ __host__ [[nodiscard]] inline consteval T NUMBER_MOMENTS() noexcept
+    {
+        return 10;
+    }
+
+    /**
+     * @brief Reference density 1.0
+     **/
+    template <typename T>
+    __device__ __host__ [[nodiscard]] inline consteval T rho0() noexcept
+    {
+        return static_cast<T>(1);
+    }
+
     namespace device
     {
         /**
@@ -135,6 +153,41 @@ namespace LBM
             {
                 return NUM_BLOCK_Z;
             }
+        }
+
+        /**
+         * @brief Allocates a symbol of type T to the device
+         * @param[in] symbol The symbol to which the value is to be copied
+         * @param[in] value The value to copy to the symbol
+         **/
+        template <typename T>
+        void copyToSymbol(const T &symbol, const T value)
+        {
+            errorHandler::check(cudaDeviceSynchronize());
+            const T valueTemp = value;
+            errorHandler::check(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), 0, cudaMemcpyHostToDevice));
+            errorHandler::check(cudaDeviceSynchronize());
+        }
+
+        template <typename T, const std::size_t N>
+        void copyToSymbol(const T (&symbol)[N], const T (&value)[N])
+        {
+            errorHandler::check(cudaDeviceSynchronize());
+            errorHandler::check(cudaMemcpyToSymbol(symbol, value, N * sizeof(T), 0, cudaMemcpyHostToDevice));
+            errorHandler::check(cudaDeviceSynchronize());
+        }
+
+        template <typename T, const std::size_t N>
+        void copyToSymbol(const T (&symbol)[N], const T value, const label_t index)
+        {
+            if (index >= N)
+            {
+                throw std::runtime_error("Error setting device symbol index" + std::to_string(index) + " out of bounds for array of size " + std::to_string(N) + ".");
+            }
+            errorHandler::check(cudaDeviceSynchronize());
+            const T valueTemp = value;
+            errorHandler::check(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), static_cast<std::size_t>(index) * sizeof(T), cudaMemcpyHostToDevice));
+            errorHandler::check(cudaDeviceSynchronize());
         }
     }
 }

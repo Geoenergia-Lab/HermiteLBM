@@ -73,7 +73,7 @@ namespace LBM
                     const scalar_t invNewCount)
                 {
                     // Index into global arrays
-                    const label_t idx = device::idx(device::threadCoordinate(), device::blockCoordinate());
+                    const label_t idx = device::idx(thread::coordinate(), block::coordinate());
 
                     // Read from global memory
                     thread::array<scalar_t, NUMBER_MOMENTS<std::size_t>()> m;

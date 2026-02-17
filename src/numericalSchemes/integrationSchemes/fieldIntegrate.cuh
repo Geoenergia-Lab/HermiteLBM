@@ -82,13 +82,13 @@ namespace LBM
             for (std::size_t y = 0; y < ny; ++y)
             {
                 // Initial condition for integration along this x-line
-                integral_f[host::idxScalarGlobal<std::size_t>(0, y, z, nx, ny)] = 0;
+                integral_f[global::idx<std::size_t>(0, y, z, nx, ny)] = 0;
 
                 // Cumulative integration using the trapezoidal rule
                 for (std::size_t x = 1; x < nx; ++x)
                 {
-                    const std::size_t current_idx = host::idxScalarGlobal<std::size_t>(x, y, z, nx, ny);
-                    const std::size_t prev_idx = host::idxScalarGlobal<std::size_t>(x - 1, y, z, nx, ny);
+                    const std::size_t current_idx = global::idx<std::size_t>(x, y, z, nx, ny);
+                    const std::size_t prev_idx = global::idx<std::size_t>(x - 1, y, z, nx, ny);
 
                     integral_f[current_idx] = integral_f[prev_idx] + static_cast<TReturn>(0.5 * dx * (static_cast<double>(f[prev_idx]) + static_cast<double>(f[current_idx])));
                 }
@@ -123,13 +123,13 @@ namespace LBM
             for (std::size_t x = 0; x < nx; ++x)
             {
                 // Initial condition for integration along this y-line
-                integral_f[host::idxScalarGlobal<std::size_t>(x, 0, z, nx, ny)] = 0;
+                integral_f[global::idx<std::size_t>(x, 0, z, nx, ny)] = 0;
 
                 // Cumulative integration using the trapezoidal rule
                 for (std::size_t y = 1; y < ny; ++y)
                 {
-                    const std::size_t current_idx = host::idxScalarGlobal<std::size_t>(x, y, z, nx, ny);
-                    const std::size_t prev_idx = host::idxScalarGlobal<std::size_t>(x, y - 1, z, nx, ny);
+                    const std::size_t current_idx = global::idx<std::size_t>(x, y, z, nx, ny);
+                    const std::size_t prev_idx = global::idx<std::size_t>(x, y - 1, z, nx, ny);
 
                     integral_f[current_idx] = integral_f[prev_idx] + static_cast<TReturn>(0.5 * dy * (static_cast<double>(f[prev_idx]) + static_cast<double>(f[current_idx])));
                 }
@@ -164,13 +164,13 @@ namespace LBM
             for (std::size_t x = 0; x < nx; ++x)
             {
                 // Initial condition for integration along this z-line
-                integral_f[host::idxScalarGlobal<std::size_t>(x, y, 0, nx, ny)] = 0;
+                integral_f[global::idx<std::size_t>(x, y, 0, nx, ny)] = 0;
 
                 // Cumulative integration using the trapezoidal rule
                 for (std::size_t z = 1; z < nz; ++z)
                 {
-                    const std::size_t current_idx = host::idxScalarGlobal<std::size_t>(x, y, z, nx, ny);
-                    const std::size_t prev_idx = host::idxScalarGlobal<std::size_t>(x, y, z - 1, nx, ny);
+                    const std::size_t current_idx = global::idx<std::size_t>(x, y, z, nx, ny);
+                    const std::size_t prev_idx = global::idx<std::size_t>(x, y, z - 1, nx, ny);
 
                     integral_f[current_idx] = integral_f[prev_idx] + static_cast<TReturn>(0.5 * dz * (static_cast<double>(f[prev_idx]) + static_cast<double>(f[current_idx])));
                 }

@@ -52,7 +52,6 @@ Notes
 case normalVector::FRONT():
 {
     // Classic Neumann
-    // const label_t tid = device::idxBlock(Tx.x, Tx.y, Tx.z - 1);
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     moments[m_i<0>()] = rho;
     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
@@ -99,7 +98,6 @@ case normalVector::FRONT():
 case normalVector::WEST_FRONT():
 {
     // Classic Neumann
-    // const label_t tid = device::idxBlock(Tx.x, Tx.y, Tx.z - 1);
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     moments[m_i<0>()] = rho;
     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
@@ -138,7 +136,6 @@ case normalVector::WEST_FRONT():
 case normalVector::EAST_FRONT():
 {
     // Classic Neumann
-    // const label_t tid = device::idxBlock(Tx.x, Tx.y, Tx.z - 1);
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     moments[m_i<0>()] = rho;
     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
@@ -177,7 +174,6 @@ case normalVector::EAST_FRONT():
 case normalVector::SOUTH_FRONT():
 {
     // Classic Neumann
-    // const label_t tid = device::idxBlock(Tx.x, Tx.y, Tx.z - 1);
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     moments[m_i<0>()] = rho;
     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
@@ -216,7 +212,6 @@ case normalVector::SOUTH_FRONT():
 case normalVector::NORTH_FRONT():
 {
     // Classic Neumann
-    // const label_t tid = device::idxBlock(Tx.x, Tx.y, Tx.z - 1);
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     moments[m_i<0>()] = rho;
     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
@@ -256,8 +251,6 @@ case normalVector::NORTH_FRONT():
 // Edges
 case normalVector::SOUTH_WEST_FRONT():
 {
-    // const label_t tid = device::idxBlock(Tx.x, Tx.y, Tx.z - 1);
-
     // Classic Neumann
     moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
@@ -276,8 +269,6 @@ case normalVector::SOUTH_WEST_FRONT():
 }
 case normalVector::NORTH_WEST_FRONT():
 {
-    // const label_t tid = device::idxBlock(Tx.x, Tx.y, Tx.z - 1);
-
     // Classic Neumann
     moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
@@ -296,8 +287,6 @@ case normalVector::NORTH_WEST_FRONT():
 }
 case normalVector::SOUTH_EAST_FRONT():
 {
-    // const label_t tid = device::idxBlock(Tx.x, Tx.y, Tx.z - 1);
-
     // Classic Neumann
     moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
@@ -316,8 +305,6 @@ case normalVector::SOUTH_EAST_FRONT():
 }
 case normalVector::NORTH_EAST_FRONT():
 {
-    // const label_t tid = device::idxBlock(Tx.x, Tx.y, Tx.z - 1);
-
     // Classic Neumann
     moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];

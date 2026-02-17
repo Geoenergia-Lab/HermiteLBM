@@ -95,9 +95,9 @@ namespace LBM
         const label_t GLOBAL_Z_BLOCK_OFFSET,
         const label_t correctDevice)
     {
-        const device::threadCoordinate Tx;
+        const thread::coordinate Tx;
 
-        const device::blockCoordinate Bx;
+        const block::coordinate Bx;
 
         const device::pointCoordinate point(Tx, Bx);
 

@@ -100,7 +100,7 @@ int main(const int argc, const char *const argv[])
 
     BlockHalo blockHalo(mesh, programCtrl);
 
-    kernelSetup<smem_alloc_size()>(momentBasedD3Q27);
+    kernel::configure<smem_alloc_size()>(momentBasedD3Q27);
 
     const runTimeIO IO(mesh, programCtrl);
 

@@ -110,7 +110,7 @@ namespace LBM
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
             const normalVector &boundaryNormal,
             const scalar_t *const ptrRestrict shared_buffer,
-            const device::threadCoordinate &Tx,
+            const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept
         {
 #include "jetBoundaryCondition.cuh"
@@ -122,7 +122,7 @@ namespace LBM
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
             const normalVector &boundaryNormal,
             const thread::array<scalar_t, N> &shared_buffer,
-            const device::threadCoordinate &Tx,
+            const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept
         {
             calculate_moments<VelocitySet>(pop, moments, boundaryNormal, shared_buffer.data(), Tx, point);

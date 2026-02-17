@@ -76,6 +76,26 @@ namespace LBM
             timeAverage = 1
         } type;
     }
+
+    /**
+     * @brief Enumerated variable indices
+     **/
+    namespace index
+    {
+        typedef enum Enum : std::size_t
+        {
+            rho = 0,
+            u = 1,
+            v = 2,
+            w = 3,
+            xx = 4,
+            xy = 5,
+            xz = 6,
+            yy = 7,
+            yz = 8,
+            zz = 9
+        } type;
+    }
 }
 
 #include "integralTypedefs.cuh"
@@ -86,5 +106,48 @@ namespace LBM
 
 #include "../hardwareConfig.cuh"
 #include "../errorHandler.cuh"
+
+namespace LBM
+{
+    /**
+     * @brief Struct used to represent 2D indices in a more readable way
+     **/
+    template <const axis::type alpha>
+    class dim2
+    {
+    public:
+        /**
+         * @brief Constructs from a linear index of a flattened 2D array with dimensions (block::n<alpha>(), block::n<beta>())
+         * @param[in] linearIdx The linear index to convert to 2D indices
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr dim2(const label_t linearIdx) noexcept
+            : i_(linearIdx % (block::n<axis::orthogonal<alpha, 0>()>())),
+              j_(linearIdx / (block::n<axis::orthogonal<alpha, 0>()>()))
+        {
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
+        };
+
+        __device__ __host__ [[nodiscard]] inline constexpr dim2(const label_t a, const label_t b) noexcept
+            : i_(a),
+              j_(b)
+        {
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
+        };
+
+        __device__ __host__ [[nodiscard]] inline constexpr label_t i() const noexcept
+        {
+            return i_;
+        }
+
+        __device__ __host__ [[nodiscard]] inline constexpr label_t j() const noexcept
+        {
+            return j_;
+        }
+
+    private:
+        const label_t i_;
+        const label_t j_;
+    };
+}
 
 #endif

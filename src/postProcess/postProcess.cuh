@@ -79,7 +79,7 @@ namespace LBM
                 mesh.nx<std::size_t>(), mesh.ny<std::size_t>(), mesh.nz<std::size_t>(),
                 [&](const std::size_t x, const std::size_t y, const std::size_t z)
                 {
-                    const std::size_t idx = host::idxScalarGlobal<std::size_t>(x, y, z, mesh.nx<std::size_t>(), mesh.ny<std::size_t>());
+                    const std::size_t idx = global::idx<std::size_t>(x, y, z, mesh.nx<std::size_t>(), mesh.ny<std::size_t>());
                     // Do the conversion in double, then cast to the desired type
                     coords[3 * idx + 0] = static_cast<T>((static_cast<double>(mesh.L().x) * static_cast<double>(x * static_cast<std::size_t>(mesh.nx() > 1))) / static_cast<double>(mesh.nx<std::size_t>() - static_cast<std::size_t>(mesh.nx() > 1)));
                     coords[3 * idx + 1] = static_cast<T>((static_cast<double>(mesh.L().y) * static_cast<double>(y * static_cast<std::size_t>(mesh.ny() > 1))) / static_cast<double>(mesh.ny<std::size_t>() - static_cast<std::size_t>(mesh.ny() > 1)));
@@ -105,8 +105,8 @@ namespace LBM
                 mesh.nx<std::size_t>(), mesh.ny<std::size_t>(), mesh.nz<std::size_t>(),
                 [&](const std::size_t x, const std::size_t y, const std::size_t z)
                 {
-                    const std::size_t base = host::idxScalarGlobal(x, y, z, mesh.nx<std::size_t>(), mesh.ny<std::size_t>());
-                    const std::size_t cell_idx = host::idxScalarGlobal(x, y, z, mesh.nx<std::size_t>() - 1, mesh.ny<std::size_t>() - 1);
+                    const std::size_t base = global::idx(x, y, z, mesh.nx<std::size_t>(), mesh.ny<std::size_t>());
+                    const std::size_t cell_idx = global::idx(x, y, z, mesh.nx<std::size_t>() - 1, mesh.ny<std::size_t>() - 1);
                     const std::size_t stride_y = mesh.nx<std::size_t>();
                     const std::size_t stride_z = mesh.nx<std::size_t>() * mesh.ny<std::size_t>();
 

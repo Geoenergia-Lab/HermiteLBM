@@ -87,19 +87,19 @@ namespace LBM
                     // Fill interior region of padded_line
                     for (label_t x = 0; x < nx; ++x)
                     {
-                        padded_line[pad + x] = static_cast<double>(f[host::idxScalarGlobal(x, y, z, nx, ny)]);
+                        padded_line[pad + x] = static_cast<double>(f[global::idx(x, y, z, nx, ny)]);
                     }
 
                     // Set left ghost cells (reflect & negate)
                     for (label_t i = 0; i < pad; ++i)
                     {
-                        padded_line[i] = static_cast<double>(-f[host::idxScalarGlobal(pad - i, y, z, nx, ny)]);
+                        padded_line[i] = static_cast<double>(-f[global::idx(pad - i, y, z, nx, ny)]);
                     }
 
                     // Set right ghost cells (reflect & negate)
                     for (label_t i = 0; i < pad; ++i)
                     {
-                        padded_line[pad + nx + i] = static_cast<double>(-f[host::idxScalarGlobal(nx - 2 - i, y, z, nx, ny)]);
+                        padded_line[pad + nx + i] = static_cast<double>(-f[global::idx(nx - 2 - i, y, z, nx, ny)]);
                     }
 
                     // Compute derivatives for each point in x-direction
@@ -109,13 +109,13 @@ namespace LBM
 
                         if constexpr (order_ == 2)
                         {
-                            dfdx[host::idxScalarGlobal(x, y, z, nx, ny)] = static_cast<TReturn>(
+                            dfdx[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
                                 (padded_line[center + 1] - padded_line[center - 1]) / (2.0 * static_cast<double>(dx)));
                         }
 
                         if constexpr (order_ == 4)
                         {
-                            dfdx[host::idxScalarGlobal(x, y, z, nx, ny)] = static_cast<TReturn>(
+                            dfdx[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
                                 (2.0 / 3.0 * (padded_line[center + 1] - padded_line[center - 1]) +
                                  1.0 / 12.0 * (padded_line[center + 2] - padded_line[center - 2])) /
                                 static_cast<double>(dx));
@@ -123,7 +123,7 @@ namespace LBM
 
                         if constexpr (order_ == 6)
                         {
-                            dfdx[host::idxScalarGlobal(x, y, z, nx, ny)] = static_cast<TReturn>(
+                            dfdx[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
                                 (3.0 / 4.0 * (padded_line[center + 1] - padded_line[center - 1]) +
                                  3.0 / 20.0 * (padded_line[center + 2] - padded_line[center - 2]) +
                                  1.0 / 60.0 * (padded_line[center + 3] - padded_line[center - 3])) /
@@ -132,7 +132,7 @@ namespace LBM
 
                         if constexpr (order_ == 8)
                         {
-                            dfdx[host::idxScalarGlobal(x, y, z, nx, ny)] = static_cast<TReturn>(
+                            dfdx[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
                                 (4.0 / 5.0 * (padded_line[center + 1] - padded_line[center - 1]) +
                                  1.0 / 5.0 * (padded_line[center + 2] - padded_line[center - 2]) +
                                  4.0 / 105.0 * (padded_line[center + 3] - padded_line[center - 3]) +
@@ -179,19 +179,19 @@ namespace LBM
                     // Fill interior region of padded_line
                     for (label_t y = 0; y < ny; ++y)
                     {
-                        padded_line[pad + y] = static_cast<double>(f[host::idxScalarGlobal(x, y, z, nx, ny)]);
+                        padded_line[pad + y] = static_cast<double>(f[global::idx(x, y, z, nx, ny)]);
                     }
 
                     // Set bottom ghost cells (reflect & negate)
                     for (label_t i = 0; i < pad; ++i)
                     {
-                        padded_line[i] = -static_cast<double>(f[host::idxScalarGlobal(x, pad - i, z, nx, ny)]);
+                        padded_line[i] = -static_cast<double>(f[global::idx(x, pad - i, z, nx, ny)]);
                     }
 
                     // Set top ghost cells (reflect & negate)
                     for (label_t i = 0; i < pad; ++i)
                     {
-                        padded_line[pad + ny + i] = -static_cast<double>(f[host::idxScalarGlobal(x, ny - 2 - i, z, nx, ny)]);
+                        padded_line[pad + ny + i] = -static_cast<double>(f[global::idx(x, ny - 2 - i, z, nx, ny)]);
                     }
 
                     // Compute derivatives for each point in y-direction
@@ -201,13 +201,13 @@ namespace LBM
 
                         if constexpr (order_ == 2)
                         {
-                            dfdy[host::idxScalarGlobal(x, y, z, nx, ny)] = static_cast<TReturn>(
+                            dfdy[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
                                 (padded_line[center + 1] - padded_line[center - 1]) / (2.0 * static_cast<double>(dy)));
                         }
 
                         if constexpr (order_ == 4)
                         {
-                            dfdy[host::idxScalarGlobal(x, y, z, nx, ny)] = static_cast<TReturn>(
+                            dfdy[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
                                 (2.0 / 3.0 * (padded_line[center + 1] - padded_line[center - 1]) +
                                  1.0 / 12.0 * (padded_line[center + 2] - padded_line[center - 2])) /
                                 static_cast<double>(dy));
@@ -215,7 +215,7 @@ namespace LBM
 
                         if constexpr (order_ == 6)
                         {
-                            dfdy[host::idxScalarGlobal(x, y, z, nx, ny)] = static_cast<TReturn>(
+                            dfdy[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
                                 (3.0 / 4.0 * (padded_line[center + 1] - padded_line[center - 1]) +
                                  3.0 / 20.0 * (padded_line[center + 2] - padded_line[center - 2]) +
                                  1.0 / 60.0 * (padded_line[center + 3] - padded_line[center - 3])) /
@@ -224,7 +224,7 @@ namespace LBM
 
                         if constexpr (order_ == 8)
                         {
-                            dfdy[host::idxScalarGlobal(x, y, z, nx, ny)] = static_cast<TReturn>(
+                            dfdy[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
                                 (4.0 / 5.0 * (padded_line[center + 1] - padded_line[center - 1]) +
                                  1.0 / 5.0 * (padded_line[center + 2] - padded_line[center - 2]) +
                                  4.0 / 105.0 * (padded_line[center + 3] - padded_line[center - 3]) +
@@ -271,19 +271,19 @@ namespace LBM
                     // Fill interior region of padded_line
                     for (label_t z = 0; z < nz; ++z)
                     {
-                        padded_line[pad + z] = static_cast<double>(f[host::idxScalarGlobal(x, y, z, nx, ny)]);
+                        padded_line[pad + z] = static_cast<double>(f[global::idx(x, y, z, nx, ny)]);
                     }
 
                     // Set front ghost cells (reflect & negate)
                     for (label_t i = 0; i < pad; ++i)
                     {
-                        padded_line[i] = -static_cast<double>(f[host::idxScalarGlobal(x, y, pad - i, nx, ny)]);
+                        padded_line[i] = -static_cast<double>(f[global::idx(x, y, pad - i, nx, ny)]);
                     }
 
                     // Set back ghost cells (reflect & negate)
                     for (label_t i = 0; i < pad; ++i)
                     {
-                        padded_line[pad + nz + i] = -static_cast<double>(f[host::idxScalarGlobal(x, y, nz - 2 - i, nx, ny)]);
+                        padded_line[pad + nz + i] = -static_cast<double>(f[global::idx(x, y, nz - 2 - i, nx, ny)]);
                     }
 
                     // Compute derivatives for each point in z-direction
@@ -293,13 +293,13 @@ namespace LBM
 
                         if constexpr (order_ == 2)
                         {
-                            dfdz[host::idxScalarGlobal(x, y, z, nx, ny)] = static_cast<TReturn>(
+                            dfdz[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
                                 (padded_line[center + 1] - padded_line[center - 1]) / (2.0 * static_cast<double>(dz)));
                         }
 
                         if constexpr (order_ == 4)
                         {
-                            dfdz[host::idxScalarGlobal(x, y, z, nx, ny)] = static_cast<TReturn>(
+                            dfdz[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
                                 (2.0 / 3.0 * (padded_line[center + 1] - padded_line[center - 1]) +
                                  1.0 / 12.0 * (padded_line[center + 2] - padded_line[center - 2])) /
                                 static_cast<double>(dz));
@@ -307,7 +307,7 @@ namespace LBM
 
                         if constexpr (order_ == 6)
                         {
-                            dfdz[host::idxScalarGlobal(x, y, z, nx, ny)] = static_cast<TReturn>(
+                            dfdz[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
                                 (3.0 / 4.0 * (padded_line[center + 1] - padded_line[center - 1]) +
                                  3.0 / 20.0 * (padded_line[center + 2] - padded_line[center - 2]) +
                                  1.0 / 60.0 * (padded_line[center + 3] - padded_line[center - 3])) /
@@ -316,7 +316,7 @@ namespace LBM
 
                         if constexpr (order_ == 8)
                         {
-                            dfdz[host::idxScalarGlobal(x, y, z, nx, ny)] = static_cast<TReturn>(
+                            dfdz[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
                                 (4.0 / 5.0 * (padded_line[center + 1] - padded_line[center - 1]) +
                                  1.0 / 5.0 * (padded_line[center + 2] - padded_line[center - 2]) +
                                  4.0 / 105.0 * (padded_line[center + 3] - padded_line[center - 3]) +

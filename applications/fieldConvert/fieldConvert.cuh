@@ -271,8 +271,8 @@ namespace LBM
                 {
                     for (std::size_t y = 0; y < mesh.ny<std::size_t>(); y++)
                     {
-                        const scalar_t f0 = fields[field][(host::idxScalarGlobal<std::size_t>(i_0, y, z, mesh.nx<std::size_t>(), mesh.ny<std::size_t>()))];
-                        const scalar_t f1 = fields[field][(host::idxScalarGlobal<std::size_t>(i_1, y, z, mesh.nx<std::size_t>(), mesh.ny<std::size_t>()))];
+                        const scalar_t f0 = fields[field][(global::idx<std::size_t>(i_0, y, z, mesh.nx<std::size_t>(), mesh.ny<std::size_t>()))];
+                        const scalar_t f1 = fields[field][(global::idx<std::size_t>(i_1, y, z, mesh.nx<std::size_t>(), mesh.ny<std::size_t>()))];
 
                         cutPlane[field][y + (z * mesh.ny<std::size_t>())] = linearInterpolate(f0, f1, weight);
                     }
@@ -288,8 +288,8 @@ namespace LBM
                 {
                     for (std::size_t x = 0; x < mesh.nx<std::size_t>(); x++)
                     {
-                        const scalar_t f0 = fields[field][(host::idxScalarGlobal<std::size_t>(x, i_0, z, (mesh.nx()), (mesh.ny())))];
-                        const scalar_t f1 = fields[field][(host::idxScalarGlobal<std::size_t>(x, i_1, z, (mesh.nx()), (mesh.ny())))];
+                        const scalar_t f0 = fields[field][(global::idx<std::size_t>(x, i_0, z, (mesh.nx()), (mesh.ny())))];
+                        const scalar_t f1 = fields[field][(global::idx<std::size_t>(x, i_1, z, (mesh.nx()), (mesh.ny())))];
                         cutPlane[field][x + (z * mesh.nx())] = linearInterpolate(f0, f1, weight);
                     }
                 }
@@ -304,8 +304,8 @@ namespace LBM
                 {
                     for (std::size_t x = 0; x < mesh.nx<std::size_t>(); x++)
                     {
-                        const scalar_t f0 = fields[field][(host::idxScalarGlobal<std::size_t>(x, y, i_0, mesh.nx<std::size_t>(), mesh.ny<std::size_t>()))];
-                        const scalar_t f1 = fields[field][(host::idxScalarGlobal<std::size_t>(x, y, i_1, mesh.nx<std::size_t>(), mesh.ny<std::size_t>()))];
+                        const scalar_t f0 = fields[field][(global::idx<std::size_t>(x, y, i_0, mesh.nx<std::size_t>(), mesh.ny<std::size_t>()))];
+                        const scalar_t f1 = fields[field][(global::idx<std::size_t>(x, y, i_1, mesh.nx<std::size_t>(), mesh.ny<std::size_t>()))];
                         cutPlane[field][x + (y * mesh.nx())] = linearInterpolate(f0, f1, weight);
                     }
                 }

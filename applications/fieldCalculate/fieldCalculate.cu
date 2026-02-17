@@ -130,7 +130,7 @@ int main(const int argc, const char *const argv[])
 
                 const std::vector<std::vector<scalar_t>> fields = fileIO::deinterleaveAoS(hostMoments.arr(), mesh);
 
-                const std::vector<std::vector<scalar_t>> omega = derivative::curl<SchemeOrder()>(fields[index::u()], fields[index::v()], fields[index::w()], mesh);
+                const std::vector<std::vector<scalar_t>> omega = derivative::curl<SchemeOrder()>(fields[index::u], fields[index::v], fields[index::w], mesh);
                 const std::vector<scalar_t> magomega = mag(omega[0], omega[1], omega[2]);
 
                 const postProcess::writerFunction writer = it->second;
@@ -168,7 +168,7 @@ int main(const int argc, const char *const argv[])
 
                 const std::vector<std::vector<scalar_t>> fields = fileIO::deinterleaveAoS(hostMoments.arr(), mesh);
 
-                const std::vector<scalar_t> divu = derivative::div<SchemeOrder()>(fields[index::u()], fields[index::v()], fields[index::w()], mesh);
+                const std::vector<scalar_t> divu = derivative::div<SchemeOrder()>(fields[index::u], fields[index::v], fields[index::w], mesh);
 
                 const postProcess::writerFunction writer = it->second;
 

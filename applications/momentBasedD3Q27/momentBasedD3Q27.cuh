@@ -83,9 +83,9 @@ namespace LBM
         const device::ptrCollection<6, const scalar_t> fGhost,
         const device::ptrCollection<6, scalar_t> gGhost)
     {
-        const device::threadCoordinate Tx;
+        const thread::coordinate Tx;
 
-        const device::blockCoordinate Bx;
+        const block::coordinate Bx;
 
         const device::pointCoordinate point(Tx, Bx);
 
@@ -93,7 +93,7 @@ namespace LBM
         const label_t idx = device::idx(Tx, Bx);
 
         // Into block arrays
-        const label_t tid = device::idxBlock(Tx);
+        const label_t tid = block::idx(Tx);
 
         // Always a multiple of 32, so no need to check this(I think)
         if constexpr (out_of_bounds_check())
@@ -121,7 +121,7 @@ namespace LBM
             {
                 const label_t ID = tid * m_i<NUMBER_MOMENTS() + 1>() + m_i<moment>();
                 shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
-                if constexpr (moment == index::rho())
+                if constexpr (moment == index::rho)
                 {
                     moments[moment] = shared_buffer[ID] + rho0<scalar_t>();
                 }

@@ -206,7 +206,7 @@ namespace LBM
                         nxGPUs, nyGPUs, nzGPUs,
                         [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
                         {
-                            const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+                            const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
 
                             if (!(ptr_[virtualDeviceIndex] == nullptr))
                             {
@@ -372,7 +372,7 @@ namespace LBM
                         nxGPUs, nyGPUs, nzGPUs,
                         [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
                         {
-                            const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+                            const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
 
                             hostPtrsToDevice[virtualDeviceIndex] = allocate_device_segment(mesh, hostArrayGlobal, GPU_x, GPU_y, GPU_z);
                         });
@@ -435,7 +435,7 @@ namespace LBM
                 const label_t nyPointsPerGPU = mesh.ny() / nyGPUs;
                 const label_t nzPointsPerGPU = mesh.nz() / nzGPUs;
                 const label_t nPointsPerGPU = nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU;
-                const label_t virtualDeviceIndex = deviceIdx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+                const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
                 const label_t startIndex = virtualDeviceIndex * nPointsPerGPU;
 
                 T *devPtr = device::allocate<T>(nPointsPerGPU, static_cast<deviceIndex_t>(virtualDeviceIndex));
@@ -501,12 +501,12 @@ namespace LBM
                     for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList.size(); virtualDeviceIndex++)
                     {
                         errorHandler::check(cudaSetDevice(deviceList[virtualDeviceIndex]));
-                        copyToSymbol(device::U_North, North(), i);
-                        copyToSymbol(device::U_South, South(), i);
-                        copyToSymbol(device::U_East, East(), i);
-                        copyToSymbol(device::U_West, West(), i);
-                        copyToSymbol(device::U_Back, Back(), i);
-                        copyToSymbol(device::U_Front, Front(), i);
+                        device::copyToSymbol(device::U_North, North(), i);
+                        device::copyToSymbol(device::U_South, South(), i);
+                        device::copyToSymbol(device::U_East, East(), i);
+                        device::copyToSymbol(device::U_West, West(), i);
+                        device::copyToSymbol(device::U_Back, Back(), i);
+                        device::copyToSymbol(device::U_Front, Front(), i);
                     }
                 }
             }

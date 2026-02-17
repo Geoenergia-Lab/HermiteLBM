@@ -54,6 +54,7 @@ SourceFiles
 #include "LBMIncludes.cuh"
 #include "typedefs/typedefs.cuh"
 #include "globalConstants.cuh"
+#include "coordinate.cuh"
 
 namespace LBM
 {
@@ -245,24 +246,6 @@ namespace LBM
     }
 
     /**
-     * @brief Device index (universal version)
-     * @tparam T Label type
-     * @param[in] dx, dy, dz Device indices in the X, Y and Z directions
-     * @param[in] ndx, ndy Number of devices in the X and Y directions
-     **/
-    template <typename T = label_t>
-    __device__ __host__ [[nodiscard]] inline constexpr T deviceIdx(const T dx, const T dy, const T dz, const T ndx, const T ndy) noexcept
-    {
-        return dx + (dy * ndx) + (dz * ndx * ndy);
-    }
-
-    /**
-     * @brief Number of hydrodynamic moments
-     **/
-    template <typename T = label_t>
-    __device__ __host__ [[nodiscard]] inline consteval T NUMBER_MOMENTS() noexcept { return 10; }
-
-    /**
      * @brief Host-side indexing operations
      **/
     namespace host
@@ -299,7 +282,10 @@ namespace LBM
         {
             return idx(tx, ty, tz, bx, by, bz, mesh.nxBlocks(), mesh.nyBlocks());
         }
+    }
 
+    namespace global
+    {
         /**
          * @brief Global scalar field index (collapsed 3D)
          * @param x,y,z Global coordinates
@@ -307,96 +293,11 @@ namespace LBM
          * @return Linearized index: x + nx*(y + ny*z)
          **/
         template <typename T = label_t>
-        __host__ [[nodiscard]] inline T idxScalarGlobal(
+        __host__ [[nodiscard]] inline T idx(
             const T x, const T y, const T z,
             const T nx, const T ny) noexcept
         {
             return x + (nx * (y + (ny * z)));
-        }
-
-        /**
-         * @brief Index for X-aligned population arrays
-         * @tparam pop Population index
-         * @tparam QF Number of populations
-         * @param ty,tz Thread-local y/z coordinates
-         * @param bx,by,bz Block indices
-         * @param nxBlocks Number of blocks in x-direction
-         * @param nyBlocks Number of blocks in y-direction
-         * @return Linearized index: ty + block::ny()*(tz + block::nz()*(pop + QF*(bx + nxBlocks*(by + nyBlocks*bz)))
-         * @note Optimized for coalesced memory access in X-direction
-         **/
-        template <const label_t pop, const label_t QF>
-        __host__ [[nodiscard]] inline label_t idxPopX(
-            const label_t ty, const label_t tz,
-            const label_t bx, const label_t by, const label_t bz,
-            const label_t nxBlocks, const label_t nyBlocks) noexcept
-        {
-            return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
-        }
-
-        /**
-         * @brief Index for Y-aligned population arrays
-         * @copydetails idxPopX
-         * @param tx,tz Thread-local x/z coordinates
-         * @return Linearized index: tx + block::nx()*(tz + block::nz()*(pop + QF*(bx + nxBlocks*(by + nyBlocks*bz)))
-         **/
-        template <const label_t pop, const label_t QF>
-        __host__ [[nodiscard]] inline label_t idxPopY(
-            const label_t tx, const label_t tz,
-            const label_t bx, const label_t by, const label_t bz,
-            const label_t nxBlocks, const label_t nyBlocks) noexcept
-        {
-            return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
-        }
-
-        /**
-         * @brief Index for Z-aligned population arrays
-         * @copydetails idxPopX
-         * @param tx,ty Thread-local x/y coordinates
-         * @return Linearized index: tx + block::nx()*(ty + block::ny()*(pop + QF*(bx + nxBlocks*(by + nyBlocks*bz)))
-         **/
-        template <const label_t pop, const label_t QF>
-        __host__ [[nodiscard]] inline label_t idxPopZ(
-            const label_t tx, const label_t ty,
-            const label_t bx, const label_t by, const label_t bz,
-            const label_t nxBlocks, const label_t nyBlocks) noexcept
-        {
-            return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
-        }
-
-        /**
-         * @brief Index for arbitrarily aligned population arrays
-         * @tparam pop Population index
-         * @tparam QF Number of populations
-         * @tparam alpha The axis direction
-         * @param tx,ty,tz Thread-local x/y/z coordinates
-         * @param bx,by,bz Block indices
-         * @param nxBlocks Number of blocks in x-direction
-         * @param nyBlocks Number of blocks in y-direction
-         * @return Linearized index: idxPopX, idxPopY, idxPopZ
-         **/
-        template <const axis::type alpha, const label_t pop, const label_t QF>
-        __host__ [[nodiscard]] inline label_t idxPop(
-            const label_t tx, const label_t ty, const label_t tz,
-            const label_t bx, const label_t by, const label_t bz,
-            const label_t nxBlocks, const label_t nyBlocks)
-        {
-            axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-            if constexpr (alpha == axis::X)
-            {
-                return idxPopX<pop, QF>(ty, tz, bx, by, bz, nxBlocks, nyBlocks);
-            }
-
-            if constexpr (alpha == axis::Y)
-            {
-                return idxPopY<pop, QF>(tx, tz, bx, by, bz, nxBlocks, nyBlocks);
-            }
-
-            if constexpr (alpha == axis::Z)
-            {
-                return idxPopZ<pop, QF>(tx, ty, bx, by, bz, nxBlocks, nyBlocks);
-            }
         }
     }
 
@@ -405,201 +306,6 @@ namespace LBM
      **/
     namespace device
     {
-        class threadCoordinate
-        {
-        public:
-            /**
-             * @brief Constructs from threadIdx
-             **/
-            __device__ [[nodiscard]] inline explicit threadCoordinate() noexcept
-                : x(static_cast<label_t>(threadIdx.x)),
-                  y(static_cast<label_t>(threadIdx.y)),
-                  z(static_cast<label_t>(threadIdx.z)){};
-
-            /**
-             * @brief Returns the ordinate in a particular axis
-             * @tparam alpha The axis
-             **/
-            template <axis::type alpha>
-            __device__ __host__ [[nodiscard]] inline constexpr label_t value() const noexcept
-            {
-                axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-                if constexpr (alpha == axis::X)
-                {
-                    return x;
-                }
-
-                if constexpr (alpha == axis::Y)
-                {
-                    return y;
-                }
-
-                if constexpr (alpha == axis::Z)
-                {
-                    return z;
-                }
-            }
-
-            /**
-             * @brief Shifts the coordinate along a particular axis by a coefficient
-             * @tparam alpha The axis
-             * @tparam coeff The coefficient to shift by (-1, 0 or +1)
-             **/
-            template <axis::type alpha, const int coeff>
-            __device__ [[nodiscard]] inline constexpr label_t shifted_coordinate() const noexcept
-            {
-                axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-                velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
-
-                if constexpr (coeff == -1)
-                {
-                    return (value<alpha>() - 1 + block::n<alpha>()) % block::n<alpha>();
-                }
-
-                if constexpr (coeff == 0)
-                {
-                    return value<alpha>();
-                }
-
-                if constexpr (coeff == 1)
-                {
-                    return (value<alpha>() + 1 + block::n<alpha>()) % block::n<alpha>();
-                }
-            }
-
-        private:
-            /**
-             * @brief The underlying thread coordinates
-             **/
-            const label_t x;
-            const label_t y;
-            const label_t z;
-        };
-
-        class blockCoordinate
-        {
-        public:
-            /**
-             * @brief Constructs from blockIdx
-             **/
-            __device__ [[nodiscard]] inline explicit blockCoordinate() noexcept
-                : x(static_cast<label_t>(blockIdx.x)),
-                  y(static_cast<label_t>(blockIdx.y)),
-                  z(static_cast<label_t>(blockIdx.z)){};
-
-            /**
-             * @brief Returns the ordinate in a particular axis
-             * @tparam alpha The axis
-             **/
-            template <axis::type alpha>
-            __device__ __host__ [[nodiscard]] inline constexpr label_t value() const noexcept
-            {
-                axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-                if constexpr (alpha == axis::X)
-                {
-                    return x;
-                }
-
-                if constexpr (alpha == axis::Y)
-                {
-                    return y;
-                }
-
-                if constexpr (alpha == axis::Z)
-                {
-                    return z;
-                }
-            }
-
-            /**
-             * @brief Shifts the coordinate along a particular axis by a coefficient
-             * @tparam alpha The axis
-             * @tparam coeff The coefficient to shift by (-1, 0 or +1)
-             **/
-            template <const axis::type alpha, const int coeff>
-            __device__ [[nodiscard]] inline constexpr label_t shifted_block() const noexcept
-            {
-                axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-                velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
-
-                if constexpr (coeff == -1)
-                {
-                    return (value<alpha>() - 1 + device::NUM_BLOCK<alpha>()) % device::NUM_BLOCK<alpha>();
-                }
-
-                if constexpr (coeff == 0)
-                {
-                    return value<alpha>();
-                }
-
-                if constexpr (coeff == 1)
-                {
-                    return (value<alpha>() + 1 + device::NUM_BLOCK<alpha>()) % device::NUM_BLOCK<alpha>();
-                }
-            }
-
-        private:
-            /**
-             * @brief The underlying block coordinates
-             **/
-            const label_t x;
-            const label_t y;
-            const label_t z;
-        };
-
-        class pointCoordinate
-        {
-        public:
-            /**
-             * @brief Constructs from thread and block coordinates
-             * @param[in] Tx The thread coordinates
-             * @param[in] Bx The block coordinates
-             **/
-            __device__ [[nodiscard]] inline explicit pointCoordinate(
-                const device::threadCoordinate &Tx,
-                const device::blockCoordinate &Bx) noexcept
-                : x(Tx.value<axis::X>() + block::nx<label_t>() * (Bx.value<axis::X>() + device::BLOCK_OFFSET_X)),
-                  y(Tx.value<axis::Y>() + block::ny<label_t>() * (Bx.value<axis::Y>() + device::BLOCK_OFFSET_Y)),
-                  z(Tx.value<axis::Z>() + block::nz<label_t>() * (Bx.value<axis::Z>() + device::BLOCK_OFFSET_Z)){};
-
-            /**
-             * @brief Returns the ordinate in a particular axis
-             * @tparam alpha The axis
-             **/
-            template <axis::type alpha>
-            __device__ __host__ [[nodiscard]] inline constexpr label_t value() const noexcept
-            {
-                axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-                if constexpr (alpha == axis::X)
-                {
-                    return x;
-                }
-
-                if constexpr (alpha == axis::Y)
-                {
-                    return y;
-                }
-
-                if constexpr (alpha == axis::Z)
-                {
-                    return z;
-                }
-            }
-
-        private:
-            /**
-             * @brief The underlying point coordinates
-             **/
-            const label_t x;
-            const label_t y;
-            const label_t z;
-        };
-
         /**
          * @brief Check if current thread exceeds global bounds
          * @note Uses device constants device::nx, device::ny, device::nz
@@ -627,14 +333,17 @@ namespace LBM
 
         /**
          * @overload
-         * @param tx Thread coordinates (device::threadCoordinate)
-         * @param bx Block indices (device::threadCoordinate)
+         * @param tx Thread coordinates (thread::coordinate)
+         * @param bx Block indices (thread::coordinate)
          **/
-        __device__ [[nodiscard]] inline label_t idx(const threadCoordinate &Tx, const blockCoordinate &Bx) noexcept
+        __device__ [[nodiscard]] inline label_t idx(const thread::coordinate &Tx, const block::coordinate &Bx) noexcept
         {
             return idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>(), Bx.value<axis::X>(), Bx.value<axis::Y>(), Bx.value<axis::Z>());
         }
+    }
 
+    namespace block
+    {
         /**
          * @brief Memory index within a block (device version)
          * @param tx Thread-local x-coordinate
@@ -648,200 +357,64 @@ namespace LBM
          *   - y-stride: block::nx()
          *   - z-stride: block::nx() * block::ny()
          **/
-        __device__ [[nodiscard]] inline label_t idxBlock(const label_t tx, const label_t ty, const label_t tz) noexcept
+        __device__ [[nodiscard]] inline label_t idx(const label_t tx, const label_t ty, const label_t tz) noexcept
         {
             return tx + block::nx() * (ty + block::ny() * tz);
         }
 
         /**
          * @overload
-         * @param tx Thread coordinates (device::threadCoordinate)
+         * @param tx Thread coordinates (thread::coordinate)
          **/
-        __device__ [[nodiscard]] inline label_t idxBlock(const device::threadCoordinate &Tx) noexcept
+        __device__ [[nodiscard]] inline label_t idx(const thread::coordinate &Tx) noexcept
         {
-            return idxBlock(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
+            return block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
         }
-        /**
-         * @brief Population index for X-aligned arrays (device version)
-         * @tparam pop Population index
-         * @tparam QF Number of populations
-         * @param ty,tz Thread-local y/z coordinates
-         * @param bx,by,bz Block indices
-         * @return Linearized index: ty + block::ny()*(tz + block::nz()*(pop + QF*(bx + device::NUM_BLOCK_X*(by + device::NUM_BLOCK_Y*bz)))
-         **/
-        template <const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPopX(const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
-        {
-            return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz))));
-        }
+    }
 
+    namespace GPU
+    {
         /**
-         * @brief Population index for Y-aligned arrays (device version)
-         * @copydetails idxPopX
-         * @param tx,tz Thread-local x/z coordinates
-         * @return Linearized index: tx + block::nx()*(tz + block::nz()*(pop + QF*(bx + device::NUM_BLOCK_X*(by + device::NUM_BLOCK_Y*bz)))
+         * @brief Device index (universal version)
+         * @tparam T Label type
+         * @param[in] dx, dy, dz Device indices in the X, Y and Z directions
+         * @param[in] ndx, ndy Number of devices in the X and Y directions
          **/
-        template <const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPopY(const label_t tx, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
+        template <typename T = label_t>
+        __device__ __host__ [[nodiscard]] inline constexpr T idx(const T dx, const T dy, const T dz, const T ndx, const T ndy) noexcept
         {
-            return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz))));
+            return dx + (dy * ndx) + (dz * ndx * ndy);
         }
 
         /**
-         * @brief Population index for Z-aligned arrays (device version)
-         * @copydetails idxPopX
-         * @param tx,ty Thread-local x/y coordinates
-         * @return Linearized index: tx + block::nx()*(ty + block::ny()*(pop + QF*(bx + device::NUM_BLOCK_X*(by + device::NUM_BLOCK_Y*bz)))
+         * @brief Queries a device and gets its properties
+         * @param[in] deviceID The ID of the device to query
+         * @return A cudaDeviceProp struct containing the properties of deviceID
          **/
-        template <const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPopZ(const label_t tx, const label_t ty, const label_t bx, const label_t by, const label_t bz) noexcept
+        __host__ [[nodiscard]] const cudaDeviceProp properties(const int deviceID)
         {
-            return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz))));
-        }
+            cudaDeviceProp props;
 
+            errorHandler::check(cudaGetDeviceProperties(&props, deviceID));
+
+            return props;
+        }
+    }
+
+    namespace kernel
+    {
         /**
-         * @brief Selects between idxPopX, idxPopY and idxPopZ based on the axis
-         * @tparam pop Population index
-         * @tparam QF Number of populations
-         * @param[in] ta,tb Thread coordinate in the two directions perpendicular to alpha
-         * @param[in] bx,by,bz Block indices
+         * @brief Configures a kernel function to prefer shared memory and sets its dynamic shared memory size
+         * @tparam smem_alloc_size The amount of shared memory (in bytes) to allocate for the kernel
+         * @tparam T The function type (e.g., a lambda or a function pointer)
+         * @param[in] func The kernel function to configure
          **/
-        template <const axis::type alpha, const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPop(
-            const label_t ta, const label_t tb,
-            const label_t bx, const label_t by, const label_t bz)
+        template <const label_t smem_alloc_size, class T>
+        __host__ void configure(T *func)
         {
-            axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-            if constexpr (alpha == axis::X)
-            {
-                return idxPopX<pop, QF>(ta, tb, bx, by, bz);
-            }
-
-            if constexpr (alpha == axis::Y)
-            {
-                return idxPopY<pop, QF>(ta, tb, bx, by, bz);
-            }
-
-            if constexpr (alpha == axis::Z)
-            {
-                return idxPopZ<pop, QF>(ta, tb, bx, by, bz);
-            }
+            errorHandler::check(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
+            errorHandler::check(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
         }
-
-        /**
-         * @overload
-         * @param Bx The block coordinate
-         **/
-        template <const axis::type alpha, const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPop(
-            const label_t talpha, const label_t tbeta,
-            const blockCoordinate &Bx)
-        {
-            axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-            return idxPop<alpha, pop, QF>(talpha, tbeta, Bx.value<axis::X>(), Bx.value<axis::Y>(), Bx.value<axis::Z>());
-        }
-    }
-
-    /**
-     * @brief Moment indices for hydrodynamic variables
-     **/
-    namespace index
-    {
-        __device__ __host__ [[nodiscard]] inline consteval label_t rho() { return 0; } // < Density
-        __device__ __host__ [[nodiscard]] inline consteval label_t u() { return 1; }   // < X-velocity
-        __device__ __host__ [[nodiscard]] inline consteval label_t v() { return 2; }   // < Y-velocity
-        __device__ __host__ [[nodiscard]] inline consteval label_t w() { return 3; }   // < Z-velocity
-        __device__ __host__ [[nodiscard]] inline consteval label_t xx() { return 4; }  // < XX-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t xy() { return 5; }  // < XY-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t xz() { return 6; }  // < XZ-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t yy() { return 7; }  // < YY-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t yz() { return 8; }  // < YZ-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t zz() { return 9; }  // < ZZ-stress component
-    }
-
-    /**
-     * @brief Reference density 1.0
-     **/
-    template <typename T>
-    __device__ __host__ [[nodiscard]] inline consteval T rho0() noexcept
-    {
-        return 1.0;
-    }
-
-    /**
-     * @brief Queries a device and gets its properties
-     * @param[in] deviceID The ID of the device to query
-     * @return A cudaDeviceProp struct containing the properties of deviceID
-     **/
-    __host__ [[nodiscard]] const cudaDeviceProp getDeviceProperties(const int deviceID)
-    {
-        cudaDeviceProp props;
-
-        errorHandler::check(cudaGetDeviceProperties(&props, deviceID));
-
-        return props;
-    }
-
-    /**
-     * @brief Allocates a symbol of type T to the device
-     * @param[in] symbol The symbol to which the value is to be copied
-     * @param[in] value The value to copy to the symbol
-     **/
-    template <typename T>
-    void copyToSymbol(const T &symbol, const T value)
-    {
-        errorHandler::check(cudaDeviceSynchronize());
-        const T valueTemp = value;
-        errorHandler::check(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), 0, cudaMemcpyHostToDevice));
-        errorHandler::check(cudaDeviceSynchronize());
-    }
-
-    template <typename T, const std::size_t N>
-    void copyToSymbol(const T (&symbol)[N], const T (&value)[N])
-    {
-        errorHandler::check(cudaDeviceSynchronize());
-        errorHandler::check(cudaMemcpyToSymbol(symbol, value, N * sizeof(T), 0, cudaMemcpyHostToDevice));
-        errorHandler::check(cudaDeviceSynchronize());
-    }
-
-    template <typename T, const std::size_t N>
-    void copyToSymbol(const T (&symbol)[N], const T value, const label_t index)
-    {
-        if (index >= N)
-        {
-            throw std::runtime_error("Error setting device symbol index" + std::to_string(index) + " out of bounds for array of size " + std::to_string(N) + ".");
-        }
-        errorHandler::check(cudaDeviceSynchronize());
-        const T valueTemp = value;
-        errorHandler::check(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), static_cast<std::size_t>(index) * sizeof(T), cudaMemcpyHostToDevice));
-        errorHandler::check(cudaDeviceSynchronize());
-    }
-
-    /**
-     * @brief Allocates a symbol of type T to the device
-     * @param[in] func A pointer to the kernel to configure
-     * @param[in] functionName The name of the function
-     **/
-    template <const label_t smem_alloc_size, class T>
-    __host__ void kernelSetup(T *func, const name_t &functionName) noexcept
-    {
-        errorHandler::check(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
-        errorHandler::check(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
-        std::cout << "Allocating " << smem_alloc_size << " bytes of dynamic shared memory to " << functionName << " kernel" << std::endl;
-        std::cout << std::endl;
-    }
-
-    /**
-     * @brief Allocates a symbol of type T to the device
-     * @param[in] func A pointer to the kernel to configure
-     **/
-    template <const label_t smem_alloc_size, class T>
-    __host__ void kernelSetup(T *func) noexcept
-    {
-        errorHandler::check(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
-        errorHandler::check(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
     }
 }
 

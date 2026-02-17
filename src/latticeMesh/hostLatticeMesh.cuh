@@ -157,7 +157,7 @@ namespace LBM
                         const label_t nzPointsPerGPU = nz_ / nDevices_.nz;
                         const label_t nPointsPerGPU = nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU;
 
-                        const cudaDeviceProp props = getDeviceProperties(programCtrl.deviceList()[virtualDeviceIndex]);
+                        const cudaDeviceProp props = GPU::properties(programCtrl.deviceList()[virtualDeviceIndex]);
                         const uintmax_t totalMemTemp = static_cast<uintmax_t>(props.totalGlobalMem);
                         const uintmax_t allocationSize = nPointsPerGPU * static_cast<uintmax_t>(sizeof(scalar_t)) * (NUMBER_MOMENTS<uintmax_t>());
 
@@ -189,7 +189,7 @@ namespace LBM
                         nxGPUs, nyGPUs, nzGPUs,
                         [&](const label_t dx, const label_t dy, const label_t dz)
                         {
-                            const label_t virtualDeviceIndex = deviceIdx(dx, dy, dz, nxGPUs, nyGPUs);
+                            const label_t virtualDeviceIndex = GPU::idx(dx, dy, dz, nxGPUs, nyGPUs);
 
                             errorHandler::check(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
 
@@ -201,12 +201,12 @@ namespace LBM
                                 const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
                                 const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
 
-                                copyToSymbol(device::L_char, programCtrl.L_char());
-                                copyToSymbol(device::Re, programCtrl.Re());
-                                copyToSymbol(device::tau, tauTemp);
-                                copyToSymbol(device::omega, omegaTemp);
-                                copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
-                                copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
+                                device::copyToSymbol(device::L_char, programCtrl.L_char());
+                                device::copyToSymbol(device::Re, programCtrl.Re());
+                                device::copyToSymbol(device::tau, tauTemp);
+                                device::copyToSymbol(device::omega, omegaTemp);
+                                device::copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
+                                device::copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
                             }
 
                             const label_t nxBlocksPerGPU = nxBlocks() / nDevices_.nx;
@@ -214,54 +214,28 @@ namespace LBM
                             const label_t nzBlocksPerGPU = nzBlocks() / nDevices_.nz;
 
                             // Allocate mesh symbols on the GPU
-                            copyToSymbol(device::nx, nx_);
-                            copyToSymbol(device::ny, ny_);
-                            copyToSymbol(device::nz, nz_);
-                            copyToSymbol(device::NUM_BLOCK_X, nxBlocksPerGPU);
-                            copyToSymbol(device::NUM_BLOCK_Y, nyBlocksPerGPU);
-                            copyToSymbol(device::NUM_BLOCK_Z, nzBlocksPerGPU);
-                            copyToSymbol(device::BLOCK_OFFSET_X, nxBlocksPerGPU * dx);
-                            copyToSymbol(device::BLOCK_OFFSET_Y, nyBlocksPerGPU * dy);
-                            copyToSymbol(device::BLOCK_OFFSET_Z, nzBlocksPerGPU * dz);
+                            device::copyToSymbol(device::nx, nx_);
+                            device::copyToSymbol(device::ny, ny_);
+                            device::copyToSymbol(device::nz, nz_);
+                            device::copyToSymbol(device::NUM_BLOCK_X, nxBlocksPerGPU);
+                            device::copyToSymbol(device::NUM_BLOCK_Y, nyBlocksPerGPU);
+                            device::copyToSymbol(device::NUM_BLOCK_Z, nzBlocksPerGPU);
+                            device::copyToSymbol(device::BLOCK_OFFSET_X, nxBlocksPerGPU * dx);
+                            device::copyToSymbol(device::BLOCK_OFFSET_Y, nyBlocksPerGPU * dy);
+                            device::copyToSymbol(device::BLOCK_OFFSET_Z, nzBlocksPerGPU * dz);
                         });
                 }
             };
 
-            // Constructor to initialise a cut plane
-            __host__ [[nodiscard]] latticeMesh(const label_t nx, const label_t ny, const label_t nz) noexcept
-                : nx_(nx),
-                  ny_(ny),
-                  nz_(nz),
-                  nPoints_(nx_ * ny_ * nz_),
-                  L_(
-                      {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
-                  nDevices_(initialise_device_list("deviceDecomposition")){};
-
-            __host__ [[nodiscard]] latticeMesh(const blockLabel_t &meshDimensions) noexcept
-                : nx_(meshDimensions.nx),
-                  ny_(meshDimensions.ny),
-                  nz_(meshDimensions.nz),
-                  nPoints_(nx_ * ny_ * nz_),
-                  L_(
-                      {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
-                  nDevices_(initialise_device_list("deviceDecomposition")){};
-
+            /**
+             * @brief Constructs a lattice mesh with specified dimensions
+             * @param[in] mesh A host::latticeMesh object to copy characteristic size from
+             * @param[in] meshDimensions blockLabel_t struct containing the number of lattice points in each direction (overrides dimensions from mesh)
+             **/
             __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const blockLabel_t &meshDimensions) noexcept
                 : nx_(meshDimensions.nx),
                   ny_(meshDimensions.ny),
                   nz_(meshDimensions.nz),
-                  nPoints_(nx_ * ny_ * nz_),
-                  L_(mesh.L()),
-                  nDevices_(initialise_device_list("deviceDecomposition")){};
-
-            __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh) noexcept
-                : nx_(mesh.nx()),
-                  ny_(mesh.ny()),
-                  nz_(mesh.nz()),
                   nPoints_(nx_ * ny_ * nz_),
                   L_(mesh.L()),
                   nDevices_(initialise_device_list("deviceDecomposition")){};
