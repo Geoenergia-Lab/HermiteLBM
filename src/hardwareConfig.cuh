@@ -109,7 +109,7 @@ namespace LBM
         template <axis::type alpha, typename T = label_t>
         __device__ __host__ [[nodiscard]] inline consteval T n() noexcept
         {
-            assertions::axis::validate<alpha, axis::NOT_NULL>();
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
 
             if constexpr (alpha == axis::X)
             {

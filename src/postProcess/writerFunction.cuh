@@ -50,10 +50,6 @@ SourceFiles
 #ifndef __MBLBM_WRITERFUNCTION_CUH
 #define __MBLBM_WRITERFUNCTION_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
-#include "../fileSystem.cuh"
-
 namespace LBM
 {
     namespace postProcess

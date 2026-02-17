@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_RUNTIMEIO_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 
 namespace LBM
 {

@@ -269,7 +269,7 @@ namespace LBM
         template <typename T, const axis::type alpha>
         __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, vs::Q()> c() noexcept
         {
-            assertions::axis::validate<alpha, axis::CAN_BE_NULL>();
+            axis::assertions::validate<alpha, axis::CAN_BE_NULL>();
 
             if constexpr (alpha == axis::NO_DIRECTION)
             {

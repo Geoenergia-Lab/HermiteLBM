@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_ARRAY_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 
 #include "threadArray.cuh"
 
@@ -66,7 +66,46 @@ SourceFiles
 
 namespace LBM
 {
+    namespace host
+    {
+        /**
+         * @brief Type of memory allocation on the host:
+         * The memory is either pageable or pinned
+         **/
+        typedef enum Enum : bool
+        {
+            PAGED = 0,
+            PINNED = 1
+        } mallocType;
+    }
 
+    namespace field
+    {
+        /**
+         * @brief Type of field to be allocated
+         * @note The skeleton type contains only a pointer;
+         * FULL_FIELD contains a pointer, name and a reference to the mesh
+         **/
+        typedef enum Enum : bool
+        {
+            SKELETON = 0,
+            FULL_FIELD = 1
+        } type;
+    }
+
+    /**
+     * @brief Constructor read types
+     * @note Has to be enumerated because there are only so many possible read configurations
+     **/
+    namespace ctorType
+    {
+        typedef enum Enum : int
+        {
+            NO_READ = 0,
+            MUST_READ = 1,
+            READ_IF_PRESENT = 2
+        } type;
+    }
 }
 
 #include "hostArray.cuh"

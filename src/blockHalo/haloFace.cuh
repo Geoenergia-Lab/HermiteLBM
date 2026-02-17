@@ -211,7 +211,7 @@ namespace LBM
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::haloFace::nFaces, "Need to fix the calculation of the number of faces per GPU: it is no longer global"));
 
-                assertions::axis::validate<alpha, axis::NOT_NULL>();
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
                 return ((mesh.nx() * mesh.ny() * mesh.nz()) / block::n<alpha>()) * VelocitySet::QF();
             }
@@ -240,9 +240,9 @@ namespace LBM
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::haloFace::initialise_pop, "Need to sort out indexing and decomposition between devices"));
 
-                assertions::axis::validate<alpha, axis::NOT_NULL>();
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-                assertions::velocitySet::validate_coefficient<coeff, assertions::velocitySet::NOT_NULL>();
+                velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
                 std::vector<scalar_t> face(nFaces<alpha>(mesh), 0);
 
@@ -297,9 +297,9 @@ namespace LBM
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::haloFace::handleGhostCells, "Potential issue with indexing: idxPop needs to be adapted to multi GPU."));
 
-                assertions::axis::validate<alpha, axis::NOT_NULL>();
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-                assertions::velocitySet::validate_coefficient<coeff, assertions::velocitySet::NOT_NULL>();
+                velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
                 constexpr const thread::array<label_t, VelocitySet::QF()> indices = velocitySet::template indices_on_face<VelocitySet, alpha, coeff>();
 

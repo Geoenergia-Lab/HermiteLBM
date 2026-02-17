@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_COLLISION_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 #include "../velocitySet/velocitySet.cuh"
 #include "../globalFunctions.cuh"
 

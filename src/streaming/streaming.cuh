@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_STREAMING_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 #include "../globalFunctions.cuh"
 #include "../array/array.cuh"
 
@@ -158,7 +158,7 @@ namespace LBM
         template <const int coeff, const label_t Dim>
         __device__ [[nodiscard]] static inline label_t periodic_index(const label_t idx) noexcept
         {
-            assertions::velocitySet::validate_coefficient<coeff, assertions::velocitySet::CAN_BE_NULL>();
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::CAN_BE_NULL>();
 
             if constexpr (Dim > 0 && (Dim & (Dim - 1)) == 0)
             {

@@ -248,9 +248,9 @@ namespace LBM
             template <const axis::type alpha, const int coeff>
             __device__ [[nodiscard]] static inline consteval label_t streaming_index(const label_t i) noexcept
             {
-                assertions::axis::validate<alpha, axis::NOT_NULL>();
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-                assertions::velocitySet::validate_coefficient<coeff, assertions::velocitySet::NOT_NULL>();
+                velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
                 return velocitySet::template indices_on_face<VelocitySet, alpha, coeff>()[i];
             }
@@ -409,9 +409,9 @@ namespace LBM
             template <const axis::type alpha, const axis::type beta>
             __device__ __host__ [[nodiscard]] static inline constexpr dim2 ij(const label_t I) noexcept
             {
-                assertions::axis::validate<alpha, axis::NOT_NULL>();
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-                assertions::axis::validate<beta, axis::NOT_NULL>();
+                axis::assertions::validate<beta, axis::NOT_NULL>();
 
                 static_assert(!(alpha == beta));
 
@@ -427,7 +427,7 @@ namespace LBM
             template <const int coeff>
             __device__ [[nodiscard]] static inline constexpr label_t thread_stencil(const thread::array<label_t, 2> &dt, const label_t t) noexcept
             {
-                assertions::velocitySet::validate_coefficient<coeff, assertions::velocitySet::CAN_BE_NULL>();
+                velocityCoefficient::assertions::validate<coeff, velocityCoefficient::CAN_BE_NULL>();
 
                 if constexpr (coeff == -1)
                 {
@@ -456,9 +456,9 @@ namespace LBM
             template <const axis::type alpha, const int coeff>
             __device__ [[nodiscard]] static inline constexpr label_t block_stencil(const label_t t, const label_t b_shifted, const label_t b) noexcept
             {
-                assertions::axis::validate<alpha, axis::NOT_NULL>();
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-                assertions::velocitySet::validate_coefficient<coeff, assertions::velocitySet::CAN_BE_NULL>();
+                velocityCoefficient::assertions::validate<coeff, velocityCoefficient::CAN_BE_NULL>();
 
                 if constexpr (coeff == -1)
                 {
@@ -489,9 +489,9 @@ namespace LBM
             template <const axis::type alpha, const int coeff, const label_t PtrIndex>
             __device__ static inline constexpr void load_face(thread::array<scalar_t, VelocitySet::Q()> &pop, const device::ptrCollection<6, const scalar_t> &fGhost, const device::threadCoordinate &Tx, const device::blockCoordinate &Bx) noexcept
             {
-                assertions::axis::validate<alpha, axis::NOT_NULL>();
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-                assertions::velocitySet::validate_coefficient<coeff, assertions::velocitySet::NOT_NULL>();
+                velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
                 const thread::array<label_t, 2> dBx{Bx.shifted_block<axis::X, -1>(), Bx.shifted_block<axis::X, +1>()};
                 const thread::array<label_t, 2> dBy{Bx.shifted_block<axis::Y, -1>(), Bx.shifted_block<axis::Y, +1>()};
@@ -542,9 +542,9 @@ namespace LBM
             template <const axis::type alpha, const label_t PtrIndex, const int coeff>
             __device__ static inline constexpr void save_face(const thread::array<scalar_t, VelocitySet::Q()> &pop, const device::ptrCollection<6, scalar_t> &gGhost, const device::threadCoordinate &Tx, const device::blockCoordinate &Bx) noexcept
             {
-                assertions::axis::validate<alpha, axis::NOT_NULL>();
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-                assertions::velocitySet::validate_coefficient<coeff, assertions::velocitySet::NOT_NULL>();
+                velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
                 device::constexpr_for<0, VelocitySet::QF()>(
                     [&](const auto i)

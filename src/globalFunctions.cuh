@@ -52,7 +52,8 @@ SourceFiles
 #define __MBLBM_GLOBALFUNCTIONS_CUH
 
 #include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
+#include "typedefs/typedefs.cuh"
+#include "globalConstants.cuh"
 
 namespace LBM
 {
@@ -380,7 +381,7 @@ namespace LBM
             const label_t bx, const label_t by, const label_t bz,
             const label_t nxBlocks, const label_t nyBlocks)
         {
-            assertions::axis::validate<alpha, axis::NOT_NULL>();
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
 
             if constexpr (alpha == axis::X)
             {
@@ -422,7 +423,7 @@ namespace LBM
             template <axis::type alpha>
             __device__ __host__ [[nodiscard]] inline constexpr label_t value() const noexcept
             {
-                assertions::axis::validate<alpha, axis::NOT_NULL>();
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
                 if constexpr (alpha == axis::X)
                 {
@@ -448,9 +449,9 @@ namespace LBM
             template <axis::type alpha, const int coeff>
             __device__ [[nodiscard]] inline constexpr label_t shifted_coordinate() const noexcept
             {
-                assertions::axis::validate<alpha, axis::NOT_NULL>();
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-                assertions::velocitySet::validate_coefficient<coeff, assertions::velocitySet::NOT_NULL>();
+                velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
                 if constexpr (coeff == -1)
                 {
@@ -495,7 +496,7 @@ namespace LBM
             template <axis::type alpha>
             __device__ __host__ [[nodiscard]] inline constexpr label_t value() const noexcept
             {
-                assertions::axis::validate<alpha, axis::NOT_NULL>();
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
                 if constexpr (alpha == axis::X)
                 {
@@ -521,9 +522,9 @@ namespace LBM
             template <const axis::type alpha, const int coeff>
             __device__ [[nodiscard]] inline constexpr label_t shifted_block() const noexcept
             {
-                assertions::axis::validate<alpha, axis::NOT_NULL>();
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-                assertions::velocitySet::validate_coefficient<coeff, assertions::velocitySet::NOT_NULL>();
+                velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
                 if constexpr (coeff == -1)
                 {
@@ -572,7 +573,7 @@ namespace LBM
             template <axis::type alpha>
             __device__ __host__ [[nodiscard]] inline constexpr label_t value() const noexcept
             {
-                assertions::axis::validate<alpha, axis::NOT_NULL>();
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
                 if constexpr (alpha == axis::X)
                 {
@@ -710,7 +711,7 @@ namespace LBM
             const label_t ta, const label_t tb,
             const label_t bx, const label_t by, const label_t bz)
         {
-            assertions::axis::validate<alpha, axis::NOT_NULL>();
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
 
             if constexpr (alpha == axis::X)
             {
@@ -737,7 +738,7 @@ namespace LBM
             const label_t talpha, const label_t tbeta,
             const blockCoordinate &Bx)
         {
-            assertions::axis::validate<alpha, axis::NOT_NULL>();
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
 
             return idxPop<alpha, pop, QF>(talpha, tbeta, Bx.value<axis::X>(), Bx.value<axis::Y>(), Bx.value<axis::Z>());
         }

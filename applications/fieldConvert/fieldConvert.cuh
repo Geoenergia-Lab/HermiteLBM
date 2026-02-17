@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_FIELDCONVERT_CUH
 
 #include "../../src/LBMIncludes.cuh"
-#include "../../src/LBMTypedefs.cuh"
+#include "../../src/typedefs/typedefs.cuh"
 #include "../../src/strings.cuh"
 #include "../../src/array/array.cuh"
 #include "../../src/collision/collision.cuh"

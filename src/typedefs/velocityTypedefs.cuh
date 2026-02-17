@@ -37,49 +37,52 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the numerical schemes library
+    A list of typedefs used throughout the cudaLBM source code
 
 Namespace
     LBM
 
 SourceFiles
-    numericalSchemes.cuh
+    velocityTypedefs.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_NUMERICALSCHEMES_CUH
-#define __MBLBM_NUMERICALSCHEMES_CUH
-
-#include "../LBMIncludes.cuh"
-#include "../typedefs/typedefs.cuh"
+#ifndef __MBLBM_VELOCITYTYPEDEFS_CUH
+#define __MBLBM_VELOCITYTYPEDEFS_CUH
 
 namespace LBM
 {
-    /**
-     * @brief Calculates the magnitude of a 3D vector field.
-     * @tparam T The data type of the vector components.
-     * @param u A vector representing the x-components of the vector field.
-     * @param v A vector representing the y-components of the vector field.
-     * @param w A vector representing the z-components of the vector field.
-     * @return A vector containing the magnitude of the vector field at each point.
-     **/
-    template <typename T>
-    __host__ [[nodiscard]] const std::vector<T> mag(const std::vector<T> &u, const std::vector<T> &v, const std::vector<T> &w)
+    namespace velocityCoefficient
     {
-        // Add a size check here
-
-        std::vector<scalar_t> magu(u.size(), 0);
-
-        for (label_t i = 0; i < u.size(); i++)
+        /**
+         * @brief Enumerated type for velocity coefficients: The coefficient either can or cannot be null
+         **/
+        typedef enum nullEnum : bool
         {
-            magu[i] = std::sqrt((u[i] * u[i]) + (v[i] * v[i]) + (w[i] * w[i]));
-        }
+            NOT_NULL = false,
+            CAN_BE_NULL = true
+        } null;
 
-        return magu;
+        namespace assertions
+        {
+            /**
+             * @brief Asserts that coeff is a valid velocity set coefficient
+             * @tparam coeff The velocity set coefficient
+             **/
+            template <const int coeff, const null Null>
+            __device__ __host__ inline consteval void validate() noexcept
+            {
+                if constexpr (Null == CAN_BE_NULL)
+                {
+                    static_assert(((coeff == 0) || (coeff == -1) || (coeff == 1)), "Coeff must be -1, 0 or +1.");
+                }
+                else
+                {
+                    static_assert(((coeff == -1) || (coeff == 1)), "Coeff must be -1, 0 or +1.");
+                }
+            }
+        }
     }
 }
-
-#include "derivativeSchemes/derivativeSchemes.cuh"
-#include "integrationSchemes/fieldIntegrate.cuh"
 
 #endif

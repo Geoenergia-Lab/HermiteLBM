@@ -543,7 +543,7 @@ namespace LBM
         template <const axis::type alpha>
         __device__ static inline constexpr scalar_t U(const thread::array<scalar_t, 6> &boundarySwitches, const scalar_t n_boundaries) noexcept
         {
-            assertions::axis::validate<alpha, axis::NOT_NULL>();
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
 
             // Calculate the boundary velocity value
             return ((boundarySwitches[0] * device::U_West[alpha]) +

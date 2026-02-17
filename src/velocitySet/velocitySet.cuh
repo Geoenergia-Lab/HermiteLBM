@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_VELOCITYSET_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 #include "../globalFunctions.cuh"
 #include "../array/threadArray.cuh"
 
@@ -273,9 +273,9 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval thread::array<label_t, VelocitySet::QF()> indices_on_face() noexcept
         {
             assertions::velocitySet::validate<VelocitySet>();
-            assertions::axis::validate<alpha, axis::NOT_NULL>();
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-            assertions::velocitySet::validate_coefficient<coeff, assertions::velocitySet::NOT_NULL>();
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
             constexpr const thread::array<int, VelocitySet::Q()> vals = VelocitySet::template c<int, alpha>();
 
@@ -339,8 +339,8 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval const thread::array<int, VelocitySet::Q()> c_AlphaBeta() noexcept
         {
             assertions::velocitySet::validate<VelocitySet>();
-            assertions::axis::validate<alpha, axis::CAN_BE_NULL>();
-            assertions::axis::validate<beta, axis::CAN_BE_NULL>();
+            axis::assertions::validate<alpha, axis::CAN_BE_NULL>();
+            axis::assertions::validate<beta, axis::CAN_BE_NULL>();
 
             return VelocitySet::template c<int, alpha>() * VelocitySet::template c<int, beta>();
         }
@@ -355,7 +355,7 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline constexpr scalar_t process_momentum_element(
             const scalar_t pop_value) noexcept
         {
-            assertions::velocitySet::validate_coefficient<coeff, assertions::velocitySet::NOT_NULL>();
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
             if constexpr (coeff == 1)
             {
@@ -385,7 +385,7 @@ namespace LBM
             const scalar_t pop_value,
             const BoundaryNormal &boundaryNormal) noexcept
         {
-            assertions::velocitySet::validate_coefficient<coeff, assertions::velocitySet::NOT_NULL>();
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
             if constexpr (coeff == 1)
             {
@@ -409,7 +409,7 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval bool is_negative(const q_i<q_> q) noexcept
         {
             assertions::velocitySet::validate<VelocitySet>();
-            assertions::axis::validate<alpha, axis::NOT_NULL>();
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
 
             return (VelocitySet::template c<int, alpha>()[q] < 0);
         }
@@ -425,7 +425,7 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval bool is_positive(const q_i<q_> q) noexcept
         {
             assertions::velocitySet::validate<VelocitySet>();
-            assertions::axis::validate<alpha, axis::NOT_NULL>();
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
 
             return (VelocitySet::template c<int, alpha>()[q] > 0);
         }

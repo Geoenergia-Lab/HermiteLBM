@@ -48,7 +48,7 @@ SourceFiles
 \*---------------------------------------------------------------------------*/
 
 #include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
+#include "typedefs/typedefs.cuh"
 
 #ifndef __MBLBM_STRINGS_CUH
 #define __MBLBM_STRINGS_CUH

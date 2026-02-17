@@ -48,8 +48,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
+#include "../LBMIncludes.cuh"
+#include "../typedefs/typedefs.cuh"
 
 #ifndef __MBLBM_FILESYSTEM_CUH
 #define __MBLBM_FILESYSTEM_CUH

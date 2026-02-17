@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_YOUR_FILENAME_UPPERCASE_CUH
 
 #include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
+#include "typedefs/typedefs.cuh"
 
 // Add additional includes as needed
 // #include "path/to/other/dependencies.cuh"

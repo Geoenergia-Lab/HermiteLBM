@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_COMPUTEVERSION_CUH
 
 #include "../../src/LBMIncludes.cuh"
-#include "../../src/LBMTypedefs.cuh"
+#include "../../src/typedefs/typedefs.cuh"
 #include "../../src/globalFunctions.cuh"
 #include "../../src/inputControl.cuh"
 

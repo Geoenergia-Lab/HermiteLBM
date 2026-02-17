@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_FIELDCALCULATE_CUH
 
 #include "../../src/LBMIncludes.cuh"
-#include "../../src/LBMTypedefs.cuh"
+#include "../../src/typedefs/typedefs.cuh"
 #include "../../src/array/threadArray.cuh"
 #include "../../src/collision/collision.cuh"
 #include "../../src/blockHalo/blockHalo.cuh"

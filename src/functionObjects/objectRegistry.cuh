@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_OBJECTREGISTRY_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 #include "../strings.cuh"
 #include "functionObjects.cuh"
 #include "moments.cuh"

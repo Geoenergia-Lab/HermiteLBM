@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_LATTICEMESH_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 #include "../globalFunctions.cuh"
 #include "../programControl/programControl.cuh"
 

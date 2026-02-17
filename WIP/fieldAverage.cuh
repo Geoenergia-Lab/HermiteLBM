@@ -7,7 +7,7 @@ Contents: Implements time averaging of the solution variables
 #define __MBLBM_FIELDAVERAGE_CUH
 
 #include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
+#include "typedefs/typedefs.cuh"
 
 namespace LBM
 {

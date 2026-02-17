@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_PROGRAMCONTROL_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 #include "../strings.cuh"
 #include "../inputControl.cuh"
 #include "../fileIO/fileIO.cuh"

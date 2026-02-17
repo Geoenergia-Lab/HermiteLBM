@@ -37,49 +37,54 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the numerical schemes library
+    A list of typedefs used throughout the cudaLBM source code
 
 Namespace
     LBM
 
 SourceFiles
-    numericalSchemes.cuh
+    LBMTypedefs.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_NUMERICALSCHEMES_CUH
-#define __MBLBM_NUMERICALSCHEMES_CUH
+#ifndef __MBLBM_TYPEDEFS_CUH
+#define __MBLBM_TYPEDEFS_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../typedefs/typedefs.cuh"
 
 namespace LBM
 {
     /**
-     * @brief Calculates the magnitude of a 3D vector field.
-     * @tparam T The data type of the vector components.
-     * @param u A vector representing the x-components of the vector field.
-     * @param v A vector representing the y-components of the vector field.
-     * @param w A vector representing the z-components of the vector field.
-     * @return A vector containing the magnitude of the vector field at each point.
+     * @brief Shorthand for __restrict__
      **/
-    template <typename T>
-    __host__ [[nodiscard]] const std::vector<T> mag(const std::vector<T> &u, const std::vector<T> &v, const std::vector<T> &w)
+#define ptrRestrict __restrict__
+
+    /**
+     * @brief Shorthand for std::string and std::vector<std::string>
+     **/
+    typedef std::string name_t;
+    typedef std::vector<name_t> words_t;
+
+    /**
+     * @brief Time stepping types: instantaneous or time-averaged
+     **/
+    namespace time
     {
-        // Add a size check here
-
-        std::vector<scalar_t> magu(u.size(), 0);
-
-        for (label_t i = 0; i < u.size(); i++)
+        typedef enum Enum : int
         {
-            magu[i] = std::sqrt((u[i] * u[i]) + (v[i] * v[i]) + (w[i] * w[i]));
-        }
-
-        return magu;
+            instantaneous = 0,
+            timeAverage = 1
+        } type;
     }
 }
 
-#include "derivativeSchemes/derivativeSchemes.cuh"
-#include "integrationSchemes/fieldIntegrate.cuh"
+#include "integralTypedefs.cuh"
+#include "arithmeticTypedefs.cuh"
+#include "axisTypedefs.cuh"
+#include "velocityTypedefs.cuh"
+#include "ptrTypedefs.cuh"
+
+#include "../hardwareConfig.cuh"
+#include "../errorHandler.cuh"
 
 #endif

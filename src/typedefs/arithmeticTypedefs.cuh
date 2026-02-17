@@ -37,49 +37,49 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the numerical schemes library
+    A list of integral typedefs used throughout the cudaLBM source code
 
 Namespace
     LBM
 
 SourceFiles
-    numericalSchemes.cuh
+    arithmeticTypedefs.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_NUMERICALSCHEMES_CUH
-#define __MBLBM_NUMERICALSCHEMES_CUH
-
-#include "../LBMIncludes.cuh"
-#include "../typedefs/typedefs.cuh"
+#ifndef __MBLBM_ARITHMETICTYPEDEFS_CUH
+#define __MBLBM_ARITHMETICTYPEDEFS_CUH
 
 namespace LBM
 {
     /**
-     * @brief Calculates the magnitude of a 3D vector field.
-     * @tparam T The data type of the vector components.
-     * @param u A vector representing the x-components of the vector field.
-     * @param v A vector representing the y-components of the vector field.
-     * @param w A vector representing the z-components of the vector field.
-     * @return A vector containing the magnitude of the vector field at each point.
+     * @brief Floating point type used for scalar types
+     * @note Types are either 32 bit or 64 bit floating point numbers
+     * @note These types are supplied via command line defines during compilation
      **/
-    template <typename T>
-    __host__ [[nodiscard]] const std::vector<T> mag(const std::vector<T> &u, const std::vector<T> &v, const std::vector<T> &w)
+#ifdef SCALAR_PRECISION
+#if SCALAR_PRECISION == 32
+    typedef float scalar_t;
+#elif SCALAR_PRECISION == 64
+    typedef double scalar_t;
+#else
+    static_assert(false, "Unsupported SCALAR_PRECISION value (must be 32 or 64)");
+    typedef float scalar_t;
+#endif
+#else
+    static_assert(false, "SCALAR_PRECISION not defined");
+    typedef float scalar_t;
+#endif
+
+    /**
+     * @brief Struct used to hold three-dimensional coordinates of a point
+     **/
+    struct pointVector
     {
-        // Add a size check here
-
-        std::vector<scalar_t> magu(u.size(), 0);
-
-        for (label_t i = 0; i < u.size(); i++)
-        {
-            magu[i] = std::sqrt((u[i] * u[i]) + (v[i] * v[i]) + (w[i] * w[i]));
-        }
-
-        return magu;
-    }
+        const scalar_t x;
+        const scalar_t y;
+        const scalar_t z;
+    };
 }
-
-#include "derivativeSchemes/derivativeSchemes.cuh"
-#include "integrationSchemes/fieldIntegrate.cuh"
 
 #endif

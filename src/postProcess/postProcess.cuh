@@ -51,8 +51,8 @@ SourceFiles
 #define __MBLBM_POSTPROCESS_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
-#include "../fileSystem.cuh"
+#include "../typedefs/typedefs.cuh"
+#include "../fileIO/fileIO.cuh"
 
 namespace LBM
 {

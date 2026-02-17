@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_BLOCKHALO_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 #include "../globalFunctions.cuh"
 #include "../velocitySet/velocitySet.cuh"
 #include "../latticeMesh/latticeMesh.cuh"

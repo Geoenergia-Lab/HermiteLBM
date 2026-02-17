@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_MEMORY_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 #include "../globalFunctions.cuh"
 
 namespace LBM
