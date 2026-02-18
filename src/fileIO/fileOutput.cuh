@@ -138,6 +138,18 @@ namespace LBM
             out << "};" << std::endl;
             out << std::endl;
 
+            // Write the mesh information: number of points, number of devices
+            out << "latticeMesh" << std::endl;
+            out << "{" << std::endl;
+            out << "\tnx\t" << mesh.nx() << ";" << std::endl;
+            out << "\tny\t" << mesh.ny() << ";" << std::endl;
+            out << "\tnz\t" << mesh.nz() << ";" << std::endl;
+            out << "\tnxGPUs\t" << mesh.template nDevices<axis::X>() << ";" << std::endl;
+            out << "\tnyGPUs\t" << mesh.template nDevices<axis::Y>() << ";" << std::endl;
+            out << "\tnzGPUs\t" << mesh.template nDevices<axis::Z>() << ";" << std::endl;
+            out << "};" << std::endl;
+            out << std::endl;
+
             // Write the field information: instantaneous or time-averaged, field names
             out << "fieldInformation" << std::endl;
             out << "{" << std::endl;
@@ -145,6 +157,8 @@ namespace LBM
             out << std::endl;
             // For now, only writing instantaneous fields
             out << "\ttimeType\t" << timeTypeString<TimeType>() << ";" << std::endl;
+            out << std::endl;
+            out << "\tnFields\t" << nVars << ";" << std::endl;
             out << std::endl;
             out << "\tfieldNames[" << nVars << "]" << std::endl;
             out << "\t{" << std::endl;

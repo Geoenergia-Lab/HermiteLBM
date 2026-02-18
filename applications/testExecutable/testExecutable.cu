@@ -91,12 +91,28 @@ int main()
 
     const name_t fileName = "jetFlow_20000.LBMBin";
 
-    const words_t lines = read_first_n_lines(fileName, 30);
+    const words_t lines = read_first_n_lines(fileName, 50);
 
-    const words_t systemInfoLines = string::extractBlock(lines, "systemInformation", 0);
+    const fileIO::systemInformation sysInfo(string::extractBlock(lines, "systemInformation", 0));
 
-    std::cout << systemInformation::readBinaryType(systemInfoLines) << std::endl;
-    std::cout << systemInformation::readScalarSize(systemInfoLines) << std::endl;
+    std::cout << sysInfo.endianType() << std::endl;
+    std::cout << sysInfo.scalarSize() << std::endl;
+
+    const fileIO::meshPrimitive mesh(string::extractBlock(lines, "latticeMesh", 0));
+
+    mesh.nPoints().print("nPoints");
+    mesh.nDevices().print("nDevices");
+
+    const fileIO::fieldInformation fieldInfo(string::extractBlock(lines, "fieldInformation", 0));
+
+    std::cout << "timeStep: " << fieldInfo.timeStep() << std::endl;
+    std::cout << "timeType: " << (fieldInfo.timeType() == time::instantaneous ? "instantaneous" : "timeAverage") << std::endl;
+    std::cout << "nFields: " << fieldInfo.nFields() << std::endl;
+
+    for (std::size_t i = 0; i < fieldInfo.fieldNames().size(); i++)
+    {
+        std::cout << fieldInfo.fieldNames()[i] << std::endl;
+    }
 
     return 0;
 }

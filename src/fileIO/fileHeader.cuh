@@ -54,6 +54,31 @@ namespace LBM
 {
     namespace fileIO
     {
+        /**
+         * @brief Reads a parameter value of type T from the provided lines based on the parameter name
+         * @tparam T The type of the parameter to read (e.g., int, float)
+         * @param[in] lines The lines of text to search for the parameter
+         * @param[in] parameterName The name of the parameter to read
+         * @return The value of the parameter converted to type T
+         **/
+        template <typename T>
+        __host__ [[nodiscard]] inline T read(const words_t &lines, const name_t &parameterName) noexcept
+        {
+            return string::extractParameter<T>(lines, parameterName);
+        }
+
+        /**
+         * @brief Trims leading/trailing whitespace and trailing semicolons from a string
+         * @param[in] str The input string to trim
+         * @return The trimmed string
+         **/
+        __host__ [[nodiscard]] const name_t filestring_trim(const name_t &str)
+        {
+            const std::size_t start = str.find_first_not_of(" \t\r\n");
+            const std::size_t end = str.find_last_not_of(" \t\r\n;");
+            return (start == name_t::npos) ? "" : str.substr(start, end - start + 1);
+        }
+
         class systemInformation
         {
         public:
@@ -62,14 +87,32 @@ namespace LBM
              * @param[in] systemInfoLines Text lines read from the file
              **/
             __host__ [[nodiscard]] systemInformation(const words_t &systemInfoLines)
-                : endianType(readBinaryType(systemInfoLines)),
-                  scalarSize(readScalarSize(systemInfoLines)){};
+                : endianType_(readBinaryType(systemInfoLines)),
+                  scalarSize_(read<std::size_t>(systemInfoLines, "scalarSize")){};
+
+            /**
+             * @brief Returns the endianness of the binary data
+             * @return The endianness as a value of the endian_t enum
+             **/
+            __host__ [[nodiscard]] inline constexpr endian_t endianType() const noexcept
+            {
+                return endianType_;
+            }
+
+            /**
+             * @brief Returns the size of the scalar values in bytes (e.g., 4 for float, 8 for double)
+             * @return The size of scalar values in bytes
+             **/
+            __host__ [[nodiscard]] inline constexpr std::size_t scalarSize() const noexcept
+            {
+                return scalarSize_;
+            }
 
         private:
             /**
              * @brief Endianness
              **/
-            const endian_t endianType;
+            const endian_t endianType_;
 
             /**
              * @brief Read the endian type
@@ -83,15 +126,145 @@ namespace LBM
             /**
              * @brief Size of the floating point type
              **/
-            const std::size_t scalarSize;
+            const std::size_t scalarSize_;
+        };
+
+        class meshPrimitive
+        {
+        public:
+            /**
+             * @brief Constructs a meshPrimitive object by parsing the provided lines of the lattice mesh block.
+             * @param[in] meshLines The lines of the lattice mesh block to parse.
+             **/
+            __host__ [[nodiscard]] meshPrimitive(const words_t &meshLines)
+                : nPoints_({read<label_t>(meshLines, "nx"), read<label_t>(meshLines, "ny"), read<label_t>(meshLines, "nz")}),
+                  nDevices_({read<label_t>(meshLines, "nxGPUs"), read<label_t>(meshLines, "nyGPUs"), read<label_t>(meshLines, "nzGPUs")}){};
 
             /**
-             * @brief Read the size of the floating point type
-             * @param[in] systemInfoLines Text lines read from the file
+             * @brief Returns the number of lattice points in each direction as a blockLabel_t struct.
+             * @return A blockLabel_t struct containing the number of lattice points in x, y, and z directions.
              **/
-            __host__ [[nodiscard]] static std::size_t readScalarSize(const words_t &systemInfoLines)
+            __host__ [[nodiscard]] inline const blockLabel_t &nPoints() const noexcept
             {
-                return string::extractParameter<std::size_t>(string::extractParameterLine(systemInfoLines, "scalarSize"));
+                return nPoints_;
+            }
+
+            /**
+             * @brief Returns the number of devices (GPUs) in each direction as a blockLabel_t struct.
+             * @return A blockLabel_t struct containing the number of devices in x, y, and z directions.
+             **/
+            __host__ [[nodiscard]] inline const blockLabel_t &nDevices() const noexcept
+            {
+                return nDevices_;
+            }
+
+        private:
+            /**
+             * @brief The number of lattice points in each direction (x, y, z) as a blockLabel_t struct.
+             **/
+            const blockLabel_t nPoints_;
+
+            /**
+             * @brief The number of devices (GPUs) in each direction (x, y, z) as a blockLabel_t struct.
+             **/
+            const blockLabel_t nDevices_;
+        };
+
+        class fieldInformation
+        {
+        public:
+            /**
+             * @brief Constructs a fieldInformation object by parsing the provided lines of the field information block.
+             * @param[in] fieldInfoLines The lines of the field information block to parse.
+             **/
+            __host__ [[nodiscard]] fieldInformation(const words_t &fieldInfoLines)
+                : timeStep_(read<std::size_t>(fieldInfoLines, "timeStep")),
+                  timeType_(readTimeType(fieldInfoLines)),
+                  nFields_(read<std::size_t>(fieldInfoLines, "nFields")),
+                  fieldNames_(readFieldNames(fieldInfoLines)){};
+
+            /**
+             * @brief Returns the time step of the saved fields.
+             * @return The time step as a size_t.
+             **/
+            __host__ [[nodiscard]] std::size_t timeStep() const noexcept
+            {
+                return timeStep_;
+            }
+
+            /**
+             * @brief Returns the time type (instantaneous or time average).
+             * @return The time type as a value of the time::type enum.
+             **/
+            __host__ [[nodiscard]] time::type timeType() const noexcept
+            {
+                return timeType_;
+            }
+
+            /**
+             * @brief Returns the number of fields.
+             * @return The number of fields as a size_t.
+             **/
+            __host__ [[nodiscard]] std::size_t nFields() const noexcept
+            {
+                return nFields_;
+            }
+
+            /**
+             * @brief Returns the field names as a vector of strings.
+             * @return A vector containing the field names.
+             **/
+            __host__ [[nodiscard]] const std::vector<std::string> &fieldNames() const noexcept
+            {
+                return fieldNames_;
+            }
+
+        private:
+            /**
+             * @brief The time step of the saved fields as a size_t.
+             **/
+            const std::size_t timeStep_;
+
+            /**
+             * @brief The time type of the saved fields (instantaneous or time average) as a value of the time::type enum.
+             **/
+            const time::type timeType_;
+
+            /**
+             * @brief The number of fields as a size_t.
+             **/
+            const std::size_t nFields_;
+
+            /**
+             * @brief The field names as a vector of strings.
+             **/
+            const std::vector<std::string> fieldNames_;
+
+            /**
+             * @brief Reads the time type from the field information block.
+             * @param[in] fieldInfoLines The lines of the field information block.
+             * @return The time type (instantaneous or time average).
+             **/
+            __host__ [[nodiscard]] static time::type readTimeType(const words_t &fieldInfoLines)
+            {
+                return (string::extractParameterLine(fieldInfoLines, "timeType") == "instantaneous") ? time::instantaneous : time::timeAverage;
+            }
+
+            /**
+             * @brief Reads the field names from the field information block.
+             * @param[in] fieldInfoLines The lines of the field information block.
+             * @return A vector containing the field names.
+             **/
+            __host__ [[nodiscard]] static words_t readFieldNames(const words_t &fieldInfoLines)
+            {
+                words_t B = string::extractBlock(fieldInfoLines, "fieldNames[10]", 0);
+
+                for (std::size_t i = 1; i < B.size() - 1; i++)
+                {
+                    B[i] = filestring_trim(B[i]);
+                }
+
+                return words_t(B.begin() + 1, B.end() - 2);
             }
         };
 
@@ -114,19 +287,6 @@ namespace LBM
             const std::size_t dataStartPos; //!< File position where binary data begins
             const words_t fieldNames;       //!< Names of all field variables
         };
-
-        /**
-         * @brief Trims leading/trailing whitespace and trailing semicolons from a string
-         * @param[in] str The input string to trim
-         * @return The trimmed string
-         **/
-        __host__ [[nodiscard]] const name_t
-        filestring_trim(const name_t &str)
-        {
-            const std::size_t start = str.find_first_not_of(" \t\r\n");
-            const std::size_t end = str.find_last_not_of(" \t\r\n;");
-            return (start == name_t::npos) ? "" : str.substr(start, end - start + 1);
-        }
 
         /**
          * @brief Parse header metadata from field file

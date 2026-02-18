@@ -79,7 +79,7 @@ namespace LBM
      **/
     namespace time
     {
-        typedef enum Enum : int
+        typedef enum Enum : bool
         {
             instantaneous = 0,
             timeAverage = 1
