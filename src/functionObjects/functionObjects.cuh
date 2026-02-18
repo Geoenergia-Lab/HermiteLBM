@@ -120,16 +120,6 @@ namespace LBM
             const programControl &programCtrl)
         {
             return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh, 0, programCtrl, initialiserSwitch(name));
-            // If we wish to allocate the array, do so
-            // if (initialiserSwitch(name))
-            // {
-            //     return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh, 0, programCtrl);
-            // }
-            // // Otherwise, just create the array without initializing it
-            // else
-            // {
-            //     return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh);
-            // }
         }
 
         template <class VelocitySet, const time::type TimeType>
@@ -140,16 +130,6 @@ namespace LBM
             const programControl &programCtrl)
         {
             return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh, 0, programCtrl, allocate);
-            // // If we wish to allocate the array, do so
-            // if (allocate)
-            // {
-            //     return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh, 0, programCtrl);
-            // }
-            // // Otherwise, just create the array without initializing it
-            // else
-            // {
-            //     return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh);
-            // }
         }
     }
 }

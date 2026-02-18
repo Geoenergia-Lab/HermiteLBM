@@ -65,7 +65,7 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval T nx() noexcept
         {
 #ifdef SCALAR_PRECISION
-            static_assert((sizeof(scalar_t) == (sizeof(float))) || (sizeof(scalar_t) == (sizeof(double))), "Unsupported SCALAR_PRECISION value (must be 32 or 64)");
+            types::assertions::validate<scalar_t>();
 
             return 8 * sizeof(float) / (sizeof(scalar_t));
 #else
@@ -80,7 +80,7 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval T ny() noexcept
         {
 #ifdef SCALAR_PRECISION
-            static_assert((sizeof(scalar_t) == (sizeof(float))) || (sizeof(scalar_t) == (sizeof(double))), "Unsupported SCALAR_PRECISION value (must be 32 or 64)");
+            types::assertions::validate<scalar_t>();
 
             return 8 * sizeof(float) / (sizeof(scalar_t));
 #else
@@ -95,7 +95,7 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval T nz() noexcept
         {
 #ifdef SCALAR_PRECISION
-            static_assert((sizeof(scalar_t) == (sizeof(float))) || (sizeof(scalar_t) == (sizeof(double))), "Unsupported SCALAR_PRECISION value (must be 32 or 64)");
+            types::assertions::validate<scalar_t>();
 
             return 8 * sizeof(float) / (sizeof(scalar_t));
 #else

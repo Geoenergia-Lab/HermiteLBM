@@ -75,7 +75,37 @@ namespace LBM
             BIG = false,
             LITTLE = true
         } type;
+
+        /**
+         * @brief Validate the endianness of the file system
+         **/
+        namespace assertions
+        {
+            __device__ __host__ inline consteval void validate() noexcept
+            {
+                static_assert(((std::endian::native == std::endian::little) || (std::endian::native == std::endian::big)), "System must be little or big endian");
+            }
+        }
+
+        /**
+         * @brief Get the string that corresponds to the endian type
+         **/
+        __device__ __host__ inline consteval const char *nameString() noexcept
+        {
+            assertions::validate();
+
+            if constexpr (std::endian::native == std::endian::little)
+            {
+                return "littleEndian";
+            }
+
+            if constexpr (std::endian::native == std::endian::big)
+            {
+                return "bigEndian";
+            }
+        }
     }
+
     /**
      * @brief Time stepping types: instantaneous or time-averaged
      **/
@@ -86,6 +116,34 @@ namespace LBM
             timeAverage = false,
             instantaneous = true
         } type;
+
+        /**
+         * @brief Validate the endianness of the file system
+         **/
+        namespace assertions
+        {
+            template <const type TimeType>
+            __device__ __host__ inline consteval void validate() noexcept
+            {
+                static_assert(((TimeType == timeAverage) || (TimeType == instantaneous)), "Time step type must be instantaneous or timeAverage");
+            }
+        }
+
+        template <const type TimeType>
+        __device__ __host__ inline consteval const char *nameString() noexcept
+        {
+            assertions::validate<TimeType>();
+
+            if constexpr (TimeType == timeAverage)
+            {
+                return "timeAverage";
+            }
+
+            if constexpr (TimeType == instantaneous)
+            {
+                return "instantaneous";
+            }
+        }
     }
 
     /**
@@ -111,6 +169,34 @@ namespace LBM
 
 #include "integralTypedefs.cuh"
 #include "arithmeticTypedefs.cuh"
+
+namespace LBM
+{
+    namespace types
+    {
+        namespace assertions
+        {
+            /**
+             * @brief Fundamental assertion to validate the type of either a floating point or integral type
+             **/
+            template <typename T>
+            __device__ __host__ inline consteval void validate() noexcept
+            {
+                static_assert((std::is_floating_point_v<T>) || (std::is_integral_v<T>), "T must be either floating point or integral");
+
+                if constexpr (std::is_floating_point_v<T>)
+                {
+                    static_assert(((std::is_same_v<T, float>) || (std::is_same_v<T, double>)), "Unsupported SCALAR_PRECISION value (must be 32 or 64)");
+                }
+                if constexpr (std::is_integral_v<T>)
+                {
+                    static_assert(((std::is_same_v<T, uint32_t>) || (std::is_same_v<T, uint64_t>)), "Unsupported LABEL_SIZE value (must be 32 or 64)");
+                }
+            }
+        }
+    }
+}
+
 #include "axisTypedefs.cuh"
 #include "velocityTypedefs.cuh"
 #include "ptrTypedefs.cuh"

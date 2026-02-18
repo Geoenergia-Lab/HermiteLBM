@@ -88,6 +88,9 @@ __host__ [[nodiscard]] const std::vector<std::string> read_first_n_lines(const s
 
 int main()
 {
+    constexpr const label_t q = 26;
+
+    std::cout << VelocitySet::cx<int>(q_i<q>()) << std::endl;
 
     const name_t fileName = "jetFlow_20000.LBMBin";
 

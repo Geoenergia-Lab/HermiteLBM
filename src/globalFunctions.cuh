@@ -118,7 +118,6 @@ namespace LBM
     template <const std::size_t N, typename T>
     __device__ __host__ [[nodiscard]] inline constexpr T pow(T &&var)
     {
-        static_assert(N >= 0, "Power must be non-negative");
         using ReturnType = std::decay_t<T>;
 
         if constexpr (N == 0)

@@ -125,23 +125,23 @@ namespace LBM
 
         /**
          * @brief Calculates the point offsets of the points of a latticeMesh object
-         * @tparam IndexType The integer type for the offset data (e.g., uint32_t, uint64_t).
+         * @tparam T The integer type for the offset data (e.g., uint32_t, uint64_t).
          * @param mesh The mesh
-         * @return An std::vector of type IndexType containing the latticeMesh object point offsets
+         * @return An std::vector of type T containing the latticeMesh object point offsets
          **/
-        template <typename IndexType>
-        __host__ [[nodiscard]] const std::vector<IndexType> meshOffsets(const host::latticeMesh &mesh)
+        template <typename T>
+        __host__ [[nodiscard]] const std::vector<T> meshOffsets(const host::latticeMesh &mesh)
         {
             const std::size_t nx = mesh.nx<std::size_t>();
             const std::size_t ny = mesh.ny<std::size_t>();
             const std::size_t nz = mesh.nz<std::size_t>();
             const std::size_t numElements = (nx - 1) * (ny - 1) * (nz - 1);
 
-            std::vector<IndexType> offsets(numElements);
+            std::vector<T> offsets(numElements);
 
             for (std::size_t i = 0; i < numElements; ++i)
             {
-                offsets[i] = static_cast<IndexType>((i + 1) * 8);
+                offsets[i] = static_cast<T>((i + 1) * 8);
             }
 
             return offsets;

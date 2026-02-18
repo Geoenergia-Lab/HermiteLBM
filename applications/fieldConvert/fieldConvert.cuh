@@ -179,19 +179,19 @@ namespace LBM
         return axis::NO_DIRECTION;
     }
 
-    __host__ [[nodiscard]] inline host::latticeMesh meshSlice(const host::latticeMesh &mesh, const axis::type dir) noexcept
+    __host__ [[nodiscard]] inline host::latticeMesh meshSlice(const host::latticeMesh &mesh, const axis::type alpha) noexcept
     {
-        if (dir == axis::X)
+        if (alpha == axis::X)
         {
             return host::latticeMesh(mesh, {1, mesh.ny(), mesh.nz()});
         }
 
-        if (dir == axis::Y)
+        if (alpha == axis::Y)
         {
             return host::latticeMesh(mesh, {mesh.nx(), 1, mesh.nz()});
         }
 
-        if (dir == axis::Z)
+        if (alpha == axis::Z)
         {
             return host::latticeMesh(mesh, {mesh.nx(), mesh.ny(), 1});
         }
@@ -199,43 +199,43 @@ namespace LBM
         return host::latticeMesh(mesh, {1, 1, 1});
     }
 
-    template <const axis::type dir>
+    template <const axis::type alpha>
     __host__ [[nodiscard]] std::vector<std::vector<scalar_t>> initialiseSlice(
         const host::latticeMesh &mesh,
         const std::size_t nFields)
     {
-        static_assert((dir == axis::X) | (dir == axis::Y) | (dir == axis::Z), "Bad direction");
+        axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-        if constexpr (dir == axis::X)
+        if constexpr (alpha == axis::X)
         {
             return std::vector<std::vector<scalar_t>>(nFields, std::vector<scalar_t>(mesh.ny<std::size_t>() * mesh.nz<std::size_t>(), 0));
         }
 
-        if constexpr (dir == axis::Y)
+        if constexpr (alpha == axis::Y)
         {
             return std::vector<std::vector<scalar_t>>(nFields, std::vector<scalar_t>(mesh.nx<std::size_t>() * mesh.nz<std::size_t>(), 0));
         }
 
-        if constexpr (dir == axis::Z)
+        if constexpr (alpha == axis::Z)
         {
             return std::vector<std::vector<scalar_t>>(nFields, std::vector<scalar_t>(mesh.nx<std::size_t>() * mesh.ny<std::size_t>(), 0));
         }
     }
 
-    template <const axis::type dir>
+    template <const axis::type alpha>
     __host__ [[nodiscard]] scalar_t indexCoordinate(const host::latticeMesh &mesh, const scalar_t pointCoordinate)
     {
-        static_assert((dir == axis::X) | (dir == axis::Y) | (dir == axis::Z), "Bad direction");
+        axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-        if constexpr (dir == axis::X)
+        if constexpr (alpha == axis::X)
         {
             return static_cast<scalar_t>(mesh.nx() - 1) * (pointCoordinate * mesh.L().x);
         }
-        if constexpr (dir == axis::Y)
+        if constexpr (alpha == axis::Y)
         {
             return static_cast<scalar_t>(mesh.ny() - 1) * (pointCoordinate * mesh.L().y);
         }
-        if constexpr (dir == axis::Z)
+        if constexpr (alpha == axis::Z)
         {
             return static_cast<scalar_t>(mesh.nz() - 1) * (pointCoordinate * mesh.L().z);
         }
@@ -247,23 +247,23 @@ namespace LBM
         return ((static_cast<T>(1) - weight) * f0) + (weight * f1);
     }
 
-    template <const axis::type dir>
+    template <const axis::type alpha>
     __host__ [[nodiscard]] const std::vector<std::vector<scalar_t>> extractCutPlane(
         const std::vector<std::vector<scalar_t>> &fields,
         const host::latticeMesh &mesh,
         const scalar_t pointCoordinate)
     {
-        static_assert((dir == axis::X) | (dir == axis::Y) | (dir == axis::Z), "Bad direction");
+        axis::assertions::validate<alpha, axis::NOT_NULL>();
 
         // Get the "index" coordinate
-        const scalar_t i = indexCoordinate<dir>(mesh, pointCoordinate);
+        const scalar_t i = indexCoordinate<alpha>(mesh, pointCoordinate);
         const std::size_t i_0 = static_cast<std::size_t>(std::floor(i));
         const std::size_t i_1 = static_cast<std::size_t>(std::ceil(i));
         const scalar_t weight = pointCoordinate - static_cast<scalar_t>(i_0);
 
-        std::vector<std::vector<scalar_t>> cutPlane = initialiseSlice<dir>(mesh, fields.size());
+        std::vector<std::vector<scalar_t>> cutPlane = initialiseSlice<alpha>(mesh, fields.size());
 
-        if constexpr (dir == axis::X)
+        if constexpr (alpha == axis::X)
         {
             for (std::size_t field = 0; field < fields.size(); field++)
             {
@@ -280,7 +280,7 @@ namespace LBM
             }
             return cutPlane;
         }
-        if constexpr (dir == axis::Y)
+        if constexpr (alpha == axis::Y)
         {
             for (std::size_t field = 0; field < fields.size(); field++)
             {
@@ -296,7 +296,7 @@ namespace LBM
             }
             return cutPlane;
         }
-        if constexpr (dir == axis::Z)
+        if constexpr (alpha == axis::Z)
         {
             for (std::size_t field = 0; field < fields.size(); field++)
             {
@@ -317,10 +317,10 @@ namespace LBM
     __host__ [[nodiscard]] const std::vector<std::vector<scalar_t>> extractCutPlane(
         const std::vector<std::vector<scalar_t>> &fields,
         const host::latticeMesh &mesh,
-        const axis::type dir,
+        const axis::type alpha,
         const scalar_t pointCoordinate)
     {
-        switch (dir)
+        switch (alpha)
         {
         case axis::X:
         {
@@ -354,12 +354,12 @@ namespace LBM
             // Check that size() - 1 isn't = 2
             const scalar_t planeCoordinate = static_cast<scalar_t>(std::stold(cutPlanePrefix.substr(2, cutPlanePrefix.size() - 1)));
 
-            const axis::type dir = cutPlaneDirection(programCtrl);
+            const axis::type alpha = cutPlaneDirection(programCtrl);
 
             return extractCutPlane(
                 fileIO::deinterleaveAoS(hostMoments.arr(), mesh),
                 mesh,
-                dir,
+                alpha,
                 planeCoordinate);
         }
         else
@@ -375,9 +375,9 @@ namespace LBM
     {
         if (cutPlane)
         {
-            const axis::type dir = cutPlaneDirection(programCtrl);
+            const axis::type alpha = cutPlaneDirection(programCtrl);
 
-            return meshSlice(mesh, dir);
+            return meshSlice(mesh, alpha);
         }
         else
         {

@@ -59,6 +59,25 @@ namespace LBM
     namespace fileSystem
     {
         /**
+         * @brief Enumeration for file formats
+         **/
+        typedef enum Enum : int
+        {
+            ASCII = 0,
+            BINARY = 1,
+            UNDEFINED = 2
+        } format;
+
+        namespace assertions
+        {
+            template <const format Format>
+            __device__ __host__ inline consteval void validate() noexcept
+            {
+                static_assert((Format == ASCII) || (Format == BINARY), "Invalid format: must be ASCII or BINARY");
+            }
+        }
+
+        /**
          * @brief Convert bytes to mebibytes (binary megabytes, 1024*1024 bytes)
          * @tparam T The return type for the converted value
          * @param[in] nBytes Number of bytes to convert
@@ -125,33 +144,23 @@ namespace LBM
         }
 
         /**
-         * @brief Enumeration for file formats
-         **/
-        typedef enum Enum : int
-        {
-            ASCII = 0,
-            BINARY = 1,
-            UNDEFINED = 2
-        } fileFormat_t;
-
-        /**
          * @brief Calculate the disk space required for field data storage
          * @tparam hasFields Whether field data is present
-         * @tparam fileFormat The file format (ASCII or BINARY)
+         * @tparam Format The file format (ASCII or BINARY)
          * @param[in] nx Number of grid points in x-direction
          * @param[in] ny Number of grid points in y-direction
          * @param[in] nz Number of grid points in z-direction
          * @param[in] nVars Number of field variables
          * @return The estimated disk space required for field data in bytes
          **/
-        template <const bool hasFields, const fileFormat_t fileFormat>
+        template <const bool hasFields, const format Format>
         __host__ [[nodiscard]] inline constexpr uintmax_t fieldsDiskUsage(const uintmax_t nx, const uintmax_t ny, const uintmax_t nz, const uintmax_t nVars) noexcept
         {
             if constexpr (hasFields)
             {
-                static_assert((fileFormat == BINARY) || (fileFormat == ASCII), "Bad file format");
+                assertions::validate<Format>();
 
-                if constexpr (fileFormat == BINARY)
+                if constexpr (Format == BINARY)
                 {
                     return static_cast<uintmax_t>(nVars) * static_cast<uintmax_t>(nx) * static_cast<uintmax_t>(ny) * static_cast<uintmax_t>(nz) * static_cast<uintmax_t>(sizeof(scalar_t));
                 }
@@ -162,7 +171,7 @@ namespace LBM
                         // Handle double
                         return static_cast<uintmax_t>(nVars) * static_cast<uintmax_t>(nx) * static_cast<uintmax_t>(ny) * static_cast<uintmax_t>(nz) * 25;
                     }
-                    else
+                    else if constexpr (std::is_same_v<scalar_t, float>)
                     {
                         // Handle float
                         return static_cast<uintmax_t>(nVars) * static_cast<uintmax_t>(nx) * static_cast<uintmax_t>(ny) * static_cast<uintmax_t>(nz) * 15;
@@ -199,7 +208,7 @@ namespace LBM
 
         /**
          * @brief Calculate total expected disk usage for all components
-         * @tparam fileFormat The file format (ASCII or BINARY)
+         * @tparam Format The file format (ASCII or BINARY)
          * @tparam hasFields Whether field data is present
          * @tparam hasPoints Whether point data is present
          * @tparam hasElements Whether element data is present
@@ -210,15 +219,15 @@ namespace LBM
          * @param[in] nVars Number of field variables
          * @return The total estimated disk space required in bytes
          **/
-        template <const fileFormat_t fileFormat, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets>
+        template <const format Format, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets>
         __host__ [[nodiscard]] inline constexpr uintmax_t expectedDiskUsage(const uintmax_t nx, const uintmax_t ny, const uintmax_t nz, const uintmax_t nVars) noexcept
         {
-            return fieldsDiskUsage<hasFields, fileFormat>(nx, ny, nz, nVars) + fieldsDiskUsage<hasPoints, fileFormat>(nx, ny, nz, 3) + elementsDiskUsage<hasElements, 8>(nx, ny, nz) + elementsDiskUsage<hasOffsets, 1>(nx, ny, nz);
+            return fieldsDiskUsage<hasFields, Format>(nx, ny, nz, nVars) + fieldsDiskUsage<hasPoints, Format>(nx, ny, nz, 3) + elementsDiskUsage<hasElements, 8>(nx, ny, nz) + elementsDiskUsage<hasOffsets, 1>(nx, ny, nz);
         }
 
         /**
          * @brief Calculate total expected disk usage for all components using mesh dimensions
-         * @tparam fileFormat The file format (ASCII or BINARY)
+         * @tparam Format The file format (ASCII or BINARY)
          * @tparam hasFields Whether field data is present
          * @tparam hasPoints Whether point data is present
          * @tparam hasElements Whether element data is present
@@ -228,15 +237,15 @@ namespace LBM
          * @param[in] nVars Number of field variables
          * @return The total estimated disk space required in bytes
          **/
-        template <const fileFormat_t fileFormat, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets, class LatticeMesh, typename T>
+        template <const format Format, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets, class LatticeMesh, typename T>
         __host__ [[nodiscard]] inline constexpr uintmax_t expectedDiskUsage(const LatticeMesh &mesh, const T nVars) noexcept
         {
-            return expectedDiskUsage<fileFormat, hasFields, hasPoints, hasElements, hasOffsets>(static_cast<uintmax_t>(mesh.nx()), static_cast<uintmax_t>(mesh.ny()), static_cast<uintmax_t>(mesh.nz()), static_cast<uintmax_t>(nVars));
+            return expectedDiskUsage<Format, hasFields, hasPoints, hasElements, hasOffsets>(static_cast<uintmax_t>(mesh.nx()), static_cast<uintmax_t>(mesh.ny()), static_cast<uintmax_t>(mesh.nz()), static_cast<uintmax_t>(nVars));
         }
 
         /**
          * @brief Check if sufficient disk space is available for writing
-         * @tparam fileFormat The file format (ASCII or BINARY)
+         * @tparam Format The file format (ASCII or BINARY)
          * @tparam hasFields Whether field data is present
          * @tparam hasPoints Whether point data is present
          * @tparam hasElements Whether element data is present
@@ -246,11 +255,11 @@ namespace LBM
          * @param[in] nVars Number of field variables
          * @return True if sufficient disk space is available, false otherwise
          **/
-        template <const fileFormat_t fileFormat, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets, class LatticeMesh>
+        template <const format Format, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets, class LatticeMesh>
         __host__ [[nodiscard]] bool diskSpaceCheck(const LatticeMesh &mesh, const uintmax_t nVars)
         {
             // Calculated the approximate required space
-            const uintmax_t requiredDiskSpace = expectedDiskUsage<fileFormat, hasFields, hasPoints, hasElements, hasOffsets>(static_cast<uintmax_t>(mesh.nx()), static_cast<uintmax_t>(mesh.ny()), static_cast<uintmax_t>(mesh.nz()), nVars);
+            const uintmax_t requiredDiskSpace = expectedDiskUsage<Format, hasFields, hasPoints, hasElements, hasOffsets>(static_cast<uintmax_t>(mesh.nx()), static_cast<uintmax_t>(mesh.ny()), static_cast<uintmax_t>(mesh.nz()), nVars);
 
             // Check enough space is available
             return fileSystem::hasEnoughSpace(requiredDiskSpace);
@@ -258,7 +267,7 @@ namespace LBM
 
         /**
          * @brief Assert that sufficient disk space is available, throw error if not
-         * @tparam fileFormat The file format (ASCII or BINARY)
+         * @tparam Format The file format (ASCII or BINARY)
          * @tparam hasFields Whether field data is present
          * @tparam hasPoints Whether point data is present
          * @tparam hasElements Whether element data is present
@@ -269,12 +278,12 @@ namespace LBM
          * @param[in] fileName Name of the file being written (for error message)
          * @throws std::runtime_error if insufficient disk space is available
          **/
-        template <const fileFormat_t fileFormat, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets, class LatticeMesh>
+        template <const format Format, const bool hasFields, const bool hasPoints, const bool hasElements, const bool hasOffsets, class LatticeMesh>
         __host__ void diskSpaceAssertion(const LatticeMesh &mesh, const uintmax_t nVars, const name_t &fileName)
         {
-            const uintmax_t requiredDiskSpace = expectedDiskUsage<fileFormat, hasFields, hasPoints, hasElements, hasOffsets>(static_cast<uintmax_t>(mesh.nx()), static_cast<uintmax_t>(mesh.ny()), static_cast<uintmax_t>(mesh.nz()), static_cast<uintmax_t>(nVars));
+            const uintmax_t requiredDiskSpace = expectedDiskUsage<Format, hasFields, hasPoints, hasElements, hasOffsets>(static_cast<uintmax_t>(mesh.nx()), static_cast<uintmax_t>(mesh.ny()), static_cast<uintmax_t>(mesh.nz()), static_cast<uintmax_t>(nVars));
 
-            if (!diskSpaceCheck<fileFormat, hasFields, hasPoints, hasElements, hasOffsets>(mesh, static_cast<uintmax_t>(nVars)))
+            if (!diskSpaceCheck<Format, hasFields, hasPoints, hasElements, hasOffsets>(mesh, static_cast<uintmax_t>(nVars)))
             {
                 const uintmax_t availableSpace = fileSystem::availableDiskSpace();
                 throw std::runtime_error("Insufficient disk space to write file " + fileName + "\nRequired: " + std::to_string(requiredDiskSpace) + "\nAvailable: " + std::to_string(availableSpace));

@@ -78,7 +78,7 @@ namespace LBM
                 }
                 else
                 {
-                    static_assert(((coeff == -1) || (coeff == 1)), "Coeff must be -1, 0 or +1.");
+                    static_assert(((coeff == -1) || (coeff == 1)), "Coeff must be -1 or +1.");
                 }
             }
         }

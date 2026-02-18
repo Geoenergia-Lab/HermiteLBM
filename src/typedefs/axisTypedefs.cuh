@@ -57,12 +57,12 @@ namespace LBM
         /**
          * @brief Cardinal axis directions: X, Y, Z or NO_DIRECTION
          **/
-        typedef enum Enum : label_t
+        typedef enum Enum : int
         {
+            NO_DIRECTION = -1,
             X = 0,
             Y = 1,
             Z = 2,
-            NO_DIRECTION = static_cast<label_t>(-1)
         } type;
 
         /**
@@ -74,7 +74,7 @@ namespace LBM
         template <const axis::type alpha, const label_t i>
         __device__ __host__ [[nodiscard]] inline consteval axis::type orthogonal() noexcept
         {
-            static_assert(i < 2);
+            static_assert(i < 2, "Index of axis orthogonal to alpha must be < 2");
 
             if constexpr (alpha == axis::X)
             {

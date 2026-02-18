@@ -58,8 +58,6 @@ namespace LBM
         template <const time::type TimeType>
         __host__ [[nodiscard]] const name_t timeTypeString() noexcept
         {
-            static_assert((TimeType == time::instantaneous || (TimeType == time::timeAverage)), "Time type must be either instantaneous or timeAverage");
-
             if constexpr (TimeType == time::instantaneous)
             {
                 return "instantaneous";
@@ -87,13 +85,8 @@ namespace LBM
             const T *const ptrRestrict fields,
             const label_t timeStep)
         {
-            static_assert(std::is_floating_point<T>::value, "T must be floating point");
-
-            static_assert(std::endian::native == std::endian::little | std::endian::native == std::endian::big, "File system must be either little or big endian");
-
-            static_assert(sizeof(T) == 4 | sizeof(T) == 8, "Error writing file: T must be either 32 or 64 bit");
-
-            static_assert((TimeType == time::instantaneous || (TimeType == time::timeAverage)), "Time type must be either instantaneous or timeAverage");
+            types::assertions::validate<T>();
+            endian::assertions::validate();
 
             const uintmax_t nVars = static_cast<uintmax_t>(varNames.size());
             const uintmax_t nPoints = static_cast<uintmax_t>(mesh.nx()) * static_cast<uintmax_t>(mesh.ny()) * static_cast<uintmax_t>(mesh.nz());
@@ -118,23 +111,10 @@ namespace LBM
             // Write the system information: binary endianness
             out << "systemInformation" << std::endl;
             out << "{" << std::endl;
-            if constexpr (std::endian::native == std::endian::little)
-            {
-                out << "\tbinaryType\tlittleEndian;" << std::endl;
-            }
-            else if constexpr (std::endian::native == std::endian::big)
-            {
-                out << "\tbinaryType\tbigEndian;" << std::endl;
-            }
             out << std::endl;
-            if constexpr (sizeof(scalar_t) == 4)
-            {
-                out << "\tscalarSize\t32;" << std::endl;
-            }
-            else if constexpr (sizeof(scalar_t) == 8)
-            {
-                out << "\tscalarSize\t64;" << std::endl;
-            }
+            out << "\ttbinaryType\t" << endian::nameString() << ";" << std::endl;
+            out << std::endl;
+            out << "\tscalarSize\t" << sizeof(scalar_t) * 4 << ";" << std::endl;
             out << "};" << std::endl;
             out << std::endl;
 

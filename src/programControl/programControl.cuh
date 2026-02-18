@@ -77,9 +77,8 @@ namespace LBM
               infoInterval_(string::extractParameter<label_t>(string::readFile("programControl"), "infoInterval")),
               latestTime_(fileIO::latestTime(caseName_))
         {
-            static_assert((std::is_same_v<scalar_t, float>) | (std::is_same_v<scalar_t, double>), "Invalid floating point size: must be either 32 or 64 bit");
-
-            static_assert((std::is_same_v<label_t, uint32_t>) | (std::is_same_v<label_t, uint64_t>), "Invalid label size: must be either 32 bit unsigned or 64 bit unsigned");
+            types::assertions::validate<scalar_t>();
+            types::assertions::validate<label_t>();
 
             // Get the launch time
             const time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());

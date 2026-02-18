@@ -71,16 +71,16 @@ namespace LBM
                 template <typename T>
                 __device__ [[nodiscard]] inline constexpr T K(const T u, const T v, const T w) noexcept
                 {
-                    static_assert((sizeof(T) == 8) || (sizeof(T) == 4), "Bad type T");
+                    types::assertions::validate<T>();
 
-                    if constexpr (sizeof(T) == 8)
-                    {
-                        return sqrt((u * u) + (v * v) + (w * w)) * static_cast<T>(0.5);
-                    }
-
-                    else if constexpr (sizeof(T) == 4)
+                    if constexpr (std::is_same_v<T, float>)
                     {
                         return sqrtf((u * u) + (v * v) + (w * w)) * static_cast<T>(0.5);
+                    }
+
+                    if constexpr (std::is_same_v<T, double>)
+                    {
+                        return sqrt((u * u) + (v * v) + (w * w)) * static_cast<T>(0.5);
                     }
                 }
 

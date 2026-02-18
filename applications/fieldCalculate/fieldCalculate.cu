@@ -130,8 +130,8 @@ int main(const int argc, const char *const argv[])
 
                 const std::vector<std::vector<scalar_t>> fields = fileIO::deinterleaveAoS(hostMoments.arr(), mesh);
 
-                const std::vector<std::vector<scalar_t>> omega = derivative::curl<SchemeOrder()>(fields[index::u], fields[index::v], fields[index::w], mesh);
-                const std::vector<scalar_t> magomega = mag(omega[0], omega[1], omega[2]);
+                const std::vector<std::vector<scalar_t>> omega = numericalSchemes::derivative::curl<SchemeOrder()>(fields[index::u], fields[index::v], fields[index::w], mesh);
+                const std::vector<scalar_t> magomega = numericalSchemes::mag(omega[0], omega[1], omega[2]);
 
                 const postProcess::writerFunction writer = it->second;
 
@@ -168,7 +168,7 @@ int main(const int argc, const char *const argv[])
 
                 const std::vector<std::vector<scalar_t>> fields = fileIO::deinterleaveAoS(hostMoments.arr(), mesh);
 
-                const std::vector<scalar_t> divu = derivative::div<SchemeOrder()>(fields[index::u], fields[index::v], fields[index::w], mesh);
+                const std::vector<scalar_t> divu = numericalSchemes::derivative::div<SchemeOrder()>(fields[index::u], fields[index::v], fields[index::w], mesh);
 
                 const postProcess::writerFunction writer = it->second;
 
@@ -183,9 +183,9 @@ int main(const int argc, const char *const argv[])
     // constexpr label_t IntegrationOrder = 2;
 
     // // Integrate the vorticity in all axes
-    // const std::vector<scalar_t> int_omega_x = integrate_x<IntegrationOrder, scalar_t>(omega[0], mesh);
-    // const std::vector<scalar_t> int_omega_y = integrate_y<IntegrationOrder, scalar_t>(omega[1], mesh);
-    // const std::vector<scalar_t> int_omega_z = integrate_z<IntegrationOrder, scalar_t>(omega[2], mesh);
+    // const std::vector<scalar_t> int_omega_x = integral(integrate_x<IntegrationOrder, scalar_t>(omega[0], mesh));
+    // const std::vector<scalar_t> int_omega_y = integral(integrate_y<IntegrationOrder, scalar_t>(omega[1], mesh));
+    // const std::vector<scalar_t> int_omega_z = integral(integrate_z<IntegrationOrder, scalar_t>(omega[2], mesh));
 
     // const std::vector<std::vector<scalar_t>> integratedOmega = {int_omega_x, int_omega_y, int_omega_z};
 

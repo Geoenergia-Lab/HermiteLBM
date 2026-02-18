@@ -168,9 +168,6 @@ namespace LBM
         template <typename T, const label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval T w_q(const q_i<q_> q) noexcept
         {
-            // Check that we are accessing a valid member
-            static_assert(q() < vs::Q(), "Invalid velocity set index in member function w(q)");
-
             // Return the component
             return w_q<T>()[q];
         }
@@ -194,9 +191,6 @@ namespace LBM
         template <typename T, const label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval T cx(const q_i<q_> q) noexcept
         {
-            // Check that we are accessing a valid member
-            static_assert(q() < vs::Q(), "Invalid velocity set index in member function cx(q)");
-
             // Return the component
             return cx<T>()[q];
         }
@@ -220,9 +214,6 @@ namespace LBM
         template <typename T, const label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval T cy(const q_i<q_> q) noexcept
         {
-            // Check that we are accessing a valid member
-            static_assert(q() < vs::Q(), "Invalid velocity set index in member function cy(q)");
-
             // Return the component
             return cy<T>()[q];
         }
@@ -246,9 +237,6 @@ namespace LBM
         template <typename T, const label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval T cz(const q_i<q_> q) noexcept
         {
-            // Check that we are accessing a valid member
-            static_assert(q() < vs::Q(), "Invalid velocity set index in member function cz(q)");
-
             // Return the component
             return cz<T>()[q];
         }

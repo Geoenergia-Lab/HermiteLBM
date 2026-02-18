@@ -66,16 +66,11 @@ namespace LBM
     public:
         /**
          * @brief Default constructor
-         *
-         * Creates N CUDA streams upon construction. The constructor includes
-         * a static assertion to ensure N is positive at compile-time.
-         * @pre N must be positive (enforced via static_assert)
          **/
         __host__ [[nodiscard]] streamHandler(const programControl &programCtrl) noexcept
             : streams_(createCudaStreams(programCtrl)),
               programCtrl_(programCtrl)
         {
-            // static_assert(N > 0, "Number of CUDA streams must be positive!");
         }
 
         /**
@@ -122,7 +117,6 @@ namespace LBM
          * @brief Synchronizes a specific CUDA stream
          * @tparam stream_ Index of the stream to synchronize (must be < N)
          * @param[in] stream Integral constant representing the stream index
-         * @pre stream_ must be less than N (enforced via static_assert)
          *
          * Blocks the host until all operations in the specified stream complete.
          **/
@@ -137,7 +131,6 @@ namespace LBM
          * @tparam stream_ Index of the stream to access (must be < N)
          * @param[in] stream Integral constant representing the stream index
          * @return Reference to the requested CUDA stream
-         * @pre stream_ must be less than N (enforced via static_assert)
          * @warning No bounds checking performed at runtime
          **/
         template <const label_t stream_>

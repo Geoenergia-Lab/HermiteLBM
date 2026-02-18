@@ -97,8 +97,8 @@ namespace LBM
         template <typename T>
         __host__ [[nodiscard]] const std::vector<T> readFieldFile(const name_t &fileName)
         {
-            static_assert(std::is_floating_point_v<T>, "T must be floating point");
-            static_assert(std::endian::native == std::endian::little || std::endian::native == std::endian::big, "System must be little or big endian");
+            endian::assertions::validate();
+            types::assertions::validate<T>();
 
             // Check that the file exists - if it doesn't, throw an exception
             if (!std::filesystem::exists(fileName))
@@ -174,8 +174,8 @@ namespace LBM
         template <typename T>
         __host__ [[nodiscard]] const std::vector<T> readFieldByName(const name_t &fileName, const name_t &fieldName)
         {
-            static_assert(std::is_floating_point_v<T>, "T must be floating point");
-            static_assert(std::endian::native == std::endian::little || std::endian::native == std::endian::big, "System must be little or big endian");
+            types::assertions::validate<T>();
+            endian::assertions::validate();
 
             // Check if file exists
             if (!std::filesystem::exists(fileName))
