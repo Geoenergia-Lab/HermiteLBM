@@ -111,8 +111,7 @@ namespace LBM
             // Write the system information: binary endianness
             out << "systemInformation" << std::endl;
             out << "{" << std::endl;
-            out << std::endl;
-            out << "\ttbinaryType\t" << endian::nameString() << ";" << std::endl;
+            out << "\tbinaryType\t" << endian::nameString() << ";" << std::endl;
             out << std::endl;
             out << "\tscalarSize\t" << sizeof(scalar_t) * 8 << ";" << std::endl;
             out << "};" << std::endl;
