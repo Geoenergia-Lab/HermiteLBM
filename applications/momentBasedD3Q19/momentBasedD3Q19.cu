@@ -148,14 +148,14 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
+                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.fGhost(0), blockHalo.gGhost(0));
             });
 
         // Calculate S kernel
         runTimeObjects.calculate(timeStep);
 
         // Halo pointer swap
-        blockHalo.swap();
+        blockHalo.swap(0);
     }
 
     return 0;

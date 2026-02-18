@@ -87,7 +87,7 @@ namespace LBM
              * @brief Get read-only access to underlying data
              * @return Const pointer to device memory
              **/
-            __device__ __host__ [[nodiscard]] inline const T *constPtr() const noexcept
+            __device__ __host__ [[nodiscard]] inline const T *constPtr([[maybe_unused]] const label_t i) const noexcept
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::array::<field::SKELETON>, "Need to add indexing into pointers for multi GPU"));
                 return ptr_;
@@ -97,7 +97,7 @@ namespace LBM
              * @brief Get mutable access to underlying data
              * @return Pointer to device memory
              **/
-            __device__ __host__ [[nodiscard]] inline T *ptr() noexcept
+            __device__ __host__ [[nodiscard]] inline T *ptr([[maybe_unused]] const label_t i) noexcept
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::array::<field::SKELETON>, "Need to add indexing into pointers for multi GPU"));
                 return ptr_;
@@ -106,7 +106,7 @@ namespace LBM
             /**
              * @brief Provide reference to pointer for swapping operations
              **/
-            __host__ [[nodiscard]] inline constexpr T * ptrRestrict & ptrRef() noexcept
+            __host__ [[nodiscard]] inline constexpr T * ptrRestrict & ptrRef([[maybe_unused]] const label_t i) noexcept
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::array::<field::SKELETON>, "Need to add indexing into pointers for multi GPU"));
                 return ptr_;
@@ -300,7 +300,7 @@ namespace LBM
             /**
              * @brief Returns the time type of the array
              **/
-            __host__ [[nodiscard]] inline consteval time::type timeType() const noexcept
+            __host__ [[nodiscard]] static inline consteval time::type timeType() noexcept
             {
                 return TimeType;
             }

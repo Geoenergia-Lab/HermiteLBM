@@ -87,11 +87,11 @@ namespace LBM
                 const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh) noexcept
                 : x0_(initialise_pop<axis::X, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
-                  x1_(initialise_pop<axis::X, 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
+                  x1_(initialise_pop<axis::X, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
                   y0_(initialise_pop<axis::Y, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
-                  y1_(initialise_pop<axis::Y, 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
+                  y1_(initialise_pop<axis::Y, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
                   z0_(initialise_pop<axis::Z, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
-                  z1_(initialise_pop<axis::Z, 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)){};
+                  z1_(initialise_pop<axis::Z, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)){};
 
             /**
              * @brief Destructor - releases all allocated device memory
@@ -103,29 +103,29 @@ namespace LBM
              * @brief Provide const access to halo face data
              * @return Const pointer to halo face data
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *x0Const() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *x0Const(const label_t i) const noexcept
             {
-                return x0_.constPtr();
+                return x0_.constPtr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *x1Const() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *x1Const(const label_t i) const noexcept
             {
-                return x1_.constPtr();
+                return x1_.constPtr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *y0Const() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *y0Const(const label_t i) const noexcept
             {
-                return y0_.constPtr();
+                return y0_.constPtr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *y1Const() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *y1Const(const label_t i) const noexcept
             {
-                return y1_.constPtr();
+                return y1_.constPtr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *z0Const() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *z0Const(const label_t i) const noexcept
             {
-                return z0_.constPtr();
+                return z0_.constPtr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *z1Const() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *z1Const(const label_t i) const noexcept
             {
-                return z1_.constPtr();
+                return z1_.constPtr(i);
             }
 
             /**
@@ -133,29 +133,29 @@ namespace LBM
              * @brief Provide mutable access to halo face data
              * @return Pointer to halo face data
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *x0() noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *x0(const label_t i) noexcept
             {
-                return x0_.ptr();
+                return x0_.ptr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *x1() noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *x1(const label_t i) noexcept
             {
-                return x1_.ptr();
+                return x1_.ptr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *y0() noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *y0(const label_t i) noexcept
             {
-                return y0_.ptr();
+                return y0_.ptr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *y1() noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *y1(const label_t i) noexcept
             {
-                return y1_.ptr();
+                return y1_.ptr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *z0() noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *z0(const label_t i) noexcept
             {
-                return z0_.ptr();
+                return z0_.ptr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *z1() noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *z1(const label_t i) noexcept
             {
-                return z1_.ptr();
+                return z1_.ptr(i);
             }
 
             /**
@@ -164,29 +164,29 @@ namespace LBM
              * @return Reference to pointer (used for buffer swapping)
              * @note These methods are specifically for pointer swapping and should not be used elsewhere
              **/
-            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & x0Ref() noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & x0Ref(const label_t i) noexcept
             {
-                return x0_.ptrRef();
+                return x0_.ptrRef(i);
             }
-            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & x1Ref() noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & x1Ref(const label_t i) noexcept
             {
-                return x1_.ptrRef();
+                return x1_.ptrRef(i);
             }
-            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & y0Ref() noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & y0Ref(const label_t i) noexcept
             {
-                return y0_.ptrRef();
+                return y0_.ptrRef(i);
             }
-            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & y1Ref() noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & y1Ref(const label_t i) noexcept
             {
-                return y1_.ptrRef();
+                return y1_.ptrRef(i);
             }
-            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & z0Ref() noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & z0Ref(const label_t i) noexcept
             {
-                return z0_.ptrRef();
+                return z0_.ptrRef(i);
             }
-            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & z1Ref() noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & z1Ref(const label_t i) noexcept
             {
-                return z1_.ptrRef();
+                return z1_.ptrRef(i);
             }
 
         private:

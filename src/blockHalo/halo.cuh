@@ -108,33 +108,35 @@ namespace LBM
              * @brief Swaps read and write halo buffers
              * @note Synchronizes device before swapping to ensure all operations complete
              **/
-            __host__ inline void swap() noexcept
+            __host__ inline void swap(const label_t i) noexcept
             {
+                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::halo::swap, "Must set the device prior to calling."));
+
                 errorHandler::checkInline(cudaDeviceSynchronize());
-                std::swap(fGhost_.x0Ref(), gGhost_.x0Ref());
-                std::swap(fGhost_.x1Ref(), gGhost_.x1Ref());
-                std::swap(fGhost_.y0Ref(), gGhost_.y0Ref());
-                std::swap(fGhost_.y1Ref(), gGhost_.y1Ref());
-                std::swap(fGhost_.z0Ref(), gGhost_.z0Ref());
-                std::swap(fGhost_.z1Ref(), gGhost_.z1Ref());
+                std::swap(fGhost_.x0Ref(i), gGhost_.x0Ref(i));
+                std::swap(fGhost_.x1Ref(i), gGhost_.x1Ref(i));
+                std::swap(fGhost_.y0Ref(i), gGhost_.y0Ref(i));
+                std::swap(fGhost_.y1Ref(i), gGhost_.y1Ref(i));
+                std::swap(fGhost_.z0Ref(i), gGhost_.z0Ref(i));
+                std::swap(fGhost_.z1Ref(i), gGhost_.z1Ref(i));
             }
 
             /**
              * @brief Provides read-only access to the current read halo
              * @return Collection of const pointers to halo faces (x0, x1, y0, y1, z0, z1)
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, const scalar_t> fGhost() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, const scalar_t> fGhost(const label_t i) const noexcept
             {
-                return {fGhost_.x0Const(), fGhost_.x1Const(), fGhost_.y0Const(), fGhost_.y1Const(), fGhost_.z0Const(), fGhost_.z1Const()};
+                return {fGhost_.x0Const(i), fGhost_.x1Const(i), fGhost_.y0Const(i), fGhost_.y1Const(i), fGhost_.z0Const(i), fGhost_.z1Const(i)};
             }
 
             /**
              * @brief Provides mutable access to the current write halo
              * @return Collection of mutable pointers to halo faces (x0, x1, y0, y1, z0, z1)
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, scalar_t> gGhost() noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, scalar_t> gGhost(const label_t i) noexcept
             {
-                return {gGhost_.x0(), gGhost_.x1(), gGhost_.y0(), gGhost_.y1(), gGhost_.z0(), gGhost_.z1()};
+                return {gGhost_.x0(i), gGhost_.x1(i), gGhost_.y0(i), gGhost_.y1(i), gGhost_.z0(i), gGhost_.z1(i)};
             }
 
             /**
@@ -146,7 +148,6 @@ namespace LBM
              **/
             __device__ static inline constexpr void load(thread::array<scalar_t, VelocitySet::Q()> &pop, const device::ptrCollection<6, const scalar_t> &fGhost, const thread::coordinate &Tx, const block::coordinate &Bx) noexcept
             {
-
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::halo::load, "Potential issue with condition checking (e.g. West, East, etc)."));
 
                 if (Tx.value<axis::X>() == 0)
