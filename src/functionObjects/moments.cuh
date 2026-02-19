@@ -226,19 +226,23 @@ namespace LBM
                  **/
                 __host__ void saveMean(const label_t timeStep) noexcept
                 {
-                    hostWriteBuffer_.copy_from_device(
-                        device::ptrCollection<10, scalar_t>(
-                            rhoMean_.ptr(0),
-                            uMean_.ptr(0),
-                            vMean_.ptr(0),
-                            wMean_.ptr(0),
-                            mxxMean_.ptr(0),
-                            mxyMean_.ptr(0),
-                            mxzMean_.ptr(0),
-                            myyMean_.ptr(0),
-                            myzMean_.ptr(0),
-                            mzzMean_.ptr(0)),
-                        mesh_);
+                    for (label_t virtualDeviceIndex = 0; virtualDeviceIndex < rhoMean_.programCtrl().deviceList().size(); virtualDeviceIndex++)
+                    {
+                        hostWriteBuffer_.copy_from_device(
+                            device::ptrCollection<10, scalar_t>(
+                                rhoMean_.ptr(virtualDeviceIndex),
+                                uMean_.ptr(virtualDeviceIndex),
+                                vMean_.ptr(virtualDeviceIndex),
+                                wMean_.ptr(virtualDeviceIndex),
+                                mxxMean_.ptr(virtualDeviceIndex),
+                                mxyMean_.ptr(virtualDeviceIndex),
+                                mxzMean_.ptr(virtualDeviceIndex),
+                                myyMean_.ptr(virtualDeviceIndex),
+                                myzMean_.ptr(virtualDeviceIndex),
+                                mzzMean_.ptr(virtualDeviceIndex)),
+                            mesh_,
+                            virtualDeviceIndex);
+                    }
 
                     fileIO::writeFile<time::timeAverage>(
                         fieldNameMean_ + "_" + std::to_string(timeStep) + ".LBMBin",

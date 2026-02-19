@@ -370,12 +370,16 @@ namespace LBM
                  **/
                 __host__ void saveInstantaneous(const label_t timeStep) noexcept
                 {
-                    hostWriteBuffer_.copy_from_device(
-                        device::ptrCollection<6, scalar_t>(
-                            xx_.ptr(0), xy_.ptr(0),
-                            xz_.ptr(0), yy_.ptr(0),
-                            yz_.ptr(0), zz_.ptr(0)),
-                        mesh_);
+                    for (label_t virtualDeviceIndex = 0; virtualDeviceIndex < xx_.programCtrl().deviceList().size(); virtualDeviceIndex++)
+                    {
+                        hostWriteBuffer_.copy_from_device(
+                            device::ptrCollection<6, scalar_t>(
+                                xx_.ptr(virtualDeviceIndex), xy_.ptr(virtualDeviceIndex),
+                                xz_.ptr(virtualDeviceIndex), yy_.ptr(virtualDeviceIndex),
+                                yz_.ptr(virtualDeviceIndex), zz_.ptr(virtualDeviceIndex)),
+                            mesh_,
+                            virtualDeviceIndex);
+                    }
 
                     fileIO::writeFile<time::instantaneous>(
                         fieldName_ + "_" + std::to_string(timeStep) + ".LBMBin",
@@ -392,12 +396,16 @@ namespace LBM
                  **/
                 __host__ void saveMean(const label_t timeStep) noexcept
                 {
-                    hostWriteBuffer_.copy_from_device(
-                        device::ptrCollection<6, scalar_t>(
-                            xx_.ptr(0), xy_.ptr(0),
-                            xz_.ptr(0), yy_.ptr(0),
-                            yz_.ptr(0), zz_.ptr(0)),
-                        mesh_);
+                    for (label_t virtualDeviceIndex = 0; virtualDeviceIndex < xxMean_.programCtrl().deviceList().size(); virtualDeviceIndex++)
+                    {
+                        hostWriteBuffer_.copy_from_device(
+                            device::ptrCollection<6, scalar_t>(
+                                xxMean_.ptr(virtualDeviceIndex), xyMean_.ptr(virtualDeviceIndex),
+                                xzMean_.ptr(virtualDeviceIndex), yyMean_.ptr(virtualDeviceIndex),
+                                yzMean_.ptr(virtualDeviceIndex), zzMean_.ptr(virtualDeviceIndex)),
+                            mesh_,
+                            virtualDeviceIndex);
+                    }
 
                     fileIO::writeFile<time::timeAverage>(
                         fieldNameMean_ + "_" + std::to_string(timeStep) + ".LBMBin",

@@ -187,10 +187,7 @@ namespace LBM
              * @param mesh The lattice mesh
              **/
             template <const label_t N>
-            __host__ void copy_from_device(
-                const device::ptrCollection<N, T> &devPtrs,
-                const host::latticeMesh &mesh,
-                const label_t virtualDeviceIndex = 0)
+            __host__ void copy_from_device(const device::ptrCollection<N, T> &devPtrs, const host::latticeMesh &mesh, const label_t virtualDeviceIndex)
             {
                 const label_t nxGPUs = mesh.nDevices<axis::X>();
                 const label_t nyGPUs = mesh.nDevices<axis::Y>();

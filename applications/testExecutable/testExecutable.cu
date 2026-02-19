@@ -53,71 +53,17 @@ SourceFiles
 
 using namespace LBM;
 
-/**
- * Reads the first N lines from a file.
- * @param filename Path to the file.
- * @param n Number of lines to read (non‑negative).
- * @return A vector containing the first N lines (or fewer if the file ends).
- */
-__host__ [[nodiscard]] const std::vector<std::string> read_first_n_lines(const std::string &filename, const std::size_t n)
-{
-    std::vector<std::string> lines;
-    if (n <= 0)
-    {
-        return lines;
-    } // nothing to read
-
-    std::ifstream file(filename);
-    if (!file.is_open())
-    {
-        std::cerr << "Error: Could not open file " << filename << std::endl;
-        return lines; // return empty vector
-    }
-
-    std::string line;
-    std::size_t count = 0;
-    while (count < n && std::getline(file, line))
-    {
-        lines.push_back(line);
-        ++count;
-    }
-
-    file.close();
-    return lines;
-}
-
 int main()
 {
-    // constexpr const label_t q = 26;
+    const name_t fileName = "kMean_20000.LBMBin";
 
-    // std::cout << VelocitySet::cx<int>(q_i<q>()) << std::endl;
-
-    const name_t fileName = "jetFlow_20000.LBMBin";
-
-    const words_t lines = read_first_n_lines(fileName, 50);
-
-    // const fileIO::systemInformation sysInfo(string::extractBlock(lines, "systemInformation", 0));
-
-    // std::cout << sysInfo.endianType() << std::endl;
-    // std::cout << sysInfo.scalarSize() << std::endl;
-
-    // const fileIO::meshPrimitive mesh(string::extractBlock(lines, "latticeMesh", 0));
-
-    // mesh.nPoints().print("nPoints");
-    // mesh.nDevices().print("nDevices");
+    const words_t lines = string::readFile(fileName);
 
     const fileIO::fieldInformation fieldInfo(string::extractBlock(lines, "fieldInformation", 0));
 
-    std::cout << fieldInfo.meanCount() << std::endl;
-
-    // std::cout << "timeStep: " << fieldInfo.timeStep() << std::endl;
-    // std::cout << "timeType: " << (fieldInfo.timeType() == time::instantaneous ? "instantaneous" : "timeAverage") << std::endl;
-    // std::cout << "nFields: " << fieldInfo.nFields() << std::endl;
-
-    // for (std::size_t i = 0; i < fieldInfo.fieldNames().size(); i++)
-    // {
-    //     std::cout << fieldInfo.fieldNames()[i] << std::endl;
-    // }
+    std::cout << std::endl;
+    std::cout << fileName << " meanCount: " << fieldInfo.meanCount() << std::endl;
+    std::cout << std::endl;
 
     return 0;
 }

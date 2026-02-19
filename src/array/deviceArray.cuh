@@ -318,6 +318,11 @@ namespace LBM
                 return meanCount_;
             }
 
+            __host__ [[nodiscard]] inline constexpr const programControl &programCtrl() const noexcept
+            {
+                return programCtrl_;
+            }
+
             /**
              * @brief Copies the array to a host pointer
              * @param hostPtr Pointer to memory allocated on the host

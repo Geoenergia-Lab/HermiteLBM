@@ -108,45 +108,84 @@ namespace LBM
     }
 
     /**
-     * Reads the first N lines from a file.
-     * @param filename Path to the file.
-     * @param n Number of lines to read (non‑negative).
-     * @return A vector containing the first N lines (or fewer if the file ends).
-     */
-    __host__ [[nodiscard]] const std::vector<std::string> read_first_n_lines(const std::string &filename, const std::size_t n)
+     * @brief Counts lines before the first occurrence of a target line.
+     * @param file   Input file stream (position advanced).
+     * @param target The line content that stops counting (excluded).
+     * @return Number of lines read before target; if target not found, returns total lines.
+     **/
+    __host__ [[nodiscard]] std::size_t line_count(std::ifstream &file, const name_t &target)
     {
-        std::vector<std::string> lines;
-        if (n <= 0)
-        {
-            return lines;
-        } // nothing to read
+        name_t line;
+        std::size_t result = 0;
+        // bool found = false;
 
+        while (std::getline(file, line))
+        {
+            if (line == target)
+            {
+                // found = true;
+                break;
+            }
+            ++result;
+        }
+
+        return result;
+    }
+
+    /**
+     * @brief Reads a file line by line and returns a vector of all lines that appear
+     * before the first line exactly equal to the target string.
+     * If the target is not found, all lines from the file are returned.
+     *
+     * The function performs two passes:
+     * 1. Count how many lines precede the target (or the whole file if target absent).
+     * 2. Reserve that many slots in the vector and read the lines again, storing them.
+     *
+     * @param[in] filename Path to the file.
+     * @param[in] target The exact line content at which to stop reading (not included).
+     * @return Vector of strings containing the lines before the target.
+     */
+    __host__ [[nodiscard]] const words_t read_until(const name_t &filename, const name_t &target)
+    {
         std::ifstream file(filename);
         if (!file.is_open())
         {
-            std::cerr << "Error: Could not open file " << filename << std::endl;
-            return lines; // return empty vector
+            return {}; // return empty vector on open failure
         }
+
+        // Count lines before target
+        // If target not found, lineCount already holds total lines in file.
+        const std::size_t lineCount = line_count(file, target);
+
+        // Read and store exactly lineCount lines
+        file.clear();                 // clear EOF and error flags
+        file.seekg(0, std::ios::beg); // rewind to beginning
 
         std::string line;
-        std::size_t count = 0;
-        while (count < n && std::getline(file, line))
+        std::vector<std::string> lines;
+        lines.reserve(lineCount); // allocate once
+
+        for (std::size_t i = 0; i < lineCount; i++)
         {
-            lines.push_back(line);
-            ++count;
+            std::getline(file, line);
+            lines.push_back(std::move(line));
         }
 
-        file.close();
         return lines;
     }
 
+    /**
+     * @brief Initialises the mean counter from a file.
+     * @param[in] programCtrl The program control object.
+     * @returns The mean counter as a label_t.
+     **/
     __host__ [[nodiscard]] label_t initialiseMeanCount(const programControl &programCtrl)
     {
         if (fileIO::hasIndexedFiles(programCtrl.caseName()))
         {
             const name_t fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin";
 
-            const words_t lines = read_first_n_lines(fileName, 50);
+            const words_t lines = read_until(fileName, "fieldData");
 
             const fileIO::fieldInformation fieldInfo(string::extractBlock(lines, "fieldInformation", 0));
 
