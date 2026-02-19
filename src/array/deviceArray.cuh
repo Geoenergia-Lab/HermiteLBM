@@ -313,7 +313,7 @@ namespace LBM
                 return meanCount_;
             }
 
-            __host__ [[nodiscard]] label_t &meanCountRef() noexcept
+            __host__ [[nodiscard]] inline constexpr label_t &meanCountRef() noexcept
             {
                 return meanCount_;
             }

@@ -76,7 +76,7 @@ namespace LBM
          * @return The value of the parameter converted to type T
          **/
         template <typename T>
-        __host__ [[nodiscard]] T read(const words_t &lines, const name_t &parameterName, const name_t &trueString)
+        __host__ [[nodiscard]] inline constexpr T read(const words_t &lines, const name_t &parameterName, const name_t &trueString)
         {
             return (string::extractParameterLine(lines, parameterName) == trueString) ? static_cast<T>(true) : static_cast<T>(false);
         }
@@ -149,7 +149,7 @@ namespace LBM
              * @brief Returns the number of lattice points in each direction as a blockLabel_t struct.
              * @return A blockLabel_t struct containing the number of lattice points in x, y, and z directions.
              **/
-            __host__ [[nodiscard]] inline const blockLabel_t &nPoints() const noexcept
+            __host__ [[nodiscard]] inline constexpr const blockLabel_t &nPoints() const noexcept
             {
                 return nPoints_;
             }
@@ -158,7 +158,7 @@ namespace LBM
              * @brief Returns the number of devices (GPUs) in each direction as a blockLabel_t struct.
              * @return A blockLabel_t struct containing the number of devices in x, y, and z directions.
              **/
-            __host__ [[nodiscard]] inline const blockLabel_t &nDevices() const noexcept
+            __host__ [[nodiscard]] inline constexpr const blockLabel_t &nDevices() const noexcept
             {
                 return nDevices_;
             }
@@ -193,7 +193,7 @@ namespace LBM
              * @brief Returns the time step of the saved fields.
              * @return The time step as a size_t.
              **/
-            __host__ [[nodiscard]] std::size_t timeStep() const noexcept
+            __host__ [[nodiscard]] inline constexpr std::size_t timeStep() const noexcept
             {
                 return timeStep_;
             }
@@ -202,7 +202,7 @@ namespace LBM
              * @brief Returns the time type (instantaneous or time average).
              * @return The time type as a value of the time::type enum.
              **/
-            __host__ [[nodiscard]] time::type timeType() const noexcept
+            __host__ [[nodiscard]] inline constexpr time::type timeType() const noexcept
             {
                 return timeType_;
             }
@@ -211,7 +211,7 @@ namespace LBM
              * @brief Returns the number of fields.
              * @return The number of fields as a size_t.
              **/
-            __host__ [[nodiscard]] const std::size_t &meanCount() const noexcept
+            __host__ [[nodiscard]] inline constexpr std::size_t meanCount() const noexcept
             {
                 return meanCount_;
             }
@@ -220,7 +220,7 @@ namespace LBM
              * @brief Returns the number of fields.
              * @return The number of fields as a size_t.
              **/
-            __host__ [[nodiscard]] std::size_t nFields() const noexcept
+            __host__ [[nodiscard]] inline constexpr std::size_t nFields() const noexcept
             {
                 return nFields_;
             }
@@ -229,7 +229,7 @@ namespace LBM
              * @brief Returns the field names as a vector of strings.
              * @return A vector containing the field names.
              **/
-            __host__ [[nodiscard]] const std::vector<std::string> &fieldNames() const noexcept
+            __host__ [[nodiscard]] inline constexpr const std::vector<std::string> &fieldNames() const noexcept
             {
                 return fieldNames_;
             }
