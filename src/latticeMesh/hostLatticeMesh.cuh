@@ -358,6 +358,11 @@ namespace LBM
                 return (z == nz_ - 1);
             }
 
+            /**
+             * @brief Returns the number of devices
+             * @tparam alpha The axis (X, Y or Z)
+             * @tparam T The return type
+             **/
             template <const axis::type alpha, typename T = label_t>
             __host__ [[nodiscard]] inline constexpr T nDevices() const noexcept
             {
@@ -375,6 +380,25 @@ namespace LBM
                 {
                     return static_cast<T>(nDevices_.nz);
                 }
+            }
+
+            /**
+             * @brief Computes the allocation size along a block face for a given QF
+             * @tparam alpha The axis (X, Y or Z)
+             * @tparam T The return type
+             **/
+            template <const axis::type alpha, const label_t QF>
+            __host__ [[nodiscard]] inline constexpr label_t nFaces() const noexcept
+            {
+                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(host::latticeMesh::faceAllocSize, "Need to fix the calculation of the number of faces per GPU: it is no longer global"));
+
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
+
+                const label_t nx = (nx_ / nDevices<axis::X>());
+                const label_t ny = (ny_ / nDevices<axis::Y>());
+                const label_t nz = (nz_ / nDevices<axis::Z>());
+
+                return ((nx * ny * nz) / block::n<alpha>()) * QF;
             }
 
         private:

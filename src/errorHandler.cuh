@@ -96,9 +96,9 @@ namespace LBM
          * This version is not marked inline, suitable for calls outside
          * performance-critical loops.
          **/
-        static void check(const cudaError_t err) noexcept
+        static void check(const cudaError_t err, const std::source_location &loc = std::source_location::current()) noexcept
         {
-            checkImpl(err);
+            checkImpl(err, loc);
         }
 
         /**
@@ -108,9 +108,9 @@ namespace LBM
          * Identical to check() but gives the compiler an inline hint.
          * Use this in tight loops where function call overhead matters.
          **/
-        static inline void checkInline(const cudaError_t err) noexcept
+        static inline void checkInline(const cudaError_t err, const std::source_location &loc = std::source_location::current()) noexcept
         {
-            checkImpl(err);
+            checkImpl(err, loc);
         }
 
         /**
@@ -120,31 +120,31 @@ namespace LBM
          *
          * If err != 0, prints a report including the given string and calls std::exit().
          **/
-        static void check(const int err, const name_t &errorString) noexcept
+        static void check(const int err, const name_t &errorString, const std::source_location &loc = std::source_location::current()) noexcept
         {
-            checkImpl(err, errorString);
+            checkImpl(err, errorString, loc);
         }
 
     private:
         /**
          * @brief Implementation of check(cudaError_t)
          **/
-        static inline void checkImpl(const cudaError_t err) noexcept
+        static inline void checkImpl(const cudaError_t err, const std::source_location &loc) noexcept
         {
             if (err != cudaSuccess)
             {
-                exit(err);
+                exit(err, loc);
             }
         }
 
         /**
          * @brief Implementation of check(int, errorString)
          **/
-        static inline void checkImpl(const int err, const name_t &errorString) noexcept
+        static inline void checkImpl(const int err, const name_t &errorString, const std::source_location &loc) noexcept
         {
             if (err != 0)
             {
-                exit(err, errorString);
+                exit(err, errorString, loc);
             }
         }
 
@@ -155,16 +155,18 @@ namespace LBM
          *
          * Outputs error details to stderr and calls std::exit(err).
          **/
-        static inline void exit(const int err, const name_t &errorString) noexcept
+        static inline void exit(const int err, const name_t &errorString, const std::source_location &loc) noexcept
         {
+            std::cerr << std::endl;
             std::cerr << "runTimeError:" << std::endl;
             std::cerr << "{" << std::endl;
-            std::cerr << "    fileName: " << std::source_location::current().file_name() << std::endl;
-            std::cerr << "    line: " << std::source_location::current().line() << std::endl;
-            std::cerr << "    functionName: " << std::source_location::current().function_name() << std::endl;
+            std::cerr << "    fileName: " << loc.file_name() << std::endl;
+            std::cerr << "    line: " << loc.line() << std::endl;
+            std::cerr << "    functionName: " << loc.function_name() << std::endl;
             std::cerr << "    errorCode: " << err << std::endl;
             std::cerr << "    errorMessage: " << errorString << std::endl;
             std::cerr << "};" << std::endl;
+            std::cerr << std::endl;
             std::exit(err);
         }
 
@@ -174,9 +176,9 @@ namespace LBM
          *
          * Converts the CUDA error to an integer and a string, then calls exit(int,string).
          **/
-        static inline void exit(const cudaError_t err) noexcept
+        static inline void exit(const cudaError_t err, const std::source_location &loc) noexcept
         {
-            exit(static_cast<int>(err), cudaGetErrorString(err));
+            exit(static_cast<int>(err), cudaGetErrorString(err), loc);
         }
     };
 

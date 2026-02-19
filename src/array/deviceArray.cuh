@@ -67,8 +67,15 @@ namespace LBM
         class array<field::SKELETON, T, VelocitySet, TimeType>
         {
         public:
-            __host__ [[nodiscard]] array(const std::vector<T> &hostArray)
-                : ptr_(device::allocateArray<T>(hostArray))
+            template <const axis::type Alpha>
+            __host__ [[nodiscard]] array(
+                const std::vector<T> &hostArray,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl,
+                const integralConstant<axis::type, Alpha> &alpha)
+                : ptr_(allocate_on_devices<alpha.value>(mesh, hostArray, programCtrl)),
+                  mesh_(mesh),
+                  programCtrl_(programCtrl)
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::array::<field::SKELETON>, "Need to decompose skeleton amongst devices"));
             };
@@ -80,43 +87,180 @@ namespace LBM
             ~array() noexcept
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::array::<field::SKELETON>, "Need to free all pointers"));
-                errorHandler::check(cudaFree(ptr_));
+                const label_t nxGPUs = mesh_.nDevices<axis::X>();
+                const label_t nyGPUs = mesh_.nDevices<axis::Y>();
+                const label_t nzGPUs = mesh_.nDevices<axis::Z>();
+
+                if constexpr (verbose())
+                {
+                    std::cout << "Entering device::array<field::SKELETON> destructor" << std::endl;
+                }
+
+                if (!(ptr_ == nullptr))
+                {
+                    gpu_for(
+                        nxGPUs, nyGPUs, nzGPUs,
+                        [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
+                        {
+                            const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+
+                            if (!(ptr_[virtualDeviceIndex] == nullptr))
+                            {
+                                if constexpr (verbose())
+                                {
+                                    std::cout << "Freeing ptr[" << virtualDeviceIndex << "];" << std::endl;
+                                }
+
+                                errorHandler::check(cudaDeviceSynchronize());
+                                errorHandler::check(cudaSetDevice(programCtrl_.deviceList()[virtualDeviceIndex]));
+                                errorHandler::check(cudaFree(ptr_[virtualDeviceIndex]));
+                                errorHandler::check(cudaDeviceSynchronize());
+
+                                if constexpr (verbose())
+                                {
+                                    std::cout << "Freed ptr[" << virtualDeviceIndex << "];" << std::endl;
+                                }
+                            }
+                        });
+
+                    errorHandler::check(cudaSetDevice(programCtrl_.deviceList()[0]));
+
+                    if constexpr (verbose())
+                    {
+                        std::cout << "Freeing host pointer collection" << std::endl;
+                    }
+                    errorHandler::check(cudaFreeHost(ptr_));
+                    if constexpr (verbose())
+                    {
+                        std::cout << "Freed host pointer collection" << std::endl;
+                    }
+                }
+                else
+                {
+                    if constexpr (verbose())
+                    {
+                        std::cout << "Nothing to free" << std::endl;
+                    }
+                }
             }
 
             /**
              * @brief Get read-only access to underlying data
              * @return Const pointer to device memory
              **/
-            __device__ __host__ [[nodiscard]] inline const T *constPtr([[maybe_unused]] const label_t i) const noexcept
+            __device__ __host__ [[nodiscard]] inline const T *constPtr(const label_t i) const noexcept
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::array::<field::SKELETON>, "Need to add indexing into pointers for multi GPU"));
-                return ptr_;
+                return ptr_[i];
             }
 
             /**
              * @brief Get mutable access to underlying data
              * @return Pointer to device memory
              **/
-            __device__ __host__ [[nodiscard]] inline T *ptr([[maybe_unused]] const label_t i) noexcept
+            __device__ __host__ [[nodiscard]] inline T *ptr(const label_t i) noexcept
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::array::<field::SKELETON>, "Need to add indexing into pointers for multi GPU"));
-                return ptr_;
+                return ptr_[i];
             }
 
             /**
              * @brief Provide reference to pointer for swapping operations
              **/
-            __host__ [[nodiscard]] inline constexpr T * ptrRestrict & ptrRef([[maybe_unused]] const label_t i) noexcept
+            __host__ [[nodiscard]] inline constexpr T * ptrRestrict & ptrRef(const label_t i) noexcept
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::array::<field::SKELETON>, "Need to add indexing into pointers for multi GPU"));
-                return ptr_;
+                return ptr_[i];
             }
 
         private:
             /**
              * @brief Pointer to the data
              **/
-            T *ptrRestrict ptr_;
+            T **ptrRestrict ptr_;
+
+            /**
+             * @brief Reference to the mesh
+             **/
+            const host::latticeMesh &mesh_;
+
+            /**
+             * @brief Reference to the program control
+             **/
+            const programControl &programCtrl_;
+
+            template <const axis::type alpha>
+            __host__ [[nodiscard]] static T *allocate_device_segment(
+                const host::latticeMesh &mesh,
+                const T *hostArrayGlobal,
+                const label_t GPU_x,
+                const label_t GPU_y,
+                const label_t GPU_z,
+                const programControl &programCtrl)
+            {
+                const label_t nxGPUs = mesh.nDevices<axis::X>();
+                const label_t nyGPUs = mesh.nDevices<axis::Y>();
+                const label_t nzGPUs = mesh.nDevices<axis::Z>();
+
+                const label_t nPointsPerGPU = mesh.nFaces<alpha, VelocitySet::QF()>();
+
+                const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+
+                const label_t startIndex = virtualDeviceIndex * nPointsPerGPU;
+
+                T *devPtr = device::allocate<T>(nPointsPerGPU, programCtrl.deviceList()[virtualDeviceIndex]);
+
+                device::copy(
+                    devPtr,
+                    &(hostArrayGlobal[startIndex]),
+                    nPointsPerGPU,
+                    programCtrl.deviceList()[virtualDeviceIndex]);
+
+                return devPtr;
+            }
+
+            template <const axis::type alpha>
+            __host__ [[nodiscard]] static T **allocate_on_devices(
+                const host::latticeMesh &mesh,
+                const T *hostArrayGlobal,
+                const programControl &programCtrl)
+            {
+                // static_assert(false, "This function needs to be adapted to only allocate the skeleton");
+
+                const label_t nxGPUs = mesh.nDevices<axis::X>();
+                const label_t nyGPUs = mesh.nDevices<axis::Y>();
+                const label_t nzGPUs = mesh.nDevices<axis::Z>();
+
+                const std::size_t nDevices = mesh.nDevices<axis::X, std::size_t>() * mesh.nDevices<axis::Y, std::size_t>() * mesh.nDevices<axis::Z, std::size_t>();
+
+                T **hostPtrsToDevice = host::allocate<T *>(nDevices, nullptr);
+
+                std::cout << "Allocated " << nDevices * sizeof(T *) << " bytes to " << hostPtrsToDevice << std::endl;
+
+                gpu_for(
+                    nxGPUs, nyGPUs, nzGPUs,
+                    [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
+                    {
+                        const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+
+                        hostPtrsToDevice[virtualDeviceIndex] = allocate_device_segment<alpha>(
+                            mesh,
+                            hostArrayGlobal,
+                            GPU_x, GPU_y, GPU_z,
+                            programCtrl);
+                    });
+
+                return hostPtrsToDevice;
+            }
+
+            template <const axis::type alpha>
+            __host__ [[nodiscard]] static T **allocate_on_devices(
+                const host::latticeMesh &mesh,
+                const std::vector<T> &hostArrayGlobal,
+                const programControl &programCtrl)
+            {
+                return allocate_on_devices<alpha>(mesh, hostArrayGlobal.data(), programCtrl);
+            }
         };
 
         template <typename T, class VelocitySet, const time::type TimeType>
@@ -482,17 +626,6 @@ namespace LBM
                 device::copy(devPtr, &(hostArrayGlobal[startIndex]), nPointsPerGPU, programCtrl.deviceList()[virtualDeviceIndex]);
 
                 return devPtr;
-            }
-
-            /**
-             * @brief Copies the underlying std::vector of a host::array type to the device
-             * @param[in] hostArray The host::array to be copied to the device
-             * @return A pointer to the copied data
-             **/
-            template <const host::mallocType MallocType>
-            __host__ [[nodiscard]] T *to_device(const host::array<MallocType, T, VelocitySet, TimeType> &hostArray)
-            {
-                return device::allocateArray<T>(hostArray.arr());
             }
 
             /**

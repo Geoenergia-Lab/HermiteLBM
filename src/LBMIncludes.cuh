@@ -90,6 +90,8 @@ SourceFiles
 
 #define MULTI_GPU
 
+#define MULTI_GPU_HALO
+
 #define MULTI_GPU_MSG_NOTE(func, note) #func " not implemented for multi GPU yet: " note
 
 #define MULTI_GPU_MSG(func) #func " not implemented for multi GPU yet"

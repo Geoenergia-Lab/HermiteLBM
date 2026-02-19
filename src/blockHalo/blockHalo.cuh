@@ -63,17 +63,18 @@ namespace LBM
     {
         /**
          * @brief Index for arbitrarily aligned population arrays
-         * @tparam pop Population index
          * @tparam QF Number of populations
          * @tparam alpha The axis direction
-         * @param tx,ty,tz Thread-local x/y/z coordinates
-         * @param bx,by,bz Block indices
-         * @param nxBlocks Number of blocks in x-direction
-         * @param nyBlocks Number of blocks in y-direction
+         * @param[in] pop Population index
+         * @param[in] tx,ty,tz Thread-local x/y/z coordinates
+         * @param[in] bx,by,bz Block indices
+         * @param[in] nxBlocks Number of blocks in x-direction
+         * @param[in] nyBlocks Number of blocks in y-direction
          * @return Linearized index: idxPopX, idxPopY, idxPopZ
          **/
-        template <const axis::type alpha, const label_t pop, const label_t QF>
+        template <const axis::type alpha, const label_t QF>
         __host__ [[nodiscard]] inline label_t idxPop(
+            const label_t pop,
             const label_t tx, const label_t ty, const label_t tz,
             const label_t bx, const label_t by, const label_t bz,
             const label_t nxBlocks, const label_t nyBlocks) noexcept
@@ -82,17 +83,17 @@ namespace LBM
 
             if constexpr (alpha == axis::X)
             {
-                return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
+                return ty + block::n<axis::orthogonal<alpha, 0>()>() * (tz + block::n<axis::orthogonal<alpha, 1>()>() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
             }
 
             if constexpr (alpha == axis::Y)
             {
-                return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
+                return tx + block::n<axis::orthogonal<alpha, 0>()>() * (tz + block::n<axis::orthogonal<alpha, 1>()>() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
             }
 
             if constexpr (alpha == axis::Z)
             {
-                return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
+                return tx + block::n<axis::orthogonal<alpha, 0>()>() * (ty + block::n<axis::orthogonal<alpha, 1>()>() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
             }
         }
     }

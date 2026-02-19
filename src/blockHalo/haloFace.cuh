@@ -85,13 +85,14 @@ namespace LBM
                 const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_yy,
                 const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_yz,
                 const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_zz,
-                const host::latticeMesh &mesh) noexcept
-                : x0_(initialise_pop<axis::X, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
-                  x1_(initialise_pop<axis::X, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
-                  y0_(initialise_pop<axis::Y, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
-                  y1_(initialise_pop<axis::Y, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
-                  z0_(initialise_pop<axis::Z, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
-                  z1_(initialise_pop<axis::Z, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)){};
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl) noexcept
+                : x0_(initialise_pop<axis::X, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::X>()),
+                  x1_(initialise_pop<axis::X, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::X>()),
+                  y0_(initialise_pop<axis::Y, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Y>()),
+                  y1_(initialise_pop<axis::Y, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Y>()),
+                  z0_(initialise_pop<axis::Z, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Z>()),
+                  z1_(initialise_pop<axis::Z, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Z>()){};
 
             /**
              * @brief Destructor - releases all allocated device memory
@@ -201,22 +202,6 @@ namespace LBM
             device::array<field::SKELETON, scalar_t, VelocitySet, time::instantaneous> z1_;
 
             /**
-             * @brief Calculate number of elements for a halo face
-             * @tparam alpha Direction index (x, y, or z)
-             * @param[in] mesh Lattice mesh for dimensioning
-             * @return Number of elements in the specified halo face
-             **/
-            template <const axis::type alpha>
-            __host__ [[nodiscard]] static inline constexpr label_t nFaces(const host::latticeMesh &mesh) noexcept
-            {
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::haloFace::nFaces, "Need to fix the calculation of the number of faces per GPU: it is no longer global"));
-
-                axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-                return ((mesh.nx() * mesh.ny() * mesh.nz()) / block::n<alpha>()) * VelocitySet::QF();
-            }
-
-            /**
              * @brief Initialize population data for a specific halo face
              * @tparam alpha Direction index (x, y, or z)
              * @tparam coeff Face coeff (-1 for min, 1 for max)
@@ -244,8 +229,10 @@ namespace LBM
 
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
-                std::vector<scalar_t> face(nFaces<alpha>(mesh), 0);
+                std::vector<scalar_t> face(mesh.nFaces<alpha, VelocitySet::QF()>(), 0);
 
+                // I think it is correct for this loop to be global
+                // Because the initial conditions and file that we read from are already GPU-ordered
                 grid_for(
                     mesh.nxBlocks(), mesh.nyBlocks(), mesh.nzBlocks(),
                     [&](const label_t bx, const label_t by, const label_t bz,
@@ -253,22 +240,23 @@ namespace LBM
                     {
                         const label_t base = host::idx(tx, ty, tz, bx, by, bz, mesh);
 
-                        // Contiguous moment access
-                        const thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(
-                            thread::array<scalar_t, 10>{
-                                rho0() + rho[base],
-                                u[base],
-                                v[base],
-                                w[base],
-                                m_xx[base],
-                                m_xy[base],
-                                m_xz[base],
-                                m_yy[base],
-                                m_yz[base],
-                                m_zz[base]});
-
-                        // Handle ghost cells (equivalent to threadIdx.x/y/z checks)
-                        handleGhostCells<alpha, coeff>(face, pop, tx, ty, tz, bx, by, bz, mesh);
+                        // Handle ghost cells
+                        handleGhostCells<alpha, coeff>(
+                            face,
+                            VelocitySet::reconstruct(
+                                {rho[base] + rho0(),
+                                 u[base],
+                                 v[base],
+                                 w[base],
+                                 m_xx[base],
+                                 m_xy[base],
+                                 m_xz[base],
+                                 m_yy[base],
+                                 m_yz[base],
+                                 m_zz[base]}),
+                            tx, ty, tz,
+                            bx, by, bz,
+                            mesh);
                     });
 
                 return face;
@@ -303,11 +291,14 @@ namespace LBM
 
                 constexpr const thread::array<label_t, VelocitySet::QF()> indices = velocitySet::template indices_on_face<VelocitySet, alpha, coeff>();
 
-                host::constexpr_for<0, VelocitySet::QF()>(
-                    [&](const auto q)
-                    {
-                        face[host::idxPop<alpha, q, VelocitySet::QF()>(tx, ty, tz, bx, by, bz, mesh.nxBlocks(), mesh.nyBlocks())] = pop[indices[q_i<q>()]];
-                    });
+                for (label_t i = 0; i < VelocitySet::QF(); i++)
+                {
+                    face[host::idxPop<alpha, VelocitySet::QF()>(
+                        i,
+                        tx, ty, tz,
+                        bx, by, bz,
+                        mesh.nxBlocks(), mesh.nyBlocks())] = pop[indices[i]];
+                }
             }
         };
     }

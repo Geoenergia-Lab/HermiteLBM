@@ -164,6 +164,7 @@ namespace LBM
         __host__ [[nodiscard]] T *allocate(const std::size_t nPoints) noexcept
         {
             T *ptr;
+
             errorHandler::check(cudaDeviceSynchronize());
 
             allocateMemory(&ptr, nPoints);

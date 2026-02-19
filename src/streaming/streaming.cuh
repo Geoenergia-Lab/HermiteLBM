@@ -93,9 +93,9 @@ namespace LBM
             const label_t tid) noexcept
         {
             device::constexpr_for<0, (VelocitySet::Q() - 1)>(
-                [&](const auto q_)
+                [&](const auto i)
                 {
-                    s_pop[q_i<q_ * block::stride()>() + tid] = pop[q_i<q_ + 1>()];
+                    s_pop[q_i<i * block::stride()>() + tid] = pop[q_i<i + 1>()];
                 });
         }
 
@@ -126,12 +126,12 @@ namespace LBM
             const thread::coordinate &Tx) noexcept
         {
             device::constexpr_for<0, (VelocitySet::Q() - 1)>(
-                [&](const auto q_)
+                [&](const auto i)
                 {
-                    const label_t x = periodic_index<-VelocitySet::template cx<int>(q_i<q_ + 1>()), block::nx()>(Tx.value<axis::X>());
-                    const label_t y = periodic_index<-VelocitySet::template cy<int>(q_i<q_ + 1>()), block::ny()>(Tx.value<axis::Y>());
-                    const label_t z = periodic_index<-VelocitySet::template cz<int>(q_i<q_ + 1>()), block::nz()>(Tx.value<axis::Z>());
-                    pop[q_i<q_ + 1>()] = s_pop[q_i<q_ * block::stride()>() + block::idx(x, y, z)];
+                    const label_t x = periodic_index<-VelocitySet::template cx<int>(q_i<i + 1>()), block::nx()>(Tx.value<axis::X>());
+                    const label_t y = periodic_index<-VelocitySet::template cy<int>(q_i<i + 1>()), block::ny()>(Tx.value<axis::Y>());
+                    const label_t z = periodic_index<-VelocitySet::template cz<int>(q_i<i + 1>()), block::nz()>(Tx.value<axis::Z>());
+                    pop[q_i<i + 1>()] = s_pop[q_i<i * block::stride()>() + block::idx(x, y, z)];
                 });
         }
 

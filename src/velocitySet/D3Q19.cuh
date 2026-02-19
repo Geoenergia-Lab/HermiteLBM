@@ -364,15 +364,15 @@ namespace LBM
         __host__ static inline void printAll(const q_i<q_> q = q_i<0>()) noexcept
         {
             // Loop over the velocity set, print to terminal
-            host::constexpr_for<q(), Q()>(
-                [&](const auto Q)
+            host::constexpr_for<q(), vs::Q()>(
+                [&](const auto i)
                 {
                     std::cout
-                        << "    [" << q_i<Q>() << "] = {"
-                        << w_q<double>()[q_i<Q>()] << ", "
-                        << cx<int>()[q_i<Q>()] << ", "
-                        << cy<int>()[q_i<Q>()] << ", "
-                        << cz<int>()[q_i<Q>()] << "};" << std::endl;
+                        << "    {w, cx, cy, cz}[" << q_i<i>() << "] = {"
+                        << w_q<double>()[q_i<i>()] << ", "
+                        << cx<int>()[q_i<i>()] << ", "
+                        << cy<int>()[q_i<i>()] << ", "
+                        << cz<int>()[q_i<i>()] << "};" << std::endl;
                 });
         }
     };
