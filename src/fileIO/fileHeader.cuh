@@ -81,18 +81,6 @@ namespace LBM
             return (string::extractParameterLine(lines, parameterName) == trueString) ? static_cast<T>(true) : static_cast<T>(false);
         }
 
-        /**
-         * @brief Trims leading/trailing whitespace and trailing semicolons from a string
-         * @param[in] str The input string to trim
-         * @return The trimmed string
-         **/
-        __host__ [[nodiscard]] const name_t filestring_trim(const name_t &str)
-        {
-            const std::size_t start = str.find_first_not_of(" \t\r\n");
-            const std::size_t end = str.find_last_not_of(" \t\r\n;");
-            return (start == name_t::npos) ? "" : str.substr(start, end - start + 1);
-        }
-
         class systemInformation
         {
         public:
@@ -271,7 +259,7 @@ namespace LBM
 
                 for (std::size_t i = 1; i < B.size() - 1; i++)
                 {
-                    B[i] = filestring_trim(B[i]);
+                    B[i] = string::trim<true>(B[i]);
                 }
 
                 return words_t(B.begin() + 1, B.end() - 2);
@@ -390,7 +378,7 @@ namespace LBM
             while (std::getline(in, line))
             {
                 lineNumber++;
-                line = filestring_trim(line);
+                line = string::trim<true>(line);
                 if (line.empty())
                 {
                     continue;
@@ -619,7 +607,7 @@ namespace LBM
                             throw std::runtime_error("Unexpected end of file after fieldNames declaration");
                         }
                         lineNumber++;
-                        line = filestring_trim(line);
+                        line = string::trim<true>(line);
                         if (line != "{")
                         {
                             throw std::runtime_error("Expected opening brace after fieldNames declaration at line " + std::to_string(lineNumber));
@@ -639,7 +627,7 @@ namespace LBM
                             {
                                 line.pop_back();
                             }
-                            const name_t fieldName = filestring_trim(line);
+                            const name_t fieldName = string::trim<true>(line);
 
                             // Validate field name
                             if (fieldName.empty())

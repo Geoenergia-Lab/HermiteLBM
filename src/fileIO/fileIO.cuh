@@ -60,31 +60,13 @@ namespace LBM
     namespace fileIO
     {
         /**
-         * @brief Checks if a string contains only digit characters
-         * @param[in] numStr String to check
-         * @return True if string contains only digits, false otherwise
-         **/
-        __host__ [[nodiscard]] inline bool isAllDigits(const name_t &numStr) noexcept
-        {
-            for (char c : numStr)
-            {
-                if (!std::isdigit(static_cast<unsigned char>(c)))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        /**
          * @brief Validates if a string represents a valid integer
          * @param[in] intStr String to validate
          * @return True if string is non-empty and contains only digits
          **/
         __host__ [[nodiscard]] inline bool isValidInteger(const name_t &intStr) noexcept
         {
-            return (!intStr.empty() || isAllDigits(intStr));
+            return (!intStr.empty() || string::isAllDigits(intStr));
         }
 
         /**
@@ -125,32 +107,13 @@ namespace LBM
                     continue;
                 }
 
-                if (isAllDigits(num_str))
+                if (string::isAllDigits(num_str))
                 {
                     return true;
                 }
             }
 
             return false;
-        }
-
-        /**
-         * @brief Converts string to integral value
-         * @tparam T Integral type to convert to
-         * @param[in] num_str String representation of number
-         * @return Converted integral value
-         * @note Uses std::from_chars for efficient conversion
-         **/
-        template <typename T>
-        __host__ [[nodiscard]] T stringToIntegral(const name_t &num_str) noexcept
-        {
-            T value = 0;
-
-            const auto result = std::from_chars(num_str.data(), num_str.data() + num_str.size(), value);
-
-            static_cast<void>(result);
-
-            return value;
         }
 
         /**
@@ -175,7 +138,7 @@ namespace LBM
                     continue;
                 }
 
-                const auto &filePath = entry.path();
+                const std::filesystem::path &filePath = entry.path();
                 if (filePath.extension() != ".LBMBin")
                 {
                     continue;
@@ -195,7 +158,7 @@ namespace LBM
 
                 try
                 {
-                    indices.push_back(stringToIntegral<label_t>(num_str));
+                    indices.push_back(LBM::string::extractParameter<label_t>(num_str));
                 }
                 catch (...)
                 {
