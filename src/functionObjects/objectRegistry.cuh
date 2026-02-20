@@ -62,7 +62,7 @@ namespace LBM
 {
     /**
      * @brief Registry for managing function objects and their calculations
-     * @tparam VelocitySet The velocity set type used in LBM simulations
+     * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
      * @tparam N The number of streams (as a compile-time constant)
      **/
     template <class VelocitySet, const label_t N>
@@ -71,7 +71,7 @@ namespace LBM
     public:
         /**
          * @brief Constructs an objectRegistry with mesh, device pointers and streams
-         * @param[in] mesh Reference to the lattice mesh
+         * @param[in] mesh The lattice mesh
          * @param[in] devPtrs Device pointer collection for memory management
          * @param[in] streamsLBM Stream handler for LBM operations
          **/

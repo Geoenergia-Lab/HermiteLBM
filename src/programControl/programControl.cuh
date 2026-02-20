@@ -223,7 +223,7 @@ namespace LBM
         /**
          * @brief Veriefies if the command line has the argument -type
          * @return A string representing the convertion type passed at the command line
-         * @param[in] programCtrl Program control parameters
+         * @param[in] programCtrl The program control object
          **/
         __host__ [[nodiscard]] const name_t getArgument(const name_t &argument) const
         {

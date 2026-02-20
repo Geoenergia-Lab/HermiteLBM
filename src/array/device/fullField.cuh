@@ -62,8 +62,8 @@ namespace LBM
          * initialisation and copying data back to the host.
          *
          * @tparam T Fundamental type of the array.
-         * @tparam VelocitySet The velocity set.
-         * @tparam TimeType Type of time stepping (instantaneous or time‑averaged).
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
+         * @tparam TimeType Type of time stepping (instantaneous or timeAverage)
          **/
         template <typename T, class VelocitySet, const time::type TimeType>
         class array<field::FULL_FIELD, T, VelocitySet, TimeType> : public arrayBase<T>
@@ -86,9 +86,9 @@ namespace LBM
             /**
              * @brief Construct a device array from an existing host array.
              * @tparam MallocType Type of host memory allocation (e.g., PAGED, PINNED).
-             * @param hostArray Source host array.
-             * @param programCtrl Program control.
-             * @param allocate If false, the array is not allocated (ptr_ remains null).
+             * @param[in] hostArray Source host array.
+             * @param[in] programCtrl The program control object
+             * @param[in] allocate If false, the array is not allocated (ptr_ remains null).
              **/
             template <const host::mallocType MallocType>
             __host__ [[nodiscard]] array(
@@ -108,11 +108,11 @@ namespace LBM
 
             /**
              * @brief Construct a device array with a uniform value.
-             * @param name Name of the field.
-             * @param mesh Lattice mesh.
-             * @param value Uniform value to initialise the array.
-             * @param programCtrl Program control.
-             * @param allocate If false, the array is not allocated.
+             * @param[in] name Name of the field.
+             * @param[in] mesh The lattice mesh
+             * @param[in] value Uniform value to initialise the array.
+             * @param[in] programCtrl The program control object
+             * @param[in] allocate If false, the array is not allocated.
              **/
             __host__ [[nodiscard]] array(
                 const name_t &name,
@@ -133,10 +133,10 @@ namespace LBM
 
             /**
              * @brief Construct a device array from checkpoint or initial condition files.
-             * @param name Name of the field.
-             * @param mesh Lattice mesh.
-             * @param programCtrl Program control.
-             * @param allocate If false, the array is not allocated.
+             * @param[in] name Name of the field.
+             * @param[in] mesh The lattice mesh
+             * @param[in] programCtrl The program control object
+             * @param[in] allocate If false, the array is not allocated.
              **/
             __host__ [[nodiscard]] array(
                 const name_t &name,
@@ -158,7 +158,7 @@ namespace LBM
             /**
              * @brief Get read-only pointer to device memory for a given GPU.
              * @tparam Idx Type that can be converted to label_t.
-             * @param idx Virtual device index.
+             * @param[in] idx Virtual device index.
              * @return Const pointer to device memory.
              **/
             template <typename Idx>
@@ -170,7 +170,7 @@ namespace LBM
             /**
              * @brief Get mutable pointer to device memory for a given GPU.
              * @tparam Idx Type that can be converted to label_t.
-             * @param idx Virtual device index.
+             * @param[in] idx Virtual device index.
              * @return Pointer to device memory.
              **/
             template <typename Idx>
@@ -237,7 +237,7 @@ namespace LBM
 
             /**
              * @brief Copy the device array to a user‑supplied host pointer.
-             * @param hostPtr Destination pointer (host memory).
+             * @param[in] hostPtr Destination pointer (host memory).
              * @note Assumes hostPtr has enough space (size() elements).
              **/
             __host__ void copy_to_host(T *const ptrRestrict hostPtr)
@@ -270,10 +270,10 @@ namespace LBM
 
             /**
              * @brief Allocate all GPU segments for a full field from a raw host pointer.
-             * @param mesh Lattice mesh.
-             * @param hostArrayGlobal Raw pointer to host data.
-             * @param allocate If false, returns nullptr.
-             * @param programCtrl Program control.
+             * @param[in] mesh The lattice mesh
+             * @param[in] hostArrayGlobal Raw pointer to host data.
+             * @param[in] allocate If false, returns nullptr.
+             * @param[in] programCtrl The program control object
              * @return Host array of device pointers, or nullptr if not allocated.
              **/
             __host__ [[nodiscard]] static T **allocate_on_devices(
@@ -288,10 +288,10 @@ namespace LBM
 
             /**
              * @brief Allocate GPU segments from a std::vector.
-             * @param mesh Lattice mesh.
-             * @param hostArrayGlobal Source vector.
-             * @param allocate If false, returns nullptr.
-             * @param programCtrl Program control.
+             * @param[in] mesh The lattice mesh
+             * @param[in] hostArrayGlobal Source vector.
+             * @param[in] allocate If false, returns nullptr.
+             * @param[in] programCtrl The program control object
              * @return Host array of device pointers.
              **/
             __host__ [[nodiscard]] static T **allocate_on_devices(
@@ -306,9 +306,9 @@ namespace LBM
             /**
              * @brief Allocate GPU segments from another device array (host::array).
              * @tparam MallocType Host memory type.
-             * @param hostArrayGlobal Source host array.
-             * @param allocate If false, returns nullptr.
-             * @param programCtrl Program control.
+             * @param[in] hostArrayGlobal Source host array.
+             * @param[in] allocate If false, returns nullptr.
+             * @param[in] programCtrl The program control object
              * @return Host array of device pointers.
              **/
             template <const host::mallocType MallocType>
@@ -322,10 +322,10 @@ namespace LBM
 
             /**
              * @brief Allocate GPU segments with a uniform value.
-             * @param mesh Lattice mesh.
-             * @param val Uniform value.
-             * @param allocate If false, returns nullptr.
-             * @param programCtrl Program control.
+             * @param[in] mesh The lattice mesh
+             * @param[in] val Uniform value.
+             * @param[in] allocate If false, returns nullptr.
+             * @param[in] programCtrl The program control object
              * @return Host array of device pointers.
              **/
             __host__ [[nodiscard]] T **allocate_on_devices(
@@ -341,10 +341,12 @@ namespace LBM
 
             /**
              * @brief Initialise boundary condition values on all GPUs for velocity fields.
-             * @param name Field name ("u", "v", or "w").
-             * @param deviceList List of device indices.
+             * @param[in] name Field name ("u", "v", or "w").
+             * @param[in] deviceList List of device indices.
              **/
-            __host__ static void initialise_boundary_condition(const name_t &name, const std::vector<deviceIndex_t> &deviceList) noexcept
+            __host__ static void initialise_boundary_condition(
+                const name_t &name,
+                const std::vector<deviceIndex_t> &deviceList) noexcept
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::array::initialise_boundary_condition, "Believed to be correct"));
 

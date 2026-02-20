@@ -235,7 +235,7 @@ namespace LBM
         /**
          * @brief Determines starting index for field conversion loop
          * @tparam PC Program control type
-         * @param[in] programCtrl Program control object
+         * @param[in] programCtrl The program control object
          * @param[in] isLatestTime Flag indicating whether to start from latest time
          * @return Starting index (0 for earliest, last index for latest)
          **/
@@ -257,7 +257,7 @@ namespace LBM
         /**
          * @brief Determines starting index based on program control settings
          * @tparam PC Program control type
-         * @param[in] programCtrl Program control object
+         * @param[in] programCtrl The program control object
          * @return Starting index determined by command line arguments
          **/
         template <class ProgramControl>

@@ -109,8 +109,8 @@ namespace LBM
 
     /**
      * @brief Counts lines before the first occurrence of a target line.
-     * @param file   Input file stream (position advanced).
-     * @param target The line content that stops counting (excluded).
+     * @param[in] file Input file stream (position advanced).
+     * @param[in] target The line content that stops counting (excluded).
      * @return Number of lines read before target; if target not found, returns total lines.
      **/
     __host__ [[nodiscard]] std::size_t line_count(std::ifstream &file, const name_t &target)
@@ -144,7 +144,7 @@ namespace LBM
      * @param[in] filename Path to the file.
      * @param[in] target The exact line content at which to stop reading (not included).
      * @return Vector of strings containing the lines before the target.
-     */
+     **/
     __host__ [[nodiscard]] const words_t read_until(const name_t &filename, const name_t &target)
     {
         std::ifstream file(filename);
@@ -176,7 +176,7 @@ namespace LBM
 
     /**
      * @brief Initialises the mean counter from a file.
-     * @param[in] programCtrl The program control object.
+     * @param[in] programCtrl The program control object
      * @returns The mean counter as a label_t.
      **/
     __host__ [[nodiscard]] label_t initialiseMeanCount(const programControl &programCtrl)
@@ -198,7 +198,7 @@ namespace LBM
     }
 }
 
-#include "hostArray.cuh"
+#include "host/array.cuh"
 #include "device/array.cuh"
 #include "hostArrayCollection.cuh"
 

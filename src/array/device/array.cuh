@@ -90,8 +90,8 @@ namespace LBM
 
             /**
              * @brief Construct a base object without initialising the pointer array.
-             * @param mesh Reference to the lattice mesh.
-             * @param programCtrl Reference to program control.
+             * @param[in] mesh The lattice mesh
+             * @param[in] programCtrl The program control object
              **/
             [[nodiscard]] arrayBase(
                 const host::latticeMesh &mesh,
@@ -102,9 +102,9 @@ namespace LBM
 
             /**
              * @brief Construct a base object with an already allocated pointer array.
-             * @param ptr Pointer to the array of device pointers (host memory).
-             * @param mesh Reference to the lattice mesh.
-             * @param programCtrl Reference to program control.
+             * @param[in] ptr Pointer to the array of device pointers (host memory).
+             * @param[in] mesh The lattice mesh
+             * @param[in] programCtrl The program control object
              **/
             [[nodiscard]] arrayBase(
                 T **ptr,
@@ -117,11 +117,11 @@ namespace LBM
             /**
              * @brief Allocate and copy one GPU segment of the skeleton array.
              * @tparam alpha Axis direction (used to compute number of faces).
-             * @param mesh Lattice mesh.
-             * @param hostArrayGlobal Pointer to full host array.
-             * @param GPU_x, GPU_y, GPU_z GPU grid coordinates.
-             * @param programCtrl Program control.
-             * @param allocationSize Number of points allocated per GPU (used to compute segment size).
+             * @param[in] mesh The lattice mesh
+             * @param[in] hostArrayGlobal Pointer to full host array.
+             * @param[in] GPU_x, GPU_y, GPU_z GPU grid coordinates.
+             * @param[in] programCtrl The program control object
+             * @param[in] allocationSize Number of points allocated per GPU (used to compute segment size).
              * @return Device pointer for the segment.
              **/
             __host__ [[nodiscard]] static T *allocate_device_segment(
@@ -146,9 +146,9 @@ namespace LBM
             /**
              * @brief Allocate all GPU segments for a skeleton array from a raw host pointer.
              * @tparam alpha Axis direction.
-             * @param mesh Lattice mesh.
-             * @param hostArrayGlobal Raw pointer to host data.
-             * @param programCtrl Program control.
+             * @param[in] mesh The lattice mesh
+             * @param[in] hostArrayGlobal Raw pointer to host data.
+             * @param[in] programCtrl The program control object
              * @return Host array of device pointers (one per GPU).
              **/
             __host__ [[nodiscard]] static T **allocate_on_devices(

@@ -84,7 +84,7 @@ namespace LBM
 
         /**
          * @brief Calculate moment variables at boundary nodes
-         * @tparam VelocitySet Velocity set configuration defining lattice structure
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @param[in] pop Population density array at current lattice node
          * @param[out] moments Moment variables array to be populated
          * @param[in] boundaryNormal Normal vector information at boundary node

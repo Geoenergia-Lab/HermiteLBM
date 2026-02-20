@@ -62,7 +62,7 @@ namespace LBM
              * @brief Calculates the x derivative of a scalar field
              * @return The x-derivative of f
              * @param f The field to be differentiated
-             * @param mesh The lattice mesh
+             * @param[in] mesh The lattice mesh
              **/
             template <const label_t SchemeOrder, typename TReturn, typename T, class LatticeMesh>
             __host__ [[nodiscard]] const std::vector<TReturn> dfdx(
@@ -153,7 +153,7 @@ namespace LBM
              * @brief Calculates the y derivative of a scalar field
              * @return The y-derivative of f
              * @param f The field to be differentiated
-             * @param mesh The lattice mesh
+             * @param[in] mesh The lattice mesh
              **/
             template <const label_t SchemeOrder, typename TReturn, typename T, class LatticeMesh>
             __host__ [[nodiscard]] const std::vector<TReturn> dfdy(
@@ -243,7 +243,7 @@ namespace LBM
              * @brief Calculates the z derivative of a scalar field
              * @return The z-derivative of f
              * @param f The field to be differentiated
-             * @param mesh The lattice mesh
+             * @param[in] mesh The lattice mesh
              **/
             template <const label_t SchemeOrder, typename TReturn, typename T, class LatticeMesh>
             __host__ [[nodiscard]] const std::vector<TReturn> dfdz(

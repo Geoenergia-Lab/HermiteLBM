@@ -233,7 +233,7 @@ namespace LBM
          * @tparam hasElements Whether element data is present
          * @tparam hasOffsets Whether offset data is present
          * @tparam Mesh The mesh type
-         * @param[in] mesh The mesh object providing dimensions
+         * @param[in] mesh The lattice mesh
          * @param[in] nVars Number of field variables
          * @return The total estimated disk space required in bytes
          **/
@@ -251,7 +251,7 @@ namespace LBM
          * @tparam hasElements Whether element data is present
          * @tparam hasOffsets Whether offset data is present
          * @tparam Mesh The mesh type
-         * @param[in] mesh The mesh object providing dimensions
+         * @param[in] mesh The lattice mesh
          * @param[in] nVars Number of field variables
          * @return True if sufficient disk space is available, false otherwise
          **/
@@ -273,7 +273,7 @@ namespace LBM
          * @tparam hasElements Whether element data is present
          * @tparam hasOffsets Whether offset data is present
          * @tparam Mesh The mesh type
-         * @param[in] mesh The mesh object providing dimensions
+         * @param[in] mesh The lattice mesh
          * @param[in] nVars Number of field variables
          * @param[in] fileName Name of the file being written (for error message)
          * @throws std::runtime_error if insufficient disk space is available

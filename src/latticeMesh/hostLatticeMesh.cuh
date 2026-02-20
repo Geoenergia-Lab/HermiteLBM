@@ -68,7 +68,7 @@ namespace LBM
         public:
             /**
              * @brief Constructs a lattice mesh from program configuration
-             * @param[in] programCtrl Program control object containing simulation parameters
+             * @param[in] programCtrl The program control object
              * @throws Error if mesh dimensions are invalid or GPU memory is insufficient
              *
              * This constructor reads mesh dimensions from the "programControl" file and performs:
@@ -229,8 +229,8 @@ namespace LBM
 
             /**
              * @brief Constructs a lattice mesh with specified dimensions
-             * @param[in] mesh A host::latticeMesh object to copy characteristic size from
-             * @param[in] meshDimensions blockLabel_t struct containing the number of lattice points in each direction (overrides dimensions from mesh)
+             * @param[in] mesh The lattice mesh
+             * @param[in] mesh The lattice mesh
              **/
             __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const blockLabel_t &meshDimensions) noexcept
                 : nx_(meshDimensions.nx),

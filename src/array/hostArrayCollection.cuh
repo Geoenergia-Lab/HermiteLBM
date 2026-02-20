@@ -66,9 +66,9 @@ namespace LBM
         public:
             /**
              * @brief Construct from program control and variable names
-             * @param[in] programCtrl Program control parameters
+             * @param[in] programCtrl The program control object
              * @param[in] varNames Names of variables to include in collection
-             * @param[in] mesh Lattice mesh for dimensioning
+             * @param[in] mesh The lattice mesh
              **/
             __host__ [[nodiscard]] arrayCollection(const programControl &programCtrl, const words_t &varNames, const host::latticeMesh &mesh)
                 : arr_(initialiseVector(programCtrl, mesh)),
@@ -76,7 +76,7 @@ namespace LBM
 
             /**
              * @brief Construct from specific time index
-             * @param[in] programCtrl Program control parameters
+             * @param[in] programCtrl The program control object
              * @param[in] varNames Names of variables to include
              * @param[in] timeIndex Specific time index to read from
              **/
@@ -89,7 +89,7 @@ namespace LBM
 
             /**
              * @brief Construct from latest available time
-             * @param[in] programCtrl Program control parameters
+             * @param[in] programCtrl The program control object
              * @param[in] varNames Names of variables to include
              **/
             __host__ [[nodiscard]] arrayCollection(
@@ -147,8 +147,8 @@ namespace LBM
 
             /**
              * @brief Initialize vector from mesh dimensions
-             * @param[in] programCtrl Program control parameters
-             * @param[in] mesh Lattice mesh for dimensioning
+             * @param[in] programCtrl The program control object
+             * @param[in] mesh The lattice mesh
              * @return Initialized data vector
              * @throws std::runtime_error if indexed files not found
              **/
@@ -181,7 +181,7 @@ namespace LBM
 
             /**
              * @brief Initialize vector from specific time index
-             * @param[in] programCtrl Program control parameters
+             * @param[in] programCtrl The program control object
              * @param[in] timeIndex Time index to read from
              * @return Initialized data vector
              * @throws std::runtime_error if indexed files not found
@@ -204,7 +204,7 @@ namespace LBM
 
             /**
              * @brief Initialize vector from latest time
-             * @param[in] programCtrl Program control parameters
+             * @param[in] programCtrl The program control object
              * @return Initialized data vector
              **/
             __host__ [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl) const

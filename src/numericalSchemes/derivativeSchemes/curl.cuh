@@ -62,7 +62,7 @@ namespace LBM
              * @param u The x component of the vector
              * @param v The y component of the vector
              * @param w The z component of the vector
-             * @param mesh The lattice mesh
+             * @param[in] mesh The lattice mesh
              **/
             template <const label_t SchemeOrder, typename T, class LatticeMesh>
             __host__ [[nodiscard]] const std::vector<std::vector<T>> curl(

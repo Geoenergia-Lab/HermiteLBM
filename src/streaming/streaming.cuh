@@ -76,7 +76,7 @@ namespace LBM
 
         /**
          * @brief Saves thread population density to shared memory
-         * @tparam VelocitySet Velocity set configuration defining lattice structure
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam N Size of shared memory array
          * @param[in] pop Population density array for current thread
          * @param[out] s_pop Shared memory array for population storage
@@ -110,7 +110,7 @@ namespace LBM
 
         /**
          * @brief Pulls population density from shared memory with periodic boundaries
-         * @tparam VelocitySet Velocity set configuration defining lattice structure
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam N Size of shared memory array
          * @param[out] pop Population density array to be populated
          * @param[in] s_pop Shared memory array containing population data

@@ -62,8 +62,8 @@ namespace LBM
          * intermediate or temporary data.
          *
          * @tparam T Fundamental type of the array.
-         * @tparam VelocitySet The velocity set (e.g., D2Q9, D3Q27).
-         * @tparam TimeType Type of time stepping (instantaneous or time‑averaged).
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
+         * @tparam TimeType Type of time stepping (instantaneous or timeAverage)
          **/
         template <typename T, class VelocitySet, const time::type TimeType>
         class array<field::SKELETON, T, VelocitySet, TimeType> : public arrayBase<T>
@@ -84,10 +84,10 @@ namespace LBM
             /**
              * @brief Construct a skeleton device array from host data.
              * @tparam Alpha Axis along which the array is defined (for decomposition).
-             * @param hostArray Source data on the host.
-             * @param mesh Lattice mesh.
-             * @param programCtrl Program control object.
-             * @param alpha Integral constant indicating the axis.
+             * @param[in] hostArray Source data on the host.
+             * @param[in] mesh The lattice mesh
+             * @param[in] programCtrl The program control object
+             * @param[in] alpha Integral constant indicating the axis.
              **/
             template <const axis::type Alpha>
             __host__ [[nodiscard]] array(
@@ -108,7 +108,7 @@ namespace LBM
 
             /**
              * @brief Get read-only pointer to device memory for a given GPU.
-             * @param i Index of the GPU (virtual device index).
+             * @param[in] i Index of the GPU (virtual device index).
              * @return Const pointer to device memory.
              **/
             __device__ __host__ [[nodiscard]] inline const T *constPtr(const label_t i) const noexcept
@@ -118,7 +118,7 @@ namespace LBM
 
             /**
              * @brief Get mutable pointer to device memory for a given GPU.
-             * @param i Index of the GPU (virtual device index).
+             * @param[in] i Index of the GPU (virtual device index).
              * @return Pointer to device memory.
              **/
             __device__ __host__ [[nodiscard]] inline T *ptr(const label_t i) noexcept
@@ -128,7 +128,7 @@ namespace LBM
 
             /**
              * @brief Provide a reference to the device pointer for swapping operations.
-             * @param i Index of the GPU (virtual device index).
+             * @param[in] i Index of the GPU (virtual device index).
              * @return Reference to the pointer (host side).
              **/
             __host__ [[nodiscard]] inline constexpr T * ptrRestrict & ptrRef(const label_t i) noexcept
@@ -140,9 +140,9 @@ namespace LBM
             /**
              * @brief Allocate all GPU segments for a skeleton array from a std::vector.
              * @tparam alpha Axis direction.
-             * @param mesh Lattice mesh.
-             * @param hostArrayGlobal Source vector.
-             * @param programCtrl Program control.
+             * @param[in] mesh The lattice mesh
+             * @param[in] hostArrayGlobal Source vector.
+             * @param[in] programCtrl The program control object
              * @return Host array of device pointers.
              **/
             template <const axis::type alpha>

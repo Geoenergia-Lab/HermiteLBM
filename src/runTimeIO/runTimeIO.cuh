@@ -68,8 +68,8 @@ namespace LBM
     public:
         /**
          * @brief Constructs a runTimeIO object and starts timing
-         * @param[in] mesh Lattice mesh providing dimension information
-         * @param[in] programCtrl Program control object with simulation parameters
+         * @param[in] mesh The lattice mesh
+         * @param[in] programCtrl The program control object
          **/
         __host__ [[nodiscard]] runTimeIO(
             const host::latticeMesh &mesh,
@@ -132,8 +132,8 @@ namespace LBM
         /**
          * @brief Calculates Million Lattice Updates Per Second (MLUPS) performance metric
          * @tparam T Data type for the MLUPS calculation (typically double)
-         * @param[in] mesh Lattice mesh providing dimension information
-         * @param[in] programCtrl Program control object with time step information
+         * @param[in] mesh The lattice mesh
+         * @param[in] programCtrl The program control object
          * @param[in] start Simulation start time point
          * @param[in] end Simulation end time point
          * @return MLUPS value as type T, or 0 if calculation is not applicable

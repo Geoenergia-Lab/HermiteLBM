@@ -56,7 +56,7 @@ namespace LBM
     /**
      * @class boundaryRegion
      * @brief Represents a complete set of boundary values for all fields in a specific region
-     * @tparam VelocitySet Velocity set configuration defining lattice structure
+     * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
      *
      * This struct aggregates all field values (density, velocity components, and moments)
      * for a specific boundary region, providing convenient access to individual components.

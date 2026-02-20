@@ -56,7 +56,7 @@ namespace LBM
     /**
      * @class boundaryValue
      * @brief Represents a single boundary value for a specific field and region
-     * @tparam VelocitySet Velocity set configuration defining lattice structure
+     * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
      *
      * This struct reads and stores boundary condition values from configuration files,
      * handling both direct numerical values and equilibrium-based calculations.

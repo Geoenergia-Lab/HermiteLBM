@@ -63,7 +63,7 @@ namespace LBM
         /**
          * @brief Calculates physical coordinates of lattice points
          * @tparam T Coordinate data type (typically scalar_t or double)
-         * @param[in] mesh Lattice mesh providing dimensions and physical size
+         * @param[in] mesh The lattice mesh
          * @return Vector of coordinates in interleaved format [x0, y0, z0, x1, y1, z1, ...]
          *
          * This function converts lattice indices to physical coordinates using
@@ -93,7 +93,7 @@ namespace LBM
          * @brief Calculates the connectivity of the points of a latticeMesh object
          * @tparam one_based If true, indices are 1-based. If false, 0-based.
          * @tparam IndexType The integer type for the connectivity data (e.g., uint32_t, uint64_t).
-         * @param mesh The mesh
+         * @param[in] mesh The lattice mesh
          * @return An std::vector of type IndexType containing the latticeMesh object connectivity
          **/
         template <const bool one_based, typename IndexType>
@@ -126,7 +126,7 @@ namespace LBM
         /**
          * @brief Calculates the point offsets of the points of a latticeMesh object
          * @tparam T The integer type for the offset data (e.g., uint32_t, uint64_t).
-         * @param mesh The mesh
+         * @param[in] mesh The lattice mesh
          * @return An std::vector of type T containing the latticeMesh object point offsets
          **/
         template <typename T>

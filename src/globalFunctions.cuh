@@ -268,7 +268,7 @@ namespace LBM
          * @brief Memory index (host version)
          * @param tx,ty,tz Thread-local coordinates
          * @param bx,by,bz Block indices
-         * @param mesh The mesh
+         * @param[in] mesh The lattice mesh
          * @return Linearized index using mesh constants
          *
          * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)

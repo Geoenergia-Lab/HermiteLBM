@@ -57,7 +57,7 @@ namespace LBM
         /**
          * @class haloFace
          * @brief Manages individual halo faces for inter-block communication in CUDA LBM
-         * @tparam VelocitySet Velocity set configuration defining lattice structure
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          *
          * This class handles the storage and management of distribution functions
          * at block boundaries for all six faces (x0, x1, y0, y1, z0, z1). It provides
@@ -71,7 +71,7 @@ namespace LBM
             /**
              * @brief Constructs halo faces from moment data and mesh
              * @param[in] fMom Moment representation of distribution functions (10 interlaced moments)
-             * @param[in] mesh Lattice mesh defining simulation domain
+             * @param[in] mesh The lattice mesh
              * @post All six halo faces are allocated and initialized with population data
              **/
             __host__ [[nodiscard]] haloFace(
@@ -206,7 +206,7 @@ namespace LBM
              * @tparam alpha Direction index (x, y, or z)
              * @tparam coeff Face coeff (-1 for min, 1 for max)
              * @param[in] fMom Moment representation of distribution functions
-             * @param[in] mesh Lattice mesh for dimensioning
+             * @param[in] mesh The lattice mesh
              * @return Initialized population data for the specified halo face
              **/
             template <const axis::type alpha, const int coeff>
@@ -270,7 +270,7 @@ namespace LBM
              * @param[in] pop Population density values for current cell
              * @param[in] tx, ty, tz Thread indices within block
              * @param[in] bx, by, bz Block indices
-             * @param[in] mesh Lattice mesh for dimensioning
+             * @param[in] mesh The lattice mesh
              *
              * This method handles the D3Q19 lattice model, storing appropriate
              * population components based on boundary position and direction.

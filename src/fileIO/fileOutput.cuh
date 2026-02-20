@@ -72,7 +72,7 @@ namespace LBM
         /**
          * @brief Implementation of the writing of the binary file
          * @param fileName Name of the file to be written
-         * @param mesh The mesh
+         * @param[in] mesh The lattice mesh
          * @param varNames The names of the solution variables
          * @param fields The solution variables encoded in interleaved AoS format
          * @param timeStep The current time step

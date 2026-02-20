@@ -56,7 +56,7 @@ namespace LBM
     /**
      * @struct boundaryFields
      * @brief Represents a single field value across all boundary regions
-     * @tparam VelocitySet Velocity set configuration defining lattice structure
+     * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
      *
      * This struct provides access to a specific field's value across all
      * boundary regions (North, South, East, West, Back, Front) and the internal field.

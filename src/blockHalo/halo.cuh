@@ -58,7 +58,7 @@ namespace LBM
         /**
          * @class halo
          * @brief Manages halo regions for inter-block communication in CUDA LBM simulations
-         * @tparam VelocitySet Velocity set configuration defining lattice structure
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          *
          * This class handles the exchange of distribution functions between adjacent
          * CUDA blocks during LBM simulations. It maintains double-buffered halo regions
@@ -70,8 +70,8 @@ namespace LBM
         public:
             /**
              * @brief Constructs halo regions from moment data and mesh
-             * @param[in] mesh Lattice mesh defining simulation domain
-             * @param[in] programCtrl Program control parameters
+             * @param[in] mesh The lattice mesh
+             * @param[in] programCtrl The program control object
              **/
             __host__ [[nodiscard]] halo(const host::latticeMesh &mesh, const programControl &programCtrl) noexcept
                 : fGhost_(haloFace<VelocitySet>(

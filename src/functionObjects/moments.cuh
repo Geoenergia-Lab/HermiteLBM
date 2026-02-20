@@ -103,7 +103,7 @@ namespace LBM
 
             /**
              * @brief Class for managing total kinetic energy scalar calculations in LBM simulations
-             * @tparam VelocitySet The velocity set type used in LBM
+             * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
              * @tparam N The number of streams (compile-time constant)
              **/
             template <class VelocitySet>
@@ -112,7 +112,7 @@ namespace LBM
             public:
                 /**
                  * @brief Constructs a total kinetic energy scalar object
-                 * @param[in] mesh Reference to lattice mesh
+                 * @param[in] mesh The lattice mesh
                  * @param[in] devPtrs Device pointer collection for memory access
                  * @param[in] streamsLBM Stream handler for CUDA operations
                  **/

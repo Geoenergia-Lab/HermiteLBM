@@ -66,7 +66,7 @@ namespace LBM
         {
             /**
              * @brief Asserts that VelocitySet is a valid velocity set (D3Q19 or D3Q27)
-             * @tparam VelocitySet The velocity set
+             * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
              **/
             template <class VelocitySet>
             __device__ __host__ inline consteval void validate() noexcept
@@ -162,7 +162,7 @@ namespace LBM
 
         /**
          * @brief Calculate a specific moment of the distribution function
-         * @tparam VelocitySet The velocity set type
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam alpha The first axis direction (X, Y, or Z)
          * @tparam beta The second axis direction (X, Y, or Z)
          * @param[in] pop The distribution function array
@@ -184,7 +184,7 @@ namespace LBM
 
         /**
          * @brief Calculate a specific moment of the distribution function
-         * @tparam VelocitySet The velocity set type
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam alpha The first axis direction (X, Y, or Z)
          * @tparam beta The second axis direction (X, Y, or Z)
          * @tparam BoundaryNormal The boundary normal vector type
@@ -208,7 +208,7 @@ namespace LBM
 
         /**
          * @brief Calculate all moments of the distribution function
-         * @tparam VelocitySet The velocity set type
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @param[in] pop The distribution function array
          * @param[out] mom The calculated moments array
          **/
@@ -235,7 +235,7 @@ namespace LBM
 
         /**
          * @brief Calculate all moments of the distribution function
-         * @tparam VelocitySet The velocity set type
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam BoundaryNormal The boundary normal vector type
          * @param[in] pop The distribution function array
          * @param[out] mom The calculated moments array
@@ -264,7 +264,7 @@ namespace LBM
 
         /**
          * @brief Returns the indices of the distribution functions on a specific face
-         * @tparam VelocitySet The velocity set being used
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam alpha The axis direction (X, Y, or Z)
          * @tparam coeff The value of the coordinate along the axis (-1 or 1)
          * @return Indices of the distribution on a specific face
@@ -374,7 +374,7 @@ namespace LBM
         /**
          * @brief Adds or subtracts a particular population based on the sign of the coefficient
          * @tparam coeff The velocity set coefficient (-1 or 1)
-         * @tparam VelocitySet The velocity set
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam BoundaryNormal The boundary normal vector type
          * @param[in] pop_value A particular population
          * @param[in] boundaryNormal
@@ -400,7 +400,7 @@ namespace LBM
 
         /**
          * @brief Determines whether or not a particular lattice coefficient is negative
-         * @tparam VelocitySet The velocity set
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam alpha The axis direction (X, Y, or Z)
          * @param[in] q The lattice index
          * @return True if the lattice coefficient is negative, false otherwise
@@ -416,7 +416,7 @@ namespace LBM
 
         /**
          * @brief Determines whether or not a particular lattice coefficient is positive
-         * @tparam VelocitySet The velocity set
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam alpha The axis direction (X, Y, or Z)
          * @param[in] The lattice index
          * @return True if the lattice coefficient is positive, false otherwise

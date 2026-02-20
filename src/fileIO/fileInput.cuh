@@ -331,7 +331,7 @@ namespace LBM
          * @tparam T Data type of array elements
          * @tparam M Mesh type providing dimension information
          * @param[in] fMom Input data in AoS format (all variables interleaved per point)
-         * @param[in] mesh Mesh object providing dimension information
+         * @param[in] mesh The lattice mesh
          * @return Vector of vectors where each inner vector contains all values for one variable
          * @throws std::invalid_argument if input size doesn't match mesh dimensions
          *

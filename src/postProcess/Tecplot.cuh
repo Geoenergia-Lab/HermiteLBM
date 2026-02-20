@@ -66,7 +66,7 @@ namespace LBM
              * @brief Writes solution data to a Tecplot ASCII file in unstructured grid format
              * @param[in] solutionVars Vector of solution variable arrays (Structure of Arrays format)
              * @param[in] fileName Output filename for Tecplot data
-             * @param[in] mesh Lattice mesh providing domain dimensions and structure
+             * @param[in] mesh The lattice mesh
              * @param[in] solutionVarNames Names of the solution variables for Tecplot header
              * @param[in] title Title for the Tecplot file
              * @return None

@@ -139,7 +139,7 @@ namespace LBM
         public:
             /**
              * @brief Constructs a meshPrimitive object by parsing the provided lines of the lattice mesh block.
-             * @param[in] meshLines The lines of the lattice mesh block to parse.
+             * @param[in] mesh The lattice mesh
              **/
             __host__ [[nodiscard]] meshPrimitive(const words_t &meshLines)
                 : nPoints_({read<label_t>(meshLines, "nx"), read<label_t>(meshLines, "ny"), read<label_t>(meshLines, "nz")}),
