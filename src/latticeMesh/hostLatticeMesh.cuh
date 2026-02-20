@@ -330,7 +330,7 @@ namespace LBM
 
             /**
              * @brief Boundary check for the faces
-             * @param x,y,z The coordinate of the point
+             * @param[in] x,y,z The coordinate of the point
              * @return True if the point is on the boundary, false otherwise
              **/
             __host__ [[nodiscard]] inline constexpr bool West(const label_t x) const noexcept

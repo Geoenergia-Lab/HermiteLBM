@@ -110,7 +110,7 @@ namespace LBM
 
     /**
      * @brief Converts a month abbreviation string to its corresponding index (0-11).
-     * @param monthStr Three-letter month abbreviation (e.g., "Jan", "Feb").
+     * @param[in] monthStr Three-letter month abbreviation (e.g., "Jan", "Feb").
      * @return Numerical index of the month (0 for January, 11 for December).
      * @throws std::runtime_error If the input string does not match any month abbreviation.
      **/
@@ -157,8 +157,8 @@ namespace LBM
     /**
      * @brief Retrieves the value of an environment variable, returning a default value if the variable is not set.
      * @tparam verboseOutput A boolean template parameter that controls whether the retrieved environment variable and its value are printed to the console.
-     * @param envVariable The name of the environment variable to retrieve.
-     * @param defaultName The default value to return if the environment variable is not set.
+     * @param[in] envVariable The name of the environment variable to retrieve.
+     * @param[in] defaultName The default value to return if the environment variable is not set.
      * @return The value of the environment variable, or the default value if it is not set.
      **/
     template <const bool verboseOutput = false>
@@ -187,7 +187,7 @@ namespace LBM
     /**
      * @brief Retrieves the value of an environment variable, throwing an exception if the variable is not set.
      * @tparam verboseOutput A boolean template parameter that controls whether the retrieved environment variable and its value are printed to the console.
-     * @param envVariable The name of the environment variable to retrieve.
+     * @param[in] envVariable The name of the environment variable to retrieve.
      * @return The value of the environment variable.
      * @throws std::runtime_error If the environment variable is not set.
      **/

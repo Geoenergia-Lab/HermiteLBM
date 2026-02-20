@@ -187,7 +187,7 @@ namespace LBM
 
         /**
          * @brief Trims leading and trailing whitespace from a string.
-         * @param str The input string to trim.
+         * @param[in] str The input string to trim.
          * @return Trimmed string, or empty string if only whitespace.
          * @note Handles space, tab, newline, carriage return, form feed, and vertical tab.
          **/
@@ -213,7 +213,7 @@ namespace LBM
 
         /**
          * @brief Trims leading and trailing whitespace from each string in a vector.
-         * @param str The vector of strings to trim.
+         * @param[in] str The vector of strings to trim.
          * @return A new vector with each string trimmed.
          **/
         template <const bool trimSemicolon>
@@ -231,7 +231,7 @@ namespace LBM
 
         /**
          * @brief Removes C++-style comments from a string.
-         * @param str The input string to process.
+         * @param[in] str The input string to process.
          * @return String with comments removed (everything after '//').
          * @note Only handles single-line comments starting with '//'.
          **/
@@ -247,7 +247,7 @@ namespace LBM
 
         /**
          * @brief Checks if a string contains only whitespace characters.
-         * @param str The string to check.
+         * @param[in] str The string to check.
          * @return true if string contains only whitespace, false otherwise.
          * @note Uses std::isspace for whitespace detection.
          **/
@@ -265,9 +265,9 @@ namespace LBM
 
         /**
          * @brief Finds the line number where a block declaration starts.
-         * @param lines Vector of strings representing the source lines.
-         * @param blockName The name of the block to find (e.g., "boundaryField").
-         * @param startLine Line number to start searching from (default: 0).
+         * @param[in] lines Vector of strings representing the source lines.
+         * @param[in] blockName The name of the block to find (e.g., "boundaryField").
+         * @param[in] startLine Line number to start searching from (default: 0).
          * @return Line number where the block declaration was found.
          * @throws std::runtime_error if block is not found.
          * @note Handles various declaration styles including braces and semicolons.
@@ -314,9 +314,9 @@ namespace LBM
 
         /**
          * @brief Extracts a complete block (with braces) from source lines.
-         * @param lines Vector of strings representing the source lines.
-         * @param blockName The name of the block to extract.
-         * @param startLine Line number to start searching from (default: 0).
+         * @param[in] lines Vector of strings representing the source lines.
+         * @param[in] blockName The name of the block to extract.
+         * @param[in] startLine Line number to start searching from (default: 0).
          * @return Vector of strings containing the complete block including braces.
          * @throws std::runtime_error for malformed blocks or unbalanced braces.
          * @note Preserves original formatting including comments in the returned block.
@@ -415,9 +415,9 @@ namespace LBM
 
         /**
          * @brief Extracts a field-specific block using a combined key-field identifier.
-         * @param lines Vector of strings representing the source lines.
-         * @param fieldName The field name (e.g., "p" for pressure).
-         * @param key The block type key (e.g., "internalField").
+         * @param[in] lines Vector of strings representing the source lines.
+         * @param[in] fieldName The field name (e.g., "p" for pressure).
+         * @param[in] key The block type key (e.g., "internalField").
          * @return Vector of strings containing the complete block.
          * @note Convenience wrapper for extractBlock(lines, key + " " + fieldName).
          **/
@@ -461,7 +461,7 @@ namespace LBM
 
         /**
          * @brief Checks that the input string is numeric.
-         * @param s The string_view object which is to be checked.
+         * @param[in] s The string_view object which is to be checked.
          * @return True if s is a valid number, false otherwise.
          * @note A valid number can optionally start with a '+' or '-' sign and may contain one decimal point.
          **/
@@ -520,7 +520,7 @@ namespace LBM
 
         /**
          * @brief Determines whether or not the number string is all digits
-         * @param numStr The number string
+         * @param[in] numStr The number string
          * @return True if the string is all digits, false otherwise
          **/
         __host__ [[nodiscard]] inline bool isAllDigits(const name_t &numStr) noexcept
@@ -538,9 +538,9 @@ namespace LBM
 
         /**
          * @brief Splits the string_view object s according to the delimiter delim
-         * @param s The string_view object which is to be split
-         * @param delim The delimiter character by which s is split, e.g. a comma, space, etc
-         * @param removeWhitespace Controls the removal of whitespace; removes blank spaces from the return value if true (default true)
+         * @param[in] s The string_view object which is to be split
+         * @param[in] delim The delimiter character by which s is split, e.g. a comma, space, etc
+         * @param[in] removeWhitespace Controls the removal of whitespace; removes blank spaces from the return value if true (default true)
          * @return A std::vector of std::string_view objects split from s by delim
          * @note This function can be used to, for example, split a string by commas, spaces, etc
          **/
@@ -600,9 +600,9 @@ namespace LBM
 
         /**
          * @brief Searches for an entry corresponding to variableName within the vector of strings S
-         * @param T The type of variable returned
-         * @param S The vector of strings which is searched
-         * @param name The name of the variable which is to be found and returned as type T
+         * @param[in] T The type of variable returned
+         * @param[in] S The vector of strings which is searched
+         * @param[in] name The name of the variable which is to be found and returned as type T
          * @return The value of the variable expressed as a type T
          * @note This function can be used to, for example, read an entry of nx within caseInfo after caseInfo has been loaded into S
          * @note The line containing the definition of variableName must separate variableName and its value with a space, for instance nx 128;
@@ -680,8 +680,8 @@ namespace LBM
 
         /**
          * @brief Parses a name-value pair
-         * @param args The list of arguments to be searched
-         * @param name The argument to be searched for
+         * @param[in] args The list of arguments to be searched
+         * @param[in] name The argument to be searched for
          * @return A std::string_view of the value argument corresponding to name
          **/
         __host__ [[nodiscard]] const name_t parseNameValuePair(const words_t &args, const name_t &name)
@@ -711,8 +711,8 @@ namespace LBM
 
         /**
          * @brief Parses the value of the argument following name
-         * @param argc First argument passed to main
-         * @param argv Second argument passed to main
+         * @param[in] argc First argument passed to main
+         * @param[in] argv Second argument passed to main
          * @return A vector of integral type T
          * @note This function can be used to parse arguments passed to the executable on the command line such as -GPU 0,1
          **/

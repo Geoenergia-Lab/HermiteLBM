@@ -63,8 +63,8 @@ namespace LBM
     public:
         /**
          * @brief Constructor for the programControl class
-         * @param argc First argument passed to main
-         * @param argv Second argument passed to main
+         * @param[in] argc First argument passed to main
+         * @param[in] argv Second argument passed to main
          **/
         __host__ [[nodiscard]] programControl(const int argc, const char *const argv[]) noexcept
             : input_(inputControl(argc, argv)),
@@ -294,7 +294,7 @@ namespace LBM
         /**
          * @brief Reads a variable from the caseInfo file into a parameter of type T
          * @return The variable as type T
-         * @param varName The name of the variable to read
+         * @param[in] varName The name of the variable to read
          **/
         template <typename T>
         __host__ [[nodiscard]] T initialiseConst(const name_t varName) const noexcept

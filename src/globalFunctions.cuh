@@ -63,7 +63,7 @@ namespace LBM
      * @tparam Start Starting index (inclusive)
      * @tparam End Ending index (exclusive)
      * @tparam F Callable type accepting integral_constant<label_t>
-     * @param f Function object to execute per iteration
+     * @param[in] f Function object to execute per iteration
      *
      * @note Equivalent to runtime loop: `for(label_t i=Start; i<End; ++i)`
      * @note Enables `if constexpr` usage in loop bodies
@@ -168,10 +168,10 @@ namespace LBM
 
     /**
      * @brief Nested loop over block and thread indices
-     * @param nxBlocks Number of blocks in x-dimension
-     * @param nyBlocks Number of blocks in y-dimension
-     * @param nzBlocks Number of blocks in z-dimension
-     * @param f Function called for each (bx, by, bz, tx, ty, tz)
+     * @param[in] nxBlocks Number of blocks in x-dimension
+     * @param[in] nyBlocks Number of blocks in y-dimension
+     * @param[in] nzBlocks Number of blocks in z-dimension
+     * @param[in] f Function called for each (bx, by, bz, tx, ty, tz)
      *
      * Example:
      * @code
@@ -213,10 +213,10 @@ namespace LBM
 
     /**
      * @brief Nested loop over global grid indices
-     * @param nx Number of points in x-dimension
-     * @param ny Number of points in y-dimension
-     * @param nz Number of points in z-dimension
-     * @param f Function called for each (bx, by, bz, tx, ty, tz)
+     * @param[in] nx Number of points in x-dimension
+     * @param[in] ny Number of points in y-dimension
+     * @param[in] nz Number of points in z-dimension
+     * @param[in] f Function called for each (bx, by, bz, tx, ty, tz)
      *
      * Example:
      * @code
@@ -251,9 +251,9 @@ namespace LBM
     {
         /**
          * @brief Memory index (host version)
-         * @param tx,ty,tz Thread-local coordinates
-         * @param bx,by,bz Block indices
-         * @param nxBlocks,nyBlocks Number of blocks in the x and y directions
+         * @param[in] tx,ty,tz Thread-local coordinates
+         * @param[in] bx,by,bz Block indices
+         * @param[in] nxBlocks,nyBlocks Number of blocks in the x and y directions
          * @return Linearized index using mesh constants
          *
          * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)
@@ -266,8 +266,8 @@ namespace LBM
 
         /**
          * @brief Memory index (host version)
-         * @param tx,ty,tz Thread-local coordinates
-         * @param bx,by,bz Block indices
+         * @param[in] tx,ty,tz Thread-local coordinates
+         * @param[in] bx,by,bz Block indices
          * @param[in] mesh The lattice mesh
          * @return Linearized index using mesh constants
          *
@@ -287,8 +287,8 @@ namespace LBM
     {
         /**
          * @brief Global scalar field index (collapsed 3D)
-         * @param x,y,z Global coordinates
-         * @param nx,ny Global dimensions
+         * @param[in] x,y,z Global coordinates
+         * @param[in] nx,ny Global dimensions
          * @return Linearized index: x + nx*(y + ny*z)
          **/
         template <typename T = label_t>
@@ -315,8 +315,8 @@ namespace LBM
 
         /**
          * @brief Memory index (device version)
-         * @param tx,ty,tz Thread-local coordinates
-         * @param bx,by,bz Block indices
+         * @param[in] tx,ty,tz Thread-local coordinates
+         * @param[in] bx,by,bz Block indices
          * @return Linearized index using device constants device::NUM_BLOCK_X/Y
          *
          * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)
@@ -330,8 +330,8 @@ namespace LBM
 
         /**
          * @overload
-         * @param tx Thread coordinates (thread::coordinate)
-         * @param bx Block indices (thread::coordinate)
+         * @param[in] tx Thread coordinates (thread::coordinate)
+         * @param[in] bx Block indices (thread::coordinate)
          **/
         __device__ [[nodiscard]] inline label_t idx(const thread::coordinate &Tx, const block::coordinate &Bx) noexcept
         {
@@ -343,9 +343,9 @@ namespace LBM
     {
         /**
          * @brief Memory index within a block (device version)
-         * @param tx Thread-local x-coordinate
-         * @param ty Thread-local y-coordinate
-         * @param tz Thread-local z-coordinate
+         * @param[in] tx Thread-local x-coordinate
+         * @param[in] ty Thread-local y-coordinate
+         * @param[in] tz Thread-local z-coordinate
          * @return Linearized index using block dimensions (block::nx() and block::ny())
          *
          * Layout within a block: [tz][ty][tx] (tx fastest varying)
@@ -361,7 +361,7 @@ namespace LBM
 
         /**
          * @overload
-         * @param tx Thread coordinates (thread::coordinate)
+         * @param[in] tx Thread coordinates (thread::coordinate)
          **/
         __device__ [[nodiscard]] inline label_t idx(const thread::coordinate &Tx) noexcept
         {

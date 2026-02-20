@@ -15,9 +15,9 @@ namespace LBM
     {
         /**
          * @brief Executes the time average of all variables within fMom
-         * @param fMom The 10 solution variables
-         * @param fMomMean The time averaged solution variables
-         * @param nodeTypes The node types of the mesh
+         * @param[in] fMom The 10 solution variables
+         * @param[in] fMomMean The time averaged solution variables
+         * @param[in] nodeTypes The node types of the mesh
          **/
         launchBounds __global__ void calculate(
             const scalar_t *const ptrRestrict fMom,

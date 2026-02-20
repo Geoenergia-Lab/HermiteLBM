@@ -85,8 +85,8 @@ namespace LBM
 
     /**
      * @brief CUDA implementation of a std::integral constant
-     * @param T The type of integral value
-     * @param v The value
+     * @param[in] T The type of integral value
+     * @param[in] v The value
      **/
     template <typename T, T v>
     struct integralConstant

@@ -71,11 +71,11 @@ namespace LBM
 
         /**
          * @brief Implementation of the writing of the binary file
-         * @param fileName Name of the file to be written
+         * @param[in] fileName Name of the file to be written
          * @param[in] mesh The lattice mesh
-         * @param varNames The names of the solution variables
-         * @param fields The solution variables encoded in interleaved AoS format
-         * @param timeStep The current time step
+         * @param[in] varNames The names of the solution variables
+         * @param[in] fields The solution variables encoded in interleaved AoS format
+         * @param[in] timeStep The current time step
          **/
         template <const time::type TimeType, class LatticeMesh, typename T>
         __host__ void writeFile(

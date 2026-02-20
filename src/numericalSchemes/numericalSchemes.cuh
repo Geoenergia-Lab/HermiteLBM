@@ -72,9 +72,9 @@ namespace LBM
         /**
          * @brief Calculates the magnitude of a 3D vector field.
          * @tparam T The data type of the vector components.
-         * @param u A vector representing the x-components of the vector field.
-         * @param v A vector representing the y-components of the vector field.
-         * @param w A vector representing the z-components of the vector field.
+         * @param[in] u A vector representing the x-components of the vector field.
+         * @param[in] v A vector representing the y-components of the vector field.
+         * @param[in] w A vector representing the z-components of the vector field.
          * @return A vector containing the magnitude of the vector field at each point.
          **/
         template <typename T>

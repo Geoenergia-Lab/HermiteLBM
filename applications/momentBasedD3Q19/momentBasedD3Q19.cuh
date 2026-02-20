@@ -76,8 +76,8 @@ namespace LBM
 
     /**
      * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
-     * @param devPtrs Collection of 10 pointers to device arrays on the GPU
-     * @param blockHalo Object containing pointers to the block halo faces used to exchange the population densities
+     * @param[in] devPtrs Collection of 10 pointers to device arrays on the GPU
+     * @param[in] blockHalo Object containing pointers to the block halo faces used to exchange the population densities
      **/
     launchBoundsD3Q19 __global__ void momentBasedD3Q19(
         const device::ptrCollection<10, scalar_t> devPtrs,

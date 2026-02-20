@@ -58,7 +58,7 @@ namespace LBM
          * @brief Calculates the integral of a scalar field along the x-axis.
          * @tparam SchemeOrder The order of the integration scheme. Currently, only 2nd order is implemented.
          * @return The integrated field of f with respect to x.
-         * @param f The field to be integrated.
+         * @param[in] f The field to be integrated.
          * @param[in] mesh The lattice mesh.
          * @note This function uses the cumulative trapezoidal rule. The integration constant is set by
          * assuming the integral is zero at x=0 for each (y, z) line.

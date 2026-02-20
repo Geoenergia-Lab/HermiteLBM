@@ -105,8 +105,8 @@ namespace LBM
          * @tparam alpha The axis on which the face lies
          * @tparam pop Population index
          * @tparam QF Number of populations
-         * @param ta,tb Thread-local y/z coordinates
-         * @param bx,by,bz Block indices
+         * @param[in] ta,tb Thread-local y/z coordinates
+         * @param[in] bx,by,bz Block indices
          * @return Linearized two-dimensional face index
          **/
         template <const axis::type alpha, const label_t pop, const label_t QF>

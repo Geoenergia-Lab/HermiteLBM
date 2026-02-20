@@ -59,9 +59,9 @@ namespace LBM
             /**
              * @brief Calculates the divergence of a vector field
              * @return The divergence of (u, v, w)
-             * @param u The x component of the vector
-             * @param v The y component of the vector
-             * @param w The z component of the vector
+             * @param[in] u The x component of the vector
+             * @param[in] v The y component of the vector
+             * @param[in] w The z component of the vector
              * @param[in] mesh The lattice mesh
              **/
             template <const label_t SchemeOrder, typename T, class LatticeMesh>
