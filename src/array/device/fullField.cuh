@@ -37,7 +37,14 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the full field device array class
+    This file defines the device array specialization for full fields. A full
+    field is a standard field that carries a name and may be time‑averaged. This
+    specialization manages device memory for the field data, as well as metadata
+    such as the field name and averaging count. It provides methods for
+    initialising boundary conditions on the device and copying data back to the
+    host. Full fields are typically used for primary physical quantities like
+    velocity and density, which require named access and may be averaged over
+    time steps.
 
 Namespace
     LBM

@@ -37,7 +37,11 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the skeleton device array class
+    This file defines the device array specialization for skeleton fields. The
+    skeleton field is a special type of field that does not carry a name or
+    time-averaging information and is typically used for inter-block halos on
+    the device. This specialization manages device memory pointers and provides
+    methods for accessing and manipulating the data on the GPU.
 
 Namespace
     LBM

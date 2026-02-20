@@ -37,13 +37,19 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A templated class for allocating arrays on the CPU
+    This file defines the host array specializations for both pinned and
+    pageable memory. The host arrays are designed to store field data on the
+    CPU side, with different allocation strategies depending on the use case.
+    The pageable specialization uses std::vector for automatic memory management,
+    while the pinned specialization manages raw pointers to CUDA page-locked
+    memory for faster host-device transfers. Both classes inherit from a common
+    base that provides access to the field name and associated lattice mesh.
 
 Namespace
     LBM::host
 
 SourceFiles
-    hostArray.cuh
+    host/array.cuh
 
 \*---------------------------------------------------------------------------*/
 

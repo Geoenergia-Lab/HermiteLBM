@@ -37,13 +37,17 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A templated class for allocating arrays on the CPU
+    This file defines the host array specialization that uses pinned
+    (page‑locked) memory. Pinned memory allows for faster data transfers
+    between host and device, which can improve performance when copying
+    large arrays. The class manages a raw pointer to pinned memory and
+    provides methods for copying data from device pointers.
 
 Namespace
     LBM::host
 
 SourceFiles
-    hostArray.cuh
+    host/pinned.cuh
 
 \*---------------------------------------------------------------------------*/
 

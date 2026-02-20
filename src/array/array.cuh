@@ -37,7 +37,13 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the array class
+    Top-level header file containing relevant includes and definitions for the
+    array classes used in cudaLBM. The array classes are designed to manage
+    field data on both the host and device, with specializations for different
+    types of fields (block halos and full fields) and memory allocation
+    strategies (pinned and pageable). This file also includes utility functions
+    for reading field data from files and initializing the mean counter for
+    time-averaged fields.
 
 Namespace
     LBM

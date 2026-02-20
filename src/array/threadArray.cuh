@@ -37,7 +37,15 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the thread-local array class
+    This file defines the thread array class, which is a fixed-size array
+    container designed for use in single-threaded device code. The class
+    provides compile-time bounds checking and supports various constructors for
+    initializing the array with specific values or from global memory using a
+    shared buffer cache. It also overloads basic arithmetic operators for
+    element-wise operations and provides methods for accessing and modifying
+    elements. The thread array is intended to be used within CUDA kernels where
+    each thread manages its own small array of data, such as the distribution
+    functions in a lattice Boltzmann simulation.
 
 Namespace
     LBM

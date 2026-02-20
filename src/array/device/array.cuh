@@ -37,7 +37,12 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the device array class
+    This file defines the primary template for device arrays, which is then
+    specialised for different field types (skeleton and full fields). The
+    primary template is not intended to be instantiated directly; instead, it
+    serves as a base for the specializations that manage device memory for
+    specific field types. The class provides common functionality for allocating
+    and freeing device memory, as well as copying data between host and device.
 
 Namespace
     LBM

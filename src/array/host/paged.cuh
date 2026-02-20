@@ -37,13 +37,16 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A templated class for allocating arrays on the CPU
+    This file defines the host array specialization that uses pageable memory
+    (std::vector). This specialization is typically used for fields loaded from
+    disk (checkpoints or initial fields) and provides initialisation from files
+    or initial conditions.
 
 Namespace
     LBM::host
 
 SourceFiles
-    hostArray.cuh
+    host/paged.cuh
 
 \*---------------------------------------------------------------------------*/
 
