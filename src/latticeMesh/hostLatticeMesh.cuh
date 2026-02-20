@@ -227,16 +227,16 @@ namespace LBM
                 }
             };
 
-            // /**
-            //  * @brief Constructs a lattice mesh with specified dimensions
-            //  * @param[in] mesh The lattice mesh
-            //  * @param[in] mesh The lattice mesh
-            //  **/
-            // __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const blockLabel_t &meshDimensions) noexcept
-            //     : n_({meshDimensions.nx, meshDimensions.ny, meshDimensions.nz}),
-            //       nPoints_(meshDimensions.size()),
-            //       L_(mesh.L()),
-            //       nDevices_(initialise_device_list("deviceDecomposition")) {}
+            /**
+             * @brief Constructs a lattice mesh with specified dimensions
+             * @param[in] mesh The lattice mesh
+             * @param[in] meshDimensions The dimensions of the mesh to construct
+             **/
+            __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const blockLabel_t &meshDimensions) noexcept
+                : n_({meshDimensions.nx, meshDimensions.ny, meshDimensions.nz}),
+                  nPoints_(meshDimensions.size()),
+                  L_(mesh.L()),
+                  nDevices_(initialise_device_list("deviceDecomposition")) {}
 
             /**
              * @name Grid Dimension Accessors
