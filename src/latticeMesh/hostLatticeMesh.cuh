@@ -388,7 +388,7 @@ namespace LBM
              * @tparam T The return type
              **/
             template <const axis::type alpha, const label_t QF>
-            __host__ [[nodiscard]] inline constexpr label_t nFaces() const noexcept
+            __host__ [[nodiscard]] inline constexpr label_t nFacesPerGPU() const noexcept
             {
                 static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(host::latticeMesh::faceAllocSize, "Need to fix the calculation of the number of faces per GPU: it is no longer global"));
 
@@ -399,6 +399,19 @@ namespace LBM
                 const label_t nz = (nz_ / nDevices<axis::Z>());
 
                 return ((nx * ny * nz) / block::n<alpha>()) * QF;
+            }
+
+            /**
+             * @brief Computes the allocation size for the number of points per GPU
+             **/
+            __host__ [[nodiscard]] inline constexpr label_t nPointsPerGPU() const noexcept
+            {
+                const label_t nxPointsPerGPU = nx_ / nDevices<axis::X>();
+                const label_t nyPointsPerGPU = ny_ / nDevices<axis::Y>();
+                const label_t nzPointsPerGPU = nz_ / nDevices<axis::Z>();
+                const label_t nPointsPerGPU = nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU;
+
+                return nPointsPerGPU;
             }
 
         private:

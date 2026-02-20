@@ -199,7 +199,7 @@ namespace LBM
 }
 
 #include "hostArray.cuh"
-#include "deviceArray.cuh"
+#include "device/array.cuh"
 #include "hostArrayCollection.cuh"
 
 #endif

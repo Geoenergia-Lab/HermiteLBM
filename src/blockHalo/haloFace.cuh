@@ -229,7 +229,7 @@ namespace LBM
 
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
-                std::vector<scalar_t> face(mesh.nFaces<alpha, VelocitySet::QF()>(), 0);
+                std::vector<scalar_t> face(mesh.nFacesPerGPU<alpha, VelocitySet::QF()>(), 0);
 
                 // I think it is correct for this loop to be global
                 // Because the initial conditions and file that we read from are already GPU-ordered
