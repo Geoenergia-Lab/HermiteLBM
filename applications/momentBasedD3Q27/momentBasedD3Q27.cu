@@ -53,16 +53,16 @@ using namespace LBM;
 
 __host__ [[nodiscard]] inline consteval label_t NStreams() noexcept { return 1; }
 
+constexpr const label_t VirtualDeviceIndex = 0;
+
 int main(const int argc, const char *const argv[])
 {
-    static_assert((std::is_same<BoundaryConditions, lidDrivenCavity>::value) || std::is_same<BoundaryConditions, jetFlow>::value);
-
     const programControl programCtrl(argc, argv);
 
     // Set cuda device
-    checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[0]));
-    checkCudaErrors(cudaDeviceSynchronize());
+    errorHandler::check(cudaDeviceSynchronize());
+    errorHandler::check(cudaSetDevice(programCtrl.deviceList()[0]));
+    errorHandler::check(cudaDeviceSynchronize());
 
     const host::latticeMesh mesh(programCtrl);
 
@@ -81,28 +81,28 @@ int main(const int argc, const char *const argv[])
     device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
 
     const device::ptrCollection<10, scalar_t> devPtrs(
-        rho.ptr(0),
-        u.ptr(0),
-        v.ptr(0),
-        w.ptr(0),
-        mxx.ptr(0),
-        mxy.ptr(0),
-        mxz.ptr(0),
-        myy.ptr(0),
-        myz.ptr(0),
-        mzz.ptr(0));
+        rho.ptr(VirtualDeviceIndex),
+        u.ptr(VirtualDeviceIndex),
+        v.ptr(VirtualDeviceIndex),
+        w.ptr(VirtualDeviceIndex),
+        mxx.ptr(VirtualDeviceIndex),
+        mxy.ptr(VirtualDeviceIndex),
+        mxz.ptr(VirtualDeviceIndex),
+        myy.ptr(VirtualDeviceIndex),
+        myz.ptr(VirtualDeviceIndex),
+        mzz.ptr(VirtualDeviceIndex));
 
     // Setup Streams
     const streamHandler streamsLBM(programCtrl);
 
     // Allocate a buffer of pinned memory on the host for writing
-    host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.nPoints() * NUMBER_MOMENTS(), mesh);
+    host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.size() * NUMBER_MOMENTS(), mesh);
 
-    // objectRegistry<VelocitySet, NStreams()> runTimeObjects(hostWriteBuffer, mesh, devPtrs, streamsLBM, programCtrl);
+    objectRegistry<VelocitySet, NStreams()> runTimeObjects(hostWriteBuffer, mesh, devPtrs, streamsLBM, programCtrl);
 
     BlockHalo blockHalo(mesh, programCtrl);
 
-    kernelSetup<smem_alloc_size()>(momentBasedD3Q27);
+    kernel::configure<smem_alloc_size()>(momentBasedD3Q27);
 
     const runTimeIO IO(mesh, programCtrl);
 
@@ -117,30 +117,50 @@ int main(const int argc, const char *const argv[])
         // Checkpoint
         if (programCtrl.save(timeStep))
         {
-            hostWriteBuffer.copy_from_device(devPtrs, mesh);
+            // Do this in a loop
+            {
+                hostWriteBuffer.copy_from_device(
+                    device::ptrCollection<10, scalar_t>{
+                        rho.ptr(VirtualDeviceIndex),
+                        u.ptr(VirtualDeviceIndex),
+                        v.ptr(VirtualDeviceIndex),
+                        w.ptr(VirtualDeviceIndex),
+                        mxx.ptr(VirtualDeviceIndex),
+                        mxy.ptr(VirtualDeviceIndex),
+                        mxz.ptr(VirtualDeviceIndex),
+                        myy.ptr(VirtualDeviceIndex),
+                        myz.ptr(VirtualDeviceIndex),
+                        mzz.ptr(VirtualDeviceIndex)},
+                    mesh,
+                    VirtualDeviceIndex);
+            }
 
             fileIO::writeFile<time::instantaneous>(
                 programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
                 mesh,
                 functionObjects::solutionVariableNames,
                 hostWriteBuffer.data(),
-                timeStep);
+                timeStep,
+                rho.meanCount());
 
-            // runTimeObjects.save(timeStep);
+            runTimeObjects.save(timeStep);
         }
 
         // Main kernel
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                momentBasedD3Q27<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
+                momentBasedD3Q27<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
+                    devPtrs,
+                    blockHalo.fGhost(VirtualDeviceIndex),
+                    blockHalo.gGhost(VirtualDeviceIndex));
             });
 
         // Calculate S kernel
-        // runTimeObjects.calculate(timeStep);
+        runTimeObjects.calculate(timeStep);
 
         // Halo pointer swap
-        blockHalo.swap();
+        blockHalo.swap(VirtualDeviceIndex);
     }
 
     return 0;

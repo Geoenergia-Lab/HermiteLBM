@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_PROGRAMCONTROL_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 #include "../strings.cuh"
 #include "../inputControl.cuh"
 #include "../fileIO/fileIO.cuh"
@@ -63,12 +63,12 @@ namespace LBM
     public:
         /**
          * @brief Constructor for the programControl class
-         * @param argc First argument passed to main
-         * @param argv Second argument passed to main
+         * @param[in] argc First argument passed to main
+         * @param[in] argv Second argument passed to main
          **/
         __host__ [[nodiscard]] programControl(const int argc, const char *const argv[]) noexcept
             : input_(inputControl(argc, argv)),
-              caseName_(string::extractParameter<std::string>(string::readFile("programControl"), "caseName")),
+              caseName_(string::extractParameter<name_t>(string::readFile("programControl"), "caseName")),
               Re_(initialiseConst<scalar_t>("Re")),
               u_inf_(initialiseConst<scalar_t>("u_inf")),
               L_char_(initialiseConst<scalar_t>("L_char")),
@@ -77,9 +77,8 @@ namespace LBM
               infoInterval_(string::extractParameter<label_t>(string::readFile("programControl"), "infoInterval")),
               latestTime_(fileIO::latestTime(caseName_))
         {
-            static_assert((std::is_same_v<scalar_t, float>) | (std::is_same_v<scalar_t, double>), "Invalid floating point size: must be either 32 or 64 bit");
-
-            static_assert((std::is_same_v<label_t, uint32_t>) | (std::is_same_v<label_t, uint64_t>), "Invalid label size: must be either 32 bit unsigned or 64 bit unsigned");
+            types::assertions::validate<scalar_t>();
+            types::assertions::validate<label_t>();
 
             // Get the launch time
             const time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -116,24 +115,47 @@ namespace LBM
             std::cout << "    saveInterval = " << saveInterval_ << ";" << std::endl;
             std::cout << "    infoInterval = " << infoInterval_ << ";" << std::endl;
             std::cout << "    latestTime = " << latestTime_ << ";" << std::endl;
-            std::cout << "    scalarType: " << ((sizeof(scalar_t) == 4) ? "32 bit" : "64 bit") << ";" << std::endl;
-            std::cout << "    labelType: " << ((sizeof(label_t) == 4) ? "uint32_t" : "uint64_t") << ";" << std::endl;
+            std::cout << "    scalarSize: " << sizeof(scalar_t) * 8 << ";" << std::endl;
+            std::cout << "    labelType: uint" << sizeof(label_t) * 8 << "_t" << ";" << std::endl;
             std::cout << "};" << std::endl;
             std::cout << std::endl;
 
-            cudaDeviceSynchronize();
+            for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList().size(); virtualDeviceIndex++)
+            {
+                errorHandler::check(cudaSetDevice(deviceList()[virtualDeviceIndex]));
+
+                // Allocate symbols on the GPU
+                const scalar_t viscosityTemp = u_inf() * L_char() / Re();
+                const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
+                const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTemp;
+                const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
+                const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
+
+                device::copyToSymbol(device::L_char, L_char());
+                device::copyToSymbol(device::Re, Re());
+                device::copyToSymbol(device::tau, tauTemp);
+                device::copyToSymbol(device::omega, omegaTemp);
+                device::copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
+                device::copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
+            }
+
+            // Make sure we synchronize and set active device to 0
+            // Probably unnecessary but nice to do it anyway
+            errorHandler::check(cudaDeviceSynchronize());
+            errorHandler::check(cudaSetDevice(deviceList()[0]));
+            errorHandler::check(cudaDeviceSynchronize());
         };
 
         /**
          * @brief Destructor for the programControl class
          **/
-        ~programControl() noexcept {};
+        ~programControl() noexcept {}
 
         /**
          * @brief Returns the name of the case
-         * @return A const std::string
+         * @return A const name_t
          **/
-        __host__ [[nodiscard]] inline constexpr const std::string &caseName() const noexcept
+        __host__ [[nodiscard]] inline constexpr const name_t &caseName() const noexcept
         {
             return caseName_;
         }
@@ -178,9 +200,10 @@ namespace LBM
          * @brief Returns the total number of simulation time steps
          * @return The total number of simulation time steps
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr label_t nt() const noexcept
+        template <typename T = label_t>
+        __device__ __host__ [[nodiscard]] inline constexpr T nt() const noexcept
         {
-            return nTimeSteps_;
+            return static_cast<T>(nTimeSteps_);
         }
 
         /**
@@ -205,9 +228,10 @@ namespace LBM
          * @brief Returns the latest time step of the solution files contained within the current directory
          * @return The latest time step as a label_t
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr label_t latestTime() const noexcept
+        template <typename T = label_t>
+        __device__ __host__ [[nodiscard]] inline constexpr T latestTime() const noexcept
         {
-            return latestTime_;
+            return static_cast<T>(latestTime_);
         }
 
         /**
@@ -222,9 +246,9 @@ namespace LBM
         /**
          * @brief Veriefies if the command line has the argument -type
          * @return A string representing the convertion type passed at the command line
-         * @param[in] programCtrl Program control parameters
+         * @param[in] programCtrl The program control object
          **/
-        __host__ [[nodiscard]] const std::string getArgument(const std::string &argument) const
+        __host__ [[nodiscard]] const name_t getArgument(const name_t &argument) const
         {
             if (input_.isArgPresent(argument))
             {
@@ -251,7 +275,7 @@ namespace LBM
          * @brief Provides read-only access to the arguments supplied at the command line
          * @return The command line input as a vector of strings
          **/
-        __host__ [[nodiscard]] inline constexpr const std::vector<std::string> &commandLine() const noexcept
+        __host__ [[nodiscard]] inline constexpr const words_t &commandLine() const noexcept
         {
             return input_.commandLine();
         }
@@ -265,7 +289,7 @@ namespace LBM
         /**
          * @brief The name of the simulation case
          **/
-        const std::string caseName_;
+        const name_t caseName_;
 
         /**
          * @brief The Reynolds number
@@ -293,10 +317,10 @@ namespace LBM
         /**
          * @brief Reads a variable from the caseInfo file into a parameter of type T
          * @return The variable as type T
-         * @param varName The name of the variable to read
+         * @param[in] varName The name of the variable to read
          **/
         template <typename T>
-        __host__ [[nodiscard]] T initialiseConst(const std::string varName) const noexcept
+        __host__ [[nodiscard]] T initialiseConst(const name_t &varName) const noexcept
         {
             return string::extractParameter<T>(string::readFile("programControl"), varName);
         }

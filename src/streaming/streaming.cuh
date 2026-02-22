@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_STREAMING_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 #include "../globalFunctions.cuh"
 #include "../array/array.cuh"
 
@@ -72,11 +72,11 @@ namespace LBM
         /**
          * @brief Default constructor
          **/
-        __device__ __host__ [[nodiscard]] inline consteval streaming(){};
+        __device__ __host__ [[nodiscard]] inline consteval streaming() {}
 
         /**
          * @brief Saves thread population density to shared memory
-         * @tparam VelocitySet Velocity set configuration defining lattice structure
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam N Size of shared memory array
          * @param[in] pop Population density array for current thread
          * @param[out] s_pop Shared memory array for population storage
@@ -93,9 +93,9 @@ namespace LBM
             const label_t tid) noexcept
         {
             device::constexpr_for<0, (VelocitySet::Q() - 1)>(
-                [&](const auto q_)
+                [&](const auto i)
                 {
-                    s_pop[q_i<q_ * block::stride()>() + tid] = pop[q_i<q_ + 1>()];
+                    s_pop[q_i<i * block::stride()>() + tid] = pop[q_i<i + 1>()];
                 });
         }
 
@@ -110,7 +110,7 @@ namespace LBM
 
         /**
          * @brief Pulls population density from shared memory with periodic boundaries
-         * @tparam VelocitySet Velocity set configuration defining lattice structure
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam N Size of shared memory array
          * @param[out] pop Population density array to be populated
          * @param[in] s_pop Shared memory array containing population data
@@ -123,15 +123,15 @@ namespace LBM
         __device__ static inline void pull(
             thread::array<scalar_t, VelocitySet::Q()> &pop,
             const scalar_t *const ptrRestrict s_pop,
-            const device::threadCoordinate &Tx) noexcept
+            const thread::coordinate &Tx) noexcept
         {
             device::constexpr_for<0, (VelocitySet::Q() - 1)>(
-                [&](const auto q_)
+                [&](const auto i)
                 {
-                    const label_t x = periodic_index<-VelocitySet::template cx<int>(q_i<q_ + 1>()), block::nx()>(Tx.value<axis::X>());
-                    const label_t y = periodic_index<-VelocitySet::template cy<int>(q_i<q_ + 1>()), block::ny()>(Tx.value<axis::Y>());
-                    const label_t z = periodic_index<-VelocitySet::template cz<int>(q_i<q_ + 1>()), block::nz()>(Tx.value<axis::Z>());
-                    pop[q_i<q_ + 1>()] = s_pop[q_i<q_ * block::stride()>() + device::idxBlock(x, y, z)];
+                    const label_t x = periodic_index<-VelocitySet::template cx<int>(q_i<i + 1>()), block::nx()>(Tx.value<axis::X>());
+                    const label_t y = periodic_index<-VelocitySet::template cy<int>(q_i<i + 1>()), block::ny()>(Tx.value<axis::Y>());
+                    const label_t z = periodic_index<-VelocitySet::template cz<int>(q_i<i + 1>()), block::nz()>(Tx.value<axis::Z>());
+                    pop[q_i<i + 1>()] = s_pop[q_i<i * block::stride()>() + block::idx(x, y, z)];
                 });
         }
 
@@ -139,7 +139,7 @@ namespace LBM
         __device__ static inline void pull(
             thread::array<scalar_t, VelocitySet::Q()> &pop,
             const thread::array<scalar_t, N> &s_pop,
-            const device::threadCoordinate &Tx) noexcept
+            const thread::coordinate &Tx) noexcept
         {
             pull<VelocitySet>(pop, s_pop.data(), Tx);
         }
@@ -155,23 +155,25 @@ namespace LBM
          * This function uses bitwise AND optimization when Dim is power-of-two
          * for improved performance, falling back to modulo arithmetic otherwise.
          **/
-        template <const int Shift, const int Dim>
+        template <const int coeff, const label_t Dim>
         __device__ [[nodiscard]] static inline label_t periodic_index(const label_t idx) noexcept
         {
-            static_assert((Shift == -1) || (Shift == 1) || (Shift == 0), "Shift must be -1, 0, or 1");
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::CAN_BE_NULL>();
 
             if constexpr (Dim > 0 && (Dim & (Dim - 1)) == 0)
             {
                 // Power-of-two: use bitwise AND
-                if constexpr (Shift == -1)
+                if constexpr (coeff == -1)
                 {
                     return (idx - 1) & (Dim - 1);
                 }
-                else if constexpr (Shift == 1)
+
+                if constexpr (coeff == 1)
                 {
                     return (idx + 1) & (Dim - 1);
                 }
-                else
+
+                if constexpr (coeff == 0)
                 {
                     return idx & (Dim - 1);
                 }
@@ -179,15 +181,17 @@ namespace LBM
             else
             {
                 // General case: adjust by adding Dim to ensure nonnegative modulo
-                if constexpr (Shift == -1)
+                if constexpr (coeff == -1)
                 {
                     return (idx - 1 + Dim) % Dim;
                 }
-                else if constexpr (Shift == 1)
+
+                if constexpr (coeff == 1)
                 {
                     return (idx + 1) % Dim;
                 }
-                else
+
+                if constexpr (coeff == 0)
                 {
                     return idx % Dim;
                 }

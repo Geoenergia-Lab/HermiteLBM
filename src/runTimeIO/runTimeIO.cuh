@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_RUNTIMEIO_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 
 namespace LBM
 {
@@ -68,8 +68,8 @@ namespace LBM
     public:
         /**
          * @brief Constructs a runTimeIO object and starts timing
-         * @param[in] mesh Lattice mesh providing dimension information
-         * @param[in] programCtrl Program control object with simulation parameters
+         * @param[in] mesh The lattice mesh
+         * @param[in] programCtrl The program control object
          **/
         __host__ [[nodiscard]] runTimeIO(
             const host::latticeMesh &mesh,
@@ -106,7 +106,7 @@ namespace LBM
          * @param[in] totalSeconds Total number of seconds to format
          * @return String formatted as HH:MM:SS (supports negative durations)
          **/
-        __host__ [[nodiscard]] static const std::string duration(const long long totalSeconds) noexcept
+        __host__ [[nodiscard]] static const name_t duration(const long long totalSeconds) noexcept
         {
             // Handle sign and absolute value conversion
             const bool isNegative = (totalSeconds < 0);
@@ -132,8 +132,8 @@ namespace LBM
         /**
          * @brief Calculates Million Lattice Updates Per Second (MLUPS) performance metric
          * @tparam T Data type for the MLUPS calculation (typically double)
-         * @param[in] mesh Lattice mesh providing dimension information
-         * @param[in] programCtrl Program control object with time step information
+         * @param[in] mesh The lattice mesh
+         * @param[in] programCtrl The program control object
          * @param[in] start Simulation start time point
          * @param[in] end Simulation end time point
          * @return MLUPS value as type T, or 0 if calculation is not applicable
@@ -148,14 +148,14 @@ namespace LBM
             const std::chrono::high_resolution_clock::time_point &start,
             const std::chrono::high_resolution_clock::time_point &end) noexcept
         {
-            if ((programCtrl.nt() == (programCtrl.latestTime() - 1)) | mesh.nPoints() == 0)
+            if ((programCtrl.nt() == (programCtrl.latestTime() - 1)) | mesh.size() == 0)
             {
                 return 0;
             }
 
-            const uint64_t nPoints = static_cast<uint64_t>(mesh.nx()) * static_cast<uint64_t>(mesh.ny()) * static_cast<uint64_t>(mesh.nz());
+            const uint64_t nPoints = mesh.dimension<axis::X, uint64_t>() * mesh.dimension<axis::Y, uint64_t>() * mesh.dimension<axis::Z, uint64_t>();
 
-            const uint64_t nTime = static_cast<uint64_t>(programCtrl.nt()) - static_cast<uint64_t>(programCtrl.latestTime()) - 1;
+            const uint64_t nTime = programCtrl.nt<uint64_t>() - programCtrl.latestTime<uint64_t>() - 1;
 
             const uint64_t numerator = nPoints * nTime;
 
@@ -165,10 +165,19 @@ namespace LBM
         }
 
     private:
+        /**
+         * @brief Reference to the mesh
+         **/
         const host::latticeMesh &mesh_;
 
+        /**
+         * @brief Reference to the program control
+         **/
         const programControl &programCtrl_;
 
+        /**
+         * @brief Start point
+         **/
         const std::chrono::high_resolution_clock::time_point start_;
     };
 }

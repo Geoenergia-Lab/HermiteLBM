@@ -62,7 +62,8 @@ namespace LBM
              * @brief Get number of discrete velocity directions
              * @return 27 (number of directions in D3Q27 lattice)
              **/
-            __device__ __host__ [[nodiscard]] static inline consteval label_t Q() noexcept
+            template <typename T = label_t>
+            __device__ __host__ [[nodiscard]] static inline consteval T Q() noexcept
             {
                 return 27;
             }
@@ -71,7 +72,8 @@ namespace LBM
              * @brief Get number of velocity components on a lattice face
              * @return 9 (number of directions crossing each face in D3Q27)
              **/
-            __device__ __host__ [[nodiscard]] static inline consteval label_t QF() noexcept
+            template <typename T = label_t>
+            __device__ __host__ [[nodiscard]] static inline consteval T QF() noexcept
             {
                 return 9;
             }
@@ -98,24 +100,26 @@ namespace LBM
         /**
          * @brief Default constructor (consteval)
          **/
-        __device__ __host__ [[nodiscard]] inline consteval D3Q27(){};
+        __device__ __host__ [[nodiscard]] inline consteval D3Q27() {}
 
         /**
          * @brief Get number of discrete velocity directions
          * @return 27 (number of directions in D3Q27 lattice)
          **/
-        __device__ __host__ [[nodiscard]] static inline consteval label_t Q() noexcept
+        template <typename T = label_t>
+        __device__ __host__ [[nodiscard]] static inline consteval T Q() noexcept
         {
-            return vs::Q();
+            return vs::Q<T>();
         }
 
         /**
          * @brief Get number of velocity components on a lattice face
          * @return 9 (number of directions crossing each face in D3Q27)
          **/
-        __device__ __host__ [[nodiscard]] static inline consteval label_t QF() noexcept
+        template <typename T = label_t>
+        __device__ __host__ [[nodiscard]] static inline consteval T QF() noexcept
         {
-            return vs::QF();
+            return vs::QF<T>();
         }
 
         /**
@@ -173,9 +177,6 @@ namespace LBM
         template <typename T, const label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval T w_q(const q_i<q_> q) noexcept
         {
-            // Check that we are accessing a valid member
-            static_assert(q() < vs::Q(), "Invalid velocity set index in member function w(q)");
-
             // Return the component
             return w_q<T>()[q];
         }
@@ -199,9 +200,6 @@ namespace LBM
         template <typename T, const label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval T cx(const q_i<q_> q) noexcept
         {
-            // Check that we are accessing a valid member
-            static_assert(q() < vs::Q(), "Invalid velocity set index in member function cx(q)");
-
             // Return the component
             return cx<T>()[q];
         }
@@ -225,9 +223,6 @@ namespace LBM
         template <typename T, const label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval T cy(const q_i<q_> q) noexcept
         {
-            // Check that we are accessing a valid member
-            static_assert(q() < vs::Q(), "Invalid velocity set index in member function cy(q)");
-
             // Return the component
             return cy<T>()[q];
         }
@@ -251,9 +246,6 @@ namespace LBM
         template <typename T, const label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval T cz(const q_i<q_> q) noexcept
         {
-            // Check that we are accessing a valid member
-            static_assert(q() < vs::Q(), "Invalid velocity set index in member function cz(q)");
-
             // Return the component
             return cz<T>()[q];
         }
@@ -265,7 +257,7 @@ namespace LBM
         template <typename T, const axis::type alpha>
         __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, vs::Q()> c() noexcept
         {
-            assertions::axis::validate<alpha, axis::CAN_BE_NULL>();
+            axis::assertions::validate<alpha, axis::CAN_BE_NULL>();
 
             if constexpr (alpha == axis::NO_DIRECTION)
             {
@@ -295,16 +287,22 @@ namespace LBM
          * @param[out] pop Population array to be filled
          * @param[in] moments Moment array (10 components)
          **/
-        __device__ static inline void reconstruct(thread::array<scalar_t, vs::Q()> &pop, const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        template <const bool CalculateRest = true>
+        __device__ __host__ static inline void reconstruct(
+            thread::array<scalar_t, vs::Q()> &pop,
+            const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
             const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()]);
 
-            const scalar_t rhow_0 = moments[m_i<0>()] * w_0<scalar_t>();
+            if constexpr (CalculateRest)
+            {
+                const scalar_t rhow_0 = moments[m_i<0>()] * w_0<scalar_t>();
+                pop[q_i<0>()] = rhow_0 * pics2;
+            }
+
             const scalar_t rhow_1 = moments[m_i<0>()] * w_1<scalar_t>();
             const scalar_t rhow_2 = moments[m_i<0>()] * w_2<scalar_t>();
             const scalar_t rhow_3 = moments[m_i<0>()] * w_3<scalar_t>();
-
-            pop[q_i<0>()] = rhow_0 * pics2;
 
             pop[q_i<1>()] = rhow_1 * (pics2 + moments[m_i<1>()] + moments[m_i<4>()]);
             pop[q_i<2>()] = rhow_1 * (pics2 - moments[m_i<1>()] + moments[m_i<4>()]);
@@ -343,41 +341,11 @@ namespace LBM
          **/
         __device__ __host__ [[nodiscard]] static inline thread::array<scalar_t, vs::Q()> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
-            const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()]);
+            thread::array<scalar_t, vs::Q()> pop;
 
-            const scalar_t rhow_0 = moments[m_i<0>()] * w_0<scalar_t>();
-            const scalar_t rhow_1 = moments[m_i<0>()] * w_1<scalar_t>();
-            const scalar_t rhow_2 = moments[m_i<0>()] * w_2<scalar_t>();
-            const scalar_t rhow_3 = moments[m_i<0>()] * w_3<scalar_t>();
+            reconstruct(pop, moments);
 
-            return {
-                rhow_0 * pics2,
-                rhow_1 * (pics2 + moments[m_i<1>()] + moments[m_i<4>()]),
-                rhow_1 * (pics2 - moments[m_i<1>()] + moments[m_i<4>()]),
-                rhow_1 * (pics2 + moments[m_i<2>()] + moments[m_i<7>()]),
-                rhow_1 * (pics2 - moments[m_i<2>()] + moments[m_i<7>()]),
-                rhow_1 * (pics2 + moments[m_i<3>()] + moments[m_i<9>()]),
-                rhow_1 * (pics2 - moments[m_i<3>()] + moments[m_i<9>()]),
-                rhow_2 * (pics2 + moments[m_i<1>()] + moments[m_i<2>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<5>()]),
-                rhow_2 * (pics2 - moments[m_i<1>()] - moments[m_i<2>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<5>()]),
-                rhow_2 * (pics2 + moments[m_i<1>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<9>()] + moments[m_i<6>()]),
-                rhow_2 * (pics2 - moments[m_i<1>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<9>()] + moments[m_i<6>()]),
-                rhow_2 * (pics2 + moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<7>()] + moments[m_i<9>()] + moments[m_i<8>()]),
-                rhow_2 * (pics2 - moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<7>()] + moments[m_i<9>()] + moments[m_i<8>()]),
-                rhow_2 * (pics2 + moments[m_i<1>()] - moments[m_i<2>()] + moments[m_i<4>()] + moments[m_i<7>()] - moments[m_i<5>()]),
-                rhow_2 * (pics2 - moments[m_i<1>()] + moments[m_i<2>()] + moments[m_i<4>()] + moments[m_i<7>()] - moments[m_i<5>()]),
-                rhow_2 * (pics2 + moments[m_i<1>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<9>()] - moments[m_i<6>()]),
-                rhow_2 * (pics2 - moments[m_i<1>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<9>()] - moments[m_i<6>()]),
-                rhow_2 * (pics2 + moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<7>()] + moments[m_i<9>()] - moments[m_i<8>()]),
-                rhow_2 * (pics2 - moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<7>()] + moments[m_i<9>()] - moments[m_i<8>()]),
-                rhow_3 * (pics2 + moments[m_i<1>()] + moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] + (moments[m_i<5>()] + moments[m_i<6>()] + moments[m_i<8>()])),
-                rhow_3 * (pics2 - moments[m_i<1>()] - moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] + (moments[m_i<5>()] + moments[m_i<6>()] + moments[m_i<8>()])),
-                rhow_3 * (pics2 + moments[m_i<1>()] + moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] + (moments[m_i<5>()] - moments[m_i<6>()] - moments[m_i<8>()])),
-                rhow_3 * (pics2 - moments[m_i<1>()] - moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] + (moments[m_i<5>()] - moments[m_i<6>()] - moments[m_i<8>()])),
-                rhow_3 * (pics2 + moments[m_i<1>()] - moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] - (moments[m_i<5>()] - moments[m_i<6>()] + moments[m_i<8>()])),
-                rhow_3 * (pics2 - moments[m_i<1>()] + moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] - (moments[m_i<5>()] - moments[m_i<6>()] + moments[m_i<8>()])),
-                rhow_3 * (pics2 - moments[m_i<1>()] + moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] - (moments[m_i<5>()] + moments[m_i<6>()] - moments[m_i<8>()])),
-                rhow_3 * (pics2 + moments[m_i<1>()] - moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] - (moments[m_i<5>()] + moments[m_i<6>()] - moments[m_i<8>()]))};
+            return pop;
         }
 
         /**
@@ -402,14 +370,14 @@ namespace LBM
         {
             // Loop over the velocity set, print to terminal
             host::constexpr_for<q(), vs::Q()>(
-                [&](const auto Q)
+                [&](const auto i)
                 {
                     std::cout
-                        << "    [" << q_i<Q>() << "] = {"
-                        << w_q<double>()[q_i<Q>()] << ", "
-                        << cx<int>()[q_i<Q>()] << ", "
-                        << cy<int>()[q_i<Q>()] << ", "
-                        << cz<int>()[q_i<Q>()] << "};" << std::endl;
+                        << "    {w, cx, cy, cz}[" << q_i<i>() << "] = {"
+                        << w_q<double>()[q_i<i>()] << ", "
+                        << velocitySet::c<cx<int>()[q_i<i>()]>() << ", "
+                        << velocitySet::c<cy<int>()[q_i<i>()]>() << ", "
+                        << velocitySet::c<cz<int>()[q_i<i>()]>() << "};" << std::endl;
                 });
         }
     };

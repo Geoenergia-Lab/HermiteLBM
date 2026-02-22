@@ -68,7 +68,7 @@ namespace LBM
         public:
             /**
              * @brief Constructs a lattice mesh from program configuration
-             * @param[in] programCtrl Program control object containing simulation parameters
+             * @param[in] programCtrl The program control object
              * @throws Error if mesh dimensions are invalid or GPU memory is insufficient
              *
              * This constructor reads mesh dimensions from the "programControl" file and performs:
@@ -77,246 +77,97 @@ namespace LBM
              * - Calculation of LBM relaxation parameters
              * - Initialization of device constants for GPU execution
              **/
-            __host__ [[nodiscard]] latticeMesh([[maybe_unused]] const programControl &programCtrl) noexcept
-                : nx_(string::extractParameter<label_t>(string::readFile("latticeMesh"), "nx")),
-                  ny_(string::extractParameter<label_t>(string::readFile("latticeMesh"), "ny")),
-                  nz_(string::extractParameter<label_t>(string::readFile("latticeMesh"), "nz")),
-                  nPoints_(nx_ * ny_ * nz_),
-                  L_(
-                      {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
-                  nDevices_(initialise_device_list("deviceDecomposition"))
+            __host__ [[nodiscard]] latticeMesh([[maybe_unused]] const programControl &programCtrl)
+                : dimensions_(string::extractParameter<blockLabel_t>("latticeMesh", "n")),
+                  L_(string::extractParameter<pointVector>("latticeMesh", "L")),
+                  nDevices_(string::extractParameter<blockLabel_t>("deviceDecomposition", "n"))
             {
-                std::cout << "latticeMesh:" << std::endl;
-                std::cout << "{" << std::endl;
-                std::cout << "    nx = " << nx_ << ";" << std::endl;
-                std::cout << "    ny = " << ny_ << ";" << std::endl;
-                std::cout << "    nz = " << nz_ << ";" << std::endl;
-                std::cout << "    Lx = " << L_.x << ";" << std::endl;
-                std::cout << "    Ly = " << L_.y << ";" << std::endl;
-                std::cout << "    Lz = " << L_.z << ";" << std::endl;
-                std::cout << "};" << std::endl;
-                std::cout << std::endl;
+                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(host::latticeMesh));
 
-                std::cout << "block:" << std::endl;
-                std::cout << "{" << std::endl;
-                std::cout << "    nx = " << block::nx() << ";" << std::endl;
-                std::cout << "    ny = " << block::ny() << ";" << std::endl;
-                std::cout << "    nz = " << block::nz() << ";" << std::endl;
-                std::cout << "};" << std::endl;
-                std::cout << std::endl;
+                print();
 
                 // Perform a block dimensions safety check
-                {
-                    if (!(block::nx() * nxBlocks() == nx_))
-                    {
-                        errorHandler(ERR_SIZE, "block::nx() * mesh.nxBlocks() not equal to mesh.nx()\nMesh dimensions should be multiples of 8");
-                    }
-                    if (!(block::ny() * nyBlocks() == ny_))
-                    {
-                        errorHandler(ERR_SIZE, "block::ny() * mesh.nyBlocks() not equal to mesh.ny()\nMesh dimensions should be multiples of 8");
-                    }
-                    if (!(block::nz() * nzBlocks() == nz_))
-                    {
-                        errorHandler(ERR_SIZE, "block::nz() * mesh.nzBlocks() not equal to mesh.nz()\nMesh dimensions should be multiples of 8");
-                    }
-                    if (!(block::nx() * nxBlocks() * block::ny() * nyBlocks() * block::nz() * nzBlocks() == nx_ * ny_ * nz_))
-                    {
-                        errorHandler(ERR_SIZE, "block::nx() * nxBlocks() * block::ny() * nyBlocks() * block::nz() * nzBlocks() not equal to mesh.nPoints()\nMesh dimensions should be multiples of 8");
-                    }
-                }
+                validate_block_dimensions(dimensions_);
 
                 // Safety check for the mesh dimensions
-                {
-                    const uintmax_t nxTemp = static_cast<uintmax_t>(nx_);
-                    const uintmax_t nyTemp = static_cast<uintmax_t>(ny_);
-                    const uintmax_t nzTemp = static_cast<uintmax_t>(nz_);
-                    const uintmax_t nPointsTemp = nxTemp * nyTemp * nzTemp;
-                    constexpr const uintmax_t typeLimit = static_cast<uintmax_t>(std::numeric_limits<label_t>::max());
+                validate_allocation_size(programCtrl, dimensions_, nDevices_);
 
-                    // Check that the mesh dimensions won't overflow the type limit for label_t
-                    if (nPointsTemp >= typeLimit)
-                    {
-                        errorHandler(ERR_SIZE,
-                                     "\nMesh size exceeds maximum allowed value:\n"
-                                     "Number of mesh points: " +
-                                         std::to_string(nPointsTemp) +
-                                         "\nLimit of label_t: " +
-                                         std::to_string(typeLimit));
-                    }
-
-                    static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(host::latticeMesh));
-
-                    // Check that the mesh dimensions are not too large for GPU memory
-                    for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < programCtrl.deviceList().size(); virtualDeviceIndex++)
-                    {
-                        // Calculate the per-GPU allocation size
-                        const label_t nxPointsPerGPU = nx_ / nDevices_.nx;
-                        const label_t nyPointsPerGPU = ny_ / nDevices_.ny;
-                        const label_t nzPointsPerGPU = nz_ / nDevices_.nz;
-                        const label_t nPointsPerGPU = nxPointsPerGPU * nyPointsPerGPU * nzPointsPerGPU;
-
-                        const cudaDeviceProp props = getDeviceProperties(programCtrl.deviceList()[virtualDeviceIndex]);
-                        const uintmax_t totalMemTemp = static_cast<uintmax_t>(props.totalGlobalMem);
-                        const uintmax_t allocationSize = nPointsPerGPU * static_cast<uintmax_t>(sizeof(scalar_t)) * (NUMBER_MOMENTS<uintmax_t>());
-
-                        if (allocationSize >= totalMemTemp)
-                        {
-                            const double gbAllocation = static_cast<double>(allocationSize / (1024 * 1024 * 1024));
-                            const double gbAvailable = static_cast<double>(totalMemTemp / (1024 * 1024 * 1024));
-
-                            errorHandler(
-                                ERR_SIZE,
-                                "\nInsufficient GPU memory:\nAttempted to allocate: " +
-                                    std::to_string(allocationSize) +
-                                    " bytes (" +
-                                    std::to_string(gbAllocation) +
-                                    " GB)\n"
-                                    "Available GPU memory: " +
-                                    std::to_string(totalMemTemp) +
-                                    " bytes (" +
-                                    std::to_string(gbAvailable) +
-                                    " GB)");
-                        }
-                    }
-                }
-
-                {
-                    const label_t nxGPUs = nDevices<axis::X>();
-                    const label_t nyGPUs = nDevices<axis::Y>();
-                    const label_t nzGPUs = nDevices<axis::Z>();
-                    gpu_for(
-                        nxGPUs, nyGPUs, nzGPUs,
-                        [&](const label_t dx, const label_t dy, const label_t dz)
-                        {
-                            const label_t virtualDeviceIndex = deviceIdx(dx, dy, dz, nxGPUs, nyGPUs);
-
-                            checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
-
-                            // Allocate programControl symbols on the GPU (clean up later)
-                            {
-                                const scalar_t viscosityTemp = programCtrl.u_inf() * programCtrl.L_char() / programCtrl.Re();
-                                const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
-                                const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTemp;
-                                const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
-                                const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
-
-                                copyToSymbol(device::L_char, programCtrl.L_char());
-                                copyToSymbol(device::Re, programCtrl.Re());
-                                copyToSymbol(device::tau, tauTemp);
-                                copyToSymbol(device::omega, omegaTemp);
-                                copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
-                                copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
-                            }
-
-                            const label_t nxBlocksPerGPU = nxBlocks() / nDevices_.nx;
-                            const label_t nyBlocksPerGPU = nyBlocks() / nDevices_.ny;
-                            const label_t nzBlocksPerGPU = nzBlocks() / nDevices_.nz;
-
-                            // Allocate mesh symbols on the GPU
-                            copyToSymbol(device::nx, nx_);
-                            copyToSymbol(device::ny, ny_);
-                            copyToSymbol(device::nz, nz_);
-                            copyToSymbol(device::NUM_BLOCK_X, nxBlocksPerGPU);
-                            copyToSymbol(device::NUM_BLOCK_Y, nyBlocksPerGPU);
-                            copyToSymbol(device::NUM_BLOCK_Z, nzBlocksPerGPU);
-                            copyToSymbol(device::BLOCK_OFFSET_X, nxBlocksPerGPU * dx);
-                            copyToSymbol(device::BLOCK_OFFSET_Y, nyBlocksPerGPU * dy);
-                            copyToSymbol(device::BLOCK_OFFSET_Z, nzBlocksPerGPU * dz);
-                        });
-                }
+                // Must be safe, so allocate device constants
+                set_constants(programCtrl, dimensions_, nBlocks(), nDevices_);
             };
 
-            // Constructor to initialise a cut plane
-            __host__ [[nodiscard]] latticeMesh(const label_t nx, const label_t ny, const label_t nz) noexcept
-                : nx_(nx),
-                  ny_(ny),
-                  nz_(nz),
-                  nPoints_(nx_ * ny_ * nz_),
-                  L_(
-                      {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
-                  nDevices_(initialise_device_list("deviceDecomposition")){};
-
-            __host__ [[nodiscard]] latticeMesh(const blockLabel_t meshDimensions) noexcept
-                : nx_(meshDimensions.nx),
-                  ny_(meshDimensions.ny),
-                  nz_(meshDimensions.nz),
-                  nPoints_(nx_ * ny_ * nz_),
-                  L_(
-                      {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}),
-                  nDevices_(initialise_device_list("deviceDecomposition")){};
-
-            __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const blockLabel_t meshDimensions) noexcept
-                : nx_(meshDimensions.nx),
-                  ny_(meshDimensions.ny),
-                  nz_(meshDimensions.nz),
-                  nPoints_(nx_ * ny_ * nz_),
-                  L_(mesh.L()),
-                  nDevices_(initialise_device_list("deviceDecomposition")){};
-
-            __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh) noexcept
-                : nx_(mesh.nx()),
-                  ny_(mesh.ny()),
-                  nz_(mesh.nz()),
-                  nPoints_(nx_ * ny_ * nz_),
-                  L_(mesh.L()),
-                  nDevices_(initialise_device_list("deviceDecomposition")){};
-
             /**
-             * @name Grid Dimension Accessors
-             * @brief Provide access to grid dimensions
-             * @return Dimension value in specified direction
+             * @brief Constructs a lattice mesh with specified dimensions
+             * @param[in] mesh The lattice mesh
+             * @param[in] meshDimensions The dimensions of the mesh to construct
              **/
-            template <typename T = label_t>
-            __device__ __host__ [[nodiscard]] inline constexpr T nx() const noexcept
+            __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const blockLabel_t &meshDimensions) noexcept
+                : dimensions_({meshDimensions.x, meshDimensions.y, meshDimensions.z}),
+                  L_(mesh.L()),
+                  nDevices_(string::extractParameter<blockLabel_t>("deviceDecomposition", "n"))
             {
-                return static_cast<T>(nx_);
-            }
-            template <typename T = label_t>
-            __device__ __host__ [[nodiscard]] inline constexpr T ny() const noexcept
-            {
-                return static_cast<T>(ny_);
-            }
-            template <typename T = label_t>
-            __device__ __host__ [[nodiscard]] inline constexpr T nz() const noexcept
-            {
-                return static_cast<T>(nz_);
-            }
-            template <typename T = label_t>
-            __device__ __host__ [[nodiscard]] inline constexpr T nPoints() const noexcept
-            {
-                return static_cast<T>(nPoints_);
+                print();
             }
 
             /**
-             * @name Block Decomposition Accessors
-             * @brief Provide access to CUDA block decomposition
-             * @return Number of blocks in specified direction
+             * @brief Total number of points in the mesh
+             * @tparam T The size type
              **/
-            template <typename T = label_t>
-            __device__ __host__ [[nodiscard]] inline constexpr T nxBlocks() const noexcept
+            template <typename ValueType = label_t>
+            __device__ __host__ [[nodiscard]] inline constexpr ValueType size() const noexcept
             {
-                return nx_ / block::nx();
+                return dimensions_.size<ValueType>();
             }
-            template <typename T = label_t>
-            __device__ __host__ [[nodiscard]] inline constexpr T nyBlocks() const noexcept
+
+            /**
+             * @brief Number of points in the mesh in a specific direction
+             * @tparam alpha The axis type (X, Y or Z)
+             * @tparam T The size type
+             **/
+            template <axis::type alpha, typename ValueType = label_t>
+            __device__ __host__ [[nodiscard]] inline constexpr ValueType dimension() const noexcept
             {
-                return ny_ / block::ny();
+                return dimensions_.value<alpha, ValueType>();
             }
-            template <typename T = label_t>
-            __device__ __host__ [[nodiscard]] inline constexpr T nzBlocks() const noexcept
+
+            /**
+             * @brief Number of points in the mesh in each specific direction
+             **/
+            __device__ __host__ [[nodiscard]] inline constexpr const blockLabel_t &dimensions() const noexcept
             {
-                return nz_ / block::nz();
+                return dimensions_;
             }
-            template <typename T = label_t>
-            __device__ __host__ [[nodiscard]] inline constexpr T nBlocks() const noexcept
+
+            /**
+             * @brief Number of blocks in the mesh in a specific direction
+             * @tparam alpha The axis type (X, Y or Z)
+             * @tparam ValueType The size type
+             * @return The number of blocks in the specified direction
+             **/
+            template <const axis::type alpha, typename ValueType = label_t>
+            __device__ __host__ [[nodiscard]] inline constexpr ValueType nBlocks() const noexcept
             {
-                return (nx<T>() / block::nx<T>()) * (ny<T>() / block::ny<T>()) * (nz<T>() / block::nz<T>());
+                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(host::latticeMesh::nBlocks, "Not calculated on a per-GPU basis"));
+
+                return dimensions_.value<alpha, ValueType>() / block::n<alpha, ValueType>();
+            }
+
+            /**
+             * @brief Number of blocks in the mesh in each specific direction
+             * @return blockLabel_t containing the number of blocks in each direction
+             **/
+            __device__ __host__ [[nodiscard]] inline constexpr blockLabel_t nBlocks() const noexcept
+            {
+                return blockLabel_t(nBlocks<axis::X, blockLabel_t::value_type>(), nBlocks<axis::Y, blockLabel_t::value_type>(), nBlocks<axis::Z, blockLabel_t::value_type>());
+            }
+
+            /**
+             * @brief Get grid dimensions for CUDA kernel launches
+             * @return dim3 structure with grid dimensions
+             **/
+            __device__ __host__ [[nodiscard]] inline constexpr dim3 gridBlock() const noexcept
+            {
+                return {nBlocks<axis::X, uint32_t>(), nBlocks<axis::Y, uint32_t>(), nBlocks<axis::Z, uint32_t>()};
             }
 
             /**
@@ -329,15 +180,6 @@ namespace LBM
             }
 
             /**
-             * @brief Get grid dimensions for CUDA kernel launches
-             * @return dim3 structure with grid dimensions
-             **/
-            __device__ __host__ [[nodiscard]] inline constexpr dim3 gridBlock() const noexcept
-            {
-                return {static_cast<uint32_t>(nx_ / block::nx()), static_cast<uint32_t>(ny_ / block::ny()), static_cast<uint32_t>(nz_ / block::nz())};
-            }
-
-            /**
              * @brief Get physical domain dimensions
              * @return Const reference to pointVector containing domain size
              **/
@@ -347,17 +189,8 @@ namespace LBM
             }
 
             /**
-             * @brief Get the number of physical dimensions of the mesh
-             * @return Const reference to pointVector containing domain size
-             **/
-            __host__ [[nodiscard]] inline constexpr label_t nDims() const noexcept
-            {
-                return static_cast<label_t>(nx_ > 1) + static_cast<label_t>(ny_ > 1) + static_cast<label_t>(nz_ > 1);
-            }
-
-            /**
              * @brief Boundary check for the faces
-             * @param x,y,z The coordinate of the point
+             * @param[in] x,y,z The coordinate of the point
              * @return True if the point is on the boundary, false otherwise
              **/
             __host__ [[nodiscard]] inline constexpr bool West(const label_t x) const noexcept
@@ -366,7 +199,7 @@ namespace LBM
             }
             __host__ [[nodiscard]] inline constexpr bool East(const label_t x) const noexcept
             {
-                return (x == nx_ - 1);
+                return (x == dimensions_.x - 1);
             }
             __host__ [[nodiscard]] inline constexpr bool South(const label_t y) const noexcept
             {
@@ -374,7 +207,7 @@ namespace LBM
             }
             __host__ [[nodiscard]] inline constexpr bool North(const label_t y) const noexcept
             {
-                return (y == ny_ - 1);
+                return (y == dimensions_.y - 1);
             }
             __host__ [[nodiscard]] inline constexpr bool Back(const label_t z) const noexcept
             {
@@ -382,36 +215,58 @@ namespace LBM
             }
             __host__ [[nodiscard]] inline constexpr bool Front(const label_t z) const noexcept
             {
-                return (z == nz_ - 1);
+                return (z == dimensions_.z - 1);
             }
 
-            template <const axis::type alpha, typename T = label_t>
-            __host__ [[nodiscard]] inline constexpr T nDevices() const noexcept
+            /**
+             * @brief Returns the number of devices
+             * @tparam alpha The axis (X, Y or Z)
+             * @tparam T The return type
+             **/
+            __host__ [[nodiscard]] inline constexpr const blockLabel_t &nDevices() const noexcept
             {
-                if constexpr (alpha == axis::X)
-                {
-                    return static_cast<T>(nDevices_.nx);
-                }
+                return nDevices_;
+            }
+            template <const axis::type alpha, typename ValueType = label_t>
+            __host__ [[nodiscard]] inline constexpr ValueType nDevices() const noexcept
+            {
+                return nDevices_.value<alpha, ValueType>();
+            }
 
-                if constexpr (alpha == axis::Y)
-                {
-                    return static_cast<T>(nDevices_.ny);
-                }
+            /**
+             * @brief Computes the allocation size along a block face for a given QF
+             * @tparam alpha The axis (X, Y or Z)
+             * @tparam T The return type
+             **/
+            template <const axis::type alpha, const label_t QF, typename ValueType = label_t>
+            __host__ [[nodiscard]] inline constexpr ValueType nFacesPerDevice() const noexcept
+            {
+                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(host::latticeMesh::faceAllocSize, "Need to fix the calculation of the number of faces per GPU: it is no longer global"));
 
-                if constexpr (alpha == axis::Z)
-                {
-                    return static_cast<T>(nDevices_.nz);
-                }
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
+
+                return dimensions_.size<ValueType>() * static_cast<ValueType>(QF) / block::n<alpha, ValueType>();
+            }
+
+            /**
+             * @brief Computes the allocation size for the number of points per GPU
+             **/
+            template <typename ValueType = label_t>
+            __host__ [[nodiscard]] inline constexpr ValueType sizePerDevice() const noexcept
+            {
+                const ValueType nxPointsPerDevice = dimensions_.value<axis::X, ValueType>() / nDevices<axis::X, ValueType>();
+                const ValueType nyPointsPerDevice = dimensions_.value<axis::Y, ValueType>() / nDevices<axis::Y, ValueType>();
+                const ValueType nzPointsPerDevice = dimensions_.value<axis::Z, ValueType>() / nDevices<axis::Z, ValueType>();
+                const ValueType nPointsPerDevice = nxPointsPerDevice * nyPointsPerDevice * nzPointsPerDevice;
+
+                return nPointsPerDevice;
             }
 
         private:
             /**
              * @brief The number of lattices in the x, y and z directions
              **/
-            const label_t nx_;
-            const label_t ny_;
-            const label_t nz_;
-            const label_t nPoints_;
+            const blockLabel_t dimensions_;
 
             /**
              * @brief Physical dimensions of the domain
@@ -423,11 +278,144 @@ namespace LBM
              **/
             const blockLabel_t nDevices_;
 
-            __host__ [[nodiscard]] static blockLabel_t initialise_device_list(const std::string &fileName) noexcept
+            /**
+             * @brief Validates that the block decomposition is compatible with the mesh dimensions
+             *
+             * @param[in] nBlocks The number of blocks in each direction
+             * @param[in] dimensions The dimensions of the mesh
+             **/
+            __host__ static void validate_block_dimensions(const blockLabel_t &dimensions)
             {
-                return {string::extractParameter<label_t>(string::readFile(fileName), "nx"),
-                        string::extractParameter<label_t>(string::readFile(fileName), "ny"),
-                        string::extractParameter<label_t>(string::readFile(fileName), "nz")};
+                const label_t nxBlocks = dimensions.x / block::nx();
+                const label_t nyBlocks = dimensions.y / block::ny();
+                const label_t nzBlocks = dimensions.z / block::nz();
+
+                if (!(block::nx() * nxBlocks == dimensions.x))
+                {
+                    throw std::runtime_error("block::nx() * mesh.nxBlocks() not equal to mesh.dimension<axis::X>(()\nMesh dimensions should be multiples of 8");
+                }
+                if (!(block::ny() * nyBlocks == dimensions.y))
+                {
+                    throw std::runtime_error("block::ny() * mesh.nyBlocks() not equal to mesh.dimension<axis::Y>()\nMesh dimensions should be multiples of 8");
+                }
+                if (!(block::nz() * nzBlocks == dimensions.z))
+                {
+                    throw std::runtime_error("block::nz() * mesh.nzBlocks() not equal to mesh.dimension<axis::Z>()\nMesh dimensions should be multiples of 8");
+                }
+                if (!(block::nx() * nxBlocks * block::ny() * nyBlocks * block::nz() * nzBlocks == dimensions.x * dimensions.y * dimensions.z))
+                {
+                    throw std::runtime_error("block::nx() * nxBlocks() * block::ny() * nyBlocks() * block::nz() * nzBlocks() not equal to mesh.size()\nMesh dimensions should be multiples of 8");
+                }
+            }
+
+            /**
+             * @brief Validates that the mesh dimensions do not exceed the limits of label_t
+             * and that the per-GPU allocation size does not exceed available GPU memory
+             *
+             * @param[in] programCtrl The program control object containing device information
+             * @param[in] dimensions The dimensions of the mesh
+             * @param[in] nDevices The number of devices in each direction for multi-GPU decomposition
+             **/
+            static void validate_allocation_size(
+                const programControl &programCtrl,
+                const blockLabel_t &dimensions,
+                const blockLabel_t &nDevices)
+            {
+                const uintmax_t nxTemp = static_cast<uintmax_t>(dimensions.value<axis::X>());
+                const uintmax_t nyTemp = static_cast<uintmax_t>(dimensions.value<axis::Y>());
+                const uintmax_t nzTemp = static_cast<uintmax_t>(dimensions.value<axis::Z>());
+                const uintmax_t nPointsTemp = nxTemp * nyTemp * nzTemp;
+                constexpr const uintmax_t typeLimit = static_cast<uintmax_t>(std::numeric_limits<label_t>::max());
+
+                // Check that the mesh dimensions won't overflow the type limit for label_t
+                if (nPointsTemp >= typeLimit)
+                {
+                    throw std::runtime_error(
+                        "\nMesh size exceeds maximum allowed value:\n"
+                        "Number of mesh points: " +
+                        std::to_string(nPointsTemp) +
+                        "\nLimit of label_t: " +
+                        std::to_string(typeLimit));
+                }
+
+                // Check that the mesh dimensions are not too large for GPU memory
+                for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < programCtrl.deviceList().size(); virtualDeviceIndex++)
+                {
+                    // Calculate the per-GPU allocation size
+                    const label_t nxPointsPerDevice = dimensions.value<axis::X>() / nDevices.value<axis::X>();
+                    const label_t nyPointsPerDevice = dimensions.value<axis::Y>() / nDevices.value<axis::Y>();
+                    const label_t nzPointsPerDevice = dimensions.value<axis::Z>() / nDevices.value<axis::Z>();
+                    const label_t nPointsPerDevice = nxPointsPerDevice * nyPointsPerDevice * nzPointsPerDevice;
+
+                    const cudaDeviceProp props = GPU::properties(programCtrl.deviceList()[virtualDeviceIndex]);
+                    const uintmax_t totalMemTemp = static_cast<uintmax_t>(props.totalGlobalMem);
+                    const uintmax_t allocationSize = nPointsPerDevice * static_cast<uintmax_t>(sizeof(scalar_t)) * (NUMBER_MOMENTS<uintmax_t>());
+
+                    if (allocationSize >= totalMemTemp)
+                    {
+                        const double gbAllocation = static_cast<double>(allocationSize / (1024 * 1024 * 1024));
+                        const double gbAvailable = static_cast<double>(totalMemTemp / (1024 * 1024 * 1024));
+
+                        throw std::runtime_error(
+                            "\nInsufficient GPU memory:\nAttempted to allocate: " +
+                            std::to_string(allocationSize) +
+                            " bytes (" +
+                            std::to_string(gbAllocation) +
+                            " GB)\n"
+                            "Available GPU memory: " +
+                            std::to_string(totalMemTemp) +
+                            " bytes (" +
+                            std::to_string(gbAvailable) +
+                            " GB)");
+                    }
+                }
+            }
+
+            /**
+             * @brief Initializes device constants for each GPU based on the program control and mesh dimensions
+             * @param[in] programCtrl The program control object containing simulation parameters
+             * @param[in] dimensions The dimensions of the mesh
+             * @param[in] nDevices The number of devices in each direction for multi-GPU decomposition
+             **/
+            __host__ static void set_constants(
+                const programControl &programCtrl,
+                const blockLabel_t &dimensions,
+                const blockLabel_t &nBlocks,
+                const blockLabel_t &nDevices)
+            {
+                LBM::GPU::forAll(
+                    nDevices,
+                    [&](const label_t dx, const label_t dy, const label_t dz)
+                    {
+                        const label_t virtualDeviceIndex = GPU::idx(dx, dy, dz, nDevices.value<axis::X>(), nDevices.value<axis::Y>());
+
+                        errorHandler::check(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
+
+                        const label_t nxBlocksPerDevice = nBlocks.value<axis::X>() / nDevices.value<axis::X>();
+                        const label_t nyBlocksPerDevice = nBlocks.value<axis::Y>() / nDevices.value<axis::Y>();
+                        const label_t nzBlocksPerDevice = nBlocks.value<axis::Z>() / nDevices.value<axis::Z>();
+
+                        // Allocate mesh symbols on the GPU
+                        device::copyToSymbol(device::nx, dimensions.x);
+                        device::copyToSymbol(device::ny, dimensions.y);
+                        device::copyToSymbol(device::nz, dimensions.z);
+                        device::copyToSymbol(device::NUM_BLOCK_X, nxBlocksPerDevice);
+                        device::copyToSymbol(device::NUM_BLOCK_Y, nyBlocksPerDevice);
+                        device::copyToSymbol(device::NUM_BLOCK_Z, nzBlocksPerDevice);
+                        device::copyToSymbol(device::BLOCK_OFFSET_X, nxBlocksPerDevice * dx);
+                        device::copyToSymbol(device::BLOCK_OFFSET_Y, nyBlocksPerDevice * dy);
+                        device::copyToSymbol(device::BLOCK_OFFSET_Z, nzBlocksPerDevice * dz);
+                    });
+            }
+
+            /**
+             * @brief Prints the lattice mesh properties to the console
+             **/
+            __host__ inline void print() const noexcept
+            {
+                dimensions_.print("latticeMesh");
+                L_.print("meshSize");
+                blockLabel_t{block::nx(), block::ny(), block::nz()}.print("blockDimensions");
             }
         };
     }

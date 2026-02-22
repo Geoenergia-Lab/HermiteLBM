@@ -55,7 +55,7 @@ namespace LBM
     /**
      * @brief New definition of the inlet plane
      * **/
-    __device__ __host__ [[nodiscard]] inline consteval bool new_inlet() noexcept { return false; }
+    __device__ __host__ [[nodiscard]] inline consteval bool new_inlet() noexcept { return true; }
 
     /**
      * @class jetFlow
@@ -73,11 +73,18 @@ namespace LBM
         /**
          * @brief Default constructor (constexpr)
          **/
-        __device__ __host__ [[nodiscard]] inline consteval jetFlow(){};
+        __device__ __host__ [[nodiscard]] inline consteval jetFlow() {}
+
+        /**
+         * @brief Periodic boundary definitions
+         **/
+        __device__ __host__ [[nodiscard]] static inline consteval bool periodicX() noexcept { return true; }
+        __device__ __host__ [[nodiscard]] static inline consteval bool periodicY() noexcept { return true; }
+        __device__ __host__ [[nodiscard]] static inline consteval bool periodicZ() noexcept { return false; }
 
         /**
          * @brief Calculate moment variables at boundary nodes
-         * @tparam VelocitySet Velocity set configuration defining lattice structure
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @param[in] pop Population density array at current lattice node
          * @param[out] moments Moment variables array to be populated
          * @param[in] boundaryNormal Normal vector information at boundary node
@@ -103,7 +110,7 @@ namespace LBM
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
             const normalVector &boundaryNormal,
             const scalar_t *const ptrRestrict shared_buffer,
-            const device::threadCoordinate &Tx,
+            const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept
         {
 #include "jetBoundaryCondition.cuh"
@@ -115,7 +122,7 @@ namespace LBM
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
             const normalVector &boundaryNormal,
             const thread::array<scalar_t, N> &shared_buffer,
-            const device::threadCoordinate &Tx,
+            const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept
         {
             calculate_moments<VelocitySet>(pop, moments, boundaryNormal, shared_buffer.data(), Tx, point);

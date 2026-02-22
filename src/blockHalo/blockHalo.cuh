@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_BLOCKHALO_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 #include "../globalFunctions.cuh"
 #include "../velocitySet/velocitySet.cuh"
 #include "../latticeMesh/latticeMesh.cuh"
@@ -59,7 +59,91 @@ SourceFiles
 
 namespace LBM
 {
+    namespace host
+    {
+        /**
+         * @brief Index for arbitrarily aligned population arrays
+         * @tparam QF Number of populations
+         * @tparam alpha The axis direction
+         * @param[in] pop Population index
+         * @param[in] tx,ty,tz Thread-local x/y/z coordinates
+         * @param[in] bx,by,bz Block indices
+         * @param[in] nxBlocks Number of blocks in x-direction
+         * @param[in] nyBlocks Number of blocks in y-direction
+         * @return Linearized index: idxPopX, idxPopY, idxPopZ
+         **/
+        template <const axis::type alpha, const label_t QF>
+        __host__ [[nodiscard]] inline label_t idxPop(
+            const label_t pop,
+            const label_t tx, const label_t ty, const label_t tz,
+            const label_t bx, const label_t by, const label_t bz,
+            const label_t nxBlocks, const label_t nyBlocks) noexcept
+        {
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
 
+            if constexpr (alpha == axis::X)
+            {
+                return ty + block::n<axis::orthogonal<alpha, 0>()>() * (tz + block::n<axis::orthogonal<alpha, 1>()>() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
+            }
+
+            if constexpr (alpha == axis::Y)
+            {
+                return tx + block::n<axis::orthogonal<alpha, 0>()>() * (tz + block::n<axis::orthogonal<alpha, 1>()>() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
+            }
+
+            if constexpr (alpha == axis::Z)
+            {
+                return tx + block::n<axis::orthogonal<alpha, 0>()>() * (ty + block::n<axis::orthogonal<alpha, 1>()>() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
+            }
+        }
+    }
+
+    namespace device
+    {
+        /**
+         * @brief Population index for alpha-aligned arrays (device version)
+         * @tparam alpha The axis on which the face lies
+         * @tparam pop Population index
+         * @tparam QF Number of populations
+         * @param[in] ta,tb Thread-local y/z coordinates
+         * @param[in] bx,by,bz Block indices
+         * @return Linearized two-dimensional face index
+         **/
+        template <const axis::type alpha, const label_t pop, const label_t QF>
+        __device__ [[nodiscard]] inline label_t idxPop(
+            const label_t ta, const label_t tb,
+            const label_t bx, const label_t by, const label_t bz) noexcept
+        {
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
+
+            return ta + block::n<axis::orthogonal<alpha, 0>()>() * (tb + block::n<axis::orthogonal<alpha, 1>()>() * (pop + QF * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz))));
+        }
+
+        /**
+         * @overload
+         * @param[in] Bx The block coordinate
+         **/
+        template <const axis::type alpha, const label_t pop, const label_t QF>
+        __device__ [[nodiscard]] inline label_t idxPop(
+            const label_t talpha, const label_t tbeta,
+            const block::coordinate &Bx) noexcept
+        {
+            return idxPop<alpha, pop, QF>(talpha, tbeta, Bx.value<axis::X>(), Bx.value<axis::Y>(), Bx.value<axis::Z>());
+        }
+
+        /**
+         * @overload
+         * @param[in] ij The thread-local 2D coordinate within the block
+         * @param[in] Bx The block coordinate
+         **/
+        template <const axis::type alpha, const label_t pop, const label_t QF>
+        __device__ [[nodiscard]] inline label_t idxPop(
+            const dim2<alpha> &ij,
+            const block::coordinate &Bx) noexcept
+        {
+            return idxPop<alpha, pop, QF>(ij.i(), ij.j(), Bx.value<axis::X>(), Bx.value<axis::Y>(), Bx.value<axis::Z>());
+        }
+    }
 }
 
 #include "haloFace.cuh"

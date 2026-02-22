@@ -37,7 +37,15 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the thread-local array class
+    This file defines the thread array class, which is a fixed-size array
+    container designed for use in single-threaded device code. The class
+    provides compile-time bounds checking and supports various constructors for
+    initializing the array with specific values or from global memory using a
+    shared buffer cache. It also overloads basic arithmetic operators for
+    element-wise operations and provides methods for accessing and modifying
+    elements. The thread array is intended to be used within CUDA kernels where
+    each thread manages its own small array of data, such as the distribution
+    functions in a lattice Boltzmann simulation.
 
 Namespace
     LBM
@@ -71,7 +79,7 @@ namespace LBM
             /**
              * @brief Constructs array with specified initial values
              * @tparam Args Variadic template parameter pack for initial values
-             * @param args Initial values for array elements
+             * @param[in] args Initial values for array elements
              * @pre Number of arguments must exactly match template parameter N
              * @note Compile-time enforced check ensures correct number of arguments
              **/
@@ -83,7 +91,7 @@ namespace LBM
 
             /**
              * @brief Fill constructor
-             * @param value Initial value for all array elements
+             * @param[in] value Initial value for all array elements
              **/
             template <std::enable_if_t<(N != 1), bool> = true>
             __device__ __host__ [[nodiscard]] inline consteval array(const T value) noexcept
@@ -98,10 +106,10 @@ namespace LBM
             /**
              * @brief Constructor that initializes array from global memory via shared buffer cache
              * @tparam SharedBufferSize Size of the shared memory buffer
-             * @param tid Thread index within the block
-             * @param idx Linear index for accessing global memory
-             * @param devPtrs Collection of device pointers (one per array element)
-             * @param shared_buffer Shared memory array for caching
+             * @param[in] tid Thread index within the block
+             * @param[in] idx Linear index for accessing global memory
+             * @param[in] devPtrs Collection of device pointers (one per array element)
+             * @param[in] shared_buffer Shared memory array for caching
              * @note Uses shared_buffer as a read-through cache and initializes data_ via aggregate initialization
              **/
             template <const label_t SharedBufferSize>
@@ -184,7 +192,7 @@ namespace LBM
             /**
              * @brief Compile-time mutable element access
              * @tparam index_ Compile-time index value
-             * @param index Index tag (label_constant wrapper)
+             * @param[in] index Index tag (label_constant wrapper)
              * @return Reference to element at specified index
              * @pre index_ must be in range [0, N-1]
              * @note No runtime bounds checking - compile-time safe
@@ -199,7 +207,7 @@ namespace LBM
             /**
              * @brief Compile-time read-only element access
              * @tparam index_ Compile-time index value
-             * @param index Index tag (label_constant wrapper)
+             * @param[in] index Index tag (label_constant wrapper)
              * @return Const reference to element at specified index
              * @pre index_ must be in range [0, N-1]
              * @note No runtime bounds checking - compile-time safe
@@ -214,7 +222,7 @@ namespace LBM
             /**
              * @brief Unified element access (compile-time or runtime)
              * @tparam Index Type of index (integral type or std::integral_constant)
-             * @param idx Index value or compile-time index tag
+             * @param[in] idx Index value or compile-time index tag
              * @return Reference to element at specified index
              * @pre Index must be in range [0, N-1]
              * @note Compile-time bounds checking for integral_constant types
@@ -229,7 +237,7 @@ namespace LBM
             /**
              * @brief Unified read-only element access (compile-time or runtime)
              * @tparam Index Type of index (integral type or std::integral_constant)
-             * @param idx Index value or compile-time index tag
+             * @param[in] idx Index value or compile-time index tag
              * @return Const reference to element at specified index
              * @pre Index must be in range [0, N-1]
              * @note Compile-time bounds checking for integral_constant types
@@ -264,8 +272,8 @@ namespace LBM
 
             /**
              * @brief Store array elements back to device memory through pointer collection
-             * @param idx Linear index for device memory access
-             * @param devPtrs Collection of device pointers
+             * @param[in] idx Linear index for device memory access
+             * @param[in] devPtrs Collection of device pointers
              * @note Compile-time unrolled loop for storing all elements
              **/
             __device__ inline void save_to(const device::ptrCollection<N, T> &devPtrs, const label_t idx) const noexcept
@@ -299,7 +307,7 @@ namespace LBM
      * @brief Computes the number of non-zero elements of an array
      * @tparam T Type of elements in the array
      * @tparam N Size of the array
-     * @param arr The input array
+     * @param[in] arr The input array
      * @return Number of non-zero elements in the array
      **/
     template <typename T, const std::size_t N>
@@ -323,7 +331,7 @@ namespace LBM
      * @tparam ReturnSize Size of the returned array
      * @tparam T Type of elements in the array
      * @tparam N Size of the input array
-     * @param arr The input array
+     * @param[in] arr The input array
      * @return Array containing only non-zero values from the input array
      **/
     template <const std::size_t ReturnSize, typename T, const std::size_t N>
@@ -350,7 +358,7 @@ namespace LBM
      * @tparam ReturnSize Size of the returned array
      * @tparam T Type of elements in the array
      * @tparam N Size of the input array
-     * @param arr The input array
+     * @param[in] arr The input array
      * @return Array containing only non-zero indices from the input array
      **/
     template <const label_t ReturnSize, typename T, const std::size_t N>

@@ -50,10 +50,43 @@ SourceFiles
 #ifndef __MBLBM_DEVICELATTICEMESH_CUH
 #define __MBLBM_DEVICELATTICEMESH_CUH
 
+#ifdef DEVICE_LATTICEMESH_READY
+
 namespace LBM
 {
     namespace device
     {
+        /**
+         * @brief Point indices descriptor
+         * @details Stores point indices in 3D space
+         **/
+        struct pointLabel_t
+        {
+            /**
+             * @brief Constructor for pointLabel_t
+             * @param[in] label A dim3 struct containing the point indices
+             **/
+            __device__ [[nodiscard]] inline constexpr pointLabel_t(const dim3 &label) noexcept
+                : x(static_cast<label_t>(label.x)),
+                  y(static_cast<label_t>(label.y)),
+                  z(static_cast<label_t>(label.z)) {}
+
+            /**
+             * @brief Constructor for pointLabel_t
+             * @param[in] X The point index in the x-direction
+             * @param[in] Y The point index in the y-direction
+             * @param[in] Z The point index in the z-direction
+             **/
+            __device__ [[nodiscard]] inline constexpr pointLabel_t(const label_t X, const label_t Y, const label_t Z) noexcept
+                : x(X),
+                  y(Y),
+                  z(Z) {}
+
+            const label_t x;
+            const label_t y;
+            const label_t z;
+        };
+
         /**
          * @class latticeMesh
          * @brief Represents the computational grid for LBM simulations
@@ -129,14 +162,14 @@ namespace LBM
             {
                 // Calculate how many blocks each GPU gets in each dimension
                 // Using ceiling division to distribute blocks as evenly as possible
-                const label_t blocksPerGPUx = (blockSpan.nx + nGPUs.nx) / nGPUs.nx; // ceiling division
-                const label_t blocksPerGPUy = (blockSpan.ny + nGPUs.ny) / nGPUs.ny;
-                const label_t blocksPerGPUz = (blockSpan.nz + nGPUs.nz) / nGPUs.nz;
+                const label_t blocksPerDevicex = (blockSpan.nx + nGPUs.nx) / nGPUs.nx; // ceiling division
+                const label_t blocksPerDevicey = (blockSpan.ny + nGPUs.ny) / nGPUs.ny;
+                const label_t blocksPerDevicez = (blockSpan.nz + nGPUs.nz) / nGPUs.nz;
 
                 // Determine which GPU partition this block belongs to
-                const label_t gpuX = blockOffsets.nx / blocksPerGPUx;
-                const label_t gpuY = blockOffsets.ny / blocksPerGPUy;
-                const label_t gpuZ = blockOffsets.nz / blocksPerGPUz;
+                const label_t gpuX = blockOffsets.nx / blocksPerDevicex;
+                const label_t gpuY = blockOffsets.ny / blocksPerDevicey;
+                const label_t gpuZ = blockOffsets.nz / blocksPerDevicez;
 
                 // Calculate and return GPU device ID
                 return static_cast<deviceIndex_t>(gpuX + gpuY * nGPUs.nx + gpuZ * nGPUs.nx * nGPUs.ny);
@@ -144,5 +177,7 @@ namespace LBM
         };
     }
 }
+
+#endif
 
 #endif

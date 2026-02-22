@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_MOMENTBASEDD3Q19_CUH
 
 #include "../../src/LBMIncludes.cuh"
-#include "../../src/LBMTypedefs.cuh"
+#include "../../src/typedefs/typedefs.cuh"
 #include "../../src/streaming/streaming.cuh"
 #include "../../src/collision/collision.cuh"
 #include "../../src/blockHalo/blockHalo.cuh"
@@ -63,41 +63,30 @@ SourceFiles
 
 namespace LBM
 {
-
-#ifdef JETFLOW
-    using BoundaryConditions = jetFlow;
-    __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
-    __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
-#endif
-
-#ifdef LIDDRIVENCAVITY
-    using BoundaryConditions = lidDrivenCavity;
-    __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return false; }
-    __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
-#endif
-
+    using BoundaryConditions = boundaryConditions::traits<boundaryConditions::caseName()>::type;
     using VelocitySet = D3Q19;
     using Collision = secondOrder;
-    using BlockHalo = device::halo<VelocitySet, periodicX(), periodicY()>;
+    using BlockHalo = device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>;
 
     __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept { return 0; }
 
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
+
 #define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
 
     /**
      * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
-     * @param devPtrs Collection of 10 pointers to device arrays on the GPU
-     * @param blockHalo Object containing pointers to the block halo faces used to exchange the population densities
+     * @param[in] devPtrs Collection of 10 pointers to device arrays on the GPU
+     * @param[in] blockHalo Object containing pointers to the block halo faces used to exchange the population densities
      **/
     launchBoundsD3Q19 __global__ void momentBasedD3Q19(
         const device::ptrCollection<10, scalar_t> devPtrs,
         const device::ptrCollection<6, const scalar_t> fGhost,
         const device::ptrCollection<6, scalar_t> gGhost)
     {
-        const device::threadCoordinate Tx;
+        const thread::coordinate Tx;
 
-        const device::blockCoordinate Bx;
+        const block::coordinate Bx;
 
         const device::pointCoordinate point(Tx, Bx);
 
@@ -105,7 +94,7 @@ namespace LBM
         const label_t idx = device::idx(Tx, Bx);
 
         // Into block arrays
-        const label_t tid = device::idxBlock(Tx);
+        const label_t tid = block::idx(Tx);
 
         // Always a multiple of 32, so no need to check this(I think)
         if constexpr (out_of_bounds_check())
@@ -124,7 +113,7 @@ namespace LBM
             });
 
         // Declare shared memory (flattened)
-        __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS()>()> shared_buffer;
+        __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<std::size_t>()>()> shared_buffer;
 
         // Coalesced read from global memory
         thread::array<scalar_t, NUMBER_MOMENTS()> moments;
@@ -133,9 +122,9 @@ namespace LBM
             {
                 const label_t ID = tid * m_i<NUMBER_MOMENTS() + 1>() + m_i<moment>();
                 shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
-                if constexpr (moment == index::rho())
+                if constexpr (moment == index::rho)
                 {
-                    moments[moment] = shared_buffer[ID] + rho0<scalar_t>();
+                    moments[moment] = shared_buffer[ID] + rho0();
                 }
                 else
                 {
@@ -160,7 +149,7 @@ namespace LBM
         }
 
         // Load pop from global memory in cover nodes
-        BlockHalo::load(pop, fGhost, Tx, Bx);
+        BlockHalo::load(pop, fGhost, Tx, Bx, point);
 
         if constexpr (std::is_same<BoundaryConditions, lidDrivenCavity>::value)
         {
@@ -212,21 +201,23 @@ namespace LBM
         // Collide
         Collision::collide(moments);
 
-        // Calculate post collision populations
-        VelocitySet::reconstruct(pop, moments);
-        // BlockHalo::transpose_to_shared(pop, shared_buffer);
-
         // Coalesced write to global memory
-        moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
         device::constexpr_for<0, NUMBER_MOMENTS()>(
             [&](const auto moment)
             {
-                devPtrs.ptr<moment>()[idx] = moments[moment];
+                if constexpr (moment == index::rho)
+                {
+                    devPtrs.ptr<moment>()[idx] = moments[moment] - rho0();
+                }
+                else
+                {
+                    devPtrs.ptr<moment>()[idx] = moments[moment];
+                }
             });
 
         // Save the populations to the block halo
         // BlockHalo::save_from_shared(shared_buffer, gGhost);
-        BlockHalo::save(pop, gGhost, Tx, Bx, point);
+        BlockHalo::save(pop, moments, gGhost, Tx, Bx, point);
     }
 }
 

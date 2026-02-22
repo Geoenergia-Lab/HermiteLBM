@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_OBJECTREGISTRY_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 #include "../strings.cuh"
 #include "functionObjects.cuh"
 #include "moments.cuh"
@@ -62,7 +62,7 @@ namespace LBM
 {
     /**
      * @brief Registry for managing function objects and their calculations
-     * @tparam VelocitySet The velocity set type used in LBM simulations
+     * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
      * @tparam N The number of streams (as a compile-time constant)
      **/
     template <class VelocitySet, const label_t N>
@@ -71,7 +71,7 @@ namespace LBM
     public:
         /**
          * @brief Constructs an objectRegistry with mesh, device pointers and streams
-         * @param[in] mesh Reference to the lattice mesh
+         * @param[in] mesh The lattice mesh
          * @param[in] devPtrs Device pointer collection for memory management
          * @param[in] streamsLBM Stream handler for LBM operations
          **/
@@ -87,12 +87,12 @@ namespace LBM
               S_(hostWriteBuffer, mesh, devPtrs, streamsLBM, programCtrl),
               k_(hostWriteBuffer, mesh, devPtrs, streamsLBM, programCtrl),
               functionVector_(functionObjectCallInitialiser(M_, S_, k_)),
-              saveVector_(functionObjectSaveInitialiser(M_, S_, k_)) {};
+              saveVector_(functionObjectSaveInitialiser(M_, S_, k_)) {}
 
         /**
          * @brief Default destructor
          **/
-        ~objectRegistry() {};
+        ~objectRegistry() {}
 
         /**
          * @brief Executes all registered function object calculations for given time step

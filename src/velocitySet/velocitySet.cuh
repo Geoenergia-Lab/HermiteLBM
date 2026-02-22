@@ -51,7 +51,7 @@ SourceFiles
 #define __MBLBM_VELOCITYSET_CUH
 
 #include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+#include "../typedefs/typedefs.cuh"
 #include "../globalFunctions.cuh"
 #include "../array/threadArray.cuh"
 
@@ -66,7 +66,7 @@ namespace LBM
         {
             /**
              * @brief Asserts that VelocitySet is a valid velocity set (D3Q19 or D3Q27)
-             * @tparam VelocitySet The velocity set
+             * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
              **/
             template <class VelocitySet>
             __device__ __host__ inline consteval void validate() noexcept
@@ -90,7 +90,7 @@ namespace LBM
         /**
          * @brief Default constructor (consteval)
          **/
-        __device__ __host__ [[nodiscard]] inline consteval velocitySet() noexcept {};
+        __device__ __host__ [[nodiscard]] inline consteval velocitySet() noexcept {}
 
         /**
          * @brief Get the a^2 constant (3.0)
@@ -162,7 +162,7 @@ namespace LBM
 
         /**
          * @brief Calculate a specific moment of the distribution function
-         * @tparam VelocitySet The velocity set type
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam alpha The first axis direction (X, Y, or Z)
          * @tparam beta The second axis direction (X, Y, or Z)
          * @param[in] pop The distribution function array
@@ -184,7 +184,7 @@ namespace LBM
 
         /**
          * @brief Calculate a specific moment of the distribution function
-         * @tparam VelocitySet The velocity set type
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam alpha The first axis direction (X, Y, or Z)
          * @tparam beta The second axis direction (X, Y, or Z)
          * @tparam BoundaryNormal The boundary normal vector type
@@ -208,7 +208,7 @@ namespace LBM
 
         /**
          * @brief Calculate all moments of the distribution function
-         * @tparam VelocitySet The velocity set type
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @param[in] pop The distribution function array
          * @param[out] mom The calculated moments array
          **/
@@ -235,7 +235,7 @@ namespace LBM
 
         /**
          * @brief Calculate all moments of the distribution function
-         * @tparam VelocitySet The velocity set type
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam BoundaryNormal The boundary normal vector type
          * @param[in] pop The distribution function array
          * @param[out] mom The calculated moments array
@@ -264,18 +264,18 @@ namespace LBM
 
         /**
          * @brief Returns the indices of the distribution functions on a specific face
-         * @tparam VelocitySet The velocity set being used
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam alpha The axis direction (X, Y, or Z)
-         * @tparam v The value of the coordinate along the axis (-1 or 1)
+         * @tparam coeff The value of the coordinate along the axis (-1 or 1)
          * @return Indices of the distribution on a specific face
          **/
-        template <class VelocitySet, const axis::type alpha, const int v>
+        template <class VelocitySet, const axis::type alpha, const int coeff>
         __device__ __host__ [[nodiscard]] static inline consteval thread::array<label_t, VelocitySet::QF()> indices_on_face() noexcept
         {
             assertions::velocitySet::validate<VelocitySet>();
-            assertions::axis::validate<alpha, axis::NOT_NULL>();
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-            static_assert((v == -1 || v == 1));
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
             constexpr const thread::array<int, VelocitySet::Q()> vals = VelocitySet::template c<int, alpha>();
 
@@ -285,7 +285,7 @@ namespace LBM
 
             for (label_t i = 0; i < VelocitySet::Q(); i++)
             {
-                if (vals[i] == v)
+                if (vals[i] == coeff)
                 {
                     indices[j] = i;
                     j++;
@@ -339,8 +339,8 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval const thread::array<int, VelocitySet::Q()> c_AlphaBeta() noexcept
         {
             assertions::velocitySet::validate<VelocitySet>();
-            assertions::axis::validate<alpha, axis::CAN_BE_NULL>();
-            assertions::axis::validate<beta, axis::CAN_BE_NULL>();
+            axis::assertions::validate<alpha, axis::CAN_BE_NULL>();
+            axis::assertions::validate<beta, axis::CAN_BE_NULL>();
 
             return VelocitySet::template c<int, alpha>() * VelocitySet::template c<int, beta>();
         }
@@ -355,13 +355,14 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline constexpr scalar_t process_momentum_element(
             const scalar_t pop_value) noexcept
         {
-            static_assert(((coeff == -1) || (coeff == 1)), "Invalid coefficient");
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
             if constexpr (coeff == 1)
             {
                 return pop_value;
             }
-            else if constexpr (coeff == -1)
+
+            if constexpr (coeff == -1)
             {
                 return -pop_value;
             }
@@ -373,7 +374,7 @@ namespace LBM
         /**
          * @brief Adds or subtracts a particular population based on the sign of the coefficient
          * @tparam coeff The velocity set coefficient (-1 or 1)
-         * @tparam VelocitySet The velocity set
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam BoundaryNormal The boundary normal vector type
          * @param[in] pop_value A particular population
          * @param[in] boundaryNormal
@@ -384,13 +385,14 @@ namespace LBM
             const scalar_t pop_value,
             const BoundaryNormal &boundaryNormal) noexcept
         {
-            static_assert(((coeff == -1) || (coeff == 1)), "Invalid coefficient");
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
             if constexpr (coeff == 1)
             {
                 return is_incoming<scalar_t, VelocitySet>(q_i<I>(), boundaryNormal) * pop_value;
             }
-            else if constexpr (coeff == -1)
+
+            if constexpr (coeff == -1)
             {
                 return -is_incoming<scalar_t, VelocitySet>(q_i<I>(), boundaryNormal) * pop_value;
             }
@@ -398,7 +400,7 @@ namespace LBM
 
         /**
          * @brief Determines whether or not a particular lattice coefficient is negative
-         * @tparam VelocitySet The velocity set
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam alpha The axis direction (X, Y, or Z)
          * @param[in] q The lattice index
          * @return True if the lattice coefficient is negative, false otherwise
@@ -407,14 +409,14 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval bool is_negative(const q_i<q_> q) noexcept
         {
             assertions::velocitySet::validate<VelocitySet>();
-            assertions::axis::validate<alpha, axis::NOT_NULL>();
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
 
             return (VelocitySet::template c<int, alpha>()[q] < 0);
         }
 
         /**
          * @brief Determines whether or not a particular lattice coefficient is positive
-         * @tparam VelocitySet The velocity set
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam alpha The axis direction (X, Y, or Z)
          * @param[in] The lattice index
          * @return True if the lattice coefficient is positive, false otherwise
@@ -423,9 +425,33 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval bool is_positive(const q_i<q_> q) noexcept
         {
             assertions::velocitySet::validate<VelocitySet>();
-            assertions::axis::validate<alpha, axis::NOT_NULL>();
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
 
             return (VelocitySet::template c<int, alpha>()[q] > 0);
+        }
+
+    protected:
+        /**
+         * @brief Returns the string corresponding to a lattice velocity coefficient
+         * @tparam coeff The velocity coefficient
+         **/
+        template <const int coeff>
+        __host__ [[nodiscard]] static inline consteval const char *c()
+        {
+            if constexpr (coeff == 0)
+            {
+                return "0";
+            }
+
+            if constexpr (coeff == -1)
+            {
+                return "-1";
+            }
+
+            if constexpr (coeff == 1)
+            {
+                return "+1";
+            }
         }
     };
 }

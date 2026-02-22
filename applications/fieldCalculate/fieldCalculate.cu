@@ -63,7 +63,7 @@ int main(const int argc, const char *const argv[])
     const bool calculationType = programCtrl.input().isArgPresent("-calculationType");
 
     // Parse the argument if present, otherwise set to empty string
-    const std::string calculationTypeString = calculationType ? programCtrl.getArgument("-calculationType") : "";
+    const name_t calculationTypeString = calculationType ? programCtrl.getArgument("-calculationType") : "";
 
     if (calculationTypeString == "containsNaN")
     {
@@ -108,10 +108,10 @@ int main(const int argc, const char *const argv[])
     if (calculationTypeString == "vorticity")
     {
         // Get the conversion type
-        const std::string conversion = programCtrl.getArgument("-fileType");
+        const name_t conversion = programCtrl.getArgument("-fileType");
 
         // Get the writer function
-        const std::unordered_map<std::string, postProcess::writerFunction>::const_iterator it = postProcess::writers.find(conversion);
+        const std::unordered_map<name_t, postProcess::writerFunction>::const_iterator it = postProcess::writers.find(conversion);
 
         // Get the time indices
         const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
@@ -121,7 +121,7 @@ int main(const int argc, const char *const argv[])
             for (label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
             {
                 // Get the file name at the present time step
-                const std::string fileName = "vorticity_" + std::to_string(fileNameIndices[timeStep]);
+                const name_t fileName = "vorticity_" + std::to_string(fileNameIndices[timeStep]);
 
                 const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
                     programCtrl,
@@ -130,8 +130,8 @@ int main(const int argc, const char *const argv[])
 
                 const std::vector<std::vector<scalar_t>> fields = fileIO::deinterleaveAoS(hostMoments.arr(), mesh);
 
-                const std::vector<std::vector<scalar_t>> omega = derivative::curl<SchemeOrder()>(fields[index::u()], fields[index::v()], fields[index::w()], mesh);
-                const std::vector<scalar_t> magomega = mag(omega[0], omega[1], omega[2]);
+                const std::vector<std::vector<scalar_t>> omega = numericalSchemes::derivative::curl<SchemeOrder()>(fields[index::u], fields[index::v], fields[index::w], mesh);
+                const std::vector<scalar_t> magomega = numericalSchemes::mag(omega[0], omega[1], omega[2]);
 
                 const postProcess::writerFunction writer = it->second;
 
@@ -146,10 +146,10 @@ int main(const int argc, const char *const argv[])
     if (calculationTypeString == "div[U]")
     {
         // Get the conversion type
-        const std::string conversion = programCtrl.getArgument("-fileType");
+        const name_t conversion = programCtrl.getArgument("-fileType");
 
         // Get the writer function
-        const std::unordered_map<std::string, postProcess::writerFunction>::const_iterator it = postProcess::writers.find(conversion);
+        const std::unordered_map<name_t, postProcess::writerFunction>::const_iterator it = postProcess::writers.find(conversion);
 
         // Get the time indices
         const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
@@ -159,7 +159,7 @@ int main(const int argc, const char *const argv[])
             for (label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
             {
                 // Get the file name at the present time step
-                const std::string fileName = "div[U]_" + std::to_string(fileNameIndices[timeStep]);
+                const name_t fileName = "div[U]_" + std::to_string(fileNameIndices[timeStep]);
 
                 const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
                     programCtrl,
@@ -168,7 +168,7 @@ int main(const int argc, const char *const argv[])
 
                 const std::vector<std::vector<scalar_t>> fields = fileIO::deinterleaveAoS(hostMoments.arr(), mesh);
 
-                const std::vector<scalar_t> divu = derivative::div<SchemeOrder()>(fields[index::u()], fields[index::v()], fields[index::w()], mesh);
+                const std::vector<scalar_t> divu = numericalSchemes::derivative::div<SchemeOrder()>(fields[index::u], fields[index::v], fields[index::w], mesh);
 
                 const postProcess::writerFunction writer = it->second;
 
@@ -183,9 +183,9 @@ int main(const int argc, const char *const argv[])
     // constexpr label_t IntegrationOrder = 2;
 
     // // Integrate the vorticity in all axes
-    // const std::vector<scalar_t> int_omega_x = integrate_x<IntegrationOrder, scalar_t>(omega[0], mesh);
-    // const std::vector<scalar_t> int_omega_y = integrate_y<IntegrationOrder, scalar_t>(omega[1], mesh);
-    // const std::vector<scalar_t> int_omega_z = integrate_z<IntegrationOrder, scalar_t>(omega[2], mesh);
+    // const std::vector<scalar_t> int_omega_x = integral(integrate_x<IntegrationOrder, scalar_t>(omega[0], mesh));
+    // const std::vector<scalar_t> int_omega_y = integral(integrate_y<IntegrationOrder, scalar_t>(omega[1], mesh));
+    // const std::vector<scalar_t> int_omega_z = integral(integrate_z<IntegrationOrder, scalar_t>(omega[2], mesh));
 
     // const std::vector<std::vector<scalar_t>> integratedOmega = {int_omega_x, int_omega_y, int_omega_z};
 

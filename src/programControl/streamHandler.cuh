@@ -60,22 +60,17 @@ namespace LBM
      * This class handles the creation, synchronization, and destruction of
      * multiple CUDA streams. It provides thread-safe access to streams and
      * ensures proper cleanup during destruction.
-     */
+     **/
     class streamHandler
     {
     public:
         /**
          * @brief Default constructor
-         *
-         * Creates N CUDA streams upon construction. The constructor includes
-         * a static assertion to ensure N is positive at compile-time.
-         * @pre N must be positive (enforced via static_assert)
-         */
+         **/
         __host__ [[nodiscard]] streamHandler(const programControl &programCtrl) noexcept
             : streams_(createCudaStreams(programCtrl)),
               programCtrl_(programCtrl)
         {
-            // static_assert(N > 0, "Number of CUDA streams must be positive!");
         }
 
         /**
@@ -83,23 +78,23 @@ namespace LBM
          *
          * Automatically synchronizes and destroys all CUDA streams upon
          * object destruction. Ensures proper cleanup of GPU resources.
-         */
+         **/
         ~streamHandler() noexcept
         {
             if (streams_.size() == 1)
             {
-                cudaStreamSynchronize(streams_[0]);
-                cudaStreamDestroy(streams_[0]);
+                errorHandler::check(cudaStreamSynchronize(streams_[0]));
+                errorHandler::check(cudaStreamDestroy(streams_[0]));
             }
             else
             {
                 for (label_t stream = 0; stream < streams_.size(); stream++)
                 {
-                    cudaStreamSynchronize(streams_[stream]);
+                    errorHandler::check(cudaStreamSynchronize(streams_[stream]));
                 }
                 for (label_t stream = 0; stream < streams_.size(); stream++)
                 {
-                    cudaStreamDestroy(streams_[stream]);
+                    errorHandler::check(cudaStreamDestroy(streams_[stream]));
                 }
             }
         }
@@ -109,12 +104,12 @@ namespace LBM
          *
          * Blocks the host until all operations in all CUDA streams complete.
          * This ensures completion of all asynchronous operations before continuing.
-         */
+         **/
         inline void synchronizeAll() const noexcept
         {
             for (label_t stream = 0; stream < streams_.size(); stream++)
             {
-                cudaStreamSynchronize(streams_[stream]);
+                errorHandler::check(cudaStreamSynchronize(streams_[stream]));
             }
         }
 
@@ -122,15 +117,13 @@ namespace LBM
          * @brief Synchronizes a specific CUDA stream
          * @tparam stream_ Index of the stream to synchronize (must be < N)
          * @param[in] stream Integral constant representing the stream index
-         * @pre stream_ must be less than N (enforced via static_assert)
          *
          * Blocks the host until all operations in the specified stream complete.
-         */
+         **/
         template <const label_t stream_>
         inline void synchronize(const std::integral_constant<label_t, stream_> stream) const noexcept
         {
-            // static_assert(stream_ < N, "Attempting to access an invalid stream: stream number must be < N");
-            cudaStreamSynchronize(streams_[stream()]);
+            errorHandler::check(cudaStreamSynchronize(streams_[stream()]));
         }
 
         /**
@@ -138,9 +131,8 @@ namespace LBM
          * @tparam stream_ Index of the stream to access (must be < N)
          * @param[in] stream Integral constant representing the stream index
          * @return Reference to the requested CUDA stream
-         * @pre stream_ must be less than N (enforced via static_assert)
          * @warning No bounds checking performed at runtime
-         */
+         **/
         template <const label_t stream_>
         __device__ cudaStream_t &operator[](const std::integral_constant<label_t, stream_> stream) const noexcept
         {
@@ -150,7 +142,7 @@ namespace LBM
         /**
          * @brief Returns all managed CUDA streams
          * @return Const reference to std::array containing all CUDA streams
-         */
+         **/
         __host__ [[nodiscard]] inline const std::vector<cudaStream_t> &streams() const noexcept
         {
             return streams_;
@@ -163,17 +155,17 @@ namespace LBM
          *
          * Private helper function that handles actual stream creation
          * with proper error checking and device synchronization.
-         */
+         **/
         __host__ [[nodiscard]] static const std::vector<cudaStream_t> createCudaStreams(const programControl &programCtrl) noexcept
         {
             std::vector<cudaStream_t> streams(programCtrl.deviceList().size());
 
             for (label_t stream = 0; stream < streams.size(); stream++)
             {
-                checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[stream]));
-                checkCudaErrors(cudaDeviceSynchronize());
-                checkCudaErrors(cudaStreamCreate(&streams[stream]));
-                checkCudaErrors(cudaDeviceSynchronize());
+                errorHandler::check(cudaSetDevice(programCtrl.deviceList()[stream]));
+                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::check(cudaStreamCreate(&streams[stream]));
+                errorHandler::check(cudaDeviceSynchronize());
             }
 
             return streams;
@@ -181,9 +173,12 @@ namespace LBM
 
         /**
          * @brief The underlying streams held in a std::array
-         */
+         **/
         const std::vector<cudaStream_t> streams_;
 
+        /**
+         * @brief Reference to the program control
+         **/
         const programControl &programCtrl_;
     };
 }

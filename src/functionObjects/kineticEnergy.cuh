@@ -71,16 +71,16 @@ namespace LBM
                 template <typename T>
                 __device__ [[nodiscard]] inline constexpr T K(const T u, const T v, const T w) noexcept
                 {
-                    static_assert((sizeof(T) == 8) || (sizeof(T) == 4), "Bad type T");
+                    types::assertions::validate<T>();
 
-                    if constexpr (sizeof(T) == 8)
-                    {
-                        return sqrt((u * u) + (v * v) + (w * w)) * static_cast<T>(0.5);
-                    }
-
-                    else if constexpr (sizeof(T) == 4)
+                    if constexpr (std::is_same_v<T, float>)
                     {
                         return sqrtf((u * u) + (v * v) + (w * w)) * static_cast<T>(0.5);
+                    }
+
+                    if constexpr (std::is_same_v<T, double>)
+                    {
+                        return sqrt((u * u) + (v * v) + (w * w)) * static_cast<T>(0.5);
                     }
                 }
 
@@ -96,8 +96,7 @@ namespace LBM
                     const scalar_t invNewCount)
                 {
                     // Calculate the index
-                    // MODIFY FOR MULTI GPU: idx must be multi GPU aware
-                    const label_t idx = device::idx(device::threadCoordinate(), device::blockCoordinate());
+                    const label_t idx = device::idx(thread::coordinate(), block::coordinate());
 
                     // Read from global memory
                     const scalar_t u = devPtrs.ptr<1>()[idx];
@@ -129,8 +128,7 @@ namespace LBM
                     const scalar_t invNewCount)
                 {
                     // Calculate the index
-                    // MODIFY FOR MULTI GPU: idx must be multi GPU aware
-                    const label_t idx = device::idx(device::threadCoordinate(), device::blockCoordinate());
+                    const label_t idx = device::idx(thread::coordinate(), block::coordinate());
 
                     // Read from global memory
                     const scalar_t u = devPtrs.ptr<1>()[idx];
@@ -159,8 +157,7 @@ namespace LBM
                     const device::ptrCollection<1, scalar_t> KPtrs)
                 {
                     // Calculate the index
-                    // MODIFY FOR MULTI GPU: idx must be multi GPU aware
-                    const label_t idx = device::idx(device::threadCoordinate(), device::blockCoordinate());
+                    const label_t idx = device::idx(thread::coordinate(), block::coordinate());
 
                     // Read from global memory
                     const scalar_t u = devPtrs.ptr<1>()[idx];
@@ -175,7 +172,7 @@ namespace LBM
 
             /**
              * @brief Class for managing total kinetic energy scalar calculations in LBM simulations
-             * @tparam VelocitySet The velocity set type used in LBM
+             * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
              * @tparam N The number of streams (compile-time constant)
              **/
             template <class VelocitySet>
@@ -184,7 +181,7 @@ namespace LBM
             public:
                 /**
                  * @brief Constructs a total kinetic energy scalar object
-                 * @param[in] mesh Reference to lattice mesh
+                 * @param[in] mesh The lattice mesh
                  * @param[in] devPtrs Device pointer collection for memory access
                  * @param[in] streamsLBM Stream handler for CUDA operations
                  **/
@@ -203,15 +200,14 @@ namespace LBM
                       k_(objectAllocator<VelocitySet, time::instantaneous>(fieldName_, mesh, programCtrl)),
                       kMean_(objectAllocator<VelocitySet, time::timeAverage>(fieldNameMean_, mesh, programCtrl))
                 {
-                    // std::cout << fieldNameMean_ << std::endl;
                     // Set the cache config to prefer L1
-                    checkCudaErrors(cudaFuncSetCacheConfig(kernel::instantaneous, cudaFuncCachePreferL1));
+                    errorHandler::check(cudaFuncSetCacheConfig(kernel::instantaneous, cudaFuncCachePreferL1));
                 };
 
                 /**
                  * @brief Default destructor
                  **/
-                ~scalar() {};
+                ~scalar() {}
 
                 /**
                  * @brief Check if instantaneous calculation is enabled
@@ -237,30 +233,22 @@ namespace LBM
                  **/
                 __host__ void calculateInstantaneous([[maybe_unused]] const label_t timeStep) noexcept
                 {
-                    // host::constexpr_for<0, N>(
-                    // [&](const auto stream)
-                    // {
                     for (label_t stream = 0; stream < streamsLBM_.streams().size(); stream++)
                     {
                         kineticEnergy::kernel::instantaneous<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
                             devPtrs_,
                             {k_.ptr(0)});
                     }
-                    // });
                 }
 
                 /**
                  * @brief Calculate time-averaged total kinetic energy
                  * @param[in] timeStep Current simulation time step
                  **/
-                __host__ void calculateMean(const label_t timeStep) noexcept
+                __host__ void calculateMean([[maybe_unused]] const label_t timeStep) noexcept
                 {
-                    const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(timeStep + 1);
+                    const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(kMean_.meanCount() + 1);
 
-                    // Calculate the mean
-                    // host::constexpr_for<0, N>(
-                    // [&](const auto stream)
-                    // {
                     for (label_t stream = 0; stream < streamsLBM_.streams().size(); stream++)
                     {
                         kineticEnergy::kernel::mean<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
@@ -268,20 +256,18 @@ namespace LBM
                             {kMean_.ptr(0)},
                             invNewCount);
                     }
-                    //});
+
+                    kMean_.meanCountRef()++;
                 }
 
                 /**
                  * @brief Calculate both the instantaneous and time-averaged total kinetic energy
                  * @param[in] timeStep Current simulation time step
                  **/
-                __host__ void calculateInstantaneousAndMean(const label_t timeStep) noexcept
+                __host__ void calculateInstantaneousAndMean([[maybe_unused]] const label_t timeStep) noexcept
                 {
-                    const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(timeStep + 1);
+                    const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(kMean_.meanCount() + 1);
 
-                    //  host::constexpr_for<0, N>(
-                    //  [&](const auto stream)
-                    //  {
                     for (label_t stream = 0; stream < streamsLBM_.streams().size(); stream++)
                     {
                         kineticEnergy::kernel::instantaneousAndMean<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
@@ -290,7 +276,8 @@ namespace LBM
                             {kMean_.ptr(0)},
                             invNewCount);
                     }
-                    //  });
+
+                    kMean_.meanCountRef()++;
                 }
 
                 /**
@@ -299,14 +286,21 @@ namespace LBM
                  **/
                 __host__ void saveInstantaneous(const label_t timeStep) noexcept
                 {
-                    hostWriteBuffer_.copy_from_device(device::ptrCollection<1, scalar_t>(k_.ptr(0)), mesh_);
+                    for (label_t virtualDeviceIndex = 0; virtualDeviceIndex < k_.programCtrl().deviceList().size(); virtualDeviceIndex++)
+                    {
+                        hostWriteBuffer_.copy_from_device(
+                            device::ptrCollection<1, scalar_t>(k_.ptr(virtualDeviceIndex)),
+                            mesh_,
+                            virtualDeviceIndex);
+                    }
 
                     fileIO::writeFile<time::instantaneous>(
                         fieldName_ + "_" + std::to_string(timeStep) + ".LBMBin",
                         mesh_,
                         componentNames_,
                         hostWriteBuffer_.data(),
-                        timeStep);
+                        timeStep,
+                        0);
                 }
 
                 /**
@@ -315,21 +309,28 @@ namespace LBM
                  **/
                 __host__ void saveMean(const label_t timeStep) noexcept
                 {
-                    hostWriteBuffer_.copy_from_device(device::ptrCollection<1, scalar_t>(kMean_.ptr(0)), mesh_);
+                    for (label_t virtualDeviceIndex = 0; virtualDeviceIndex < kMean_.programCtrl().deviceList().size(); virtualDeviceIndex++)
+                    {
+                        hostWriteBuffer_.copy_from_device(
+                            device::ptrCollection<1, scalar_t>(kMean_.ptr(virtualDeviceIndex)),
+                            mesh_,
+                            virtualDeviceIndex);
+                    }
 
                     fileIO::writeFile<time::timeAverage>(
                         fieldNameMean_ + "_" + std::to_string(timeStep) + ".LBMBin",
                         mesh_,
                         componentNamesMean_,
                         hostWriteBuffer_.data(),
-                        timeStep);
+                        timeStep,
+                        kMean_.meanCount());
                 }
 
                 /**
                  * @brief Get the field name for instantaneous components
                  * @return Field name string
                  **/
-                __device__ __host__ [[nodiscard]] inline constexpr const std::string &fieldName() const noexcept
+                __device__ __host__ [[nodiscard]] inline constexpr const name_t &fieldName() const noexcept
                 {
                     return fieldName_;
                 }
@@ -338,7 +339,7 @@ namespace LBM
                  * @brief Get the field name for mean components
                  * @return Field name string
                  **/
-                __device__ __host__ [[nodiscard]] inline constexpr const std::string &fieldNameMean() const noexcept
+                __device__ __host__ [[nodiscard]] inline constexpr const name_t &fieldNameMean() const noexcept
                 {
                     return fieldNameMean_;
                 }
@@ -347,7 +348,7 @@ namespace LBM
                  * @brief Get the component names for instantaneous scalar
                  * @return Vector of component names
                  **/
-                __device__ __host__ [[nodiscard]] inline constexpr const std::vector<std::string> &componentNames() const noexcept
+                __device__ __host__ [[nodiscard]] inline constexpr const words_t &componentNames() const noexcept
                 {
                     return componentNames_;
                 }
@@ -356,7 +357,7 @@ namespace LBM
                  * @brief Get the component names for mean scalar
                  * @return Vector of component names
                  **/
-                __device__ __host__ [[nodiscard]] inline constexpr const std::vector<std::string> &componentNamesMean() const noexcept
+                __device__ __host__ [[nodiscard]] inline constexpr const words_t &componentNamesMean() const noexcept
                 {
                     return componentNamesMean_;
                 }
@@ -367,22 +368,22 @@ namespace LBM
                 /**
                  * @brief Field name for instantaneous scalar
                  **/
-                const std::string fieldName_ = "k";
+                const name_t fieldName_ = "k";
 
                 /**
                  * @brief Field name for mean scalar
                  **/
-                const std::string fieldNameMean_ = fieldName_ + "Mean";
+                const name_t fieldNameMean_ = fieldName_ + "Mean";
 
                 /**
                  * @brief Instantaneous scalar name
                  **/
-                const std::vector<std::string> componentNames_ = {"k"};
+                const words_t componentNames_ = {"k"};
 
                 /**
                  * @brief Mean scalar name
                  **/
-                const std::vector<std::string> componentNamesMean_ = string::catenate(componentNames_, "Mean");
+                const words_t componentNamesMean_ = string::catenate(componentNames_, "Mean");
 
                 /**
                  * @brief Reference to lattice mesh

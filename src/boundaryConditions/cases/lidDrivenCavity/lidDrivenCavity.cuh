@@ -69,11 +69,18 @@ namespace LBM
         /**
          * @brief Default constructor (constexpr)
          **/
-        __device__ __host__ [[nodiscard]] inline consteval lidDrivenCavity(){};
+        __device__ __host__ [[nodiscard]] inline consteval lidDrivenCavity() {}
+
+        /**
+         * @brief Periodic boundary definitions
+         **/
+        __device__ __host__ [[nodiscard]] static inline consteval bool periodicX() noexcept { return false; }
+        __device__ __host__ [[nodiscard]] static inline consteval bool periodicY() noexcept { return false; }
+        __device__ __host__ [[nodiscard]] static inline consteval bool periodicZ() noexcept { return false; }
 
         /**
          * @brief Calculate moment variables at boundary nodes
-         * @tparam VelocitySet Velocity set configuration defining lattice structure
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @param[in] pop Population density array at current lattice node
          * @param[out] moments Moment variables array to be populated
          * @param[in] boundaryNormal Normal vector information at boundary node
@@ -94,7 +101,7 @@ namespace LBM
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
             const normalVector &boundaryNormal,
             [[maybe_unused]] const scalar_t *const ptrRestrict shared_buffer,
-            [[maybe_unused]] const device::threadCoordinate &Tx,
+            [[maybe_unused]] const thread::coordinate &Tx,
             [[maybe_unused]] const device::pointCoordinate &point) noexcept
         {
             const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
@@ -536,7 +543,7 @@ namespace LBM
         template <const axis::type alpha>
         __device__ static inline constexpr scalar_t U(const thread::array<scalar_t, 6> &boundarySwitches, const scalar_t n_boundaries) noexcept
         {
-            assertions::axis::validate<alpha, axis::NOT_NULL>();
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
 
             // Calculate the boundary velocity value
             return ((boundarySwitches[0] * device::U_West[alpha]) +
