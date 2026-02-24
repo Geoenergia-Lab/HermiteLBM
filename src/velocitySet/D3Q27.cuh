@@ -424,12 +424,6 @@ namespace LBM
             pop[q_i<4>()] = rhow_1 * (pics2 - moments[m_i<2>()] + myy_mod);
             pop[q_i<5>()] = rhow_1 * (pics2 + moments[m_i<3>()] + mzz_mod);
             pop[q_i<6>()] = rhow_1 * (pics2 - moments[m_i<3>()] + mzz_mod);
-            pop[q_i<1>()] = rhow_1 * (pics2 + moments[m_i<1>()] + mxx_mod);
-            pop[q_i<2>()] = rhow_1 * (pics2 - moments[m_i<1>()] + mxx_mod);
-            pop[q_i<3>()] = rhow_1 * (pics2 + moments[m_i<2>()] + myy_mod);
-            pop[q_i<4>()] = rhow_1 * (pics2 - moments[m_i<2>()] + myy_mod);
-            pop[q_i<5>()] = rhow_1 * (pics2 + moments[m_i<3>()] + mzz_mod);
-            pop[q_i<6>()] = rhow_1 * (pics2 - moments[m_i<3>()] + mzz_mod);
 
             const scalar_t rhow_2 = moments[m_i<0>()] * w_2<scalar_t>();
             pop[q_i<7>()] = rhow_2 * (pics2 + moments[m_i<1>()] + moments[m_i<2>()] + mxx_mod + myy_mod + moments[m_i<5>()]);
