@@ -67,24 +67,82 @@ namespace LBM
          * @param argv Second argument passed to main
          **/
         __host__ [[nodiscard]] programControl(const int argc, const char *const argv[]) noexcept
-            : input_(inputControl(argc, argv)),
-              caseName_(string::extractParameter<std::string>(string::readFile("programControl"), "caseName")),
-              multiphase_(string::extractParameter<bool>(string::readFile("programControl"), "multiphase")),
-              Re_(multiphase_ ? static_cast<scalar_t>(0) : initialiseConst<scalar_t>("Re")),
-              ReA_(multiphase_ ? initialiseConst<scalar_t>("ReA") : static_cast<scalar_t>(0)),
-              ReB_(multiphase_ ? initialiseConst<scalar_t>("ReB") : static_cast<scalar_t>(0)),
-              We_(multiphase_ ? initialiseConst<scalar_t>("We") : static_cast<scalar_t>(0)),
-              interfaceWidth_(multiphase_ ? initialiseConst<scalar_t>("interfaceWidth") : static_cast<scalar_t>(0)),
-              u_inf_(initialiseConst<scalar_t>("u_inf")),
-              L_char_(initialiseConst<scalar_t>("L_char")),
-              nTimeSteps_(string::extractParameter<label_t>(string::readFile("programControl"), "nTimeSteps")),
-              saveInterval_(string::extractParameter<label_t>(string::readFile("programControl"), "saveInterval")),
-              infoInterval_(string::extractParameter<label_t>(string::readFile("programControl"), "infoInterval")),
-              latestTime_(fileIO::latestTime(caseName_))
+            : input_(inputControl(argc, argv))
         {
             static_assert((std::is_same_v<scalar_t, float>) | (std::is_same_v<scalar_t, double>), "Invalid floating point size: must be either 32 or 64 bit");
 
             static_assert((std::is_same_v<label_t, uint32_t>) | (std::is_same_v<label_t, uint64_t>), "Invalid label size: must be either 32 bit unsigned or 64 bit unsigned");
+
+            const auto file = string::readFile("programControl");
+
+            caseName_ = string::extractParameter<std::string>(file, "caseName");
+            multiphase_ = string::extractParameter<bool>(file, "multiphase");
+
+            const bool hasRe = string::hasParameter(file, "Re");
+            const bool hasReA = string::hasParameter(file, "ReA");
+            const bool hasReB = string::hasParameter(file, "ReB");
+
+            const bool hasNuA = string::hasParameter(file, "nuA");
+            const bool hasNuB = string::hasParameter(file, "nuB");
+
+            if (!multiphase_)
+            {
+                if (!hasRe)
+                {
+                    errorHandler(-1, "Single-phase simulation requires 'Re'.");
+                }
+
+                Re_ = string::extractParameter<scalar_t>(file, "Re");
+                ReA_ = static_cast<scalar_t>(0);
+                ReB_ = static_cast<scalar_t>(0);
+                nuA_ = static_cast<scalar_t>(0);
+                nuB_ = static_cast<scalar_t>(0);
+                We_ = static_cast<scalar_t>(0);
+                interfaceWidth_ = static_cast<scalar_t>(0);
+            }
+            else
+            {
+                const bool usingRe = hasReA && hasReB;
+                const bool usingNu = hasNuA && hasNuB;
+
+                if (usingRe && usingNu)
+                {
+                    errorHandler(-1, "Specify either (ReA/ReB) or (nuA/nuB), not both.");
+                }
+
+                if (!usingRe && !usingNu)
+                {
+                    errorHandler(-1, "Multiphase requires either (ReA/ReB) or (nuA/nuB).");
+                }
+
+                if (usingRe)
+                {
+                    ReA_ = string::extractParameter<scalar_t>(file, "ReA");
+                    ReB_ = string::extractParameter<scalar_t>(file, "ReB");
+                    nuA_ = static_cast<scalar_t>(0);
+                    nuB_ = static_cast<scalar_t>(0);
+                }
+                else
+                {
+                    nuA_ = string::extractParameter<scalar_t>(file, "nuA");
+                    nuB_ = string::extractParameter<scalar_t>(file, "nuB");
+                    ReA_ = static_cast<scalar_t>(0);
+                    ReB_ = static_cast<scalar_t>(0);
+                }
+
+                Re_ = static_cast<scalar_t>(0);
+                We_ = string::extractParameter<scalar_t>(file, "We");
+                interfaceWidth_ = string::extractParameter<scalar_t>(file, "interfaceWidth");
+            }
+
+            u_inf_ = string::extractParameter<scalar_t>(file, "u_inf");
+            L_char_ = string::extractParameter<scalar_t>(file, "L_char");
+
+            nTimeSteps_ = string::extractParameter<label_t>(file, "nTimeSteps");
+            saveInterval_ = string::extractParameter<label_t>(file, "saveInterval");
+            infoInterval_ = string::extractParameter<label_t>(file, "infoInterval");
+
+            latestTime_ = fileIO::latestTime(caseName_);
 
             // Get the launch time
             const time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -196,6 +254,24 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline constexpr scalar_t ReB() const noexcept
         {
             return ReB_;
+        }
+
+        /**
+         * @brief Returns the fluid A kinematic viscosity
+         * @return The kinematic viscosity for fluid A
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr scalar_t nuA() const noexcept
+        {
+            return nuA_;
+        }
+
+        /**
+         * @brief Returns the fluid B kinematic viscosity
+         * @return The kinematic viscosity for fluid B
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr scalar_t nuB() const noexcept
+        {
+            return nuB_;
         }
 
         /**
@@ -325,55 +401,65 @@ namespace LBM
         /**
          * @brief The name of the simulation case
          **/
-        const std::string caseName_;
+        std::string caseName_;
 
         /**
          * @brief Whether the simulation is multiphase
          **/
-        const bool multiphase_;
+        bool multiphase_;
 
         /**
          * @brief The Reynolds number
          **/
-        const scalar_t Re_;
+        scalar_t Re_;
 
         /**
          * @brief The fluid A Reynolds number
          **/
-        const scalar_t ReA_;
+        scalar_t ReA_;
 
         /**
          * @brief The fluid B Reynolds number
          **/
-        const scalar_t ReB_;
+        scalar_t ReB_;
+
+        /**
+         * @brief The fluid A kinematic viscosity
+         **/
+        scalar_t nuA_;
+
+        /**
+         * @brief The fluid B kinematic viscosity
+         **/
+        scalar_t nuB_;
 
         /**
          * @brief The Weber number
          **/
-        const scalar_t We_;
+        scalar_t We_;
 
         /**
          * @brief The interface width
          **/
-        const scalar_t interfaceWidth_;
+        scalar_t interfaceWidth_;
 
         /**
          * @brief The characteristic velocity
          **/
-        const scalar_t u_inf_;
+        scalar_t u_inf_;
 
         /**
          * @brief The characteristic length scale
          **/
-        const scalar_t L_char_;
+        scalar_t L_char_;
 
         /**
          * @brief Total number of simulation time steps, the save interval, info output interval and the latest time step at program start
          **/
-        const label_t nTimeSteps_;
-        const label_t saveInterval_;
-        const label_t infoInterval_;
-        const label_t latestTime_;
+        label_t nTimeSteps_;
+        label_t saveInterval_;
+        label_t infoInterval_;
+        label_t latestTime_;
 
         /**
          * @brief Reads a variable from the caseInfo file into a parameter of type T

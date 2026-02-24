@@ -68,7 +68,7 @@ case normalVector::BACK():
 
     if constexpr (new_inlet())
     {
-        const scalar_t is_jet = static_cast<scalar_t>(((dx * dx) + (dy * dy)) < r2());
+        const scalar_t is_jet = static_cast<scalar_t>(((dx * dx) + (dy * dy)) < r2_oil());
         const scalar_t rho = rho0<scalar_t>();
         moments[m_i<0>()] = rho;                                                    // rho
         moments[m_i<1>()] = is_jet * device::U_Back[0];                             // ux
@@ -84,7 +84,7 @@ case normalVector::BACK():
     }
     else
     {
-        const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(y) - y_pos()) * (static_cast<scalar_t>(y) - y_pos()) < r2());
+        const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(y) - y_pos()) * (static_cast<scalar_t>(y) - y_pos()) < r2_oil());
         const scalar_t mxz_I = velocitySet::calculate_moment<VelocitySet, axis::X, axis::Z>(pop, boundaryNormal) * inv_rho_I;
         const scalar_t myz_I = velocitySet::calculate_moment<VelocitySet, axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
 
@@ -119,7 +119,7 @@ case normalVector::SOUTH():
 
     if constexpr (new_inlet())
     {
-        const scalar_t is_jet = static_cast<scalar_t>(((dx * dx) + (dz * dz)) < r2());
+        const scalar_t is_jet = static_cast<scalar_t>(((dx * dx) + (dz * dz)) < r2_water());
         const scalar_t rho = rho0<scalar_t>();
         moments[m_i<0>()] = rho;                                                      // rho
         moments[m_i<1>()] = is_jet * device::U_South[0];                              // ux
@@ -135,7 +135,7 @@ case normalVector::SOUTH():
     }
     else
     {
-        const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(z) - z_pos()) * (static_cast<scalar_t>(z) - z_pos()) < r2());
+        const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(z) - z_pos()) * (static_cast<scalar_t>(z) - z_pos()) < r2_water());
         const scalar_t mxy_I = velocitySet::calculate_moment<VelocitySet, axis::X, axis::Y>(pop, boundaryNormal) * inv_rho_I;
         const scalar_t myz_I = velocitySet::calculate_moment<VelocitySet, axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
 

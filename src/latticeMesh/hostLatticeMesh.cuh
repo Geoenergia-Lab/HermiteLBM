@@ -199,10 +199,24 @@ namespace LBM
                     }
                     else
                     {
-                        const scalar_t viscosityTempA = programCtrl.u_inf() * programCtrl.L_char() / programCtrl.ReA();
-                        const scalar_t viscosityTempB = programCtrl.u_inf() * programCtrl.L_char() / programCtrl.ReB();
-                        const scalar_t tauTempA = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTempA;
-                        const scalar_t tauTempB = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTempB;
+                        scalar_t tauTempA;
+                        scalar_t tauTempB;
+
+                        if (programCtrl.nuA() > static_cast<scalar_t>(0))
+                        {
+                            // Direct viscosity mode
+                            tauTempA = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * programCtrl.nuA();
+                            tauTempB = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * programCtrl.nuB();
+                        }
+                        else
+                        {
+                            // Reynolds mode
+                            const scalar_t viscosityTempA = programCtrl.u_inf() * programCtrl.L_char() / programCtrl.ReA();
+                            const scalar_t viscosityTempB = programCtrl.u_inf() * programCtrl.L_char() / programCtrl.ReB();
+                            tauTempA = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTempA;
+                            tauTempB = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTempB;
+                        }
+
                         const scalar_t sigmaTemp = (programCtrl.u_inf() * programCtrl.u_inf() * programCtrl.L_char()) / programCtrl.We();
                         const scalar_t gammaTemp = static_cast<scalar_t>(2) / programCtrl.interfaceWidth();
 

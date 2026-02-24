@@ -604,6 +604,21 @@ namespace LBM
             throw std::runtime_error("Parameter '" + name + "' not found");
         }
 
+        __host__ [[nodiscard]] bool hasParameter(
+            const std::vector<std::string> &S,
+            const std::string &name) noexcept
+        {
+            try
+            {
+                static_cast<void>(extractParameterLine(S, name));
+                return true;
+            }
+            catch (...)
+            {
+                return false;
+            }
+        }
+
         /**
          * @brief Searches for an entry corresponding to variableName within the vector of strings S
          * @param T The type of variable returned

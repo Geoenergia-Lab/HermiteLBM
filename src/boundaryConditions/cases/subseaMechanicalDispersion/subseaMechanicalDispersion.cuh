@@ -129,17 +129,27 @@ namespace LBM
 
         __device__ [[nodiscard]] static inline scalar_t z_pos() noexcept
         {
-            return static_cast<scalar_t>(0.7) * center_z();
+            return static_cast<scalar_t>(0.5) * center_z();
         }
 
-        __device__ [[nodiscard]] static inline scalar_t radius() noexcept
+        __device__ [[nodiscard]] static inline scalar_t radius_water() noexcept
         {
-            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::L_char);
+            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(4.10);
         }
 
-        __device__ [[nodiscard]] static inline scalar_t r2() noexcept
+        __device__ [[nodiscard]] static inline scalar_t radius_oil() noexcept
         {
-            return radius() * radius();
+            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(30);
+        }
+
+        __device__ [[nodiscard]] static inline scalar_t r2_water() noexcept
+        {
+            return radius_water() * radius_water();
+        }
+
+        __device__ [[nodiscard]] static inline scalar_t r2_oil() noexcept
+        {
+            return radius_oil() * radius_oil();
         }
     };
 }
