@@ -122,7 +122,7 @@ namespace LBM
             const scalar_t invRho = static_cast<scalar_t>(1) / moments[m_i<0>()];
 
             // Mixture viscosity local relaxation parameters
-            const scalar_t tau_loc = (static_cast<scalar_t>(1) - moments[m_i<10>()]) * device::tauA + moments[m_i<10>()] * device::tauB;
+            const scalar_t tau_loc = (static_cast<scalar_t>(1) - moments[m_i<10>()]) * device::tau_A + moments[m_i<10>()] * device::tau_B;
             const scalar_t omega_loc = static_cast<scalar_t>(1.0) / tau_loc;
             const scalar_t t_omegaVar_loc = static_cast<scalar_t>(1) - omega_loc;
             const scalar_t omegaVar_d2_loc = static_cast<scalar_t>(0.5) * omega_loc;

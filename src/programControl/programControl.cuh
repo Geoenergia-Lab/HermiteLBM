@@ -78,12 +78,80 @@ namespace LBM
             caseName_ = string::extractParameter<std::string>(file, "caseName");
             multiphase_ = string::extractParameter<bool>(file, "multiphase");
 
-            const bool hasRe = string::hasParameter(file, "Re");
-            const bool hasReA = string::hasParameter(file, "ReA");
-            const bool hasReB = string::hasParameter(file, "ReB");
+            // Dual-characteristic auto-detection
+            const bool hasUinfA = string::hasParameter(file, "u_inf_A");
+            const bool hasUinfB = string::hasParameter(file, "u_inf_B");
+            const bool hasLcharA = string::hasParameter(file, "L_char_A");
+            const bool hasLcharB = string::hasParameter(file, "L_char_B");
 
-            const bool hasNuA = string::hasParameter(file, "nuA");
-            const bool hasNuB = string::hasParameter(file, "nuB");
+            dualCharacteristic_ = (hasUinfA || hasUinfB || hasLcharA || hasLcharB);
+
+            if (dualCharacteristic_)
+            {
+                // Require full A/B set
+                if (!(hasUinfA && hasUinfB && hasLcharA && hasLcharB))
+                {
+                    errorHandler(-1, "Dual-characteristic requires all of: u_inf_A, u_inf_B, L_char_A, L_char_B.");
+                }
+
+                u_inf_A_ = string::extractParameter<scalar_t>(file, "u_inf_A");
+                u_inf_B_ = string::extractParameter<scalar_t>(file, "u_inf_B");
+                L_char_A_ = string::extractParameter<scalar_t>(file, "L_char_A");
+                L_char_B_ = string::extractParameter<scalar_t>(file, "L_char_B");
+
+                // Legacy single getters map to A
+                u_inf_single_ = u_inf_A_;
+                L_char_single_ = L_char_A_;
+            }
+            else
+            {
+                const bool hasUinf = string::hasParameter(file, "u_inf");
+                const bool hasLchar = string::hasParameter(file, "L_char");
+
+                if (!hasUinf || !hasLchar)
+                {
+                    errorHandler(-1, "Single-characteristic requires both 'u_inf' and 'L_char'.");
+                }
+
+                u_inf_single_ = string::extractParameter<scalar_t>(file, "u_inf");
+                L_char_single_ = string::extractParameter<scalar_t>(file, "L_char");
+
+                // Map A/B getters to single values
+                u_inf_A_ = u_inf_single_;
+                u_inf_B_ = u_inf_single_;
+                L_char_A_ = L_char_single_;
+                L_char_B_ = L_char_single_;
+            }
+
+            // Nozzle scaling parameters for SSMD case (default unused)
+            const bool hasNozzleScaleA = string::hasParameter(file, "nozzleScale_A");
+            const bool hasNozzleScaleB = string::hasParameter(file, "nozzleScale_B");
+
+            if ((hasNozzleScaleA || hasNozzleScaleB) && (!multiphase_ || !dualCharacteristic_))
+            {
+                errorHandler(-1, "nozzleScale_* only allowed for multiphase dual-characteristic cases (SSMD).");
+            }
+
+            if (hasNozzleScaleA != hasNozzleScaleB)
+            {
+                errorHandler(-1, "Nozzle scaling requires both 'nozzleScale_A' and 'nozzleScale_B' (either specify both or neither).");
+            }
+
+            if (hasNozzleScaleA) // implies hasNozzleScaleB
+            {
+                nozzleScale_A_ = string::extractParameter<scalar_t>(file, "nozzleScale_A");
+                nozzleScale_B_ = string::extractParameter<scalar_t>(file, "nozzleScale_B");
+            }
+            else
+            {
+                nozzleScale_A_ = static_cast<scalar_t>(0);
+                nozzleScale_B_ = static_cast<scalar_t>(0);
+            }
+
+            // Reynolds selection
+            const bool hasRe = string::hasParameter(file, "Re");
+            const bool hasReA = string::hasParameter(file, "Re_A");
+            const bool hasReB = string::hasParameter(file, "Re_B");
 
             if (!multiphase_)
             {
@@ -93,55 +161,30 @@ namespace LBM
                 }
 
                 Re_ = string::extractParameter<scalar_t>(file, "Re");
-                ReA_ = static_cast<scalar_t>(0);
-                ReB_ = static_cast<scalar_t>(0);
-                nuA_ = static_cast<scalar_t>(0);
-                nuB_ = static_cast<scalar_t>(0);
+                Re_A_ = static_cast<scalar_t>(0);
+                Re_B_ = static_cast<scalar_t>(0);
+
                 We_ = static_cast<scalar_t>(0);
                 interfaceWidth_ = static_cast<scalar_t>(0);
             }
             else
             {
-                const bool usingRe = hasReA && hasReB;
-                const bool usingNu = hasNuA && hasNuB;
-
-                if (usingRe && usingNu)
+                if (!(hasReA && hasReB))
                 {
-                    errorHandler(-1, "Specify either (ReA/ReB) or (nuA/nuB), not both.");
-                }
-
-                if (!usingRe && !usingNu)
-                {
-                    errorHandler(-1, "Multiphase requires either (ReA/ReB) or (nuA/nuB).");
-                }
-
-                if (usingRe)
-                {
-                    ReA_ = string::extractParameter<scalar_t>(file, "ReA");
-                    ReB_ = string::extractParameter<scalar_t>(file, "ReB");
-                    nuA_ = static_cast<scalar_t>(0);
-                    nuB_ = static_cast<scalar_t>(0);
-                }
-                else
-                {
-                    nuA_ = string::extractParameter<scalar_t>(file, "nuA");
-                    nuB_ = string::extractParameter<scalar_t>(file, "nuB");
-                    ReA_ = static_cast<scalar_t>(0);
-                    ReB_ = static_cast<scalar_t>(0);
+                    errorHandler(-1, "Multiphase requires both 'Re_A' and 'Re_B'.");
                 }
 
                 Re_ = static_cast<scalar_t>(0);
+                Re_A_ = string::extractParameter<scalar_t>(file, "Re_A");
+                Re_B_ = string::extractParameter<scalar_t>(file, "Re_B");
+
                 We_ = string::extractParameter<scalar_t>(file, "We");
                 interfaceWidth_ = string::extractParameter<scalar_t>(file, "interfaceWidth");
             }
 
-            u_inf_ = string::extractParameter<scalar_t>(file, "u_inf");
-            L_char_ = string::extractParameter<scalar_t>(file, "L_char");
-
             nTimeSteps_ = string::extractParameter<label_t>(file, "nTimeSteps");
             saveInterval_ = string::extractParameter<label_t>(file, "saveInterval");
             infoInterval_ = string::extractParameter<label_t>(file, "infoInterval");
-
             latestTime_ = fileIO::latestTime(caseName_);
 
             // Get the launch time
@@ -174,16 +217,35 @@ namespace LBM
             }
             std::cout << deviceList()[deviceList().size() - 1] << "];" << std::endl;
             std::cout << "    caseName: " << caseName_ << ";" << std::endl;
+            std::cout << "    multiphase: " << (multiphase_ ? "true" : "false") << ";" << std::endl;
+            std::cout << "    dualCharacteristic: " << (dualCharacteristic_ ? "true" : "false") << ";" << std::endl;
             if (!multiphase_)
             {
                 std::cout << "    Re = " << Re_ << ";" << std::endl;
             }
             else
             {
-                std::cout << "    ReA = " << ReA_ << ";" << std::endl;
-                std::cout << "    ReB = " << ReB_ << ";" << std::endl;
+                std::cout << "    Re_A = " << Re_A_ << ";" << std::endl;
+                std::cout << "    Re_B = " << Re_B_ << ";" << std::endl;
                 std::cout << "    We = " << We_ << ";" << std::endl;
                 std::cout << "    interfaceWidth = " << interfaceWidth_ << ";" << std::endl;
+            }
+            if (!dualCharacteristic_)
+            {
+                std::cout << "    u_inf = " << u_inf_single_ << ";" << std::endl;
+                std::cout << "    L_char = " << L_char_single_ << ";" << std::endl;
+            }
+            else
+            {
+                std::cout << "    u_inf_A = " << u_inf_A_ << ";" << std::endl;
+                std::cout << "    u_inf_B = " << u_inf_B_ << ";" << std::endl;
+                std::cout << "    L_char_A = " << L_char_A_ << ";" << std::endl;
+                std::cout << "    L_char_B = " << L_char_B_ << ";" << std::endl;
+            }
+            if (hasNozzleScaleA)
+            {
+                std::cout << "    nozzleScale_A = " << nozzleScale_A_ << ";" << std::endl;
+                std::cout << "    nozzleScale_B = " << nozzleScale_B_ << ";" << std::endl;
             }
             std::cout << "    nTimeSteps = " << nTimeSteps_ << ";" << std::endl;
             std::cout << "    saveInterval = " << saveInterval_ << ";" << std::endl;
@@ -221,6 +283,15 @@ namespace LBM
         }
 
         /**
+         * @brief CHECKPOINT
+         * @return CHECKPOINT
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr bool dualCharacteristic() const noexcept
+        {
+            return dualCharacteristic_;
+        }
+
+        /**
          * @brief Returns the array of device indices
          * @return A read-only reference to deviceList_ contained within input_
          **/
@@ -242,36 +313,18 @@ namespace LBM
          * @brief Returns the fluid A Reynolds number
          * @return The Reynolds number for fluid A
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr scalar_t ReA() const noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr scalar_t Re_A() const noexcept
         {
-            return ReA_;
+            return Re_A_;
         }
 
         /**
          * @brief Returns the fluid B Reynolds number
          * @return The Reynolds number for fluid B
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr scalar_t ReB() const noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr scalar_t Re_B() const noexcept
         {
-            return ReB_;
-        }
-
-        /**
-         * @brief Returns the fluid A kinematic viscosity
-         * @return The kinematic viscosity for fluid A
-         **/
-        __device__ __host__ [[nodiscard]] inline constexpr scalar_t nuA() const noexcept
-        {
-            return nuA_;
-        }
-
-        /**
-         * @brief Returns the fluid B kinematic viscosity
-         * @return The kinematic viscosity for fluid B
-         **/
-        __device__ __host__ [[nodiscard]] inline constexpr scalar_t nuB() const noexcept
-        {
-            return nuB_;
+            return Re_B_;
         }
 
         /**
@@ -298,7 +351,7 @@ namespace LBM
          **/
         __device__ __host__ [[nodiscard]] inline constexpr scalar_t u_inf() const noexcept
         {
-            return u_inf_;
+            return dualCharacteristic_ ? u_inf_A_ : u_inf_single_;
         }
 
         /**
@@ -307,7 +360,61 @@ namespace LBM
          **/
         __device__ __host__ [[nodiscard]] inline constexpr scalar_t L_char() const noexcept
         {
-            return L_char_;
+            return dualCharacteristic_ ? L_char_A_ : L_char_single_;
+        }
+
+        /**
+         * @brief Returns the characteristic velocity of fluid A
+         * @return The characteristic velocity of fluid A
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr scalar_t u_inf_A() const noexcept
+        {
+            return u_inf_A_;
+        }
+
+        /**
+         * @brief Returns the characteristic velocity of fluid B
+         * @return The characteristic velocity of fluid B
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr scalar_t u_inf_B() const noexcept
+        {
+            return u_inf_B_;
+        }
+
+        /**
+         * @brief Returns the nozzle scaling factor of fluid A
+         * @return The nozzle scaling factor of fluid A
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr scalar_t nozzleScale_A() const noexcept
+        {
+            return nozzleScale_A_;
+        }
+
+        /**
+         * @brief Returns the nozzle scaling factor of fluid B
+         * @return The nozzle scaling factor of fluid B
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr scalar_t nozzleScale_B() const noexcept
+        {
+            return nozzleScale_B_;
+        }
+
+        /**
+         * @brief Returns the characteristic length of fluid A
+         * @return The characteristic length of fluid A
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr scalar_t L_char_A() const noexcept
+        {
+            return L_char_A_;
+        }
+
+        /**
+         * @brief Returns the characteristic length of fluid B
+         * @return The characteristic length of fluid B
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr scalar_t L_char_B() const noexcept
+        {
+            return L_char_B_;
         }
 
         /**
@@ -409,6 +516,11 @@ namespace LBM
         bool multiphase_;
 
         /**
+         * @brief Whether the simulation uses separate characteristic scales for fluids A and B
+         **/
+        bool dualCharacteristic_;
+
+        /**
          * @brief The Reynolds number
          **/
         scalar_t Re_;
@@ -416,22 +528,12 @@ namespace LBM
         /**
          * @brief The fluid A Reynolds number
          **/
-        scalar_t ReA_;
+        scalar_t Re_A_;
 
         /**
          * @brief The fluid B Reynolds number
          **/
-        scalar_t ReB_;
-
-        /**
-         * @brief The fluid A kinematic viscosity
-         **/
-        scalar_t nuA_;
-
-        /**
-         * @brief The fluid B kinematic viscosity
-         **/
-        scalar_t nuB_;
+        scalar_t Re_B_;
 
         /**
          * @brief The Weber number
@@ -446,12 +548,42 @@ namespace LBM
         /**
          * @brief The characteristic velocity
          **/
-        scalar_t u_inf_;
+        scalar_t u_inf_single_;
 
         /**
          * @brief The characteristic length scale
          **/
-        scalar_t L_char_;
+        scalar_t L_char_single_;
+
+        /**
+         * @brief The characteristic velocity of fluid A
+         **/
+        scalar_t u_inf_A_;
+
+        /**
+         * @brief The characteristic velocity of fluid B
+         **/
+        scalar_t u_inf_B_;
+
+        /**
+         * @brief The characteristic length scale of fluid A
+         **/
+        scalar_t L_char_A_;
+
+        /**
+         * @brief The characteristic length scale of fluid B
+         **/
+        scalar_t L_char_B_;
+
+        /**
+         * @brief The nozzle scaling factor of fluid A
+         **/
+        scalar_t nozzleScale_A_;
+
+        /**
+         * @brief The nozzle scaling factor of fluid B
+         **/
+        scalar_t nozzleScale_B_;
 
         /**
          * @brief Total number of simulation time steps, the save interval, info output interval and the latest time step at program start

@@ -182,10 +182,10 @@ namespace LBM
 #else
                 // Allocate programControl symbols on the GPU (clean up later)
                 {
-                    copyToSymbol(device::L_char, programCtrl.L_char());
-
                     if (!programCtrl.isMultiphase())
                     {
+                        copyToSymbol(device::L_char, programCtrl.L_char());
+
                         const scalar_t viscosityTemp = programCtrl.u_inf() * programCtrl.L_char() / programCtrl.Re();
                         const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
                         const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTemp;
@@ -199,32 +199,44 @@ namespace LBM
                     }
                     else
                     {
+                        copyToSymbol(device::nozzleScale_A, programCtrl.nozzleScale_A());
+                        copyToSymbol(device::nozzleScale_B, programCtrl.nozzleScale_B());
+
                         scalar_t tauTempA;
                         scalar_t tauTempB;
 
-                        if (programCtrl.nuA() > static_cast<scalar_t>(0))
+                        if (programCtrl.dualCharacteristic())
                         {
-                            // Direct viscosity mode
-                            tauTempA = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * programCtrl.nuA();
-                            tauTempB = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * programCtrl.nuB();
+                            const scalar_t viscosityTempA = programCtrl.u_inf_A() * programCtrl.L_char_A() / programCtrl.Re_A();
+                            const scalar_t viscosityTempB = programCtrl.u_inf_B() * programCtrl.L_char_B() / programCtrl.Re_B();
+                            tauTempA = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTempA;
+                            tauTempB = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTempB;
+                            const scalar_t sigmaTemp = (programCtrl.u_inf_A() * programCtrl.u_inf_A() * programCtrl.L_char_A()) / programCtrl.We();
+
+                            copyToSymbol(device::L_char_A, programCtrl.L_char_A());
+                            copyToSymbol(device::L_char_B, programCtrl.L_char_B());
+                            copyToSymbol(device::sigma, sigmaTemp);
                         }
                         else
                         {
-                            // Reynolds mode
-                            const scalar_t viscosityTempA = programCtrl.u_inf() * programCtrl.L_char() / programCtrl.ReA();
-                            const scalar_t viscosityTempB = programCtrl.u_inf() * programCtrl.L_char() / programCtrl.ReB();
+                            const scalar_t viscosityTempA = programCtrl.u_inf() * programCtrl.L_char() / programCtrl.Re_A();
+                            const scalar_t viscosityTempB = programCtrl.u_inf() * programCtrl.L_char() / programCtrl.Re_B();
                             tauTempA = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTempA;
                             tauTempB = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTempB;
+                            const scalar_t sigmaTemp = (programCtrl.u_inf() * programCtrl.u_inf() * programCtrl.L_char()) / programCtrl.We();
+
+                            copyToSymbol(device::L_char, programCtrl.L_char());
+                            copyToSymbol(device::sigma, sigmaTemp);
                         }
 
-                        const scalar_t sigmaTemp = (programCtrl.u_inf() * programCtrl.u_inf() * programCtrl.L_char()) / programCtrl.We();
-                        const scalar_t gammaTemp = static_cast<scalar_t>(2) / programCtrl.interfaceWidth();
+                        const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTempA;
+                        const scalar_t gammaTemp = static_cast<scalar_t>(2.0) / programCtrl.interfaceWidth();
 
                         copyToSymbol(device::tau, tauTempA); // For compatibility. Ctrl+Shift+F -> CHECKPOINT to find place of future fix
-                        copyToSymbol(device::tauA, tauTempA);
-                        copyToSymbol(device::tauB, tauTempB);
+                        copyToSymbol(device::tau_A, tauTempA);
+                        copyToSymbol(device::tau_B, tauTempB);
+                        copyToSymbol(device::omega, omegaTemp);
                         copyToSymbol(device::gamma, gammaTemp);
-                        copyToSymbol(device::sigma, sigmaTemp);
                     }
                 }
 

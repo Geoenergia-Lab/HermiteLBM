@@ -354,10 +354,14 @@ namespace LBM
         __device__ __constant__ label_t NUM_BLOCK_Z;
 
         // Extra for multiphase
-        __device__ __constant__ scalar_t tauA;
-        __device__ __constant__ scalar_t tauB;
+        __device__ __constant__ scalar_t L_char_A;
+        __device__ __constant__ scalar_t L_char_B;
+        __device__ __constant__ scalar_t tau_A;
+        __device__ __constant__ scalar_t tau_B;
         __device__ __constant__ scalar_t sigma;
         __device__ __constant__ scalar_t gamma;
+        __device__ __constant__ scalar_t nozzleScale_A;
+        __device__ __constant__ scalar_t nozzleScale_B;
 
         /**
          * @brief Class holding N device pointers of type T

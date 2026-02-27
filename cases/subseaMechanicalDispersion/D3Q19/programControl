@@ -11,17 +11,25 @@
 
 caseName        subseaMechanicalDispersion;
 
-nuA             0.0000130;
+Re_A            1400;
 
-nuB             0.000694;
+Re_B            450;
 
-We              541;
+We              500;
 
-interfaceWidth  3;
+interfaceWidth  4;
 
-u_inf           0;
+u_inf_A         0.05;
 
-L_char          0;
+u_inf_B         0.05;
+
+L_char_A        8;
+
+L_char_B        8;
+
+nozzleScale_A   6;
+
+nozzleScale_B   3;
 
 startFrom       latestTime;
 

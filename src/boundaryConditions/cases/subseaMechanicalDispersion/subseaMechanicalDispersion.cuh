@@ -117,29 +117,29 @@ namespace LBM
             return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::ny - 1);
         }
 
-        __device__ [[nodiscard]] static inline scalar_t y_pos() noexcept
-        {
-            return static_cast<scalar_t>(0.5) * center_y();
-        }
-
         __device__ [[nodiscard]] static inline scalar_t center_z() noexcept
         {
             return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::nz - 1);
         }
 
-        __device__ [[nodiscard]] static inline scalar_t z_pos() noexcept
+        __device__ [[nodiscard]] static inline scalar_t water_pos() noexcept
         {
-            return static_cast<scalar_t>(0.5) * center_z();
+            return device::nozzleScale_A * device::L_char_A;
+        }
+
+        __device__ [[nodiscard]] static inline scalar_t oil_pos() noexcept
+        {
+            return device::nozzleScale_B * device::L_char_B;
         }
 
         __device__ [[nodiscard]] static inline scalar_t radius_water() noexcept
         {
-            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(4.10);
+            return static_cast<scalar_t>(0.5) * device::L_char_A;
         }
 
         __device__ [[nodiscard]] static inline scalar_t radius_oil() noexcept
         {
-            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(30);
+            return static_cast<scalar_t>(0.5) * device::L_char_B;
         }
 
         __device__ [[nodiscard]] static inline scalar_t r2_water() noexcept
