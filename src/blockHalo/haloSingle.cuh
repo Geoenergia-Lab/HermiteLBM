@@ -63,7 +63,7 @@ namespace LBM
          * This class allocates a single halo face-set. It is suitable when halo
          * production and consumption are separated by kernel boundaries
          **/
-        template <class VelocitySet, const bool PeriodicX, const bool PeriodicY>
+        template <class VelocitySet, const bool x_periodic, const bool y_periodic, const bool z_periodic>
         class haloSingle
         {
         public:

@@ -129,8 +129,8 @@ int main(const int argc, const char *const argv[])
 
     objectRegistry<VelocitySet, NStreams()> runTimeObjects(hostWriteBuffer, mesh, hydroPtrs, streamsLBM);
 
-    device::haloSingle<VelocitySet, periodicX(), periodicY()> fBlockHalo(mesh, programCtrl);      // Hydrodynamic halo
-    device::haloSingle<PhaseVelocitySet, periodicX(), periodicY()> gBlockHalo(mesh, programCtrl); // Phase field halo
+    device::haloSingle<VelocitySet, periodicX(), periodicY(), periodicZ()> fBlockHalo(mesh, programCtrl);      // Hydrodynamic halo
+    device::haloSingle<PhaseVelocitySet, periodicX(), periodicY(), periodicZ()> gBlockHalo(mesh, programCtrl); // Phase field halo
 
     kernelSetup<smem_alloc_size()>(phaseFieldStream);
 

@@ -64,7 +64,7 @@ namespace LBM
          * CUDA blocks during LBM simulations. It maintains double-buffered halo regions
          * to support efficient ping-pong swapping between computation steps.
          **/
-        template <class VelocitySet, const bool x_periodic, const bool y_periodic>
+        template <class VelocitySet, const bool x_periodic, const bool y_periodic, const bool z_periodic>
         class halo
         {
         public:
@@ -532,7 +532,14 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool Back(const label_t z) noexcept
             {
-                return (threadIdx.z == 0 && z != 0);
+                if constexpr (z_periodic)
+                {
+                    return (threadIdx.z == 0);
+                }
+                else
+                {
+                    return (threadIdx.z == 0 && z != 0);
+                }
             }
 
             /**
@@ -542,7 +549,14 @@ namespace LBM
              **/
             __device__ [[nodiscard]] static inline bool Front(const label_t z) noexcept
             {
-                return (threadIdx.z == (block::nz() - 1) && z != (device::nz - 1));
+                if constexpr (z_periodic)
+                {
+                    return (threadIdx.z == (block::nz() - 1));
+                }
+                else
+                {
+                    return (threadIdx.z == (block::nz() - 1) && z != (device::nz - 1));
+                }
             }
 
             /**

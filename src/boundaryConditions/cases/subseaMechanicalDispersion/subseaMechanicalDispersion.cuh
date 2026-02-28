@@ -124,7 +124,7 @@ namespace LBM
 
         __device__ [[nodiscard]] static inline scalar_t water_pos() noexcept
         {
-            return device::nozzleScale_A * device::L_char_A;
+            return device::nozzleScale_A * device::L_char_B;
         }
 
         __device__ [[nodiscard]] static inline scalar_t oil_pos() noexcept

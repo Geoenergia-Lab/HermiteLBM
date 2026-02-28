@@ -71,12 +71,14 @@ namespace LBM
     using BoundaryConditions = multiphaseJet;
     __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return true; }
     __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return true; }
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicZ() noexcept { return false; }
 #endif
 
 #ifdef SUBSEAMECHANICALDISPERSION
     using BoundaryConditions = subseaMechanicalDispersion;
     __device__ __host__ [[nodiscard]] inline consteval bool periodicX() noexcept { return false; }
     __device__ __host__ [[nodiscard]] inline consteval bool periodicY() noexcept { return false; }
+    __device__ __host__ [[nodiscard]] inline consteval bool periodicZ() noexcept { return false; }
 #endif
 
     using VelocitySet = D3Q19;
@@ -84,8 +86,8 @@ namespace LBM
     using Collision = secondOrder;
 
     // Aliases use the standard halo methods
-    using HydroHalo = device::halo<VelocitySet, periodicX(), periodicY()>;
-    using PhaseHalo = device::halo<PhaseVelocitySet, periodicX(), periodicY()>;
+    using HydroHalo = device::halo<VelocitySet, periodicX(), periodicY(), periodicZ()>;
+    using PhaseHalo = device::halo<PhaseVelocitySet, periodicX(), periodicY(), periodicZ()>;
 
     __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept
     {
