@@ -201,7 +201,6 @@ namespace LBM
                                                 phi_xp1_yp1_zm1 - phi_xm1_ym1_zp1 +
                                                 phi_xp1_ym1_zp1 - phi_xm1_yp1_zm1 +
                                                 phi_xp1_ym1_zm1 - phi_xm1_yp1_zp1);
-            ;
 
             const scalar_t sgy =
                 VelocitySet::w_1<scalar_t>() * (phi[i_yp] - phi[i_ym]) +
