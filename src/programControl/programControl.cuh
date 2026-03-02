@@ -157,6 +157,12 @@ namespace LBM
         }
 
         /**
+         * @brief Disable copying
+         **/
+        __host__ [[nodiscard]] programControl(const programControl &) = delete;
+        __host__ [[nodiscard]] programControl &operator=(const programControl &) = delete;
+
+        /**
          * @brief Returns the name of the case
          * @return A const name_t
          **/

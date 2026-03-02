@@ -110,6 +110,17 @@ namespace LBM
             }
 
             /**
+             * @brief Default destructor
+             **/
+            __host__ ~latticeMesh() noexcept {}
+
+            /**
+             * @brief Disable copying
+             **/
+            __host__ [[nodiscard]] latticeMesh(const latticeMesh &) = delete;
+            __host__ [[nodiscard]] latticeMesh &operator=(const latticeMesh &) = delete;
+
+            /**
              * @brief Total number of points in the mesh
              * @tparam T The size type
              **/

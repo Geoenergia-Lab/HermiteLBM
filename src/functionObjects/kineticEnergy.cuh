@@ -210,6 +210,12 @@ namespace LBM
                 ~scalar() {}
 
                 /**
+                 * @brief Disable copying
+                 **/
+                __host__ [[nodiscard]] scalar(const scalar &) = delete;
+                __host__ [[nodiscard]] scalar &operator=(const scalar &) = delete;
+
+                /**
                  * @brief Check if instantaneous calculation is enabled
                  * @return True if instantaneous calculation is enabled
                  **/

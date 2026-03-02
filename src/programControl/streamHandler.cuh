@@ -100,6 +100,12 @@ namespace LBM
         }
 
         /**
+         * @brief Disable copying
+         **/
+        __host__ [[nodiscard]] streamHandler(const streamHandler &) = delete;
+        __host__ [[nodiscard]] streamHandler &operator=(const streamHandler &) = delete;
+
+        /**
          * @brief Synchronizes all managed CUDA streams
          *
          * Blocks the host until all operations in all CUDA streams complete.

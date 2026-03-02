@@ -294,6 +294,12 @@ namespace LBM
                 ~tensor() {}
 
                 /**
+                 * @brief Disable copying
+                 **/
+                __host__ [[nodiscard]] tensor(const tensor &) = delete;
+                __host__ [[nodiscard]] tensor &operator=(const tensor &) = delete;
+
+                /**
                  * @brief Check if instantaneous calculation is enabled
                  * @return True if instantaneous calculation is enabled
                  **/

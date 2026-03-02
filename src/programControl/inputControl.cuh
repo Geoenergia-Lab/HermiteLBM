@@ -80,6 +80,12 @@ namespace LBM
         ~inputControl() noexcept {}
 
         /**
+         * @brief Disable copying
+         **/
+        __host__ [[nodiscard]] inputControl(const inputControl &) = delete;
+        __host__ [[nodiscard]] inputControl &operator=(const inputControl &) = delete;
+
+        /**
          * @brief Returns the device list as a vector of ints
          * @return const std::vector<deviceIndex_t>& The device list containing GPU indices
          **/

@@ -148,6 +148,12 @@ namespace LBM
                 ~collection() {}
 
                 /**
+                 * @brief Disable copying
+                 **/
+                __host__ [[nodiscard]] collection(const collection &) = delete;
+                __host__ [[nodiscard]] collection &operator=(const collection &) = delete;
+
+                /**
                  * @brief Check if instantaneous calculation is enabled
                  * @return True if instantaneous calculation is enabled
                  **/

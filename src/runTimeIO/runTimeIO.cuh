@@ -99,6 +99,12 @@ namespace LBM
         };
 
         /**
+         * @brief Disable copying
+         **/
+        __host__ [[nodiscard]] runTimeIO(const runTimeIO &) = delete;
+        __host__ [[nodiscard]] runTimeIO &operator=(const runTimeIO &) = delete;
+
+        /**
          * @brief Formats a duration in seconds into HH:MM:SS string format
          * @param[in] totalSeconds Total number of seconds to format
          * @return String formatted as HH:MM:SS (supports negative durations)

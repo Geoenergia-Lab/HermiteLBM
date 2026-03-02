@@ -95,6 +95,12 @@ namespace LBM
         ~objectRegistry() {}
 
         /**
+         * @brief Disable copying
+         **/
+        __host__ [[nodiscard]] objectRegistry(const objectRegistry &) = delete;
+        __host__ [[nodiscard]] objectRegistry &operator=(const objectRegistry &) = delete;
+
+        /**
          * @brief Executes all registered function object calculations for given time step
          * @param[in] timeStep The current simulation time step
          **/

@@ -360,7 +360,7 @@ namespace LBM
         }
         else
         {
-            return mesh;
+            return host::latticeMesh(programCtrl);
         }
     }
 
