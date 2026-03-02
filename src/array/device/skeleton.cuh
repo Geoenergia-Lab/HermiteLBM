@@ -171,13 +171,36 @@ namespace LBM
                     mesh.nDevices(),
                     [&](label_t GPU_x, label_t GPU_y, label_t GPU_z)
                     {
+                        const label_t EastBoundary = static_cast<label_t>(GPU_x < mesh.nDevices<axis::X>() - 1);
+                        const label_t WestBoundary = static_cast<label_t>(GPU_x > 0);
+                        const label_t NorthBoundary = static_cast<label_t>(GPU_y < mesh.nDevices<axis::Y>() - 1);
+                        const label_t SouthBoundary = static_cast<label_t>(GPU_y > 0);
+                        const label_t BackBoundary = static_cast<label_t>(GPU_z < mesh.nDevices<axis::Z>() - 1);
+                        const label_t FrontBoundary = static_cast<label_t>(GPU_z > 0);
                         std::cout << "deviceID {" << GPU_x << " " << GPU_y << " " << GPU_z << "}:" << std::endl;
-                        std::cout << "East boundary: " << (GPU_x < mesh.nDevices<axis::X>() - 1) << std::endl;
-                        std::cout << "West boundary: " << (GPU_x > 0) << std::endl;
-                        std::cout << "North boundary: " << (GPU_y < mesh.nDevices<axis::Y>() - 1) << std::endl;
-                        std::cout << "South boundary: " << (GPU_y > 0) << std::endl;
-                        std::cout << "Back boundary: " << (GPU_z < mesh.nDevices<axis::Z>() - 1) << std::endl;
-                        std::cout << "Front boundary: " << (GPU_z > 0) << std::endl;
+                        std::cout << "East boundary: " << EastBoundary << std::endl;
+                        std::cout << "West boundary: " << WestBoundary << std::endl;
+                        std::cout << "North boundary: " << NorthBoundary << std::endl;
+                        std::cout << "South boundary: " << SouthBoundary << std::endl;
+                        std::cout << "Back boundary: " << BackBoundary << std::endl;
+                        std::cout << "Front boundary: " << FrontBoundary << std::endl;
+
+                        device::copyToSymbol(device::STREAMING_OFFSET_WEST, WestBoundary);
+                        device::copyToSymbol(device::STREAMING_OFFSET_EAST, EastBoundary);
+                        device::copyToSymbol(device::STREAMING_OFFSET_SOUTH, SouthBoundary);
+                        device::copyToSymbol(device::STREAMING_OFFSET_NORTH, NorthBoundary);
+                        device::copyToSymbol(device::STREAMING_OFFSET_BACK, BackBoundary);
+                        device::copyToSymbol(device::STREAMING_OFFSET_FRONT, FrontBoundary);
+
+                        const label_t nxHaloBlocks = mesh.blocksPerDevice<axis::X>() + EastBoundary + WestBoundary;
+                        const label_t nyHaloBlocks = mesh.blocksPerDevice<axis::Y>() + NorthBoundary + SouthBoundary;
+                        const label_t nzHaloBlocks = mesh.blocksPerDevice<axis::Z>() + BackBoundary + FrontBoundary;
+
+                        // std::vector<scalar_t>(nxHaloBlocks * nyHaloBlocks * nzHaloBlocks * block::nx()
+
+                        // Now, we should create a std vector containing the halo for this device
+                        // The halo should begin at bx = (gpu_x * nxBlocksPerGPU) - WestBoundary, I think
+                        // Same for the other boundaries
 
                         // const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, mesh.nDevices<axis::X>(), mesh.nDevices<axis::Y>());
                         // hostPtrsToDevice[virtualDeviceIndex] = allocate_halo_segment(mesh, hostArrayGlobal, GPU_x, GPU_y, GPU_z, programCtrl, allocationSize);
