@@ -53,11 +53,6 @@ SourceFiles
 namespace LBM
 {
     /**
-     * @brief New definition of the inlet plane
-     * **/
-    __device__ __host__ [[nodiscard]] inline consteval bool new_inlet() noexcept { return false; }
-
-    /**
      * @class jetFlow
      *
      * @brief Applies boundary conditions for jet flow simulations using moment representation

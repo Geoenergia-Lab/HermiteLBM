@@ -79,7 +79,7 @@ namespace LBM
 
             static const std::unordered_map<std::string, std::vector<std::string>> multi = {
                 {"momentsMean", {"rhoMean", "uMean", "vMean", "wMean", "m_xxMean", "m_xyMean", "m_xzMean", "m_yyMean", "m_yzMean", "m_zzMean", "phiMean"}},
-                {"subseaMechanicalDispersion", {"phi", "v"}},
+                {"subseaMechanicalDispersion", {"phi"}},
                 {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}},
                 {"SMean", {"S_xxMean", "S_xyMean", "S_xzMean", "S_yyMean", "S_yzMean", "S_zzMean"}},
                 {"k", {"k"}},
