@@ -153,41 +153,88 @@ namespace LBM
             }
 
             template <const axis::type alpha>
-            __host__ [[nodiscard]] static inline constexpr std::size_t AllocationSize(
+            __host__ [[nodiscard]] static inline constexpr label_t AllocationSize(
+                const label_t nxBlocksTrue,
+                const label_t nyBlocksTrue,
+                const label_t nzBlocksTrue) noexcept
+            {
+                return VelocitySet::QF() * nxBlocksTrue * nyBlocksTrue * nzBlocksTrue * block::nx() * block::ny() * block::nz() / block::n<alpha>();
+            }
+
+            template <const axis::type alpha, const int coeff>
+            __host__ [[nodiscard]] static inline constexpr label_t extraFace(
                 const label_t GPU_x,
                 const label_t GPU_y,
                 const label_t GPU_z,
                 const host::latticeMesh &mesh) noexcept
             {
-                const std::size_t EastBoundary = static_cast<std::size_t>(GPU_x < mesh.nDevices<axis::X>() - 1);
-                const std::size_t WestBoundary = static_cast<std::size_t>(GPU_x > 0);
-                const std::size_t NorthBoundary = static_cast<std::size_t>(GPU_y < mesh.nDevices<axis::Y>() - 1);
-                const std::size_t SouthBoundary = static_cast<std::size_t>(GPU_y > 0);
-                const std::size_t FrontBoundary = static_cast<std::size_t>(GPU_z < mesh.nDevices<axis::Z>() - 1);
-                const std::size_t BackBoundary = static_cast<std::size_t>(GPU_z > 0);
-
                 if constexpr (alpha == axis::X)
                 {
-                    return mesh.nFacesPerDevice<alpha, VelocitySet::QF(), std::size_t>(EastBoundary, WestBoundary);
+                    if constexpr (coeff == -1)
+                    {
+                        // If it is the West-bound coefficient, then we need to pad to the EAST if there is a GPU boundary
+                        return static_cast<label_t>(GPU_x < mesh.nDevices<axis::X>() - 1);
+
+                        // Since we pad to the East and pull Westbound, we don't need any block offsets for the streaming step
+                        // Set the device X block offsets to 0 here
+                    }
+                    if constexpr (coeff == +1)
+                    {
+                        // If it is the East-bound coefficient, then we need to pad to the WEST if there is a GPU boundary
+                        return static_cast<label_t>(GPU_x > 0);
+
+                        // Since we pad to the West and pull Eastbound, we need an offset of +1 to the block z coordinate for the streaming step
+                        // Set the device Z block offsets to 1 here
+                    }
                 }
 
                 if constexpr (alpha == axis::Y)
                 {
-                    return mesh.nFacesPerDevice<alpha, VelocitySet::QF(), std::size_t>(NorthBoundary, SouthBoundary);
+                    if constexpr (coeff == -1)
+                    {
+                        // If it is the West-bound coefficient, then we need to pad to the EAST if there is a GPU boundary
+                        return static_cast<label_t>(GPU_y < mesh.nDevices<axis::Y>() - 1);
+
+                        // Since we pad to the East and pull Westbound, we don't need any block offsets for the streaming step
+                        // Set the device Y block offsets to 0 here
+                    }
+                    if constexpr (coeff == +1)
+                    {
+                        // If it is the East-bound coefficient, then we need to pad to the WEST if there is a GPU boundary
+                        return static_cast<label_t>(GPU_y > 0);
+
+                        // Since we pad to the West and pull Eastbound, we need an offset of +1 to the block z coordinate for the streaming step
+                        // Set the device Z block offsets to 1 here
+                    }
                 }
 
                 if constexpr (alpha == axis::Z)
                 {
-                    return mesh.nFacesPerDevice<alpha, VelocitySet::QF(), std::size_t>(BackBoundary, FrontBoundary);
+                    if constexpr (coeff == -1)
+                    {
+                        // If it is the West-bound coefficient, then we need to pad to the EAST if there is a GPU boundary
+                        return static_cast<label_t>(GPU_z < mesh.nDevices<axis::Z>() - 1);
+
+                        // Since we pad to the East and pull Westbound, we don't need any block offsets for the streaming step
+                        // Set the device Z block offsets to 0 here
+                    }
+                    if constexpr (coeff == +1)
+                    {
+                        // If it is the East-bound coefficient, then we need to pad to the WEST if there is a GPU boundary
+                        return static_cast<label_t>(GPU_z > 0);
+
+                        // Since we pad to the West and pull Eastbound, we need an offset of +1 to the block z coordinate for the streaming step
+                        // Set the device Z block offsets to 1 here
+                    }
                 }
             }
 
             template <const axis::type alpha, const int coeff>
             __host__ [[nodiscard]] static T **allocate_halo_on_devices(
-                const host::latticeMesh &mesh,
-                const T *hostArrayGlobal,
-                const programControl &programCtrl,
-                const std::size_t globalSize)
+                [[maybe_unused]] const host::latticeMesh &mesh,
+                [[maybe_unused]] const T *hostArrayGlobal,
+                [[maybe_unused]] const programControl &programCtrl,
+                [[maybe_unused]] const std::size_t globalSize)
             {
                 T **hostPtrsToDevice = host::allocate<T *>(mesh.nDevices().size(), nullptr);
 
@@ -204,91 +251,73 @@ namespace LBM
                         mesh.nDevices(),
                         [&](label_t GPU_x, label_t GPU_y, label_t GPU_z)
                         {
-                            const label_t EastBoundary = static_cast<label_t>(GPU_x < mesh.nDevices<axis::X>() - 1);
-                            const label_t WestBoundary = static_cast<label_t>(GPU_x > 0);
-                            const label_t NorthBoundary = static_cast<label_t>(GPU_y < mesh.nDevices<axis::Y>() - 1);
-                            const label_t SouthBoundary = static_cast<label_t>(GPU_y > 0);
-                            const label_t FrontBoundary = static_cast<label_t>(GPU_z < mesh.nDevices<axis::Z>() - 1);
-                            const label_t BackBoundary = static_cast<label_t>(GPU_z > 0);
-                            std::cout << "deviceID {" << GPU_x << " " << GPU_y << " " << GPU_z << "}:" << std::endl;
-                            std::cout << "West boundary: " << (WestBoundary ? "true" : "false") << std::endl;
-                            std::cout << "East boundary: " << (EastBoundary ? "true" : "false") << std::endl;
-                            std::cout << "South boundary: " << (SouthBoundary ? "true" : "false") << std::endl;
-                            std::cout << "North boundary: " << (NorthBoundary ? "true" : "false") << std::endl;
-                            std::cout << "Back boundary: " << (BackBoundary ? "true" : "false") << std::endl;
-                            std::cout << "Front boundary: " << (FrontBoundary ? "true" : "false") << std::endl;
-                            std::cout << std::endl;
+                            const label_t haloHasExtraFace_x = 0; // This is not correct in the general case but works for 1d decomp
+                            const label_t haloHasExtraFace_y = 0; // This is not correct in the general case but works for 1d decomp
+                            const label_t haloHasExtraFace_z = extraFace<alpha, coeff>(GPU_x, GPU_y, GPU_z, mesh);
 
-                            device::copyToSymbol(device::STREAMING_OFFSET_WEST, WestBoundary);
-                            device::copyToSymbol(device::STREAMING_OFFSET_EAST, EastBoundary);
-                            device::copyToSymbol(device::STREAMING_OFFSET_SOUTH, SouthBoundary);
-                            device::copyToSymbol(device::STREAMING_OFFSET_NORTH, NorthBoundary);
-                            device::copyToSymbol(device::STREAMING_OFFSET_BACK, BackBoundary);
-                            device::copyToSymbol(device::STREAMING_OFFSET_FRONT, FrontBoundary);
+                            device::copyToSymbol(device::STREAMING_OFFSET_FRONT, haloHasExtraFace_z);
 
-                            // Now, we should create a std vector containing the halo for this device
-                            // The halo should begin at bx = (gpu_x * nxBlocksPerGPU) - WestBoundary, I think
-                            // Same for the other boundaries
-                            const std::size_t partitionAllocationSize = AllocationSize<alpha>(GPU_x, GPU_y, GPU_z, mesh);
+                            // Get the number of non-halo blocks per device
+                            const label_t nxBlocksPerGPU = mesh.blocksPerDevice<axis::X>();
+                            const label_t nyBlocksPerGPU = mesh.blocksPerDevice<axis::Y>();
+                            const label_t nzBlocksPerGPU = mesh.blocksPerDevice<axis::Z>();
 
+                            // So, the Z allocation size is nz blocks + haloHasExtraFace
+                            const label_t nxBlocksTrue = nxBlocksPerGPU + haloHasExtraFace_x;
+                            const label_t nyBlocksTrue = nyBlocksPerGPU + haloHasExtraFace_y;
+                            const label_t nzBlocksTrue = nzBlocksPerGPU + haloHasExtraFace_z;
+
+                            const label_t partitionAllocationSize = AllocationSize<alpha>(nxBlocksTrue, nyBlocksTrue, nzBlocksTrue);
                             std::vector<scalar_t> haloAlloc(partitionAllocationSize, 0);
-                            const label_t nxBlocksPerDevice = mesh.blocksPerDevice<axis::X>() + WestBoundary + EastBoundary;
-                            const label_t nyBlocksPerDevice = mesh.blocksPerDevice<axis::Y>() + SouthBoundary + NorthBoundary;
-                            const label_t nzBlocksPerDevice = mesh.blocksPerDevice<axis::Z>() + BackBoundary + FrontBoundary;
 
-                            // Calculate the first x,y,z block indices
-                            const label_t bx0 = (GPU_x * nxBlocksPerDevice) - WestBoundary;
-                            const label_t by0 = (GPU_y * nyBlocksPerDevice) - SouthBoundary;
-                            const label_t bz0 = (GPU_z * nzBlocksPerDevice) - BackBoundary;
+                            // Get the starting block indices for this GPU
+                            // These indices are not offset to account for the extra halo
+                            const label_t bx0 = GPU_x * nxBlocksPerGPU;
+                            const label_t by0 = GPU_y * nyBlocksPerGPU;
+                            label_t bz0 = GPU_z * nzBlocksPerGPU;
 
-                            // This is the correct loop structure.
-                            // Loop over the blocks: make sure to add the offsets and make these per GPU
-                            for (label_t bz = 0; bz < nzBlocksPerDevice; bz++)
+                            // So, offset the Z halo (only Z decomp works for now) depending on the coefficient
+                            if constexpr (alpha == axis::Z)
                             {
-                                for (label_t by = 0; by < nyBlocksPerDevice; by++)
+                                // If the coeff is - 1, we don't need to offset
+
+                                // If the coeff is + 1, we need to subtract 1 since we pull from the West to the East
+                                if constexpr (coeff == +1)
                                 {
-                                    for (label_t bx = 0; bx < nxBlocksPerDevice; bx++)
+                                    bz0 = bz0 - 1;
+                                }
+                            }
+
+                            for (label_t bz = 0; bz < nzBlocksTrue; bz++)
+                            {
+                                for (label_t by = 0; by < nyBlocksTrue; by++)
+                                {
+                                    for (label_t bx = 0; bx < nxBlocksTrue; bx++)
                                     {
-                                        for (label_t i = 0; i < VelocitySet::QF(); i++)
+                                        // Second perpendicular axis
+                                        for (label_t tb = 0; tb < block::n<axis::orthogonal<alpha, 1>()>(); tb++)
                                         {
-                                            // Loop over the threads that are perpendicular to alpha
-                                            // These inner nested loops are correct, I believe
-                                            // Second perpendicular axis
-                                            for (label_t tb = 0; tb < block::n<axis::orthogonal<alpha, 1>()>(); tb++)
+                                            // First perpendicular axis
+                                            for (label_t ta = 0; ta < block::n<axis::orthogonal<alpha, 0>()>(); ta++)
                                             {
-                                                // First perpendicular axis
-                                                for (label_t ta = 0; ta < block::n<axis::orthogonal<alpha, 0>()>(); ta++)
+                                                // Get the 3d indices on the face
+                                                // Note: This call might not be correct, I am not sure if it should be + or - coeff
+                                                // I think it should actually be + coeff, since we want to pull from the edge of the block propagating to the current
+                                                const blockLabel_t Tx = axis::to_3d<alpha, +coeff>(ta, tb);
+
+                                                // The block label in the segment of the halo
+                                                const blockLabel_t Bx(bx, by, bz);
+
+                                                // The block label in the global halo
+                                                const blockLabel_t Bx_global(bx0 + bx, by0 + by, bz0 + bz);
+
+                                                // Local index in haloAlloc (same layout, but using local block dimensions)
+                                                for (label_t i = 0; i < VelocitySet::QF(); i++)
                                                 {
-                                                    // Get the 3d indices on the face
-                                                    const blockLabel_t Tx = axis::to_3d<alpha, coeff>(ta, tb);
-
-                                                    const blockLabel_t Bx(bx, by, bz);
-                                                    const blockLabel_t Bx_global(bx0 + bx, by0 + by, bz0 + bz);
-
+                                                    // Linear index in the global matrix
                                                     const label_t global_idx = (idxPopTest<alpha, VelocitySet::QF()>(i, Tx, Bx_global, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>())) % (static_cast<label_t>(globalSize));
 
-                                                    // Local index in haloAlloc (same layout, but using local block dimensions)
-                                                    const label_t local_idx = (idxPopTest<alpha, VelocitySet::QF()>(i, Tx, Bx, nxBlocksPerDevice, nyBlocksPerDevice)) % (static_cast<label_t>(partitionAllocationSize));
-
-                                                    if (static_cast<std::size_t>(global_idx) > globalSize)
-                                                    {
-                                                        std::cout << "Access error in hostArrayGlobal: " << global_idx << std::endl;
-                                                        std::cout << "local_idx: " << local_idx << std::endl;
-                                                        std::cout << "deviceID:" << std::endl;
-                                                        std::cout << GPU_x << ", " << GPU_y << ", " << GPU_z << std::endl;
-                                                        std::cout << nxBlocksPerDevice << " x blocks per device" << std::endl;
-                                                        std::cout << nyBlocksPerDevice << " y blocks per device" << std::endl;
-                                                        std::cout << nzBlocksPerDevice << " z blocks per device" << std::endl;
-                                                        Tx.print("Tx");
-                                                        Bx_global.print("BxGlobal");
-                                                        throw std::runtime_error("Access error in hostArrayGlobal");
-                                                    }
-
-                                                    if (local_idx > haloAlloc.size())
-                                                    {
-                                                        std::cout << "Access error in haloAlloc" << std::endl;
-                                                        throw std::runtime_error("Access error in haloAlloc");
-                                                    }
+                                                    const label_t local_idx = idxPopTest<alpha, VelocitySet::QF()>(i, Tx, Bx, nxBlocksTrue, nyBlocksTrue);
 
                                                     haloAlloc[local_idx] = hostArrayGlobal[global_idx];
                                                 }
@@ -297,6 +326,7 @@ namespace LBM
                                     }
                                 }
                             }
+
                             const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, mesh.nDevices<axis::X>(), mesh.nDevices<axis::Y>());
                             hostPtrsToDevice[virtualDeviceIndex] = allocate_halo_segment(haloAlloc.data(), virtualDeviceIndex, programCtrl, partitionAllocationSize);
                         });

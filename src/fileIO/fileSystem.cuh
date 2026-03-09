@@ -245,43 +245,14 @@ namespace LBM
         }
 
         /**
-         * @brief Gets the name of the disk on which path is found
-         * @param[in] dir The directory to query
-         * @return The name of the disk, e.g. "/mnt/c"
-         **/
-        __host__ [[nodiscard]] const name_t diskName(const std::filesystem::path &dir = std::filesystem::current_path()) noexcept
-        {
-            std::filesystem::path current = std::filesystem::absolute(dir);
-
-            // Traverse up the directory tree to find a mounted Windows drive
-            while (current != current.root_path())
-            {
-                if (current.parent_path() == current)
-                {
-                    break;
-                }
-                current = current.parent_path();
-            }
-
-            // Check if we're in a mounted Windows drive (/mnt/X/)
-            if (current.string().find("/mnt/") == 0)
-            {
-                return current.string(); // This is already the mounted path like "/mnt/c"
-            }
-
-            // If we're in WSL filesystem, default to C: drive
-            return "/mnt/c";
-        }
-
-        /**
          * @brief Gets the available storage space on the disk containing dir.
          * @param[in] dir The directory to query
          * @return Available bytes.
          */
-        __host__ [[nodiscard]] uintmax_t availableDiskSpace(const std::filesystem::path &dir = std::filesystem::current_path()) noexcept
+        __host__ [[nodiscard]] inline uintmax_t availableDiskSpace(const std::filesystem::path &dir = std::filesystem::current_path()) noexcept
         {
             std::error_code ec;
-            const std::filesystem::space_info space = std::filesystem::space(diskName(dir), ec);
+            const std::filesystem::space_info space = std::filesystem::space(dir, ec);
             return ec ? 0 : space.available;
         }
 

@@ -112,7 +112,7 @@ namespace LBM
         __device__ __constant__ constexpr const label_t STREAMING_OFFSET_NORTH = 0;
         __device__ __constant__ constexpr const label_t STREAMING_OFFSET_SOUTH = 0;
         __device__ __constant__ constexpr const label_t STREAMING_OFFSET_BACK = 0;
-        __device__ __constant__ constexpr const label_t STREAMING_OFFSET_FRONT = 0;
+        __device__ __constant__ label_t STREAMING_OFFSET_FRONT; // This is 1 in the case that we have a GPU boundary on the back of the subdomain, otherwise 0
 
         /**
          * @brief Allocates a symbol of type T to the device
