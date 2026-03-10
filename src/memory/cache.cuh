@@ -151,7 +151,7 @@ namespace LBM
 #if (__CUDA_ARCH__ >= 800)
                     asm volatile("prefetch.global.L2::evict_first [%0];" ::"l"(aligned));
 #else
-                    asm volatile("prefetch.global.L1 [%0];" ::"l"(aligned));
+                    asm volatile("prefetch.global.L2 [%0];" ::"l"(aligned));
 #endif
                 }
                 else if constexpr (policy == Policy::evict_last)
@@ -159,7 +159,7 @@ namespace LBM
 #if (__CUDA_ARCH__ >= 800)
                     asm volatile("prefetch.global.L2::evict_last [%0];" ::"l"(aligned));
 #else
-                    asm volatile("prefetch.global.L1 [%0];" ::"l"(aligned));
+                    asm volatile("prefetch.global.L2 [%0];" ::"l"(aligned));
 #endif
                 }
             }
