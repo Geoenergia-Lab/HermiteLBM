@@ -113,7 +113,8 @@ namespace LBM
         const scalar_t *const ptrRestrict normy,
         const scalar_t *const ptrRestrict normz,
         const device::ptrCollection<6, const scalar_t> ghostHydro,
-        const device::ptrCollection<6, const scalar_t> ghostPhase)
+        const device::ptrCollection<6, const scalar_t> ghostPhase,
+        const label_t step)
     {
         // Always a multiple of 32, so no need to check this(I think)
         if constexpr (out_of_bounds_check())
@@ -183,6 +184,8 @@ namespace LBM
             // Pull from shared memory
             streaming::pull<VelocitySet>(pop, shared_buffer);
             streaming::phase_pull(pop_g, shared_buffer_g);
+
+            __syncthreads();
         }
 
         // Load hydro pop from global memory in cover nodes
@@ -211,7 +214,7 @@ namespace LBM
 
             if (boundaryNormal.isBoundary())
             {
-                BoundaryConditions::calculate_moments<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, shared_buffer);
+                BoundaryConditions::calculate_moments<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, shared_buffer, step);
             }
         }
 

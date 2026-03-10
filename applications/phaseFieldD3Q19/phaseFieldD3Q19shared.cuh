@@ -271,6 +271,8 @@ namespace LBM
             // Pull from shared memory
             streaming::pull<VelocitySet>(pop, shared_buffer);
             streaming::phase_pull(pop_g, shared_buffer_g);
+
+            __syncthreads();
         }
 
         // Load hydro pop from global memory in cover nodes

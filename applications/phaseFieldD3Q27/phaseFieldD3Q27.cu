@@ -161,7 +161,8 @@ int main(const int argc, const char *const argv[])
                 phaseFieldStream<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
                     devPtrs, normx.ptr(), normy.ptr(), normz.ptr(),
                     fBlockHalo.ghostConst(),
-                    gBlockHalo.ghostConst());
+                    gBlockHalo.ghostConst(),
+                    timeStep);
 
                 phaseFieldNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
                     phi.ptr(), normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr());

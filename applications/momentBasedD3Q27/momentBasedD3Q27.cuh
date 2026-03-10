@@ -154,6 +154,8 @@ namespace LBM
 
             // Pull from shared memory
             streaming::pull<VelocitySet>(pop, shared_buffer);
+
+            __syncthreads();
         }
 
         // Load pop from global memory in cover nodes
