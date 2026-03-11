@@ -48,7 +48,7 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#define PHASEFIELD_GLOBAL
+// #define PHASEFIELD_GLOBAL
 
 #if defined(PHASEFIELD_GLOBAL)
 #include "phaseFieldD3Q19global.cuh" // Uses four extra global pointers
