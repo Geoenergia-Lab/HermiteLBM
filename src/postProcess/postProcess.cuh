@@ -75,7 +75,7 @@ namespace LBM
         {
             std::vector<T> coords(mesh.dimension<axis::X, std::size_t>() * mesh.dimension<axis::Y, std::size_t>() * mesh.dimension<axis::Z, std::size_t>() * 3, 0);
 
-            global::forAll<blockLabel_t{0, 0, 0}>(
+            global::forAll<blockLabel{0, 0, 0}>(
                 mesh.dimensions(),
                 [&](const std::size_t x, const std::size_t y, const std::size_t z)
                 {
@@ -101,7 +101,7 @@ namespace LBM
         {
             std::vector<IndexType> connectivity((mesh.dimension<axis::X, std::size_t>() - 1) * (mesh.dimension<axis::Y, std::size_t>() - 1) * (mesh.dimension<axis::Z, std::size_t>() - 1) * 8);
             constexpr const label_t offset = one_based ? 1 : 0;
-            global::forAll<blockLabel_t{1, 1, 1}>(
+            global::forAll<blockLabel{1, 1, 1}>(
                 mesh.dimensions(),
                 [&](const std::size_t x, const std::size_t y, const std::size_t z)
                 {

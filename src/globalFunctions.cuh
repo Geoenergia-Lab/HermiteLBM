@@ -158,7 +158,7 @@ namespace LBM
          * @endcode
          **/
         template <typename T = label_t, typename F>
-        __host__ void forAll(const blockLabel_t &nGPUs, const F &&f) noexcept
+        __host__ void forAll(const blockLabel &nGPUs, const F &&f) noexcept
         {
             // Loops for block indices
             for (T GPU_z = 0; GPU_z < nGPUs.value<axis::Z, T>(); GPU_z++)
@@ -172,6 +172,15 @@ namespace LBM
                     }
                 }
             }
+        }
+
+        __host__ [[nodiscard]] int current_ordinal() noexcept
+        {
+            int result = 0;
+
+            errorHandler::check(cudaGetDevice(&result));
+
+            return result;
         }
     }
 
@@ -190,7 +199,7 @@ namespace LBM
          * @endcode
          **/
         template <typename T = label_t, typename F>
-        __host__ void forAll(const blockLabel_t &nBlocks, const F &&f) noexcept
+        __host__ void forAll(const blockLabel &nBlocks, const F &&f) noexcept
         {
             // Loops for block indices
             for (T bz = 0; bz < nBlocks.value<axis::Z, T>(); bz++)
@@ -231,8 +240,8 @@ namespace LBM
          * });
          * @endcode
          **/
-        template <const blockLabel_t Indent, typename F>
-        __host__ void forAll(const blockLabel_t &dimensions, const F &&f) noexcept
+        template <const blockLabel Indent, typename F>
+        __host__ void forAll(const blockLabel &dimensions, const F &&f) noexcept
         {
             for (label_t z = 0; z < dimensions.z - Indent.z; z++)
             {
@@ -268,7 +277,7 @@ namespace LBM
         }
 
         template <typename T = label_t>
-        __host__ [[nodiscard]] inline constexpr T idx(const blockLabel_t &Tx, const blockLabel_t &Bx, const T nxBlocks, const T nyBlocks) noexcept
+        __host__ [[nodiscard]] inline constexpr T idx(const threadLabel &Tx, const blockLabel &Bx, const T nxBlocks, const T nyBlocks) noexcept
         {
             return idx<T>(Tx.x, Tx.y, Tx.z, Bx.x, Bx.y, Bx.z, nxBlocks, nyBlocks);
         }
@@ -358,6 +367,14 @@ namespace LBM
         {
             return block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
         }
+
+        /**
+         * @brief Wrapper for __syncthreads
+         **/
+        __device__ inline void sync() noexcept
+        {
+            __syncthreads();
+        }
     }
 
     namespace GPU
@@ -386,30 +403,6 @@ namespace LBM
             errorHandler::check(cudaGetDeviceProperties(&props, deviceID));
 
             return props;
-        }
-    }
-
-    namespace kernel
-    {
-        /**
-         * @brief Configures a kernel function to prefer shared memory and sets its dynamic shared memory size
-         * @tparam smem_alloc_size The amount of shared memory (in bytes) to allocate for the kernel
-         * @tparam T The function type (e.g., a lambda or a function pointer)
-         * @param[in] func The kernel function to configure
-         **/
-        template <const label_t smem_alloc_size, class T, class ProgramControl>
-        __host__ void configure(T *func, const ProgramControl &programCtrl)
-        {
-            for (std::size_t VirtualDeviceIndex = 0; VirtualDeviceIndex < programCtrl.deviceList().size(); VirtualDeviceIndex++)
-            {
-                errorHandler::checkInline(cudaDeviceSynchronize());
-                errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
-                errorHandler::checkInline(cudaDeviceSynchronize());
-                errorHandler::check(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
-                errorHandler::checkInline(cudaDeviceSynchronize());
-                errorHandler::check(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
-                errorHandler::checkInline(cudaDeviceSynchronize());
-            }
         }
     }
 }

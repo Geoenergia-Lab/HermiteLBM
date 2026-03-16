@@ -131,7 +131,7 @@ namespace LBM
     /**
      * @brief Block dimensions descriptor (specialisation for label_t)
      */
-    struct blockLabel_t : var3<label_t>
+    struct blockLabel : var3<label_t>
     {
     public:
         /**
@@ -148,6 +148,9 @@ namespace LBM
             return value<axis::X, ValueType>() * value<axis::Y, ValueType>() * value<axis::Z, ValueType>();
         }
     };
+
+    using pointLabel = blockLabel;
+    using threadLabel = blockLabel;
 
     /**
      * @brief Generic vector of scalar_t

@@ -223,50 +223,27 @@ namespace LBM
                 const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh) const noexcept
             {
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::haloFace::initialise_pop, "Need to sort out indexing and decomposition between devices"));
-
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
 
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
                 std::vector<scalar_t> face(mesh.nFaces<alpha, VelocitySet::QF()>(), 0);
 
-                // Loop over all the blocks
+                // Loop over all the blocks of the global domain
                 for (label_t bz = 0; bz < mesh.nBlocks<axis::Z>(); bz++)
                 {
                     for (label_t by = 0; by < mesh.nBlocks<axis::Y>(); by++)
                     {
                         for (label_t bx = 0; bx < mesh.nBlocks<axis::X>(); bx++)
                         {
-                            // Loop over the threads that are perpendicular to alpha
-                            // Second perpendicular axis
-                            for (label_t tb = 0; tb < block::n<axis::orthogonal<alpha, 1>()>(); tb++)
-                            {
-                                // First perpendicular axis
-                                for (label_t ta = 0; ta < block::n<axis::orthogonal<alpha, 0>()>(); ta++)
-                                {
-                                    // Recover the 3D thread coordinates from the orthogonals, the axis and the normal coefficient
-                                    const blockLabel_t Tx = axis::to_3d<alpha, coeff>(ta, tb);
-                                    const blockLabel_t Bx(bx, by, bz);
-
-                                    const label_t base = host::idx(Tx, Bx, mesh);
-
-                                    const thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(
-                                        {rho[base] + rho0(),
-                                         u[base],
-                                         v[base],
-                                         w[base],
-                                         m_xx[base],
-                                         m_xy[base],
-                                         m_xz[base],
-                                         m_yy[base],
-                                         m_yz[base],
-                                         m_zz[base]});
-
-                                    // Handle ghost cells
-                                    handleGhostCells<alpha, coeff>(face, pop, Tx, Bx, mesh);
-                                }
-                            }
+                            // Handle the ghost cells for this block
+                            const blockLabel Bx(bx, by, bz);
+                            handleGhostCells<alpha, coeff>(
+                                face,
+                                rho,
+                                u, v, w,
+                                m_xx, m_xy, m_xz, m_yy, m_yz, m_zz,
+                                Bx, mesh);
                         }
                     }
                 }
@@ -290,26 +267,60 @@ namespace LBM
             template <const axis::type alpha, const int coeff>
             __host__ static void handleGhostCells(
                 std::vector<scalar_t> &face,
-                const thread::array<scalar_t, VelocitySet::Q()> &pop,
-                const blockLabel_t &Tx, const blockLabel_t &Bx,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &rho,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &u,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &v,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &w,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xx,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xy,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xz,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_yy,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_yz,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_zz,
+                const blockLabel &Bx,
                 const host::latticeMesh &mesh) noexcept
             {
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::haloFace::handleGhostCells, "Potential issue with indexing: idxPop needs to be adapted to multi GPU."));
-
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
 
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
                 constexpr const thread::array<label_t, VelocitySet::QF()> indices = velocitySet::template indices_on_face<VelocitySet, alpha, coeff>();
 
+                // For all velocity coefficients on this face
                 for (label_t i = 0; i < VelocitySet::QF(); i++)
                 {
-                    const label_t j = host::idxPop<alpha, VelocitySet::QF()>(i, Tx, Bx, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
-                    if (j >= face.size())
+                    // Second perpendicular axis
+                    for (label_t tb = 0; tb < block::n<axis::orthogonal<alpha, 1>()>(); tb++)
                     {
-                        std::cout << j << " is greater than " << face.size() << std::endl;
+                        // First perpendicular axis
+                        for (label_t ta = 0; ta < block::n<axis::orthogonal<alpha, 0>()>(); ta++)
+                        {
+                            // Recover the 3D thread coordinates from the orthogonals, the axis and the normal coefficient
+                            const blockLabel Tx = axis::to_3d<alpha, coeff>(ta, tb);
+
+                            const label_t base = host::idx(Tx, Bx, mesh);
+
+                            const thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(
+                                {rho[base] + rho0(),
+                                 u[base],
+                                 v[base],
+                                 w[base],
+                                 m_xx[base],
+                                 m_xy[base],
+                                 m_xz[base],
+                                 m_yy[base],
+                                 m_yz[base],
+                                 m_zz[base]});
+
+                            const label_t j = host::idxPop<alpha, VelocitySet::QF()>(i, Tx, Bx, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
+
+                            if (j >= face.size())
+                            {
+                                std::cout << j << " is greater than " << face.size() << std::endl;
+                            }
+                            face[j] = pop[indices[i]];
+                        }
                     }
-                    face[j] = pop[indices[i]];
                 }
             }
         };

@@ -208,7 +208,7 @@ namespace LBM
     namespace axis
     {
         template <const axis::type alpha, const int coeff>
-        __host__ [[nodiscard]] static inline constexpr blockLabel_t to_3d(const label_t ta, const label_t tb) noexcept
+        __host__ [[nodiscard]] static inline constexpr blockLabel to_3d(const label_t ta, const label_t tb) noexcept
         {
             if constexpr (alpha == axis::X)
             {

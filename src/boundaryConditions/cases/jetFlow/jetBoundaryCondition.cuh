@@ -50,8 +50,6 @@ Notes
 
 assertions::velocitySet::validate<VelocitySet>();
 
-static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(jetBoundaryCondition::calculate_moments, "Need to verify calculation of jet centreline"));
-
 if (!(boundaryNormal.isBack() || boundaryNormal.isFront()))
 {
     // moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];

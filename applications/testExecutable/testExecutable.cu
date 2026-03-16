@@ -53,19 +53,6 @@ SourceFiles
 
 using namespace LBM;
 
-template <const label_t N, typename T>
-[[nodiscard]] bool collection_contains_nullptr(const device::ptrCollection<N, T> &devPtrs)
-{
-    for (label_t i = 0; i < N; i++)
-    {
-        if (devPtrs[i] == nullptr)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
 int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
@@ -97,11 +84,11 @@ int main(const int argc, const char *const argv[])
     // Allocate a buffer of pinned memory on the host for writing
     host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.size() * NUMBER_MOMENTS(), mesh);
 
-    // objectRegistry<VelocitySet, NStreams()> runTimeObjects(hostWriteBuffer, mesh, devPtrs, streamsLBM, programCtrl);
+    // objectRegistry<VelocitySet, 1> runTimeObjects(hostWriteBuffer, mesh, devPtrs, streamsLBM, programCtrl);
 
     BlockHalo blockHalo(mesh, programCtrl);
 
-    kernel::configure<smem_alloc_size()>(momentBasedD3Q27, programCtrl);
+    programCtrl.configure<smem_alloc_size()>(getMomentBasedKernel<VelocitySet>());
 
     const runTimeIO IO(mesh, programCtrl);
 
@@ -159,13 +146,6 @@ int main(const int argc, const char *const argv[])
             errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
             streamsLBM.synchronize(VirtualDeviceIndex);
 
-            // errorHandler::checkInline(cudaStreamSynchronize(streamsLBM.streams()[VirtualDeviceIndex]));
-
-            // if (programCtrl.print(timeStep))
-            // {
-            //     std::cout << "deviceIdx: " << programCtrl.deviceList()[VirtualDeviceIndex] << std::endl;
-            // }
-
             const device::ptrCollection<10, scalar_t> devPtrs{
                 rho.ptr(VirtualDeviceIndex),
                 u.ptr(VirtualDeviceIndex),
@@ -181,22 +161,10 @@ int main(const int argc, const char *const argv[])
             const device::ptrCollection<6, const scalar_t> readBuffer = blockHalo.readBuffer(VirtualDeviceIndex);
             const device::ptrCollection<6, scalar_t> writeBuffer = blockHalo.writeBuffer(VirtualDeviceIndex);
 
-            // std::cout << "devPtrs on device " << VirtualDeviceIndex << (collection_contains_nullptr(devPtrs) ? " contains nullptr" : " does not contain nullptr") << std::endl;
-            // std::cout << "readBuffer on device " << VirtualDeviceIndex << (collection_contains_nullptr(readBuffer) ? " contains nullptr" : " does not contain nullptr") << std::endl;
-            // std::cout << "writeBuffer on device " << VirtualDeviceIndex << (collection_contains_nullptr(writeBuffer) ? " contains nullptr" : " does not contain nullptr") << std::endl;
-
             // Configure the kernel to run per GPU
-            momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[VirtualDeviceIndex]>>>(devPtrs, readBuffer, writeBuffer);
+            getMomentBasedKernel<VelocitySet>()<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[VirtualDeviceIndex]>>>(devPtrs, readBuffer, writeBuffer);
 
-            // testKernel<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[VirtualDeviceIndex]>>>(devPtrs, readBuffer, writeBuffer);
-
-            // testKernel<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[VirtualDeviceIndex]>>>();
-
-            const cudaError_t err = cudaGetLastError();
-            if (err != cudaSuccess)
-            {
-                std::cout << "Launch error: " << cudaGetErrorString(err) << std::endl;
-            }
+            errorHandler::checkLast();
         }
 
         // Sync all devices and streams
@@ -212,51 +180,54 @@ int main(const int argc, const char *const argv[])
             // Set the device
             errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[0]));
 
-            // Get the pointers
-            // GPU 0 needs to pull from the z0 pointer
-            // GPU 1 needs to pull from the z1 pointer
-            // So it should be GPU 0 > 1, z1
-            // GPU 1 > 0, z0
-            // When copying from the West boundary of the East GPU, we need to add an offset of bz by +1
-            // Also when copying from the East of the West GPU, we need to add an inset of bz by -1
-            // constexpr const std::size_t offset = 0; // Has to be idxPop at bz = 1, I think
+            const label_t nxb = mesh.nBlocks<axis::X>();
+            const label_t nyb = mesh.nBlocks<axis::Y>();
 
-            // Offset by 0 or 1 into the GPU: These are located on the Front device
-            const std::size_t NoOffset = host::idxPop<axis::Z, VelocitySet::QF()>(0, blockLabel_t(0, 0, 0), blockLabel_t(0, 0, 0), mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
-            const std::size_t Offset = host::idxPop<axis::Z, VelocitySet::QF()>(0, blockLabel_t(0, 0, 0), blockLabel_t(0, 0, 1), mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
+            constexpr const threadLabel threadStart(static_cast<label_t>(0), static_cast<label_t>(0), static_cast<label_t>(0));
 
-            // Inset by 0 or 1 into the GPU: These are located on the Back device
-            const std::size_t NoInset = host::idxPop<axis::Z, VelocitySet::QF()>(0, blockLabel_t(0, 0, 0), blockLabel_t(0, 0, mesh.blocksPerDevice<axis::Z>() - 1), mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
-            const std::size_t Inset = host::idxPop<axis::Z, VelocitySet::QF()>(0, blockLabel_t(0, 0, 0), blockLabel_t(0, 0, mesh.blocksPerDevice<axis::Z>() - 2), mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
-
-            // OFFSET SHOULD BE ADDING + 1 TO BZ ALWAYS SINCE IT HAS AN EXTRA LAYER!!!
-
-            // constexpr const std::size_t copySize = 128; // Has to be the size of nbx * nby * QF * ntx * nty
             const std::size_t Size = static_cast<std::size_t>(sizeof(scalar_t)) * VelocitySet::QF<std::size_t>() * block::nx<std::size_t>() * block::ny<std::size_t>() * mesh.blocksPerDevice<axis::X, std::size_t>() * mesh.blocksPerDevice<axis::Y, std::size_t>();
 
-            constexpr const label_t BackDevice = 0;  // Should receive z1
-            constexpr const label_t FrontDevice = 1; // Should receive z0
+            constexpr const label_t WestDevice = 0;
+            constexpr const label_t EastDevice = 1;
 
-            constexpr const label_t BackPtr_z0 = 4;
-            constexpr const label_t FrontPtr_z1 = 5;
+            constexpr const label_t WestPtr_x0 = 4;
+            constexpr const label_t EastPtr_x1 = 5;
 
-            // 1. From Back device front face (ptr 5) to Front device back face (ptr 4)
-            cudaMemcpyPeer(
-                &(blockHalo.writeBuffer(FrontDevice).ptr<FrontPtr_z1>()[NoOffset]),
-                programCtrl.deviceList()[FrontDevice],
+            // East to West exchange
+            // Destination z block: located at bz = nzBlocks
+            // Pretty sure this is right, not 100%
+            const blockLabel WestDeviceDestinationBlock(0, 0, 0);
+            const label_t WestDestinationID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, WestDeviceDestinationBlock, nxb, nyb);
 
-                &(blockHalo.writeBuffer(BackDevice).ptr<FrontPtr_z1>()[Inset]),
-                programCtrl.deviceList()[BackDevice],
-                Size);
+            // Source z block: located at bz = 0
+            // Pretty sure this is right
+            const blockLabel EastDeviceSourceBlock(0, 0, 0);
+            const label_t EastSourceID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, EastDeviceSourceBlock, nxb, nyb);
 
-            // 2. From Front device back face (ptr 4) to Back device front face (ptr 5)
-            cudaMemcpyPeer(
-                &(blockHalo.writeBuffer(BackDevice).ptr<BackPtr_z0>()[NoInset]),
-                programCtrl.deviceList()[BackDevice],
+            errorHandler::check(cudaMemcpyPeer(
+                &(blockHalo.writeBuffer(WestDevice).ptr<WestPtr_x0>()[WestDestinationID]),
+                programCtrl.deviceList()[WestDevice],
+                &(blockHalo.writeBuffer(EastDevice).ptr<WestPtr_x0>()[EastSourceID]),
+                programCtrl.deviceList()[EastDevice],
+                Size));
 
-                &(blockHalo.writeBuffer(FrontDevice).ptr<BackPtr_z0>()[Offset]),
-                programCtrl.deviceList()[FrontDevice],
-                Size);
+            // West to East exchange
+            // Destination z block: located at bz = 0
+            // Pretty sure this is right
+            const blockLabel EastDeviceDestinationBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
+            const label_t EastDestinationID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, EastDeviceDestinationBlock, nxb, nyb);
+
+            // Source z block: located at bz = nzBlocks
+            // Pretty sure this is right
+            const blockLabel WestDeviceSourceBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
+            const label_t WestSourceID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, WestDeviceSourceBlock, nxb, nyb);
+
+            errorHandler::check(cudaMemcpyPeer(
+                &(blockHalo.writeBuffer(EastDevice).ptr<EastPtr_x1>()[EastDestinationID]),
+                programCtrl.deviceList()[EastDevice],
+                &(blockHalo.writeBuffer(WestDevice).ptr<EastPtr_x1>()[WestSourceID]),
+                programCtrl.deviceList()[WestDevice],
+                Size));
         }
 
         // Sync all devices and streams
@@ -270,7 +241,11 @@ int main(const int argc, const char *const argv[])
         // Halo pointer swap
         for (label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
         {
+            errorHandler::checkInline(cudaDeviceSynchronize());
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
+            errorHandler::checkInline(cudaDeviceSynchronize());
             blockHalo.swap(VirtualDeviceIndex);
+            errorHandler::checkInline(cudaDeviceSynchronize());
         }
     }
 

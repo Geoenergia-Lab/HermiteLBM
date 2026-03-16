@@ -189,7 +189,7 @@ __device__ static inline void transpose_to_shared(
         s_buffer[front_offset + base_idx + (4 * z_size) + 3] = pop[q_i<18>()];
     }
 
-    __syncthreads();
+    block::sync();
 }
 
 /**

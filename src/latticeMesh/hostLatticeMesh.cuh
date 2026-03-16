@@ -78,12 +78,10 @@ namespace LBM
              * - Initialization of device constants for GPU execution
              **/
             __host__ [[nodiscard]] latticeMesh([[maybe_unused]] const programControl &programCtrl)
-                : dimensions_(string::extractParameter<blockLabel_t>("latticeMesh", "n")),
+                : dimensions_(string::extractParameter<blockLabel>("latticeMesh", "n")),
                   L_(string::extractParameter<pointVector>("latticeMesh", "L")),
-                  nDevices_(string::extractParameter<blockLabel_t>("deviceDecomposition", "n"))
+                  nDevices_(string::extractParameter<blockLabel>("deviceDecomposition", "n"))
             {
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(host::latticeMesh));
-
                 print();
 
                 // Perform a block dimensions safety check
@@ -101,10 +99,10 @@ namespace LBM
              * @param[in] mesh The lattice mesh
              * @param[in] meshDimensions The dimensions of the mesh to construct
              **/
-            __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const blockLabel_t &meshDimensions) noexcept
+            __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const blockLabel &meshDimensions) noexcept
                 : dimensions_({meshDimensions.x, meshDimensions.y, meshDimensions.z}),
                   L_(mesh.L()),
-                  nDevices_(string::extractParameter<blockLabel_t>("deviceDecomposition", "n"))
+                  nDevices_(string::extractParameter<blockLabel>("deviceDecomposition", "n"))
             {
                 print();
             }
@@ -144,7 +142,7 @@ namespace LBM
             /**
              * @brief Number of points in the mesh in each specific direction
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr const blockLabel_t &dimensions() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const blockLabel &dimensions() const noexcept
             {
                 return dimensions_;
             }
@@ -158,18 +156,16 @@ namespace LBM
             template <const axis::type alpha, typename ValueType = label_t>
             __device__ __host__ [[nodiscard]] inline constexpr ValueType nBlocks() const noexcept
             {
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(host::latticeMesh::nBlocks, "Not calculated on a per-GPU basis"));
-
                 return dimensions_.value<alpha, ValueType>() / block::n<alpha, ValueType>();
             }
 
             /**
              * @brief Number of blocks in the mesh in each specific direction
-             * @return blockLabel_t containing the number of blocks in each direction
+             * @return blockLabel containing the number of blocks in each direction
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr blockLabel_t nBlocks() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr blockLabel nBlocks() const noexcept
             {
-                return blockLabel_t(nBlocks<axis::X, blockLabel_t::value_type>(), nBlocks<axis::Y, blockLabel_t::value_type>(), nBlocks<axis::Z, blockLabel_t::value_type>());
+                return blockLabel(nBlocks<axis::X, blockLabel::value_type>(), nBlocks<axis::Y, blockLabel::value_type>(), nBlocks<axis::Z, blockLabel::value_type>());
             }
 
             /**
@@ -234,7 +230,7 @@ namespace LBM
              * @tparam alpha The axis (X, Y or Z)
              * @tparam T The return type
              **/
-            __host__ [[nodiscard]] inline constexpr const blockLabel_t &nDevices() const noexcept
+            __host__ [[nodiscard]] inline constexpr const blockLabel &nDevices() const noexcept
             {
                 return nDevices_;
             }
@@ -247,8 +243,6 @@ namespace LBM
             template <const axis::type alpha, const label_t QF, typename ValueType = label_t>
             __host__ [[nodiscard]] inline constexpr ValueType nFaces() const noexcept
             {
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(host::latticeMesh::nFacesPerDevice, "Need to fix the calculation of the number of faces per GPU: it is no longer global"));
-
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
 
                 return (dimensions_.size<ValueType>() * static_cast<ValueType>(QF)) / (block::n<alpha, ValueType>());
@@ -262,47 +256,9 @@ namespace LBM
             template <const axis::type alpha, const label_t QF, typename ValueType = label_t>
             __host__ [[nodiscard]] inline constexpr ValueType nFacesPerDevice() const noexcept
             {
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(host::latticeMesh::nFacesPerDevice, "Need to fix the calculation of the number of faces per GPU: it is no longer global"));
-
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
 
                 return (dimensions_.size<ValueType>() * static_cast<ValueType>(QF)) / (block::n<alpha, ValueType>() * nDevices<alpha, ValueType>());
-            }
-            template <const axis::type alpha, const label_t QF, typename ValueType = label_t>
-            __host__ [[nodiscard]] ValueType nFacesPerDevice(const ValueType extraFace) const noexcept
-            {
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(host::latticeMesh::nFacesPerDevice, "Need to fix the calculation of the number of faces per GPU: it is no longer global"));
-
-                axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-                std::cout << "extraFace: " << extraFace << std::endl;
-
-                if constexpr (alpha == axis::X)
-                {
-                    std::cout << "Returning (QF * block::ny() * block::nz()" << " * " << (nBlocks<axis::X, ValueType>() + extraFace) << " * " << nBlocks<axis::Y, ValueType>() << " * " << nBlocks<axis::Z, ValueType>() << ") / " << nDevices_.value<axis::X, ValueType>() << std::endl;
-
-                    std::cout << "Numerator: " << (QF * block::n<axis::orthogonal<alpha, 0>()>() * block::n<axis::orthogonal<alpha, 1>()>() * (nBlocks<axis::X, ValueType>() + extraFace) * nBlocks<axis::Y, ValueType>() * nBlocks<axis::Z, ValueType>()) << std::endl;
-
-                    return (QF * block::n<axis::orthogonal<alpha, 0>()>() * block::n<axis::orthogonal<alpha, 1>()>() * (nBlocks<axis::X, ValueType>() + extraFace) * nBlocks<axis::Y, ValueType>() * nBlocks<axis::Z, ValueType>()) / nDevices_.value<axis::X, ValueType>();
-                }
-
-                if constexpr (alpha == axis::Y)
-                {
-                    std::cout << "Returning (QF * block::nx() * block::nz() * " << nBlocks<axis::X, ValueType>() << " * " << (nBlocks<axis::Y, ValueType>() + extraFace) << " * " << nBlocks<axis::Z, ValueType>() << ") / " << nDevices_.value<axis::Y, ValueType>() << std::endl;
-
-                    std::cout << "Numerator: " << (QF * block::n<axis::orthogonal<alpha, 0>()>() * block::n<axis::orthogonal<alpha, 1>()>() * nBlocks<axis::X, ValueType>() * (nBlocks<axis::Y, ValueType>() + extraFace) * nBlocks<axis::Z, ValueType>()) << std::endl;
-
-                    return (QF * block::n<axis::orthogonal<alpha, 0>()>() * block::n<axis::orthogonal<alpha, 1>()>() * nBlocks<axis::X, ValueType>() * (nBlocks<axis::Y, ValueType>() + extraFace) * nBlocks<axis::Z, ValueType>()) / nDevices_.value<axis::Y, ValueType>();
-                }
-
-                if constexpr (alpha == axis::Z)
-                {
-                    std::cout << "Returning (QF * block::nx() * block::ny() * " << nBlocks<axis::X, ValueType>() << " * " << nBlocks<axis::Y, ValueType>() << " * " << (nBlocks<axis::Z, ValueType>() + extraFace) << ") / " << nDevices_.value<axis::Z, ValueType>() << std::endl;
-
-                    std::cout << "Numerator: " << (QF * block::n<axis::orthogonal<alpha, 0>()>() * block::n<axis::orthogonal<alpha, 1>()>() * nBlocks<axis::X, ValueType>() * nBlocks<axis::Y, ValueType>() * (nBlocks<axis::Z, ValueType>() + extraFace)) << std::endl;
-
-                    return (QF * block::n<axis::orthogonal<alpha, 0>()>() * block::n<axis::orthogonal<alpha, 1>()>() * nBlocks<axis::X, ValueType>() * nBlocks<axis::Y, ValueType>() * (nBlocks<axis::Z, ValueType>() + extraFace)) / nDevices_.value<axis::Z, ValueType>();
-                }
             }
 
             /**
@@ -324,9 +280,9 @@ namespace LBM
             template <const axis::type alpha, typename ValueType = label_t>
             __host__ [[nodiscard]] inline constexpr ValueType blocksPerDevice() const noexcept
             {
-                return nBlocks<alpha>() / nDevices_.value<alpha, ValueType>();
+                return nBlocks<alpha, ValueType>() / nDevices_.value<alpha, ValueType>();
             }
-            __host__ [[nodiscard]] inline constexpr blockLabel_t blocksPerDevice() const noexcept
+            __host__ [[nodiscard]] inline constexpr blockLabel blocksPerDevice() const noexcept
             {
                 return {nBlocks<axis::X>() / nDevices_.value<axis::X>(), nBlocks<axis::Y>() / nDevices_.value<axis::Y>(), nBlocks<axis::Z>() / nDevices_.value<axis::Z>()};
             }
@@ -335,7 +291,7 @@ namespace LBM
             /**
              * @brief The number of lattices in the x, y and z directions
              **/
-            const blockLabel_t dimensions_;
+            const blockLabel dimensions_;
 
             /**
              * @brief Physical dimensions of the domain
@@ -345,7 +301,7 @@ namespace LBM
             /**
              * @brief Number of devices in the x, y and z directions
              **/
-            const blockLabel_t nDevices_;
+            const blockLabel nDevices_;
 
             /**
              * @brief Validates that the block decomposition is compatible with the mesh dimensions
@@ -353,7 +309,7 @@ namespace LBM
              * @param[in] nBlocks The number of blocks in each direction
              * @param[in] dimensions The dimensions of the mesh
              **/
-            __host__ static void validate_block_dimensions(const blockLabel_t &dimensions)
+            __host__ static void validate_block_dimensions(const blockLabel &dimensions)
             {
                 const label_t nxBlocks = dimensions.x / block::nx();
                 const label_t nyBlocks = dimensions.y / block::ny();
@@ -387,8 +343,8 @@ namespace LBM
              **/
             static void validate_allocation_size(
                 const programControl &programCtrl,
-                const blockLabel_t &dimensions,
-                const blockLabel_t &nDevices)
+                const blockLabel &dimensions,
+                const blockLabel &nDevices)
             {
                 const uintmax_t nxTemp = static_cast<uintmax_t>(dimensions.value<axis::X>());
                 const uintmax_t nyTemp = static_cast<uintmax_t>(dimensions.value<axis::Y>());
@@ -446,18 +402,12 @@ namespace LBM
              * @param[in] dimensions The dimensions of the mesh
              * @param[in] nDevices The number of devices in each direction for multi-GPU decomposition
              **/
-            __host__ static void set_constants(
-                const programControl &programCtrl,
-                const blockLabel_t &dimensions,
-                const blockLabel_t &nBlocks,
-                const blockLabel_t &nDevices)
+            __host__ static void set_constants(const programControl &programCtrl, const blockLabel &dimensions, const blockLabel &nBlocks, const blockLabel &nDevices)
             {
                 GPU::forAll(
                     nDevices,
                     [&](const label_t dx, const label_t dy, const label_t dz)
                     {
-                        static_assert(MULTI_GPU_ASSERTION(), "host::latticeMesh::set_constants must set the block halo offset indices based on the mesh decomposition");
-
                         const label_t virtualDeviceIndex = GPU::idx(dx, dy, dz, nDevices.value<axis::X>(), nDevices.value<axis::Y>());
 
                         errorHandler::check(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
@@ -490,7 +440,7 @@ namespace LBM
                 L_.print("meshSize");
                 std::cout << std::endl;
 
-                blockLabel_t{block::nx(), block::ny(), block::nz()}.print("blockDimensions");
+                blockLabel{block::nx(), block::ny(), block::nz()}.print("blockDimensions");
                 std::cout << std::endl;
 
                 nDevices_.print("deviceDecomposition");

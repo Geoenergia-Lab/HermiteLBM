@@ -195,7 +195,7 @@ namespace LBM
 
                 std::vector<T> field(mesh.size(), 0);
 
-                const blockLabel_t nBlocksPerDevice = mesh.blocksPerDevice();
+                const blockLabel nBlocksPerDevice = mesh.blocksPerDevice();
 
                 GPU::forAll(
                     mesh.nDevices(),

@@ -80,8 +80,8 @@ namespace LBM
         }
 
         __host__ [[nodiscard]] inline label_t idx(
-            const blockLabel_t &Tx,
-            const blockLabel_t &Bx,
+            const threadLabel &Tx,
+            const blockLabel &Bx,
             const latticeMesh &mesh) noexcept
         {
             return idx(Tx.x, Tx.y, Tx.z, Bx.x, Bx.y, Bx.z, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());

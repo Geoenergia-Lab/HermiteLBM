@@ -134,33 +134,33 @@ namespace LBM
                   nDevices_({read<label_t>(meshLines, "nxGPUs"), read<label_t>(meshLines, "nyGPUs"), read<label_t>(meshLines, "nzGPUs")}) {}
 
             /**
-             * @brief Returns the number of lattice points in each direction as a blockLabel_t struct.
-             * @return A blockLabel_t struct containing the number of lattice points in x, y, and z directions.
+             * @brief Returns the number of lattice points in each direction as a blockLabel struct.
+             * @return A blockLabel struct containing the number of lattice points in x, y, and z directions.
              **/
-            __host__ [[nodiscard]] inline constexpr const blockLabel_t &nPoints() const noexcept
+            __host__ [[nodiscard]] inline constexpr const blockLabel &nPoints() const noexcept
             {
                 return nPoints_;
             }
 
             /**
-             * @brief Returns the number of devices (GPUs) in each direction as a blockLabel_t struct.
-             * @return A blockLabel_t struct containing the number of devices in x, y, and z directions.
+             * @brief Returns the number of devices (GPUs) in each direction as a blockLabel struct.
+             * @return A blockLabel struct containing the number of devices in x, y, and z directions.
              **/
-            __host__ [[nodiscard]] inline constexpr const blockLabel_t &nDevices() const noexcept
+            __host__ [[nodiscard]] inline constexpr const blockLabel &nDevices() const noexcept
             {
                 return nDevices_;
             }
 
         private:
             /**
-             * @brief The number of lattice points in each direction (x, y, z) as a blockLabel_t struct.
+             * @brief The number of lattice points in each direction (x, y, z) as a blockLabel struct.
              **/
-            const blockLabel_t nPoints_;
+            const blockLabel nPoints_;
 
             /**
-             * @brief The number of devices (GPUs) in each direction (x, y, z) as a blockLabel_t struct.
+             * @brief The number of devices (GPUs) in each direction (x, y, z) as a blockLabel struct.
              **/
-            const blockLabel_t nDevices_;
+            const blockLabel nDevices_;
         };
 
         class fieldInformation

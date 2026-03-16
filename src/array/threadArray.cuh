@@ -112,24 +112,24 @@ namespace LBM
              * @param[in] shared_buffer Shared memory array for caching
              * @note Uses shared_buffer as a read-through cache and initializes data_ via aggregate initialization
              **/
-            template <const label_t SharedBufferSize>
-            __device__ [[nodiscard]] inline array(
-                const label_t tid,
-                const label_t idx,
-                const device::ptrCollection<N, T> &devPtrs,
-                thread::array<T, SharedBufferSize> &shared_buffer) noexcept
-            {
-                // Initialize data_ in the constructor body using pack expansion
-                [&]<const label_t... Is>(std::index_sequence<Is...>)
-                {
-                    // Direct fold expression with comma operator for multiple operations
-                    ((shared_buffer[tid * m_i<N + 1>() + m_i<Is>()] = devPtrs.template ptr<Is>()[idx],
-                      data_[Is] = shared_buffer[tid * m_i<N + 1>() + m_i<Is>()] + rho0<T>()),
-                     ...);
-                }(std::make_index_sequence<N>{});
+            // template <const label_t SharedBufferSize>
+            // __device__ [[nodiscard]] inline array(
+            //     const label_t tid,
+            //     const label_t idx,
+            //     const device::ptrCollection<N, T> &devPtrs,
+            //     thread::array<T, SharedBufferSize> &shared_buffer) noexcept
+            // {
+            //     // Initialize data_ in the constructor body using pack expansion
+            //     [&]<const label_t... Is>(std::index_sequence<Is...>)
+            //     {
+            //         // Direct fold expression with comma operator for multiple operations
+            //         ((shared_buffer[tid * m_i<N + 1>() + m_i<Is>()] = devPtrs.template ptr<Is>()[idx],
+            //           data_[Is] = shared_buffer[tid * m_i<N + 1>() + m_i<Is>()] + rho0<T>()),
+            //          ...);
+            //     }(std::make_index_sequence<N>{});
 
-                __syncthreads();
-            }
+            //     block::sync();
+            // }
 
             /**
              * @brief Default constructor (value-initializes all elements)

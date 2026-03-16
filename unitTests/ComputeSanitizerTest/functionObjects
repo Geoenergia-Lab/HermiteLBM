@@ -9,22 +9,13 @@
 
 /*---------------------------------------------------------------------------*\
 
-caseName        jetFlow;
-
-Re              5000;
-
-u_inf           0.016;
-
-L_char          8;
-
-startFrom       latestTime;
-
-startTime       0;
-
-nTimeSteps      201;
-
-saveInterval    200;
-
-infoInterval    20;
+functionObjectList
+{
+    // S;
+    // SMean;
+    // k;
+    // kMean;
+    // momentsMean;
+};
 
 \*---------------------------------------------------------------------------*/

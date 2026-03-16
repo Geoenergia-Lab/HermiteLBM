@@ -107,104 +107,104 @@ namespace LBM
         __device__ __constant__ label_t BLOCK_OFFSET_Y;
         __device__ __constant__ label_t BLOCK_OFFSET_Z;
 
-        __device__ __constant__ constexpr const label_t STREAMING_OFFSET_WEST = 0;
-        __device__ __constant__ constexpr const label_t STREAMING_OFFSET_EAST = 0;
-        __device__ __constant__ constexpr const label_t STREAMING_OFFSET_NORTH = 0;
-        __device__ __constant__ constexpr const label_t STREAMING_OFFSET_SOUTH = 0;
-        __device__ __constant__ constexpr const label_t STREAMING_OFFSET_BACK = 0;
-        __device__ __constant__ label_t STREAMING_OFFSET_FRONT; // This is 1 in the case that we have a GPU boundary on the back of the subdomain, otherwise 0
+        // __device__ __constant__ constexpr const label_t STREAMING_OFFSET_XM1 = 0;
+        // __device__ __constant__ constexpr const label_t STREAMING_OFFSET_XP1 = 0;
+        // __device__ __constant__ constexpr const label_t STREAMING_OFFSET_YM1 = 0;
+        // __device__ __constant__ constexpr const label_t STREAMING_OFFSET_YP1 = 0;
+        // __device__ __constant__ constexpr const label_t STREAMING_OFFSET_ZM1 = 0;
+        // __device__ __constant__ label_t STREAMING_OFFSET_ZP1 = 0; // This is 1 in the case that we have a GPU boundary on the back of the subdomain, otherwise 0
 
-        __device__ __constant__ label_t HAS_DEVICE_BOUNDARY_WEST;
-        __device__ __constant__ label_t HAS_DEVICE_BOUNDARY_EAST;
-        __device__ __constant__ label_t HAS_DEVICE_BOUNDARY_SOUTH;
-        __device__ __constant__ label_t HAS_DEVICE_BOUNDARY_NORTH;
-        __device__ __constant__ label_t HAS_DEVICE_BOUNDARY_BACK;
-        __device__ __constant__ label_t HAS_DEVICE_BOUNDARY_FRONT;
+        // __device__ __constant__ constexpr const label_t HAS_EXTRA_LAYER_XM1 = 0;
+        // __device__ __constant__ constexpr const label_t HAS_EXTRA_LAYER_XP1 = 0;
+        // __device__ __constant__ constexpr const label_t HAS_EXTRA_LAYER_YM1 = 0;
+        // __device__ __constant__ constexpr const label_t HAS_EXTRA_LAYER_YP1 = 0;
+        // __device__ __constant__ label_t HAS_EXTRA_LAYER_ZM1;
+        // __device__ __constant__ label_t HAS_EXTRA_LAYER_ZP1;
 
-        __device__ static int alreadyPrinted0 = 0;
-        __device__ static int alreadyPrinted1 = 0;
-        __device__ static int alreadyPrinted2 = 0;
-        __device__ static int alreadyPrinted3 = 0;
+        // __device__ static int alreadyPrinted0 = 0;
+        // __device__ static int alreadyPrinted1 = 0;
+        // __device__ static int alreadyPrinted2 = 0;
+        // __device__ static int alreadyPrinted3 = 0;
 
-        template <const axis::type alpha, const int coeff>
-        __device__ [[nodiscard]] inline constexpr label_t STREAMING_OFFSET() noexcept
-        {
-            if constexpr (alpha == axis::X)
-            {
-                if constexpr (coeff == -1)
-                {
-                    return STREAMING_OFFSET_WEST;
-                }
-                if constexpr (coeff == +1)
-                {
-                    return STREAMING_OFFSET_EAST;
-                }
-            }
+        // template <const axis::type alpha, const int coeff>
+        // __device__ [[nodiscard]] inline constexpr label_t STREAMING_OFFSET() noexcept
+        // {
+        //     if constexpr (alpha == axis::X)
+        //     {
+        //         if constexpr (coeff == -1)
+        //         {
+        //             return STREAMING_OFFSET_XM1;
+        //         }
+        //         if constexpr (coeff == +1)
+        //         {
+        //             return STREAMING_OFFSET_XP1;
+        //         }
+        //     }
 
-            if constexpr (alpha == axis::Y)
-            {
-                if constexpr (coeff == -1)
-                {
-                    return STREAMING_OFFSET_SOUTH;
-                }
-                if constexpr (coeff == +1)
-                {
-                    return STREAMING_OFFSET_NORTH;
-                }
-            }
+        //     if constexpr (alpha == axis::Y)
+        //     {
+        //         if constexpr (coeff == -1)
+        //         {
+        //             return STREAMING_OFFSET_YM1;
+        //         }
+        //         if constexpr (coeff == +1)
+        //         {
+        //             return STREAMING_OFFSET_YP1;
+        //         }
+        //     }
 
-            if constexpr (alpha == axis::Z)
-            {
-                if constexpr (coeff == -1)
-                {
-                    return STREAMING_OFFSET_BACK;
-                }
-                if constexpr (coeff == +1)
-                {
-                    return STREAMING_OFFSET_FRONT;
-                }
-            }
-        }
+        //     if constexpr (alpha == axis::Z)
+        //     {
+        //         if constexpr (coeff == -1)
+        //         {
+        //             return STREAMING_OFFSET_ZM1;
+        //         }
+        //         if constexpr (coeff == +1)
+        //         {
+        //             return STREAMING_OFFSET_ZP1;
+        //         }
+        //     }
+        // }
 
-        template <const axis::type alpha, const int coeff>
-        __device__ [[nodiscard]] inline constexpr label_t HAS_DEVICE_BOUNDARY() noexcept
-        {
-            if constexpr (alpha == axis::X)
-            {
-                if constexpr (coeff == -1)
-                {
-                    return HAS_DEVICE_BOUNDARY_WEST;
-                }
-                if constexpr (coeff == +1)
-                {
-                    return HAS_DEVICE_BOUNDARY_EAST;
-                }
-            }
+        // template <const axis::type alpha, const int coeff>
+        // __device__ [[nodiscard]] inline constexpr label_t HAS_EXTRA_LAYER() noexcept
+        // {
+        //     if constexpr (alpha == axis::X)
+        //     {
+        //         if constexpr (coeff == -1)
+        //         {
+        //             return HAS_EXTRA_LAYER_XM1;
+        //         }
+        //         if constexpr (coeff == +1)
+        //         {
+        //             return HAS_EXTRA_LAYER_XP1;
+        //         }
+        //     }
 
-            if constexpr (alpha == axis::Y)
-            {
-                if constexpr (coeff == -1)
-                {
-                    return HAS_DEVICE_BOUNDARY_SOUTH;
-                }
-                if constexpr (coeff == +1)
-                {
-                    return HAS_DEVICE_BOUNDARY_NORTH;
-                }
-            }
+        //     if constexpr (alpha == axis::Y)
+        //     {
+        //         if constexpr (coeff == -1)
+        //         {
+        //             return HAS_EXTRA_LAYER_YM1;
+        //         }
+        //         if constexpr (coeff == +1)
+        //         {
+        //             return HAS_EXTRA_LAYER_YP1;
+        //         }
+        //     }
 
-            if constexpr (alpha == axis::Z)
-            {
-                if constexpr (coeff == -1)
-                {
-                    return HAS_DEVICE_BOUNDARY_BACK;
-                }
-                if constexpr (coeff == +1)
-                {
-                    return HAS_DEVICE_BOUNDARY_FRONT;
-                }
-            }
-        }
+        //     if constexpr (alpha == axis::Z)
+        //     {
+        //         if constexpr (coeff == -1)
+        //         {
+        //             return HAS_EXTRA_LAYER_ZM1;
+        //         }
+        //         if constexpr (coeff == +1)
+        //         {
+        //             return HAS_EXTRA_LAYER_ZP1;
+        //         }
+        //     }
+        // }
 
         /**
          * @brief Allocates a symbol of type T to the device
@@ -228,16 +228,16 @@ namespace LBM
             errorHandler::check(cudaDeviceSynchronize());
         }
 
-        template <typename T, const std::size_t N>
-        void copyToSymbol(const T (&symbol)[N], const T value, const label_t index)
+        template <typename T, const std::size_t N, typename SizeType>
+        void copyToSymbol(const T (&symbol)[N], const T value, const SizeType index)
         {
-            if (index >= N)
+            if (static_cast<std::size_t>(index) >= N)
             {
                 throw std::runtime_error("Error setting device symbol index" + std::to_string(index) + " out of bounds for array of size " + std::to_string(N) + ".");
             }
             errorHandler::check(cudaDeviceSynchronize());
             const T valueTemp = value;
-            errorHandler::check(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), static_cast<std::size_t>(index) * sizeof(T), cudaMemcpyHostToDevice));
+            errorHandler::check(cudaMemcpyToSymbol(symbol, &valueTemp, static_cast<std::size_t>(sizeof(T)), static_cast<std::size_t>(index) * static_cast<std::size_t>(sizeof(T)), cudaMemcpyHostToDevice));
             errorHandler::check(cudaDeviceSynchronize());
         }
     }

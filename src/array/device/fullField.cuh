@@ -249,8 +249,6 @@ namespace LBM
              **/
             __host__ void copy_to_host(T *const ptrRestrict hostPtr)
             {
-                static_assert(MULTI_GPU_ASSERTION());
-
                 const std::size_t nPointsPerDevice = mesh_.template sizePerDevice<std::size_t>();
 
                 const std::size_t nDevices = mesh_.template nDevices<std::size_t>();
@@ -352,8 +350,6 @@ namespace LBM
                 const name_t &name,
                 const std::vector<deviceIndex_t> &deviceList) noexcept
             {
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::array::initialise_boundary_condition, "Believed to be correct"));
-
                 if ((name == "u") || (name == "v") || (name == "w"))
                 {
                     const label_t i = (name == "u") ? 0 : ((name == "v") ? 1 : 2);

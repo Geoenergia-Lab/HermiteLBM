@@ -102,7 +102,7 @@ int main(const int argc, const char *const argv[])
 
     BlockHalo blockHalo(mesh, programCtrl);
 
-    kernel::configure<smem_alloc_size()>(momentBasedD3Q19, programCtrl);
+    programCtrl.configure<smem_alloc_size()>(momentBasedD3Q19);
 
     const runTimeIO IO(mesh, programCtrl);
 

@@ -129,12 +129,12 @@ namespace LBM
         template <const label_t stream_>
         inline void synchronize(const std::integral_constant<label_t, stream_> stream) const noexcept
         {
-            errorHandler::check(cudaStreamSynchronize(streams_[stream()]));
+            errorHandler::checkInline(cudaStreamSynchronize(streams_[stream()]));
         }
 
         inline void synchronize(const label_t i) const noexcept
         {
-            errorHandler::check(cudaStreamSynchronize(streams_[i]));
+            errorHandler::checkInline(cudaStreamSynchronize(streams_[i]));
         }
 
         /**

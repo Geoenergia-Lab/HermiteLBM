@@ -56,6 +56,18 @@ SourceFiles
 
 namespace LBM
 {
+    template <typename T>
+    __host__ void allocateMessage(const name_t &functionName, const std::size_t nPoints, const T *ptr) noexcept
+    {
+        std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in " << functionName << " to address " << ptr << " (current device: " << GPU::current_ordinal() << ")" << std::endl;
+    }
+
+    template <typename T>
+    __host__ void copyMessage(const name_t &functionName, const std::size_t nPoints, const T *srcPtr, const T *destPtr) noexcept
+    {
+        std::cout << "Copied " << sizeof(T) * nPoints << " bytes of memory in " << functionName << " from address " << srcPtr << " to address " << destPtr << " (current device: " << GPU::current_ordinal() << ")" << std::endl;
+    }
+
     namespace host
     {
         /**
@@ -84,10 +96,10 @@ namespace LBM
 
             allocateMemory(&ptr, nPoints);
 
-            if constexpr (verbose())
-            {
-                std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in cudaMallocHost to address " << ptr << std::endl;
-            }
+            // if constexpr (verbose())
+            // {
+            //     allocateMessage("host::allocate", nPoints, ptr);
+            // }
 
             std::uninitialized_fill_n(ptr, nPoints, val);
 
@@ -110,7 +122,7 @@ namespace LBM
 
             if constexpr (verbose())
             {
-                std::cout << "Copied " << sizeof(T) * nPoints << " bytes of memory from device address " << devPtr << " to host address " << hostPtr << std::endl;
+                copyMessage("host::to_host", nPoints, devPtr, hostPtr);
             }
         }
 
@@ -173,7 +185,7 @@ namespace LBM
 
             if constexpr (verbose())
             {
-                std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in cudaMalloc to address " << ptr << std::endl;
+                allocateMessage("device::allocate", nPoints, ptr);
             }
 
             return ptr;
@@ -192,11 +204,6 @@ namespace LBM
             errorHandler::check(cudaSetDevice(deviceID));
 
             errorHandler::check(cudaDeviceSynchronize());
-
-            if constexpr (verbose())
-            {
-                std::cout << "Allocated " << nPoints << " to device " << deviceID << std::endl;
-            }
 
             return allocate<T>(nPoints);
         }
@@ -228,34 +235,29 @@ namespace LBM
         /**
          * @brief Copies data from host to device memory
          * @tparam T Data type of the elements
-         * @param[out] devicePtr Destination device pointer
+         * @param[out] devPtr Destination device pointer
          * @param[in] hostPtr Source host pointer
          * @param[in] nPoints The number of points of T to copy to the device
          * @throws std::runtime_error if CUDA memory copy fails
          * @note Verbose mode prints copy details
          **/
         template <typename T>
-        __host__ void copy(T *const devicePtr, const T *const ptrRestrict hostPtr, const std::size_t nPoints) noexcept
+        __host__ void copy(T *const devPtr, const T *const ptrRestrict hostPtr, const std::size_t nPoints) noexcept
         {
-            if constexpr (verbose())
-            {
-                std::cout << "Copying " << sizeof(T) * nPoints << " bytes of memory in cudaMemcpy to address " << devicePtr << std::endl;
-            }
-
             errorHandler::check(cudaDeviceSynchronize());
 
-            errorHandler::check(cudaMemcpy(devicePtr, hostPtr, nPoints * sizeof(T), cudaMemcpyHostToDevice));
+            errorHandler::check(cudaMemcpy(devPtr, hostPtr, nPoints * sizeof(T), cudaMemcpyHostToDevice));
 
             errorHandler::check(cudaDeviceSynchronize());
 
             if constexpr (verbose())
             {
-                std::cout << "Copied " << sizeof(T) * nPoints << " bytes of memory in cudaMemcpy to address " << devicePtr << std::endl;
+                copyMessage("device::copy", nPoints, hostPtr, devPtr);
             }
         }
 
         template <typename T>
-        __host__ void copy(T *const devicePtr, const T *const ptrRestrict hostPtr, const std::size_t nPoints, const deviceIndex_t deviceID) noexcept
+        __host__ void copy(T *const devPtr, const T *const ptrRestrict hostPtr, const std::size_t nPoints, const deviceIndex_t deviceID) noexcept
         {
             errorHandler::check(cudaDeviceSynchronize());
 
@@ -263,7 +265,7 @@ namespace LBM
 
             errorHandler::check(cudaDeviceSynchronize());
 
-            copy(devicePtr, hostPtr, nPoints);
+            copy(devPtr, hostPtr, nPoints);
 
             errorHandler::check(cudaDeviceSynchronize());
         }

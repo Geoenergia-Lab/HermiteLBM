@@ -112,8 +112,6 @@ namespace LBM
              **/
             __host__ inline void swap(const label_t i) noexcept
             {
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::halo::swap, "Must set the device prior to calling."));
-
                 errorHandler::checkInline(cudaDeviceSynchronize());
                 std::swap(readBuffer_.x0Ref(i), writeBuffer_.x0Ref(i));
                 std::swap(readBuffer_.x1Ref(i), writeBuffer_.x1Ref(i));
@@ -361,7 +359,7 @@ namespace LBM
                             thread_stencil<-VelocitySet::template c<int, axis::Z>()[streaming_index<alpha, coeff>(i)]>(dBz, Bx.value<axis::Z>()),
                             Bx.value<axis::Z>());
 
-                        pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&readBuffer.ptr<static_cast<label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::QF()>(t_a, t_b, b_x, b_y, b_z)]);
+                        pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&(readBuffer.ptr<static_cast<label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::QF()>(t_a, t_b, b_x, b_y, b_z)]));
                     });
             }
 
@@ -369,8 +367,6 @@ namespace LBM
              * @brief Loads halo population data from neighboring blocks in a specific direction
              * @tparam alpha The axis direction (X, Y or Z)
              * @tparam isPeriodic Whether the domain is periodic in this direction
-             * @tparam PtrIdx0 The index of the pointer for the negative face halo
-             * @tparam PtrIdx1 The index of the pointer for the positive face halo
              * @param[out] pop Array to store loaded population values
              * @param[in] readBuffer Collection of pointers to the halo faces
              * @param[in] Tx Three-dimensional thread coordinates
@@ -422,7 +418,9 @@ namespace LBM
                         writeBuffer.ptr<static_cast<label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::QF()>(
                             Tx.value<axis::orthogonal<alpha, 0>()>(),
                             Tx.value<axis::orthogonal<alpha, 1>()>(),
-                            Bx)] = pop[q_i<streaming_index<alpha, coeff>(i)>()];
+                            Bx.value<axis::X>(),
+                            Bx.value<axis::Y>(),
+                            Bx.value<axis::Z>())] = pop[q_i<streaming_index<alpha, coeff>(i)>()];
                     });
             }
 

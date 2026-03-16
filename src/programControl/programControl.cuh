@@ -291,6 +291,27 @@ namespace LBM
             return input_.commandLine();
         }
 
+        /**
+         * @brief Configures a kernel function to prefer shared memory and sets its dynamic shared memory size
+         * @tparam smem_alloc_size The amount of shared memory (in bytes) to allocate for the kernel
+         * @tparam T The function type (e.g., a lambda or a function pointer)
+         * @param[in] func The kernel function to configure
+         **/
+        template <const label_t smem_alloc_size, class T>
+        __host__ void configure(T *func) const
+        {
+            for (std::size_t VirtualDeviceIndex = 0; VirtualDeviceIndex < deviceList().size(); VirtualDeviceIndex++)
+            {
+                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::check(cudaSetDevice(deviceList()[VirtualDeviceIndex]));
+                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::check(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
+                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::check(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
+                errorHandler::check(cudaDeviceSynchronize());
+            }
+        }
+
     private:
         /**
          * @brief A reference to the input control object

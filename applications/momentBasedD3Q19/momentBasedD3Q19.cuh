@@ -132,7 +132,7 @@ namespace LBM
                 }
             });
 
-        __syncthreads();
+        block::sync();
 
         // Reconstruct the population from the moments
         thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
@@ -142,7 +142,7 @@ namespace LBM
             // Save populations in shared memory
             streaming::save<VelocitySet>(pop, shared_buffer, tid);
 
-            __syncthreads();
+            block::sync();
 
             // Pull from shared memory
             streaming::pull<VelocitySet>(pop, shared_buffer, Tx);
@@ -150,7 +150,7 @@ namespace LBM
             // Pull pop from global memory in cover nodes
             BlockHalo::pull(pop, readBuffer, Tx, Bx, point);
 
-            __syncthreads();
+            block::sync();
         }
 
         if constexpr (std::is_same<BoundaryConditions, lidDrivenCavity>::value)
@@ -184,7 +184,7 @@ namespace LBM
                     });
             }
 
-            __syncthreads();
+            block::sync();
 
             // Calculate the moments at the boundary
             {

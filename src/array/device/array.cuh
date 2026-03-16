@@ -168,7 +168,7 @@ namespace LBM
 
                 GPU::forAll(
                     mesh.nDevices(),
-                    [&](label_t GPU_x, label_t GPU_y, label_t GPU_z)
+                    [&](const label_t GPU_x, const label_t GPU_y, const label_t GPU_z)
                     {
                         const label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, mesh.nDevices<axis::X>(), mesh.nDevices<axis::Y>());
                         hostPtrsToDevice[virtualDeviceIndex] = allocate_device_segment(mesh, hostArrayGlobal, GPU_x, GPU_y, GPU_z, programCtrl, allocationSize);
