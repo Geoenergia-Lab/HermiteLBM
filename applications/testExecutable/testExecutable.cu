@@ -88,7 +88,7 @@ int main(const int argc, const char *const argv[])
 
     BlockHalo blockHalo(mesh, programCtrl);
 
-    programCtrl.configure<smem_alloc_size()>(getMomentBasedKernel<VelocitySet>());
+    programCtrl.configure<smem_alloc_size()>(kernel<VelocitySet>());
 
     const runTimeIO IO(mesh, programCtrl);
 
@@ -162,7 +162,7 @@ int main(const int argc, const char *const argv[])
             const device::ptrCollection<6, scalar_t> writeBuffer = blockHalo.writeBuffer(VirtualDeviceIndex);
 
             // Configure the kernel to run per GPU
-            getMomentBasedKernel<VelocitySet>()<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[VirtualDeviceIndex]>>>(devPtrs, readBuffer, writeBuffer);
+            kernel<VelocitySet>()<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[VirtualDeviceIndex]>>>(devPtrs, readBuffer, writeBuffer);
 
             errorHandler::checkLast();
         }
@@ -175,60 +175,57 @@ int main(const int argc, const char *const argv[])
             streamsLBM.synchronize(VirtualDeviceIndex);
         }
 
-        if constexpr (true)
-        {
-            // Set the device
-            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[0]));
+        // Set the device
+        errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[0]));
 
-            const label_t nxb = mesh.nBlocks<axis::X>();
-            const label_t nyb = mesh.nBlocks<axis::Y>();
+        const label_t nxb = mesh.nBlocks<axis::X>();
+        const label_t nyb = mesh.nBlocks<axis::Y>();
 
-            constexpr const threadLabel threadStart(static_cast<label_t>(0), static_cast<label_t>(0), static_cast<label_t>(0));
+        constexpr const threadLabel threadStart(static_cast<label_t>(0), static_cast<label_t>(0), static_cast<label_t>(0));
 
-            const std::size_t Size = static_cast<std::size_t>(sizeof(scalar_t)) * VelocitySet::QF<std::size_t>() * block::nx<std::size_t>() * block::ny<std::size_t>() * mesh.blocksPerDevice<axis::X, std::size_t>() * mesh.blocksPerDevice<axis::Y, std::size_t>();
+        const std::size_t Size = static_cast<std::size_t>(sizeof(scalar_t)) * VelocitySet::QF<std::size_t>() * block::nx<std::size_t>() * block::ny<std::size_t>() * mesh.blocksPerDevice<axis::X, std::size_t>() * mesh.blocksPerDevice<axis::Y, std::size_t>();
 
-            constexpr const label_t WestDevice = 0;
-            constexpr const label_t EastDevice = 1;
+        constexpr const label_t WestDevice = 0;
+        constexpr const label_t EastDevice = 1;
 
-            constexpr const label_t WestPtr_x0 = 4;
-            constexpr const label_t EastPtr_x1 = 5;
+        constexpr const label_t WestPtr_x0 = 4;
+        constexpr const label_t EastPtr_x1 = 5;
 
-            // East to West exchange
-            // Destination z block: located at bz = nzBlocks
-            // Pretty sure this is right, not 100%
-            const blockLabel WestDeviceDestinationBlock(0, 0, 0);
-            const label_t WestDestinationID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, WestDeviceDestinationBlock, nxb, nyb);
+        // East to West exchange
+        // Destination z block: located at bz = nzBlocks
+        // Pretty sure this is right, not 100%
+        const blockLabel WestDeviceDestinationBlock(0, 0, 0);
+        const label_t WestDestinationID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, WestDeviceDestinationBlock, nxb, nyb);
 
-            // Source z block: located at bz = 0
-            // Pretty sure this is right
-            const blockLabel EastDeviceSourceBlock(0, 0, 0);
-            const label_t EastSourceID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, EastDeviceSourceBlock, nxb, nyb);
+        // Source z block: located at bz = 0
+        // Pretty sure this is right
+        const blockLabel EastDeviceSourceBlock(0, 0, 0);
+        const label_t EastSourceID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, EastDeviceSourceBlock, nxb, nyb);
 
-            errorHandler::check(cudaMemcpyPeer(
-                &(blockHalo.writeBuffer(WestDevice).ptr<WestPtr_x0>()[WestDestinationID]),
-                programCtrl.deviceList()[WestDevice],
-                &(blockHalo.writeBuffer(EastDevice).ptr<WestPtr_x0>()[EastSourceID]),
-                programCtrl.deviceList()[EastDevice],
-                Size));
+        errorHandler::check(cudaMemcpyPeer(
+            &(blockHalo.writeBuffer(WestDevice).ptr<WestPtr_x0>()[WestDestinationID]),
+            programCtrl.deviceList()[WestDevice],
+            &(blockHalo.writeBuffer(EastDevice).ptr<WestPtr_x0>()[EastSourceID]),
+            programCtrl.deviceList()[EastDevice],
+            Size));
 
-            // West to East exchange
-            // Destination z block: located at bz = 0
-            // Pretty sure this is right
-            const blockLabel EastDeviceDestinationBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
-            const label_t EastDestinationID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, EastDeviceDestinationBlock, nxb, nyb);
+        // West to East exchange
+        // Destination z block: located at bz = 0
+        // Pretty sure this is right
+        const blockLabel EastDeviceDestinationBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
+        const label_t EastDestinationID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, EastDeviceDestinationBlock, nxb, nyb);
 
-            // Source z block: located at bz = nzBlocks
-            // Pretty sure this is right
-            const blockLabel WestDeviceSourceBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
-            const label_t WestSourceID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, WestDeviceSourceBlock, nxb, nyb);
+        // Source z block: located at bz = nzBlocks
+        // Pretty sure this is right
+        const blockLabel WestDeviceSourceBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
+        const label_t WestSourceID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, WestDeviceSourceBlock, nxb, nyb);
 
-            errorHandler::check(cudaMemcpyPeer(
-                &(blockHalo.writeBuffer(EastDevice).ptr<EastPtr_x1>()[EastDestinationID]),
-                programCtrl.deviceList()[EastDevice],
-                &(blockHalo.writeBuffer(WestDevice).ptr<EastPtr_x1>()[WestSourceID]),
-                programCtrl.deviceList()[WestDevice],
-                Size));
-        }
+        errorHandler::check(cudaMemcpyPeer(
+            &(blockHalo.writeBuffer(EastDevice).ptr<EastPtr_x1>()[EastDestinationID]),
+            programCtrl.deviceList()[EastDevice],
+            &(blockHalo.writeBuffer(WestDevice).ptr<EastPtr_x1>()[WestSourceID]),
+            programCtrl.deviceList()[WestDevice],
+            Size));
 
         // Sync all devices and streams
         for (label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)

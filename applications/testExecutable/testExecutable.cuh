@@ -376,16 +376,16 @@ namespace LBM
     }
 
     template <typename T>
-    constexpr auto getMomentBasedKernel();
+    __host__ [[nodiscard]] inline constexpr auto kernel() noexcept;
 
     template <>
-    constexpr auto getMomentBasedKernel<D3Q19>()
+    __host__ [[nodiscard]] inline constexpr auto kernel<D3Q19>() noexcept
     {
         return momentBasedD3Q19;
     }
 
     template <>
-    constexpr auto getMomentBasedKernel<D3Q27>()
+    __host__ [[nodiscard]] inline constexpr auto kernel<D3Q27>() noexcept
     {
         return momentBasedD3Q27;
     }

@@ -158,71 +158,6 @@ namespace LBM
                 return VelocitySet::template QF<std::size_t>() * ((static_cast<std::size_t>(nxBlocksTrue) * static_cast<std::size_t>(nyBlocksTrue) * static_cast<std::size_t>(nzBlocksTrue) * block::nx<std::size_t>() * block::ny<std::size_t>() * block::nz<std::size_t>()) / block::n<alpha, std::size_t>());
             }
 
-            // template <const axis::type alpha, const axis::type beta, const int coeff>
-            // __host__ [[nodiscard]] static inline constexpr label_t extraFace(
-            //     const label_t GPU_x,
-            //     const label_t GPU_y,
-            //     const label_t GPU_z,
-            //     const host::latticeMesh &mesh) noexcept
-            // {
-            //     if constexpr (alpha == axis::X)
-            //     {
-            //         if constexpr (alpha == beta)
-            //         {
-            //             if constexpr (coeff == -1)
-            //             {
-            //                 return static_cast<label_t>(GPU_x < mesh.nDevices<axis::X>() - 1);
-            //             }
-            //             if constexpr (coeff == +1)
-            //             {
-            //                 return static_cast<label_t>(GPU_x > 0);
-            //             }
-            //         }
-            //         else
-            //         {
-            //             return 0;
-            //         }
-            //     }
-
-            //     if constexpr (alpha == axis::Y)
-            //     {
-            //         if constexpr (alpha == beta)
-            //         {
-            //             if constexpr (coeff == -1)
-            //             {
-            //                 return static_cast<label_t>(GPU_y < mesh.nDevices<axis::Y>() - 1);
-            //             }
-            //             if constexpr (coeff == +1)
-            //             {
-            //                 return static_cast<label_t>(GPU_y > 0);
-            //             }
-            //         }
-            //         else
-            //         {
-            //             return 0;
-            //         }
-            //     }
-
-            //     if constexpr (alpha == axis::Z)
-            //     {
-            //         if constexpr (alpha == beta)
-            //         {
-            //             if constexpr (coeff == -1)
-            //             {
-            //                 return static_cast<label_t>(GPU_z < mesh.nDevices<axis::Z>() - 1);
-            //             }
-            //             if constexpr (coeff == +1)
-            //             {
-            //                 return static_cast<label_t>(GPU_z > 0);
-            //             }
-            //         }
-            //         else
-            //         {
-            //             return 0;
-            //         }
-            //     }
-            // }
-
             template <const axis::type alpha>
             __host__ [[nodiscard]] static inline consteval const char *axisName() noexcept
             {
@@ -241,20 +176,6 @@ namespace LBM
                     return "Z";
                 }
             }
-
-            // template <const int coeff>
-            // __host__ [[nodiscard]] static inline constexpr label_t z_block_offset(const label_t GPU_z) noexcept
-            // {
-            //     if constexpr (coeff == -1)
-            //     {
-            //         return 0;
-            //     }
-
-            //     if constexpr (coeff == +1)
-            //     {
-            //         return static_cast<label_t>(GPU_z > 0);
-            //     }
-            // }
 
             template <const axis::type alpha, const int coeff>
             __host__ [[nodiscard]] static T **allocate_halo_on_devices(
@@ -284,57 +205,6 @@ namespace LBM
                             errorHandler::check(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
                             errorHandler::check(cudaDeviceSynchronize());
 
-                            // // This calls are correct, I think
-                            // const label_t haloHasExtraFace_x = extraFace<axis::X, alpha, coeff>(GPU_x, GPU_y, GPU_z, mesh);
-                            // const label_t haloHasExtraFace_y = extraFace<axis::Y, alpha, coeff>(GPU_x, GPU_y, GPU_z, mesh);
-                            // const label_t haloHasExtraFace_z = extraFace<axis::Z, alpha, coeff>(GPU_x, GPU_y, GPU_z, mesh);
-
-                            // if (haloHasExtraFace_x > 0)
-                            // {
-                            //     errorHandler::check(-1, "X halo has an extra face! this is wrong");
-                            // }
-
-                            // if (haloHasExtraFace_y > 0)
-                            // {
-                            //     errorHandler::check(-1, "Y halo has an extra face! this is wrong");
-                            // }
-
-                            // if constexpr ((alpha == axis::Z) && (coeff == +1))
-                            // {
-                            //     if (GPU_z == 1)
-                            //     {
-                            //         device::copyToSymbol(device::STREAMING_OFFSET_ZP1, static_cast<label_t>(1));
-                            //     }
-                            //     else
-                            //     {
-                            //         device::copyToSymbol(device::STREAMING_OFFSET_ZP1, static_cast<label_t>(0));
-                            //     }
-                            // }
-
-                            // if constexpr ((alpha == axis::Z) && (coeff == -1))
-                            // {
-                            //     if (GPU_z == 0)
-                            //     {
-                            //         device::copyToSymbol(device::HAS_EXTRA_LAYER_ZM1, static_cast<label_t>(1));
-                            //     }
-                            //     else
-                            //     {
-                            //         device::copyToSymbol(device::HAS_EXTRA_LAYER_ZM1, static_cast<label_t>(0));
-                            //     }
-                            // }
-
-                            // if constexpr ((alpha == axis::Z) && (coeff == +1))
-                            // {
-                            //     if (GPU_z == 1)
-                            //     {
-                            //         device::copyToSymbol(device::HAS_EXTRA_LAYER_ZP1, static_cast<label_t>(1));
-                            //     }
-                            //     else
-                            //     {
-                            //         device::copyToSymbol(device::HAS_EXTRA_LAYER_ZP1, static_cast<label_t>(0));
-                            //     }
-                            // }
-
                             // Get the number of non-halo blocks per device
                             const label_t nxBlocksPerGPU = mesh.blocksPerDevice<axis::X>();
                             const label_t nyBlocksPerGPU = mesh.blocksPerDevice<axis::Y>();
@@ -344,13 +214,6 @@ namespace LBM
                             const label_t nxBlocksTrue = nxBlocksPerGPU;
                             const label_t nyBlocksTrue = nyBlocksPerGPU;
                             const label_t nzBlocksTrue = nzBlocksPerGPU;
-
-                            // std::cout << std::endl;
-                            // std::cout << "Allocating axis " << axisName<alpha>() << ", " << coeff << " with " << nxBlocksTrue << ", " << nyBlocksTrue << ", " << nzBlocksTrue << " blocks on device " << GPU::current_ordinal() << std::endl;
-                            // if constexpr (alpha == axis::Z)
-                            // {
-                            //     std::cout << "In Z with coefficient " << coeff << ", deviceIdx.z = " << GPU_z << " has " << haloHasExtraFace_z << " extra " << (haloHasExtraFace_z == 1 ? "face" : "faces") << " with a z block offset of " << z_block_offset<coeff>(GPU_z) << std::endl;
-                            // }
 
                             const std::size_t partitionAllocationSize = AllocationSize<alpha>(nxBlocksTrue, nyBlocksTrue, nzBlocksTrue);
                             std::vector<scalar_t> haloAlloc(partitionAllocationSize, 0);
@@ -421,14 +284,7 @@ namespace LBM
                 const std::vector<T> &hostArrayGlobal,
                 const programControl &programCtrl)
             {
-                if constexpr (true)
-                {
-                    return allocate_halo_on_devices<alpha, coeff>(mesh, hostArrayGlobal.data(), programCtrl, hostArrayGlobal.size());
-                }
-                else
-                {
-                    return arrayBase<T>::allocate_on_devices(mesh, hostArrayGlobal.data(), programCtrl, mesh.nFacesPerDevice<alpha, VelocitySet::QF()>());
-                }
+                return allocate_halo_on_devices<alpha, coeff>(mesh, hostArrayGlobal.data(), programCtrl, hostArrayGlobal.size());
             }
 
             __host__ [[nodiscard]] static T *allocate_halo_segment(
