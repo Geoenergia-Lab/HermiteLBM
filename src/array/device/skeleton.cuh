@@ -178,6 +178,75 @@ namespace LBM
             }
 
             template <const axis::type alpha, const int coeff>
+            __host__ [[nodiscard]] static const std::vector<scalar_t> halo_partition(
+                const host::latticeMesh &mesh,
+                const T *hostArrayGlobal,
+                const label_t GPU_x,
+                const label_t GPU_y,
+                const label_t GPU_z)
+            {
+                // Get the number of non-halo blocks per device
+                const label_t nxBlocksPerGPU = mesh.blocksPerDevice<axis::X>();
+                const label_t nyBlocksPerGPU = mesh.blocksPerDevice<axis::Y>();
+                const label_t nzBlocksPerGPU = mesh.blocksPerDevice<axis::Z>();
+
+                // So, the Z allocation size is nz blocks + haloHasExtraFace
+                const label_t nxBlocksTrue = nxBlocksPerGPU;
+                const label_t nyBlocksTrue = nyBlocksPerGPU;
+                const label_t nzBlocksTrue = nzBlocksPerGPU;
+
+                // Get the starting block indices for this GPU
+                // These indices are not offset to account for the extra halo
+                const label_t bx0 = GPU_x * nxBlocksPerGPU;
+                const label_t by0 = GPU_y * nyBlocksPerGPU;
+                const label_t bz0 = GPU_z * nzBlocksPerGPU;
+
+                const std::size_t partitionAllocationSize = AllocationSize<alpha>(nxBlocksTrue, nyBlocksTrue, nzBlocksTrue);
+                std::vector<scalar_t> haloAlloc(partitionAllocationSize, 0);
+
+                for (label_t bz = 0; bz < nzBlocksTrue; bz++)
+                {
+                    for (label_t by = 0; by < nyBlocksTrue; by++)
+                    {
+                        for (label_t bx = 0; bx < nxBlocksTrue; bx++)
+                        {
+                            // Second perpendicular axis
+                            for (label_t tb = 0; tb < block::n<axis::orthogonal<alpha, 1>()>(); tb++)
+                            {
+                                // First perpendicular axis
+                                for (label_t ta = 0; ta < block::n<axis::orthogonal<alpha, 0>()>(); ta++)
+                                {
+                                    // Get the 3d indices on the face
+                                    // Note: This call might not be correct, I am not sure if it should be + or - coeff
+                                    // I think it should actually be + coeff, since we want to pull from the edge of the block propagating to the current
+                                    const blockLabel Tx = axis::to_3d<alpha, coeff>(ta, tb);
+
+                                    // The block label in the segment of the halo
+                                    const blockLabel Bx(bx, by, bz);
+
+                                    // The block label in the global halo
+                                    const blockLabel Bx_global(bx0 + bx, by0 + by, bz0 + bz);
+
+                                    // Local index in haloAlloc (same layout, but using local block dimensions)
+                                    for (label_t i = 0; i < VelocitySet::QF(); i++)
+                                    {
+                                        // Linear index in the global matrix
+                                        const label_t global_idx = idxPopTest<alpha, VelocitySet::QF()>(i, Tx, Bx_global, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
+
+                                        const label_t local_idx = idxPopTest<alpha, VelocitySet::QF()>(i, Tx, Bx, nxBlocksTrue, nyBlocksTrue);
+
+                                        haloAlloc[local_idx] = hostArrayGlobal[global_idx];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return haloAlloc;
+            }
+
+            template <const axis::type alpha, const int coeff>
             __host__ [[nodiscard]] static T **allocate_halo_on_devices(
                 const host::latticeMesh &mesh,
                 const T *hostArrayGlobal,
@@ -206,64 +275,9 @@ namespace LBM
                             errorHandler::check(cudaDeviceSynchronize());
 
                             // Get the number of non-halo blocks per device
-                            const label_t nxBlocksPerGPU = mesh.blocksPerDevice<axis::X>();
-                            const label_t nyBlocksPerGPU = mesh.blocksPerDevice<axis::Y>();
-                            const label_t nzBlocksPerGPU = mesh.blocksPerDevice<axis::Z>();
+                            const std::vector<scalar_t> haloAlloc = halo_partition<alpha, coeff>(mesh, hostArrayGlobal, GPU_x, GPU_y, GPU_z);
 
-                            // So, the Z allocation size is nz blocks + haloHasExtraFace
-                            const label_t nxBlocksTrue = nxBlocksPerGPU;
-                            const label_t nyBlocksTrue = nyBlocksPerGPU;
-                            const label_t nzBlocksTrue = nzBlocksPerGPU;
-
-                            const std::size_t partitionAllocationSize = AllocationSize<alpha>(nxBlocksTrue, nyBlocksTrue, nzBlocksTrue);
-                            std::vector<scalar_t> haloAlloc(partitionAllocationSize, 0);
-
-                            // Get the starting block indices for this GPU
-                            // These indices are not offset to account for the extra halo
-                            const label_t bx0 = GPU_x * nxBlocksPerGPU;
-                            const label_t by0 = GPU_y * nyBlocksPerGPU;
-                            const label_t bz0 = GPU_z * nzBlocksPerGPU;
-
-                            for (label_t bz = 0; bz < nzBlocksTrue; bz++)
-                            {
-                                for (label_t by = 0; by < nyBlocksTrue; by++)
-                                {
-                                    for (label_t bx = 0; bx < nxBlocksTrue; bx++)
-                                    {
-                                        // Second perpendicular axis
-                                        for (label_t tb = 0; tb < block::n<axis::orthogonal<alpha, 1>()>(); tb++)
-                                        {
-                                            // First perpendicular axis
-                                            for (label_t ta = 0; ta < block::n<axis::orthogonal<alpha, 0>()>(); ta++)
-                                            {
-                                                // Get the 3d indices on the face
-                                                // Note: This call might not be correct, I am not sure if it should be + or - coeff
-                                                // I think it should actually be + coeff, since we want to pull from the edge of the block propagating to the current
-                                                const blockLabel Tx = axis::to_3d<alpha, coeff>(ta, tb);
-
-                                                // The block label in the segment of the halo
-                                                const blockLabel Bx(bx, by, bz);
-
-                                                // The block label in the global halo
-                                                const blockLabel Bx_global(bx0 + bx, by0 + by, bz0 + bz);
-
-                                                // Local index in haloAlloc (same layout, but using local block dimensions)
-                                                for (label_t i = 0; i < VelocitySet::QF(); i++)
-                                                {
-                                                    // Linear index in the global matrix
-                                                    const label_t global_idx = idxPopTest<alpha, VelocitySet::QF()>(i, Tx, Bx_global, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
-
-                                                    const label_t local_idx = idxPopTest<alpha, VelocitySet::QF()>(i, Tx, Bx, nxBlocksTrue, nyBlocksTrue);
-
-                                                    haloAlloc[local_idx] = hostArrayGlobal[global_idx];
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            hostPtrsToDevice[virtualDeviceIndex] = allocate_halo_segment(haloAlloc.data(), virtualDeviceIndex, programCtrl, partitionAllocationSize);
+                            hostPtrsToDevice[virtualDeviceIndex] = allocate_halo_segment(haloAlloc.data(), virtualDeviceIndex, programCtrl, haloAlloc.size());
                         });
                 }
 
