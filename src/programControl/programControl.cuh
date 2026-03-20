@@ -100,15 +100,15 @@ namespace LBM
             std::cout << "    programName: " << input_.commandLine()[0] << ";" << std::endl;
             std::cout << "    launchTime: " << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S") << ";" << std::endl;
             std::cout << "    launchDirectory: " << launchDirectory.string() << ";" << std::endl;
-            std::cout << "    deviceList: [";
-            if (deviceList().size() > 1)
+            if (deviceList().size() > 0)
             {
+                std::cout << "    deviceList: [";
+
                 for (host::label_t i = 0; i < deviceList().size() - 1; i++)
                 {
                     std::cout << deviceList()[i] << ", ";
                 }
             }
-            std::cout << deviceList()[deviceList().size() - 1] << "];" << std::endl;
             std::cout << "    caseName: " << caseName_ << ";" << std::endl;
             std::cout << "    Re = " << Re_ << ";" << std::endl;
             std::cout << "    nTimeSteps = " << nTimeSteps_ << ";" << std::endl;
@@ -120,30 +120,36 @@ namespace LBM
             std::cout << "};" << std::endl;
             std::cout << std::endl;
 
-            for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList().size(); virtualDeviceIndex++)
+            if (deviceList().size() > 0)
             {
-                errorHandler::check(cudaSetDevice(deviceList()[virtualDeviceIndex]));
+                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList().size(); virtualDeviceIndex++)
+                {
+                    errorHandler::check(cudaSetDevice(deviceList()[virtualDeviceIndex]));
 
-                // Allocate symbols on the GPU
-                const scalar_t viscosityTemp = u_inf() * L_char() / Re();
-                const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
-                const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTemp;
-                const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
-                const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
+                    // Allocate symbols on the GPU
+                    const scalar_t viscosityTemp = u_inf() * L_char() / Re();
+                    const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
+                    const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTemp;
+                    const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
+                    const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
 
-                device::copyToSymbol(device::L_char, L_char());
-                device::copyToSymbol(device::Re, Re());
-                device::copyToSymbol(device::tau, tauTemp);
-                device::copyToSymbol(device::omega, omegaTemp);
-                device::copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
-                device::copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
+                    device::copyToSymbol(device::L_char, L_char());
+                    device::copyToSymbol(device::Re, Re());
+                    device::copyToSymbol(device::tau, tauTemp);
+                    device::copyToSymbol(device::omega, omegaTemp);
+                    device::copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
+                    device::copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
+                }
             }
 
             // Make sure we synchronize and set active device to 0
             // Probably unnecessary but nice to do it anyway
-            errorHandler::check(cudaDeviceSynchronize());
-            errorHandler::check(cudaSetDevice(deviceList()[0]));
-            errorHandler::check(cudaDeviceSynchronize());
+            if (deviceList().size() > 0)
+            {
+                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::check(cudaSetDevice(deviceList()[0]));
+                errorHandler::check(cudaDeviceSynchronize());
+            }
         };
 
         /**

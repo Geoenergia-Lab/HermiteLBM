@@ -84,14 +84,18 @@ namespace LBM
             {
                 print();
 
-                // Perform a block dimensions safety check
-                validate_block_dimensions(dimensions_);
+                // Check if we are actually running GPU code
+                if (programCtrl.deviceList().size() > 0)
+                {
+                    // Perform a block dimensions safety check
+                    validate_block_dimensions(dimensions_);
 
-                // Safety check for the mesh dimensions
-                validate_allocation_size(programCtrl, dimensions_, nDevices_);
+                    // Safety check for the mesh dimensions
+                    validate_allocation_size(programCtrl, dimensions_, nDevices_);
 
-                // Must be safe, so allocate device constants
-                set_constants(programCtrl, dimensions_, nBlocks(), nDevices_);
+                    // Must be safe, so allocate device constants
+                    set_constants(programCtrl, dimensions_, nBlocks(), nDevices_);
+                }
             };
 
             /**

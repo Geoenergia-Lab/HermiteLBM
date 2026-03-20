@@ -219,7 +219,7 @@ namespace LBM
             {
                 if ((executableName() == "fieldConvert") | (executableName() == "fieldCalculate") | (executableName() == "computeVersion"))
                 {
-                    return {0};
+                    return {};
                 }
                 else
                 {
