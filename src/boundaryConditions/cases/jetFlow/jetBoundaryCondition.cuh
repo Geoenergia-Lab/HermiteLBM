@@ -50,8 +50,6 @@ Notes
 
 assertions::velocitySet::validate<VelocitySet>();
 
-static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(jetBoundaryCondition::calculate_moments, "Need to verify calculation of jet centreline"));
-
 if (!(boundaryNormal.isBack() || boundaryNormal.isFront()))
 {
     // moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
@@ -61,7 +59,7 @@ if (!(boundaryNormal.isBack() || boundaryNormal.isFront()))
 
 const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
 const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
-const label_t tid = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), block::nz() - 2);
+const device::label_t tid = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), block::nz() - 2);
 
 const scalar_t is_jet = static_cast<scalar_t>(boundaryNormal.isBack() && rms_sq(point.value<axis::X, scalar_t>() - center_x(), point.value<axis::Y, scalar_t>() - center_y()) <= r2());
 

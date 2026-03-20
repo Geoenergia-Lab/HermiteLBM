@@ -83,15 +83,15 @@ namespace LBM
             const LatticeMesh &mesh,
             const words_t &varNames,
             const T *const ptrRestrict fields,
-            const label_t timeStep,
-            const label_t meanCount)
+            const host::label_t timeStep,
+            const host::label_t meanCount)
         {
             types::assertions::validate<T>();
             endian::assertions::validate();
 
-            const uintmax_t nVars = static_cast<uintmax_t>(varNames.size());
-            const uintmax_t nPoints = mesh.template size<uintmax_t>();
-            const uintmax_t expectedSize = nPoints * nVars;
+            const host::label_t nVars = varNames.size();
+            const host::label_t nPoints = mesh.size();
+            const host::label_t expectedSize = nPoints * nVars;
 
             // Check if there is enough disk space to store the file
             fileSystem::diskSpaceAssertion<
@@ -120,20 +120,10 @@ namespace LBM
             out << std::endl;
 
             // Write the mesh information: number of points, number of devices
-            out << "latticeMesh" << std::endl;
-            out << "{" << std::endl;
-            out << "\tnx\t\t" << mesh.template dimension<axis::X>() << ";" << std::endl;
+            static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(fileIO::writeFile, "Multi-GPU must write GPU decomposition information to the file"));
+            mesh.dimensions().print("latticeMesh", out);
             out << std::endl;
-            out << "\tny\t\t" << mesh.template dimension<axis::Y>() << ";" << std::endl;
-            out << std::endl;
-            out << "\tnz\t\t" << mesh.template dimension<axis::Z>() << ";" << std::endl;
-            out << std::endl;
-            out << "\tnxGPUs\t\t" << mesh.template nDevices<axis::X>() << ";" << std::endl;
-            out << std::endl;
-            out << "\tnyGPUs\t\t" << mesh.template nDevices<axis::Y>() << ";" << std::endl;
-            out << std::endl;
-            out << "\tnzGPUs\t\t" << mesh.template nDevices<axis::Z>() << ";" << std::endl;
-            out << "};" << std::endl;
+            mesh.nDevices().print("deviceDecomposition", out);
             out << std::endl;
 
             // Write the field information: instantaneous or time-averaged, field names
@@ -164,9 +154,9 @@ namespace LBM
             out << std::endl;
 
             // Write binary data with safe size conversion
-            const std::size_t byteSize = expectedSize * sizeof(T);
+            const host::label_t byteSize = expectedSize * sizeof(T);
 
-            if (byteSize > static_cast<std::size_t>(std::numeric_limits<std::streamsize>::max()))
+            if (byteSize > static_cast<host::label_t>(std::numeric_limits<std::streamsize>::max()))
             {
                 throw std::runtime_error("Data size exceeds maximum stream size");
             }

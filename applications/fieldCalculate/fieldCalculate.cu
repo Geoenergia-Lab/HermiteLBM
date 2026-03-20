@@ -68,9 +68,9 @@ int main(const int argc, const char *const argv[])
     if (calculationTypeString == "containsNaN")
     {
         // Get the time indices
-        const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
+        const std::vector<host::label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
 
-        for (label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
+        for (host::label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
         {
             // We should check for field names here. Currently we are just doing the default fields
             const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
@@ -80,17 +80,14 @@ int main(const int argc, const char *const argv[])
 
             containsNaN(hostMoments, mesh, fileNameIndices[timeStep]);
         }
-
-        std::cout << "End" << std::endl;
-        std::cout << std::endl;
     }
 
     if (calculationTypeString == "spatialMean")
     {
         // Get the time indices
-        const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
+        const std::vector<host::label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
 
-        for (label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
+        for (host::label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
         {
             // We should check for field names here. Currently we are just doing the default fields
             const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
@@ -100,9 +97,6 @@ int main(const int argc, const char *const argv[])
 
             spatialMean(hostMoments, mesh, fileNameIndices[timeStep]);
         }
-
-        std::cout << "End" << std::endl;
-        std::cout << std::endl;
     }
 
     if (calculationTypeString == "vorticity")
@@ -114,11 +108,11 @@ int main(const int argc, const char *const argv[])
         const std::unordered_map<name_t, postProcess::writerFunction>::const_iterator it = postProcess::writers.find(conversion);
 
         // Get the time indices
-        const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
+        const std::vector<host::label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
 
         if (it != postProcess::writers.end())
         {
-            for (label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
+            for (host::label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
             {
                 // Get the file name at the present time step
                 const name_t fileName = "vorticity_" + std::to_string(fileNameIndices[timeStep]);
@@ -138,9 +132,6 @@ int main(const int argc, const char *const argv[])
                 writer({omega[0], omega[1], omega[2], magomega}, fileName, mesh, {"omega_x", "omega_y", "omega_z", "mag[omega]"});
             }
         }
-
-        std::cout << "End" << std::endl;
-        std::cout << std::endl;
     }
 
     if (calculationTypeString == "div[U]")
@@ -152,11 +143,11 @@ int main(const int argc, const char *const argv[])
         const std::unordered_map<name_t, postProcess::writerFunction>::const_iterator it = postProcess::writers.find(conversion);
 
         // Get the time indices
-        const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
+        const std::vector<host::label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
 
         if (it != postProcess::writers.end())
         {
-            for (label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
+            for (host::label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
             {
                 // Get the file name at the present time step
                 const name_t fileName = "div[U]_" + std::to_string(fileNameIndices[timeStep]);
@@ -175,12 +166,9 @@ int main(const int argc, const char *const argv[])
                 writer({divu}, fileName, mesh, {"div[U]"});
             }
         }
-
-        std::cout << "End" << std::endl;
-        std::cout << std::endl;
     }
 
-    // constexpr label_t IntegrationOrder = 2;
+    // constexpr host::label_t IntegrationOrder = 2;
 
     // // Integrate the vorticity in all axes
     // const std::vector<scalar_t> int_omega_x = integral(integrate_x<IntegrationOrder, scalar_t>(omega[0], mesh));

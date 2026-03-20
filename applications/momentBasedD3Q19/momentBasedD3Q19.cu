@@ -51,9 +51,9 @@ SourceFiles
 
 using namespace LBM;
 
-__host__ [[nodiscard]] inline consteval label_t NStreams() noexcept { return 1; }
+__host__ [[nodiscard]] inline consteval device::label_t NStreams() noexcept { return 1; }
 
-constexpr const label_t VirtualDeviceIndex = 0;
+constexpr const device::label_t VirtualDeviceIndex = 0;
 
 int main(const int argc, const char *const argv[])
 {
@@ -102,11 +102,11 @@ int main(const int argc, const char *const argv[])
 
     BlockHalo blockHalo(mesh, programCtrl);
 
-    kernel::configure<smem_alloc_size()>(momentBasedD3Q19);
+    programCtrl.configure<smem_alloc_size()>(momentBasedD3Q19);
 
     const runTimeIO IO(mesh, programCtrl);
 
-    for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
+    for (host::label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
         // Do the run-time IO
         if (programCtrl.print(timeStep))
@@ -150,7 +150,7 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.fGhost(VirtualDeviceIndex), blockHalo.gGhost(VirtualDeviceIndex));
+                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.readBuffer(VirtualDeviceIndex), blockHalo.writeBuffer(VirtualDeviceIndex));
             });
 
         // Calculate S kernel

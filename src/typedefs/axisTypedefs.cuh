@@ -66,12 +66,25 @@ namespace LBM
         } type;
 
         /**
+         * @brief Enumerated type for indexing pointers to halos
+         **/
+        typedef enum pointerIndexEnum : host::label_t
+        {
+            West = 0,
+            East = 1,
+            South = 2,
+            North = 3,
+            Back = 4,
+            Front = 5
+        } pointerIndex_t;
+
+        /**
          * @brief Returns axis directions orthogonal to alpha
          * @tparam alpha The axis direction
          * @tparam i The index of the orthogonal axis (must be 0 or 1)
          * @returns One of two axis directions orthogonal to alpha
          **/
-        template <const axis::type alpha, const label_t i>
+        template <const axis::type alpha, const device::label_t i>
         __device__ __host__ [[nodiscard]] inline consteval axis::type orthogonal() noexcept
         {
             static_assert(i < 2, "Index of axis orthogonal to alpha must be < 2");

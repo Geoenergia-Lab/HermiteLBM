@@ -62,7 +62,7 @@ namespace LBM
              * @brief Get number of discrete velocity directions
              * @return 27 (number of directions in D3Q27 lattice)
              **/
-            template <typename T = label_t>
+            template <typename T = host::label_t>
             __device__ __host__ [[nodiscard]] static inline consteval T Q() noexcept
             {
                 return 27;
@@ -72,7 +72,7 @@ namespace LBM
              * @brief Get number of velocity components on a lattice face
              * @return 9 (number of directions crossing each face in D3Q27)
              **/
-            template <typename T = label_t>
+            template <typename T = host::label_t>
             __device__ __host__ [[nodiscard]] static inline consteval T QF() noexcept
             {
                 return 9;
@@ -106,7 +106,7 @@ namespace LBM
          * @brief Get number of discrete velocity directions
          * @return 27 (number of directions in D3Q27 lattice)
          **/
-        template <typename T = label_t>
+        template <typename T = host::label_t>
         __device__ __host__ [[nodiscard]] static inline consteval T Q() noexcept
         {
             return vs::Q<T>();
@@ -116,7 +116,7 @@ namespace LBM
          * @brief Get number of velocity components on a lattice face
          * @return 9 (number of directions crossing each face in D3Q27)
          **/
-        template <typename T = label_t>
+        template <typename T = host::label_t>
         __device__ __host__ [[nodiscard]] static inline consteval T QF() noexcept
         {
             return vs::QF<T>();
@@ -174,7 +174,7 @@ namespace LBM
          * @param[in] q Direction index as compile-time constant
          * @return Weight for specified direction
          **/
-        template <typename T, const label_t q_>
+        template <typename T, const device::label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval T w_q(const q_i<q_> q) noexcept
         {
             // Return the component
@@ -197,7 +197,7 @@ namespace LBM
          * @param[in] q Direction index as compile-time constant
          * @return x-component for specified direction
          **/
-        template <typename T, const label_t q_>
+        template <typename T, const device::label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval T cx(const q_i<q_> q) noexcept
         {
             // Return the component
@@ -220,7 +220,7 @@ namespace LBM
          * @param[in] q Direction index as compile-time constant
          * @return y-component for specified direction
          **/
-        template <typename T, const label_t q_>
+        template <typename T, const device::label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval T cy(const q_i<q_> q) noexcept
         {
             // Return the component
@@ -243,7 +243,7 @@ namespace LBM
          * @param[in] q Direction index as compile-time constant
          * @return z-component for specified direction
          **/
-        template <typename T, const label_t q_>
+        template <typename T, const device::label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval T cz(const q_i<q_> q) noexcept
         {
             // Return the component
@@ -261,8 +261,8 @@ namespace LBM
 
             if constexpr (alpha == axis::NO_DIRECTION)
             {
-                thread::array<T, vs::Q()> result;
-                for (std::size_t i = 0; i < vs::Q(); i++)
+                thread::array<T, Q()> result;
+                for (host::label_t i = 0; i < Q(); i++)
                 {
                     result[i] = 1;
                 }
@@ -290,7 +290,7 @@ namespace LBM
         template <const bool CalculateRest = true>
         __device__ __host__ static inline void reconstruct(
             thread::array<scalar_t, vs::Q()> &pop,
-            const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+            const thread::array<scalar_t, NUMBER_MOMENTS<host::label_t>()> &moments) noexcept
         {
             const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()]);
 
@@ -339,7 +339,7 @@ namespace LBM
          * @param[in] moments Moment array (10 components)
          * @return Population array with 27 components
          **/
-        __device__ __host__ [[nodiscard]] static inline thread::array<scalar_t, vs::Q()> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ __host__ [[nodiscard]] static inline thread::array<scalar_t, vs::Q()> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS<host::label_t>()> &moments) noexcept
         {
             thread::array<scalar_t, vs::Q()> pop;
 
@@ -365,7 +365,7 @@ namespace LBM
          * @brief Implementation of the print loop
          * @note This function effectively unrolls the loop at compile-time and checks for its bounds
          **/
-        template <const label_t q_ = 0>
+        template <const device::label_t q_ = 0>
         __host__ static inline void printAll(const q_i<q_> q = q_i<0>()) noexcept
         {
             // Loop over the velocity set, print to terminal

@@ -81,7 +81,7 @@ namespace LBM
          * If the error is non-zero, the program terminates with the provided
          * error code and message.
          **/
-        [[nodiscard]] errorHandler(const int err, const std::string &errorString) noexcept
+        [[nodiscard]] errorHandler(const int err, const name_t &errorString) noexcept
         {
             check(err, errorString);
         }
@@ -100,6 +100,10 @@ namespace LBM
         {
             checkImpl(err, loc);
         }
+        static inline void checkLast(const std::source_location &loc = std::source_location::current()) noexcept
+        {
+            check(cudaGetLastError(), loc);
+        }
 
         /**
          * @brief Inline version of check(cudaError_t).
@@ -111,6 +115,10 @@ namespace LBM
         static inline void checkInline(const cudaError_t err, const std::source_location &loc = std::source_location::current()) noexcept
         {
             checkImpl(err, loc);
+        }
+        static inline void checkLastInline(const std::source_location &loc = std::source_location::current()) noexcept
+        {
+            checkInline(cudaGetLastError(), loc);
         }
 
         /**

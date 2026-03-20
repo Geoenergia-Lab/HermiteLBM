@@ -68,9 +68,9 @@ namespace LBM
     using Collision = secondOrder;
     using BlockHalo = device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>;
 
-    __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept { return block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<std::size_t>()>(sizeof(scalar_t)); }
+    __device__ __host__ [[nodiscard]] inline consteval device::label_t smem_alloc_size() noexcept { return block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<host::label_t>()>(sizeof(scalar_t)); }
 
-    __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
+    __host__ [[nodiscard]] inline consteval device::label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
 #define launchBoundsD3Q27 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
 
     /**
@@ -80,8 +80,8 @@ namespace LBM
      **/
     launchBoundsD3Q27 __global__ void momentBasedD3Q27(
         const device::ptrCollection<10, scalar_t> devPtrs,
-        const device::ptrCollection<6, const scalar_t> fGhost,
-        const device::ptrCollection<6, scalar_t> gGhost)
+        const device::ptrCollection<6, const scalar_t> readBuffer,
+        const device::ptrCollection<6, scalar_t> writeBuffer)
     {
         const thread::coordinate Tx;
 
@@ -92,10 +92,10 @@ namespace LBM
         const device::pointCoordinate point(Tx, Bx);
 
         // Index into global arrays
-        const label_t idx = device::idx(Tx, Bx);
+        const device::label_t idx = device::idx(Tx, Bx);
 
         // Into block arrays
-        const label_t tid = block::idx(Tx);
+        const device::label_t tid = block::idx(Tx);
 
         // Always a multiple of 32, so no need to check this(I think)
         if constexpr (out_of_bounds_check())
@@ -121,7 +121,7 @@ namespace LBM
         device::constexpr_for<0, NUMBER_MOMENTS()>(
             [&](const auto moment)
             {
-                const label_t ID = tid * m_i<NUMBER_MOMENTS() + 1>() + m_i<moment>();
+                const device::label_t ID = tid * m_i<NUMBER_MOMENTS() + 1>() + m_i<moment>();
                 shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
                 if constexpr (moment == index::rho)
                 {
@@ -133,24 +133,27 @@ namespace LBM
                 }
             });
 
-        __syncthreads();
+        block::sync();
 
         // Reconstruct the population from the moments
-        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
+        thread::array<scalar_t, VelocitySet::Q()>
+            pop = VelocitySet::reconstruct(moments);
 
         // Save/pull from shared memory
         {
             // Save populations in shared memory
             streaming::save<VelocitySet>(pop, shared_buffer, tid);
 
-            __syncthreads();
+            block::sync();
 
             // Pull from shared memory
             streaming::pull<VelocitySet>(pop, shared_buffer, Tx);
-        }
 
-        // Load pop from global memory in cover nodes
-        BlockHalo::load(pop, fGhost, Tx, Bx, point);
+            // Pull pop from global memory in cover nodes
+            BlockHalo::pull(pop, readBuffer, Tx, Bx, point);
+
+            block::sync();
+        }
 
         if constexpr (std::is_same<BoundaryConditions, lidDrivenCavity>::value)
         {
@@ -178,12 +181,12 @@ namespace LBM
                 device::constexpr_for<0, NUMBER_MOMENTS()>(
                     [&](const auto moment)
                     {
-                        const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
+                        const device::label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
                         shared_buffer[ID] = moments[moment];
                     });
             }
 
-            __syncthreads();
+            block::sync();
 
             // Calculate the moments at the boundary
             {
@@ -217,8 +220,8 @@ namespace LBM
             });
 
         // Save the populations to the block halo
-        // BlockHalo::save_from_shared(shared_buffer, gGhost);
-        BlockHalo::save(pop, moments, gGhost, Tx, Bx, point);
+        // BlockHalo::save_from_shared(shared_buffer, writeBuffer);
+        BlockHalo::save(pop, moments, writeBuffer, Tx, Bx, point);
     }
 }
 

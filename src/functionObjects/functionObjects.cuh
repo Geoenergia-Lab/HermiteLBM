@@ -54,6 +54,8 @@ namespace LBM
 {
     namespace functionObjects
     {
+        using save_function_signature = std::function<void(const host::label_t)>;
+
         /**
          * @brief The names of the 10 solution variables of the moment representation
          **/
@@ -82,7 +84,7 @@ namespace LBM
             return fMean + (f - fMean) * invNewCount;
         }
 
-        template <typename T, const std::size_t N>
+        template <typename T, const host::label_t N>
         __device__ [[nodiscard]] inline constexpr const thread::array<T, N> timeAverage(const thread::array<T, N> &fMean, const thread::array<T, N> &f, const T invNewCount) noexcept
         {
             thread::array<T, N> newMean;

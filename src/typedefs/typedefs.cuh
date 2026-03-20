@@ -60,7 +60,7 @@ namespace LBM
 #define ptrRestrict __restrict__
 
     /**
-     * @brief Shorthand for std::string and std::vector<std::string>
+     * @brief Shorthand for name_t and words_t
      **/
     typedef std::string name_t;
     typedef std::vector<name_t> words_t;
@@ -145,13 +145,19 @@ namespace LBM
             }
         }
     }
+}
 
+#include "integralTypedefs.cuh"
+#include "arithmeticTypedefs.cuh"
+
+namespace LBM
+{
     /**
      * @brief Enumerated variable indices
      **/
     namespace index
     {
-        typedef enum Enum : std::size_t
+        typedef enum Enum : host::label_t
         {
             rho = 0,
             u = 1,
@@ -165,13 +171,7 @@ namespace LBM
             zz = 9
         } type;
     }
-}
 
-#include "integralTypedefs.cuh"
-#include "arithmeticTypedefs.cuh"
-
-namespace LBM
-{
     namespace types
     {
         namespace assertions
@@ -190,7 +190,7 @@ namespace LBM
                 }
                 if constexpr (std::is_integral_v<T>)
                 {
-                    static_assert(((std::is_same_v<T, uint32_t>) || (std::is_same_v<T, uint64_t>)), "Unsupported LABEL_SIZE value (must be 32 or 64)");
+                    static_assert(((std::is_same_v<T, uint32_t>) || (std::is_same_v<T, host::label_t>)), "Unsupported LABEL_SIZE value (must be 32 or 64)");
                 }
             }
         }
@@ -201,51 +201,31 @@ namespace LBM
 #include "velocityTypedefs.cuh"
 #include "ptrTypedefs.cuh"
 #include "var3.cuh"
-
-#include "../hardwareConfig.cuh"
-#include "../errorHandler.cuh"
+#include "coordinateTypedefs.cuh"
 
 namespace LBM
 {
-    /**
-     * @brief Struct used to represent 2D indices in a more readable way
-     **/
-    template <const axis::type alpha>
-    class dim2
+    namespace axis
     {
-    public:
-        /**
-         * @brief Constructs from a linear index of a flattened 2D array with dimensions (block::n<alpha>(), block::n<beta>())
-         * @param[in] linearIdx The linear index to convert to 2D indices
-         **/
-        __device__ __host__ [[nodiscard]] inline constexpr dim2(const label_t linearIdx) noexcept
-            : i_(linearIdx % (block::n<axis::orthogonal<alpha, 0>()>())),
-              j_(linearIdx / (block::n<axis::orthogonal<alpha, 0>()>()))
+        template <const axis::type alpha, const int coeff>
+        __host__ [[nodiscard]] static inline constexpr host::blockLabel to_3d(const host::label_t ta, const host::label_t tb) noexcept
         {
-            axis::assertions::validate<alpha, axis::NOT_NULL>();
-        };
+            if constexpr (alpha == axis::X)
+            {
+                return {thread::boundary<alpha, coeff>(), ta, tb};
+            }
 
-        __device__ __host__ [[nodiscard]] inline constexpr dim2(const label_t a, const label_t b) noexcept
-            : i_(a),
-              j_(b)
-        {
-            axis::assertions::validate<alpha, axis::NOT_NULL>();
-        };
+            if constexpr (alpha == axis::Y)
+            {
+                return {ta, thread::boundary<alpha, coeff>(), tb};
+            }
 
-        __device__ __host__ [[nodiscard]] inline constexpr label_t i() const noexcept
-        {
-            return i_;
+            if constexpr (alpha == axis::Z)
+            {
+                return {ta, tb, thread::boundary<alpha, coeff>()};
+            }
         }
-
-        __device__ __host__ [[nodiscard]] inline constexpr label_t j() const noexcept
-        {
-            return j_;
-        }
-
-    private:
-        const label_t i_;
-        const label_t j_;
-    };
+    }
 }
 
 #endif

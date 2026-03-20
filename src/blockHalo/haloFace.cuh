@@ -87,12 +87,12 @@ namespace LBM
                 const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl) noexcept
-                : x0_(initialise_pop<axis::X, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::X>()),
-                  x1_(initialise_pop<axis::X, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::X>()),
-                  y0_(initialise_pop<axis::Y, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Y>()),
-                  y1_(initialise_pop<axis::Y, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Y>()),
-                  z0_(initialise_pop<axis::Z, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Z>()),
-                  z1_(initialise_pop<axis::Z, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Z>()) {}
+                : West_(initialise_pop<axis::X, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::X>(), integralConstant<int, -1>()),
+                  East_(initialise_pop<axis::X, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::X>(), integralConstant<int, +1>()),
+                  South_(initialise_pop<axis::Y, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Y>(), integralConstant<int, -1>()),
+                  North_(initialise_pop<axis::Y, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Y>(), integralConstant<int, +1>()),
+                  Back_(initialise_pop<axis::Z, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Z>(), integralConstant<int, -1>()),
+                  Front_(initialise_pop<axis::Z, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Z>(), integralConstant<int, +1>()) {}
 
             /**
              * @brief Destructor - releases all allocated device memory
@@ -104,29 +104,29 @@ namespace LBM
              * @brief Provide const access to halo face data
              * @return Const pointer to halo face data
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *x0Const(const label_t i) const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *x0Const(const host::label_t i) const noexcept
             {
-                return x0_.constPtr(i);
+                return West_.constPtr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *x1Const(const label_t i) const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *x1Const(const host::label_t i) const noexcept
             {
-                return x1_.constPtr(i);
+                return East_.constPtr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *y0Const(const label_t i) const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *y0Const(const host::label_t i) const noexcept
             {
-                return y0_.constPtr(i);
+                return South_.constPtr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *y1Const(const label_t i) const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *y1Const(const host::label_t i) const noexcept
             {
-                return y1_.constPtr(i);
+                return North_.constPtr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *z0Const(const label_t i) const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *z0Const(const host::label_t i) const noexcept
             {
-                return z0_.constPtr(i);
+                return Back_.constPtr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *z1Const(const label_t i) const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *z1Const(const host::label_t i) const noexcept
             {
-                return z1_.constPtr(i);
+                return Front_.constPtr(i);
             }
 
             /**
@@ -134,29 +134,29 @@ namespace LBM
              * @brief Provide mutable access to halo face data
              * @return Pointer to halo face data
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *x0(const label_t i) noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *x0(const host::label_t i) noexcept
             {
-                return x0_.ptr(i);
+                return West_.ptr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *x1(const label_t i) noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *x1(const host::label_t i) noexcept
             {
-                return x1_.ptr(i);
+                return East_.ptr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *y0(const label_t i) noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *y0(const host::label_t i) noexcept
             {
-                return y0_.ptr(i);
+                return South_.ptr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *y1(const label_t i) noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *y1(const host::label_t i) noexcept
             {
-                return y1_.ptr(i);
+                return North_.ptr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *z0(const label_t i) noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *z0(const host::label_t i) noexcept
             {
-                return z0_.ptr(i);
+                return Back_.ptr(i);
             }
-            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *z1(const label_t i) noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr scalar_t *z1(const host::label_t i) noexcept
             {
-                return z1_.ptr(i);
+                return Front_.ptr(i);
             }
 
             /**
@@ -165,41 +165,41 @@ namespace LBM
              * @return Reference to pointer (used for buffer swapping)
              * @note These methods are specifically for pointer swapping and should not be used elsewhere
              **/
-            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & x0Ref(const label_t i) noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & x0Ref(const host::label_t i) noexcept
             {
-                return x0_.ptrRef(i);
+                return West_.ptrRef(i);
             }
-            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & x1Ref(const label_t i) noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & x1Ref(const host::label_t i) noexcept
             {
-                return x1_.ptrRef(i);
+                return East_.ptrRef(i);
             }
-            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & y0Ref(const label_t i) noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & y0Ref(const host::label_t i) noexcept
             {
-                return y0_.ptrRef(i);
+                return South_.ptrRef(i);
             }
-            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & y1Ref(const label_t i) noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & y1Ref(const host::label_t i) noexcept
             {
-                return y1_.ptrRef(i);
+                return North_.ptrRef(i);
             }
-            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & z0Ref(const label_t i) noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & z0Ref(const host::label_t i) noexcept
             {
-                return z0_.ptrRef(i);
+                return Back_.ptrRef(i);
             }
-            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & z1Ref(const label_t i) noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t * ptrRestrict & z1Ref(const host::label_t i) noexcept
             {
-                return z1_.ptrRef(i);
+                return Front_.ptrRef(i);
             }
 
         private:
             /**
              * @brief Halo face arrays
              **/
-            device::array<field::SKELETON, scalar_t, VelocitySet, time::instantaneous> x0_;
-            device::array<field::SKELETON, scalar_t, VelocitySet, time::instantaneous> x1_;
-            device::array<field::SKELETON, scalar_t, VelocitySet, time::instantaneous> y0_;
-            device::array<field::SKELETON, scalar_t, VelocitySet, time::instantaneous> y1_;
-            device::array<field::SKELETON, scalar_t, VelocitySet, time::instantaneous> z0_;
-            device::array<field::SKELETON, scalar_t, VelocitySet, time::instantaneous> z1_;
+            device::array<field::SKELETON, scalar_t, VelocitySet, time::instantaneous> West_;
+            device::array<field::SKELETON, scalar_t, VelocitySet, time::instantaneous> East_;
+            device::array<field::SKELETON, scalar_t, VelocitySet, time::instantaneous> South_;
+            device::array<field::SKELETON, scalar_t, VelocitySet, time::instantaneous> North_;
+            device::array<field::SKELETON, scalar_t, VelocitySet, time::instantaneous> Back_;
+            device::array<field::SKELETON, scalar_t, VelocitySet, time::instantaneous> Front_;
 
             /**
              * @brief Initialize population data for a specific halo face
@@ -223,41 +223,30 @@ namespace LBM
                 const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh) const noexcept
             {
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::haloFace::initialise_pop, "Need to sort out indexing and decomposition between devices"));
-
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
 
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
-                std::vector<scalar_t> face(mesh.nFacesPerDevice<alpha, VelocitySet::QF()>(), 0);
+                std::vector<scalar_t> face(mesh.nFaces<alpha, VelocitySet::QF()>(), 0);
 
-                // I think it is correct for this loop to be global
-                // Because the initial conditions and file that we read from are already GPU-ordered
-                host::forAll(
-                    mesh.nBlocks(),
-                    [&](const label_t bx, const label_t by, const label_t bz,
-                        const label_t tx, const label_t ty, const label_t tz)
+                // Loop over all the blocks of the global domain
+                for (host::label_t bz = 0; bz < mesh.nBlocks<axis::Z>(); bz++)
+                {
+                    for (host::label_t by = 0; by < mesh.nBlocks<axis::Y>(); by++)
                     {
-                        const label_t base = host::idx(tx, ty, tz, bx, by, bz, mesh);
-
-                        // Handle ghost cells
-                        handleGhostCells<alpha, coeff>(
-                            face,
-                            VelocitySet::reconstruct(
-                                {rho[base] + rho0(),
-                                 u[base],
-                                 v[base],
-                                 w[base],
-                                 m_xx[base],
-                                 m_xy[base],
-                                 m_xz[base],
-                                 m_yy[base],
-                                 m_yz[base],
-                                 m_zz[base]}),
-                            tx, ty, tz,
-                            bx, by, bz,
-                            mesh);
-                    });
+                        for (host::label_t bx = 0; bx < mesh.nBlocks<axis::X>(); bx++)
+                        {
+                            // Handle the ghost cells for this block
+                            const host::blockLabel Bx(bx, by, bz);
+                            handleGhostCells<alpha, coeff>(
+                                face,
+                                rho,
+                                u, v, w,
+                                m_xx, m_xy, m_xz, m_yy, m_yz, m_zz,
+                                Bx, mesh);
+                        }
+                    }
+                }
 
                 return face;
             }
@@ -278,26 +267,60 @@ namespace LBM
             template <const axis::type alpha, const int coeff>
             __host__ static void handleGhostCells(
                 std::vector<scalar_t> &face,
-                const thread::array<scalar_t, VelocitySet::Q()> &pop,
-                const label_t tx, const label_t ty, const label_t tz,
-                const label_t bx, const label_t by, const label_t bz,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &rho,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &u,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &v,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &w,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xx,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xy,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_xz,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_yy,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_yz,
+                const host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous> &m_zz,
+                const host::blockLabel &Bx,
                 const host::latticeMesh &mesh) noexcept
             {
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::haloFace::handleGhostCells, "Potential issue with indexing: idxPop needs to be adapted to multi GPU."));
-
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
 
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
-                constexpr const thread::array<label_t, VelocitySet::QF()> indices = velocitySet::template indices_on_face<VelocitySet, alpha, coeff>();
+                constexpr const thread::array<host::label_t, VelocitySet::QF()> indices = velocitySet::template indices_on_face<VelocitySet, alpha, coeff>();
 
-                for (label_t i = 0; i < VelocitySet::QF(); i++)
+                // For all velocity coefficients on this face
+                for (host::label_t i = 0; i < VelocitySet::QF(); i++)
                 {
-                    face[host::idxPop<alpha, VelocitySet::QF()>(
-                        i,
-                        tx, ty, tz,
-                        bx, by, bz,
-                        mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>())] = pop[indices[i]];
+                    // Second perpendicular axis
+                    for (host::label_t tb = 0; tb < block::n<axis::orthogonal<alpha, 1>(), host::label_t>(); tb++)
+                    {
+                        // First perpendicular axis
+                        for (host::label_t ta = 0; ta < block::n<axis::orthogonal<alpha, 0>(), host::label_t>(); ta++)
+                        {
+                            // Recover the 3D thread coordinates from the orthogonals, the axis and the normal coefficient
+                            const host::blockLabel Tx = axis::to_3d<alpha, coeff>(ta, tb);
+
+                            const host::label_t base = host::idx(Tx, Bx, mesh);
+
+                            const thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(
+                                {rho[base] + rho0(),
+                                 u[base],
+                                 v[base],
+                                 w[base],
+                                 m_xx[base],
+                                 m_xy[base],
+                                 m_xz[base],
+                                 m_yy[base],
+                                 m_yz[base],
+                                 m_zz[base]});
+
+                            const host::label_t j = host::idxPop<alpha, VelocitySet::QF()>(i, Tx, Bx, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
+
+                            if (j >= face.size())
+                            {
+                                std::cout << j << " is greater than " << face.size() << std::endl;
+                            }
+                            face[j] = pop[indices[i]];
+                        }
+                    }
                 }
             }
         };

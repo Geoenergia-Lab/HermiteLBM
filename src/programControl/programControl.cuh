@@ -53,7 +53,7 @@ SourceFiles
 #include "../LBMIncludes.cuh"
 #include "../typedefs/typedefs.cuh"
 #include "../strings.cuh"
-#include "../inputControl.cuh"
+#include "inputControl.cuh"
 #include "../fileIO/fileIO.cuh"
 
 namespace LBM
@@ -72,13 +72,13 @@ namespace LBM
               Re_(initialiseConst<scalar_t>("Re")),
               u_inf_(initialiseConst<scalar_t>("u_inf")),
               L_char_(initialiseConst<scalar_t>("L_char")),
-              nTimeSteps_(string::extractParameter<label_t>(string::readFile("programControl"), "nTimeSteps")),
-              saveInterval_(string::extractParameter<label_t>(string::readFile("programControl"), "saveInterval")),
-              infoInterval_(string::extractParameter<label_t>(string::readFile("programControl"), "infoInterval")),
+              nTimeSteps_(string::extractParameter<host::label_t>(string::readFile("programControl"), "nTimeSteps")),
+              saveInterval_(string::extractParameter<host::label_t>(string::readFile("programControl"), "saveInterval")),
+              infoInterval_(string::extractParameter<host::label_t>(string::readFile("programControl"), "infoInterval")),
               latestTime_(fileIO::latestTime(caseName_))
         {
             types::assertions::validate<scalar_t>();
-            types::assertions::validate<label_t>();
+            types::assertions::validate<device::label_t>();
 
             // Get the launch time
             const time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -100,15 +100,15 @@ namespace LBM
             std::cout << "    programName: " << input_.commandLine()[0] << ";" << std::endl;
             std::cout << "    launchTime: " << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S") << ";" << std::endl;
             std::cout << "    launchDirectory: " << launchDirectory.string() << ";" << std::endl;
-            std::cout << "    deviceList: [";
-            if (deviceList().size() > 1)
+            if (deviceList().size() > 0)
             {
-                for (label_t i = 0; i < deviceList().size() - 1; i++)
+                std::cout << "    deviceList: [";
+
+                for (host::label_t i = 0; i < deviceList().size() - 1; i++)
                 {
                     std::cout << deviceList()[i] << ", ";
                 }
             }
-            std::cout << deviceList()[deviceList().size() - 1] << "];" << std::endl;
             std::cout << "    caseName: " << caseName_ << ";" << std::endl;
             std::cout << "    Re = " << Re_ << ";" << std::endl;
             std::cout << "    nTimeSteps = " << nTimeSteps_ << ";" << std::endl;
@@ -116,40 +116,57 @@ namespace LBM
             std::cout << "    infoInterval = " << infoInterval_ << ";" << std::endl;
             std::cout << "    latestTime = " << latestTime_ << ";" << std::endl;
             std::cout << "    scalarSize: " << sizeof(scalar_t) * 8 << ";" << std::endl;
-            std::cout << "    labelType: uint" << sizeof(label_t) * 8 << "_t" << ";" << std::endl;
+            std::cout << "    labelType: uint" << sizeof(device::label_t) * 8 << "_t" << ";" << std::endl;
             std::cout << "};" << std::endl;
             std::cout << std::endl;
 
-            for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList().size(); virtualDeviceIndex++)
+            if (deviceList().size() > 0)
             {
-                errorHandler::check(cudaSetDevice(deviceList()[virtualDeviceIndex]));
+                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList().size(); virtualDeviceIndex++)
+                {
+                    errorHandler::check(cudaSetDevice(deviceList()[virtualDeviceIndex]));
 
-                // Allocate symbols on the GPU
-                const scalar_t viscosityTemp = u_inf() * L_char() / Re();
-                const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
-                const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTemp;
-                const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
-                const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
+                    // Allocate symbols on the GPU
+                    const scalar_t viscosityTemp = u_inf() * L_char() / Re();
+                    const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
+                    const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTemp;
+                    const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
+                    const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
 
-                device::copyToSymbol(device::L_char, L_char());
-                device::copyToSymbol(device::Re, Re());
-                device::copyToSymbol(device::tau, tauTemp);
-                device::copyToSymbol(device::omega, omegaTemp);
-                device::copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
-                device::copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
+                    device::copyToSymbol(device::L_char, L_char());
+                    device::copyToSymbol(device::Re, Re());
+                    device::copyToSymbol(device::tau, tauTemp);
+                    device::copyToSymbol(device::omega, omegaTemp);
+                    device::copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
+                    device::copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
+                }
             }
 
             // Make sure we synchronize and set active device to 0
             // Probably unnecessary but nice to do it anyway
-            errorHandler::check(cudaDeviceSynchronize());
-            errorHandler::check(cudaSetDevice(deviceList()[0]));
-            errorHandler::check(cudaDeviceSynchronize());
+            if (deviceList().size() > 0)
+            {
+                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::check(cudaSetDevice(deviceList()[0]));
+                errorHandler::check(cudaDeviceSynchronize());
+            }
         };
 
         /**
          * @brief Destructor for the programControl class
          **/
-        ~programControl() noexcept {}
+        ~programControl() noexcept
+        {
+            std::cout << std::endl;
+            std::cout << "End" << std::endl;
+            std::cout << std::endl;
+        }
+
+        /**
+         * @brief Disable copying
+         **/
+        __host__ [[nodiscard]] programControl(const programControl &) = delete;
+        __host__ [[nodiscard]] programControl &operator=(const programControl &) = delete;
 
         /**
          * @brief Returns the name of the case
@@ -200,17 +217,16 @@ namespace LBM
          * @brief Returns the total number of simulation time steps
          * @return The total number of simulation time steps
          **/
-        template <typename T = label_t>
-        __device__ __host__ [[nodiscard]] inline constexpr T nt() const noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr host::label_t nt() const noexcept
         {
-            return static_cast<T>(nTimeSteps_);
+            return nTimeSteps_;
         }
 
         /**
          * @brief Decide whether or not the program should perform a checkpoint
          * @return True if the program should checkpoint, false otherwise
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr bool save(const label_t timeStep) const noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr bool save(const host::label_t timeStep) const noexcept
         {
             return (timeStep % saveInterval_) == 0;
         }
@@ -219,19 +235,18 @@ namespace LBM
          * @brief Decide whether or not the program should perform a checkpoint
          * @return True if the program should checkpoint, false otherwise
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr bool print(const label_t timeStep) const noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr bool print(const host::label_t timeStep) const noexcept
         {
             return (timeStep % infoInterval_) == 0;
         }
 
         /**
          * @brief Returns the latest time step of the solution files contained within the current directory
-         * @return The latest time step as a label_t
+         * @return The latest time step as a host::label_t
          **/
-        template <typename T = label_t>
-        __device__ __host__ [[nodiscard]] inline constexpr T latestTime() const noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr host::label_t latestTime() const noexcept
         {
-            return static_cast<T>(latestTime_);
+            return latestTime_;
         }
 
         /**
@@ -252,7 +267,7 @@ namespace LBM
         {
             if (input_.isArgPresent(argument))
             {
-                for (label_t arg = 0; arg < commandLine().size(); arg++)
+                for (host::label_t arg = 0; arg < commandLine().size(); arg++)
                 {
                     if (commandLine()[arg] == argument)
                     {
@@ -278,6 +293,27 @@ namespace LBM
         __host__ [[nodiscard]] inline constexpr const words_t &commandLine() const noexcept
         {
             return input_.commandLine();
+        }
+
+        /**
+         * @brief Configures a kernel function to prefer shared memory and sets its dynamic shared memory size
+         * @tparam smem_alloc_size The amount of shared memory (in bytes) to allocate for the kernel
+         * @tparam T The function type (e.g., a lambda or a function pointer)
+         * @param[in] func The kernel function to configure
+         **/
+        template <const host::label_t smem_alloc_size, class T>
+        __host__ void configure(T *func) const
+        {
+            for (host::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < deviceList().size(); VirtualDeviceIndex++)
+            {
+                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::check(cudaSetDevice(deviceList()[VirtualDeviceIndex]));
+                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::check(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
+                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::check(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
+                errorHandler::check(cudaDeviceSynchronize());
+            }
         }
 
     private:
@@ -309,10 +345,10 @@ namespace LBM
         /**
          * @brief Total number of simulation time steps, the save interval, info output interval and the latest time step at program start
          **/
-        const label_t nTimeSteps_;
-        const label_t saveInterval_;
-        const label_t infoInterval_;
-        const label_t latestTime_;
+        const host::label_t nTimeSteps_;
+        const host::label_t saveInterval_;
+        const host::label_t infoInterval_;
+        const host::label_t latestTime_;
 
         /**
          * @brief Reads a variable from the caseInfo file into a parameter of type T

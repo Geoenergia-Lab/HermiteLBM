@@ -104,7 +104,7 @@ namespace LBM
                 const bool allocate = true)
                 : arrayBase<T>(
                       This::allocate_on_devices(
-                          hostArray.mesh(), hostArray.data(), allocate, programCtrl),
+                          hostArray, allocate, programCtrl),
                       hostArray.mesh(),
                       programCtrl),
                   name_(hostArray.name()),
@@ -164,7 +164,7 @@ namespace LBM
 
             /**
              * @brief Get read-only pointer to device memory for a given GPU.
-             * @tparam Idx Type that can be converted to label_t.
+             * @tparam Idx Type that can be converted to device::label_t.
              * @param[in] idx Virtual device index.
              * @return Const pointer to device memory.
              **/
@@ -176,7 +176,7 @@ namespace LBM
 
             /**
              * @brief Get mutable pointer to device memory for a given GPU.
-             * @tparam Idx Type that can be converted to label_t.
+             * @tparam Idx Type that can be converted to device::label_t.
              * @param[in] idx Virtual device index.
              * @return Pointer to device memory.
              **/
@@ -206,13 +206,12 @@ namespace LBM
 
             /**
              * @brief Get total number of elements (mesh points).
-             * @tparam SizeType Desired return type (default label_t).
+             * @tparam SizeType Desired return type (default device::label_t).
              * @return Number of elements.
              **/
-            template <typename SizeType = label_t>
-            __host__ [[nodiscard]] inline constexpr SizeType size() const noexcept
+            __host__ [[nodiscard]] inline constexpr host::label_t size() const noexcept
             {
-                return mesh_.template nPoints<SizeType>();
+                return mesh_.nPoints();
             }
 
             /**
@@ -228,7 +227,7 @@ namespace LBM
              * @brief Get the current averaging count (for time‑averaged fields).
              * @return Number of time steps averaged so far.
              **/
-            __host__ [[nodiscard]] inline constexpr label_t meanCount() const noexcept
+            __host__ [[nodiscard]] inline constexpr host::label_t meanCount() const noexcept
             {
                 return meanCount_;
             }
@@ -237,7 +236,7 @@ namespace LBM
              * @brief Get a reference to the averaging count (for modification).
              * @return Reference to meanCount_.
              **/
-            __host__ [[nodiscard]] inline constexpr label_t &meanCountRef() noexcept
+            __host__ [[nodiscard]] inline constexpr host::label_t &meanCountRef() noexcept
             {
                 return meanCount_;
             }
@@ -249,15 +248,13 @@ namespace LBM
              **/
             __host__ void copy_to_host(T *const ptrRestrict hostPtr)
             {
-                static_assert(MULTI_GPU_ASSERTION());
+                const host::label_t nPointsPerDevice = mesh_.template sizePerDevice<host::label_t>();
 
-                const std::size_t nPointsPerDevice = mesh_.template sizePerDevice<std::size_t>();
+                const host::label_t nDevices = mesh_.template nDevices<host::label_t>();
 
-                const std::size_t nDevices = mesh_.template nDevices<std::size_t>();
-
-                for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < nDevices; ++virtualDeviceIndex)
+                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < nDevices; ++virtualDeviceIndex)
                 {
-                    const label_t startIndex = virtualDeviceIndex * nPointsPerDevice;
+                    const host::label_t startIndex = virtualDeviceIndex * nPointsPerDevice;
                     errorHandler::check(cudaMemcpy(&(hostPtr[startIndex]), ptr_[virtualDeviceIndex], nPointsPerDevice * sizeof(T), cudaMemcpyDeviceToHost));
                 }
             }
@@ -271,7 +268,7 @@ namespace LBM
             /**
              * @brief Number of time steps averaged over (for time‑averaged fields)
              **/
-            label_t meanCount_;
+            host::label_t meanCount_;
 
             /**
              * @brief Allocate all GPU segments for a full field from a raw host pointer.
@@ -286,7 +283,7 @@ namespace LBM
                 const T *hostArrayGlobal,
                 const bool allocate,
                 const programControl &programCtrl,
-                const label_t allocationSize)
+                const host::label_t allocationSize)
             {
                 return (allocate) ? (arrayBase<T>::allocate_on_devices(mesh, hostArrayGlobal, programCtrl, allocationSize)) : (nullptr);
             }
@@ -339,7 +336,7 @@ namespace LBM
                 const bool allocate,
                 const programControl &programCtrl)
             {
-                const std::vector<T> toAllocate(static_cast<std::size_t>(allocate) * mesh.size<std::size_t>(), val);
+                const std::vector<T> toAllocate(static_cast<host::label_t>(allocate) * mesh.size(), val);
                 return This::allocate_on_devices(mesh, toAllocate.data(), allocate, programCtrl, mesh.sizePerDevice());
             }
 
@@ -352,11 +349,9 @@ namespace LBM
                 const name_t &name,
                 const std::vector<deviceIndex_t> &deviceList) noexcept
             {
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::array::initialise_boundary_condition, "Believed to be correct"));
-
                 if ((name == "u") || (name == "v") || (name == "w"))
                 {
-                    const label_t i = (name == "u") ? 0 : ((name == "v") ? 1 : 2);
+                    const device::label_t i = (name == "u") ? 0 : ((name == "v") ? 1 : 2);
 
                     const boundaryValue<VelocitySet, false> North(name, "North");
                     const boundaryValue<VelocitySet, false> South(name, "South");
@@ -365,7 +360,7 @@ namespace LBM
                     const boundaryValue<VelocitySet, false> Back(name, "Back");
                     const boundaryValue<VelocitySet, false> Front(name, "Front");
 
-                    for (std::size_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList.size(); ++virtualDeviceIndex)
+                    for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList.size(); ++virtualDeviceIndex)
                     {
                         errorHandler::check(cudaSetDevice(deviceList[virtualDeviceIndex]));
                         device::copyToSymbol(device::U_North, North(), i);

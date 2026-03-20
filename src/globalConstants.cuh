@@ -50,12 +50,14 @@ SourceFiles
 #ifndef __MBLBM_GLOBALCONSTANTS_CUH
 #define __MBLBM_GLOBALCONSTANTS_CUH
 
+#include "errorHandler.cuh"
+
 namespace LBM
 {
     /**
      * @brief Number of hydrodynamic moments
      **/
-    template <typename T = label_t>
+    template <typename T = device::label_t>
     __device__ __host__ [[nodiscard]] inline consteval T NUMBER_MOMENTS() noexcept
     {
         return 10;
@@ -95,65 +97,15 @@ namespace LBM
         /**
          * @brief Mesh constant variables
          **/
-        __device__ __constant__ label_t nx;
-        __device__ __constant__ label_t ny;
-        __device__ __constant__ label_t nz;
-        __device__ __constant__ label_t NUM_BLOCK_X;
-        __device__ __constant__ label_t NUM_BLOCK_Y;
-        __device__ __constant__ label_t NUM_BLOCK_Z;
-        __device__ __constant__ label_t BLOCK_OFFSET_X;
-        __device__ __constant__ label_t BLOCK_OFFSET_Y;
-        __device__ __constant__ label_t BLOCK_OFFSET_Z;
-
-        /**
-         * @brief Returns the global mesh size in a particular axis direction
-         * @tparam alpha The axis
-         **/
-        template <axis::type alpha>
-        __device__ [[nodiscard]] inline constexpr label_t n() noexcept
-        {
-            axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-            if constexpr (alpha == axis::X)
-            {
-                return nx;
-            }
-
-            if constexpr (alpha == axis::Y)
-            {
-                return ny;
-            }
-
-            if constexpr (alpha == axis::Z)
-            {
-                return nz;
-            }
-        }
-
-        /**
-         * @brief Returns the number of mesh blocks per GPU in a particular axis direction
-         * @tparam alpha The axis
-         **/
-        template <axis::type alpha>
-        __device__ [[nodiscard]] inline constexpr label_t NUM_BLOCK() noexcept
-        {
-            axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-            if constexpr (alpha == axis::X)
-            {
-                return NUM_BLOCK_X;
-            }
-
-            if constexpr (alpha == axis::Y)
-            {
-                return NUM_BLOCK_Y;
-            }
-
-            if constexpr (alpha == axis::Z)
-            {
-                return NUM_BLOCK_Z;
-            }
-        }
+        __device__ __constant__ device::label_t nx;
+        __device__ __constant__ device::label_t ny;
+        __device__ __constant__ device::label_t nz;
+        __device__ __constant__ device::label_t NUM_BLOCK_X;
+        __device__ __constant__ device::label_t NUM_BLOCK_Y;
+        __device__ __constant__ device::label_t NUM_BLOCK_Z;
+        __device__ __constant__ device::label_t BLOCK_OFFSET_X;
+        __device__ __constant__ device::label_t BLOCK_OFFSET_Y;
+        __device__ __constant__ device::label_t BLOCK_OFFSET_Z;
 
         /**
          * @brief Allocates a symbol of type T to the device
@@ -169,7 +121,7 @@ namespace LBM
             errorHandler::check(cudaDeviceSynchronize());
         }
 
-        template <typename T, const std::size_t N>
+        template <typename T, const host::label_t N>
         void copyToSymbol(const T (&symbol)[N], const T (&value)[N])
         {
             errorHandler::check(cudaDeviceSynchronize());
@@ -177,16 +129,16 @@ namespace LBM
             errorHandler::check(cudaDeviceSynchronize());
         }
 
-        template <typename T, const std::size_t N>
-        void copyToSymbol(const T (&symbol)[N], const T value, const label_t index)
+        template <typename T, const host::label_t N, typename SizeType>
+        void copyToSymbol(const T (&symbol)[N], const T value, const SizeType index)
         {
-            if (index >= N)
+            if (static_cast<host::label_t>(index) >= N)
             {
                 throw std::runtime_error("Error setting device symbol index" + std::to_string(index) + " out of bounds for array of size " + std::to_string(N) + ".");
             }
             errorHandler::check(cudaDeviceSynchronize());
             const T valueTemp = value;
-            errorHandler::check(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), static_cast<std::size_t>(index) * sizeof(T), cudaMemcpyHostToDevice));
+            errorHandler::check(cudaMemcpyToSymbol(symbol, &valueTemp, static_cast<host::label_t>(sizeof(T)), static_cast<host::label_t>(index) * static_cast<host::label_t>(sizeof(T)), cudaMemcpyHostToDevice));
             errorHandler::check(cudaDeviceSynchronize());
         }
     }

@@ -89,17 +89,20 @@ namespace LBM
          * - Total elapsed time in HH:MM:SS format
          * - MLUPS (Million Lattice Updates Per Second) performance metric
          **/
-        ~runTimeIO()
+        inline ~runTimeIO() noexcept
         {
             const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
             std::cout << std::endl;
             std::cout << "Elapsed time: " << runTimeIO::duration(std::chrono::duration_cast<std::chrono::seconds>(end - start_).count()) << std::endl;
             std::cout << std::endl;
             std::cout << "MLUPS: " << runTimeIO::MLUPS<double>(mesh_, programCtrl_, start_, end) << std::endl;
-            std::cout << std::endl;
-            std::cout << "End" << std::endl;
-            std::cout << std::endl;
         };
+
+        /**
+         * @brief Disable copying
+         **/
+        __host__ [[nodiscard]] runTimeIO(const runTimeIO &) = delete;
+        __host__ [[nodiscard]] runTimeIO &operator=(const runTimeIO &) = delete;
 
         /**
          * @brief Formats a duration in seconds into HH:MM:SS string format
@@ -153,13 +156,13 @@ namespace LBM
                 return 0;
             }
 
-            const uint64_t nPoints = mesh.dimension<axis::X, uint64_t>() * mesh.dimension<axis::Y, uint64_t>() * mesh.dimension<axis::Z, uint64_t>();
+            const host::label_t nPoints = mesh.dimension<axis::X>() * mesh.dimension<axis::Y>() * mesh.dimension<axis::Z>();
 
-            const uint64_t nTime = programCtrl.nt<uint64_t>() - programCtrl.latestTime<uint64_t>() - 1;
+            const host::label_t nTime = programCtrl.nt() - programCtrl.latestTime() - 1;
 
-            const uint64_t numerator = nPoints * nTime;
+            const host::label_t numerator = nPoints * nTime;
 
-            const uint64_t denominator = static_cast<uint64_t>(1000000) * static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::seconds>(end - start).count());
+            const host::label_t denominator = static_cast<host::label_t>(1000000) * static_cast<host::label_t>(std::chrono::duration_cast<std::chrono::seconds>(end - start).count());
 
             return static_cast<T>(numerator) / static_cast<T>(denominator);
         }

@@ -58,3 +58,4 @@ applications/testExecutable/*/*.LBMBin
 applications/testExecutable/*/*/*.dat
 applications/testExecutable/*/*/*.vts
 applications/testExecutable/*/*/*.vtu
+applications/testExecutable/*/logs

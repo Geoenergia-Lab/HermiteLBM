@@ -58,7 +58,7 @@ namespace LBM
         {
             namespace kernel
             {
-                __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 3; }
+                __host__ [[nodiscard]] inline consteval host::label_t MIN_BLOCKS_PER_MP() noexcept { return 3; }
 #define launchBounds __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
 
                 /**
@@ -73,10 +73,10 @@ namespace LBM
                     const scalar_t invNewCount)
                 {
                     // Index into global arrays
-                    const label_t idx = device::idx(thread::coordinate(), block::coordinate());
+                    const device::label_t idx = device::idx(thread::coordinate(), block::coordinate());
 
                     // Read from global memory
-                    thread::array<scalar_t, NUMBER_MOMENTS<std::size_t>()> m;
+                    thread::array<scalar_t, NUMBER_MOMENTS<host::label_t>()> m;
                     device::constexpr_for<0, NUMBER_MOMENTS()>(
                         [&](const auto n)
                         {
@@ -84,7 +84,7 @@ namespace LBM
                         });
 
                     // Read the mean values from global memory
-                    thread::array<scalar_t, NUMBER_MOMENTS<std::size_t>()> mMean;
+                    thread::array<scalar_t, NUMBER_MOMENTS<host::label_t>()> mMean;
                     device::constexpr_for<0, NUMBER_MOMENTS()>(
                         [&](const auto n)
                         {
@@ -92,7 +92,7 @@ namespace LBM
                         });
 
                     // Update the mean value and write back to global
-                    const thread::array<scalar_t, NUMBER_MOMENTS<std::size_t>()> meanNew = timeAverage(mMean, m, invNewCount);
+                    const thread::array<scalar_t, NUMBER_MOMENTS<host::label_t>()> meanNew = timeAverage(mMean, m, invNewCount);
                     device::constexpr_for<0, NUMBER_MOMENTS()>(
                         [&](const auto n)
                         {
@@ -148,6 +148,12 @@ namespace LBM
                 ~collection() {}
 
                 /**
+                 * @brief Disable copying
+                 **/
+                __host__ [[nodiscard]] collection(const collection &) = delete;
+                __host__ [[nodiscard]] collection &operator=(const collection &) = delete;
+
+                /**
                  * @brief Check if instantaneous calculation is enabled
                  * @return True if instantaneous calculation is enabled
                  **/
@@ -169,7 +175,7 @@ namespace LBM
                  * @brief Calculate instantaneous total kinetic energy
                  * @param[in] timeStep Current simulation time step
                  **/
-                __host__ void calculateInstantaneous([[maybe_unused]] const label_t timeStep) noexcept
+                __host__ void calculateInstantaneous([[maybe_unused]] const host::label_t timeStep) noexcept
                 {
                     return;
                 }
@@ -178,11 +184,11 @@ namespace LBM
                  * @brief Calculate time-averaged total kinetic energy
                  * @param[in] timeStep Current simulation time step
                  **/
-                __host__ void calculateMean([[maybe_unused]] const label_t timeStep) noexcept
+                __host__ void calculateMean([[maybe_unused]] const host::label_t timeStep) noexcept
                 {
                     const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(rhoMean_.meanCount() + 1);
 
-                    for (label_t stream = 0; stream < streamsLBM_.streams().size(); stream++)
+                    for (host::label_t stream = 0; stream < streamsLBM_.streams().size(); stream++)
                     {
                         moments::kernel::mean<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
                             devPtrs_,
@@ -206,7 +212,7 @@ namespace LBM
                  * @brief Calculate both the instantaneous and time-averaged total kinetic energy
                  * @param[in] timeStep Current simulation time step
                  **/
-                __host__ void calculateInstantaneousAndMean([[maybe_unused]] const label_t timeStep) noexcept
+                __host__ void calculateInstantaneousAndMean([[maybe_unused]] const host::label_t timeStep) noexcept
                 {
                     return;
                 }
@@ -215,7 +221,7 @@ namespace LBM
                  * @brief Saves the instantaneous total kinetic energy to file
                  * @param[in] timeStep Current simulation time step
                  **/
-                __host__ void saveInstantaneous([[maybe_unused]] const label_t timeStep) noexcept
+                __host__ void saveInstantaneous([[maybe_unused]] const host::label_t timeStep) noexcept
                 {
                     return;
                 }
@@ -224,9 +230,9 @@ namespace LBM
                  * @brief Saves the mean total kinetic energy to file
                  * @param[in] timeStep Current simulation time step
                  **/
-                __host__ void saveMean(const label_t timeStep) noexcept
+                __host__ void saveMean(const host::label_t timeStep) noexcept
                 {
-                    for (label_t virtualDeviceIndex = 0; virtualDeviceIndex < rhoMean_.programCtrl().deviceList().size(); virtualDeviceIndex++)
+                    for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < rhoMean_.programCtrl().deviceList().size(); virtualDeviceIndex++)
                     {
                         hostWriteBuffer_.copy_from_device(
                             device::ptrCollection<10, scalar_t>(

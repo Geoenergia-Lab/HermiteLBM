@@ -104,40 +104,82 @@ namespace LBM
         }
 
         /**
-         * @brief Print the struct to cout
-         * @param[in] name Name of the struct
+         * @brief Print the structure to an output stream
+         * @param[in] name Name to identify the structure in the output
+         * @param[in] os Output stream to write to
          */
+        void print(const name_t &name, std::ostream &os) const noexcept
+        {
+            os << name << std::endl;
+            os << "{" << std::endl;
+            os << "    x = " << x << ";" << std::endl;
+            os << "    y = " << y << ";" << std::endl;
+            os << "    z = " << z << ";" << std::endl;
+            os << "};" << std::endl;
+        }
+
+        /**
+         * @brief Print the structure to std::cout
+         * @param[in] name Name to identify the structure in the output
+         **/
         void print(const name_t &name) const noexcept
         {
-            std::cout << name << std::endl;
-            std::cout << "{" << std::endl;
-            std::cout << "    x = " << x << ";" << std::endl;
-            std::cout << "    y = " << y << ";" << std::endl;
-            std::cout << "    z = " << z << ";" << std::endl;
-            std::cout << "};" << std::endl;
+            print(name, std::cout);
         }
     };
 
-    /**
-     * @brief Block dimensions descriptor (specialisation for label_t)
-     */
-    struct blockLabel_t : var3<label_t>
+    namespace device
     {
-    public:
         /**
-         * @brief Inherit constructors
+         * @brief Block dimensions descriptor (specialisation for device::label_t)
          */
-        using var3<value_type>::var3;
-
-        /**
-         * @brief Total size
-         */
-        template <typename ValueType = value_type>
-        __host__ __device__ [[nodiscard]] inline constexpr ValueType size() const noexcept
+        struct blockLabel : var3<device::label_t>
         {
-            return value<axis::X, ValueType>() * value<axis::Y, ValueType>() * value<axis::Z, ValueType>();
-        }
-    };
+        public:
+            /**
+             * @brief Inherit constructors
+             */
+            using var3<value_type>::var3;
+
+            /**
+             * @brief Total size
+             */
+            template <typename ValueType = value_type>
+            __host__ __device__ [[nodiscard]] inline constexpr ValueType size() const noexcept
+            {
+                return value<axis::X, ValueType>() * value<axis::Y, ValueType>() * value<axis::Z, ValueType>();
+            }
+        };
+
+        using pointLabel = blockLabel;
+        using threadLabel = blockLabel;
+    }
+
+    namespace host
+    {
+        /**
+         * @brief Block dimensions descriptor (specialisation for host::label_t)
+         */
+        struct blockLabel : var3<host::label_t>
+        {
+        public:
+            /**
+             * @brief Inherit constructors
+             */
+            using var3<value_type>::var3;
+
+            /**
+             * @brief Total size
+             */
+            __host__ __device__ [[nodiscard]] inline constexpr host::label_t size() const noexcept
+            {
+                return value<axis::X>() * value<axis::Y>() * value<axis::Z>();
+            }
+        };
+
+        using pointLabel = blockLabel;
+        using threadLabel = blockLabel;
+    }
 
     /**
      * @brief Generic vector of scalar_t
