@@ -71,7 +71,7 @@ namespace LBM
     /**
      * @brief Minimum number of blocks per streaming microprocessor
      **/
-    __host__ [[nodiscard]] inline consteval device::label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
+    __host__ [[nodiscard]] inline consteval device::label_t MIN_BLOCKS_PER_MP() noexcept { return 1; }
 
     /**
      * @brief Implements solution of the lattice Boltzmann method using the moment representation and a chosen velocity set

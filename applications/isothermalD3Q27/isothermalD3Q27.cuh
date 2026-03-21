@@ -37,19 +37,19 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Aliases and kernel definitions for the thermal D3Q19 moment representation
-    lattice Boltzmann model
+    Aliases and kernel definitions for the isothermal D3Q27 moment
+    representation lattice Boltzmann model
 
 Namespace
     LBM
 
 SourceFiles
-    momentBasedD3Q19.cuh
+    isothermalD3Q27.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_MOMENTBASEDD3Q19_CUH
-#define __MBLBM_MOMENTBASEDD3Q19_CUH
+#ifndef __MBLBM_ISOTHERMALD3Q27_CUH
+#define __MBLBM_ISOTHERMALD3Q27_CUH
 
 #include "../../src/LBMIncludes.cuh"
 #include "../../src/typedefs/typedefs.cuh"
@@ -66,26 +66,26 @@ SourceFiles
 namespace LBM
 {
     using BoundaryConditions = boundaryConditions::traits<boundaryConditions::caseName()>::type;
-    using VelocitySet = D3Q19<Thermal>;
+    using VelocitySet = D3Q27<Isothermal>;
     using Collision = secondOrder;
     using BlockHalo = device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>;
 
-#ifndef launchBoundsD3Q19
-#define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
+#ifndef launchBoundsD3Q27
+#define launchBoundsD3Q27 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
 #endif
 
     /**
-     * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
+     * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q27 velocity set
      * @param[in] devPtrs Collection of 10 pointers to device arrays on the GPU
      * @param[in] readBuffer Collection of read-only pointers to the block halo faces used during streaming
      * @param[in] writeBuffer Collection of mutable pointers to the block halo faces used after streaming
      **/
-    launchBoundsD3Q19 __global__ void momentBasedD3Q19(
+    launchBoundsD3Q27 __global__ void momentBasedD3Q27(
         const device::ptrCollection<10, scalar_t> devPtrs,
         const device::ptrCollection<6, const scalar_t> readBuffer,
         const device::ptrCollection<6, scalar_t> writeBuffer)
     {
-        __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<host::label_t>()>()> shared_buffer;
+        extern __shared__ scalar_t shared_buffer[];
 
         momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer);
     }

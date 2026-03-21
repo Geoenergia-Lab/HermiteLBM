@@ -37,7 +37,8 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Main kernel for the moment representation with the D3Q19 velocity set
+    Aliases and kernel definitions for the thermal D3Q27 moment representation
+    lattice Boltzmann model
 
 Namespace
     LBM
@@ -65,7 +66,7 @@ SourceFiles
 namespace LBM
 {
     using BoundaryConditions = boundaryConditions::traits<boundaryConditions::caseName()>::type;
-    using VelocitySet = D3Q27;
+    using VelocitySet = D3Q27<Thermal>;
     using Collision = secondOrder;
     using BlockHalo = device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>;
 
