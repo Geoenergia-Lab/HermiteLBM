@@ -50,7 +50,7 @@ SourceFiles
 #ifndef __MBLBM_TESTEXECUTABLE_CUH
 #define __MBLBM_TESTEXECUTABLE_CUH
 
-#include "../momentBasedD3Q27/momentBasedD3Q27.cuh"
+#include "../solvers/momentBasedD3Q27/momentBasedD3Q27.cuh"
 
 namespace LBM
 {
