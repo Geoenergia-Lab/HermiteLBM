@@ -54,7 +54,7 @@ using namespace LBM;
 
 __host__ [[nodiscard]] inline consteval device::label_t NStreams() noexcept { return 1; }
 
-constexpr const device::label_t VirtualDeviceIndex = 0;
+__host__ [[nodiscard]] inline consteval device::label_t VirtualDeviceIndex() noexcept { return 0; }
 
 int main(const int argc, const char *const argv[])
 {
@@ -82,16 +82,16 @@ int main(const int argc, const char *const argv[])
     device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
 
     const device::ptrCollection<10, scalar_t> devPtrs(
-        rho.ptr(VirtualDeviceIndex),
-        u.ptr(VirtualDeviceIndex),
-        v.ptr(VirtualDeviceIndex),
-        w.ptr(VirtualDeviceIndex),
-        mxx.ptr(VirtualDeviceIndex),
-        mxy.ptr(VirtualDeviceIndex),
-        mxz.ptr(VirtualDeviceIndex),
-        myy.ptr(VirtualDeviceIndex),
-        myz.ptr(VirtualDeviceIndex),
-        mzz.ptr(VirtualDeviceIndex));
+        rho.ptr(VirtualDeviceIndex()),
+        u.ptr(VirtualDeviceIndex()),
+        v.ptr(VirtualDeviceIndex()),
+        w.ptr(VirtualDeviceIndex()),
+        mxx.ptr(VirtualDeviceIndex()),
+        mxy.ptr(VirtualDeviceIndex()),
+        mxz.ptr(VirtualDeviceIndex()),
+        myy.ptr(VirtualDeviceIndex()),
+        myz.ptr(VirtualDeviceIndex()),
+        mzz.ptr(VirtualDeviceIndex()));
 
     // Setup Streams
     const streamHandler streamsLBM(programCtrl);
@@ -122,18 +122,18 @@ int main(const int argc, const char *const argv[])
             {
                 hostWriteBuffer.copy_from_device(
                     device::ptrCollection<10, scalar_t>{
-                        rho.ptr(VirtualDeviceIndex),
-                        u.ptr(VirtualDeviceIndex),
-                        v.ptr(VirtualDeviceIndex),
-                        w.ptr(VirtualDeviceIndex),
-                        mxx.ptr(VirtualDeviceIndex),
-                        mxy.ptr(VirtualDeviceIndex),
-                        mxz.ptr(VirtualDeviceIndex),
-                        myy.ptr(VirtualDeviceIndex),
-                        myz.ptr(VirtualDeviceIndex),
-                        mzz.ptr(VirtualDeviceIndex)},
+                        rho.ptr(VirtualDeviceIndex()),
+                        u.ptr(VirtualDeviceIndex()),
+                        v.ptr(VirtualDeviceIndex()),
+                        w.ptr(VirtualDeviceIndex()),
+                        mxx.ptr(VirtualDeviceIndex()),
+                        mxy.ptr(VirtualDeviceIndex()),
+                        mxz.ptr(VirtualDeviceIndex()),
+                        myy.ptr(VirtualDeviceIndex()),
+                        myz.ptr(VirtualDeviceIndex()),
+                        mzz.ptr(VirtualDeviceIndex())},
                     mesh,
-                    VirtualDeviceIndex);
+                    VirtualDeviceIndex());
             }
 
             fileIO::writeFile<time::instantaneous>(
@@ -153,15 +153,15 @@ int main(const int argc, const char *const argv[])
             {
                 kernel::momentBasedLBM<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[stream]>>>(
                     devPtrs,
-                    blockHalo.readBuffer(VirtualDeviceIndex),
-                    blockHalo.writeBuffer(VirtualDeviceIndex));
+                    blockHalo.readBuffer(VirtualDeviceIndex()),
+                    blockHalo.writeBuffer(VirtualDeviceIndex()));
             });
 
         // Calculate S kernel
         runTimeObjects.calculate(timeStep);
 
         // Halo pointer swap
-        blockHalo.swap(VirtualDeviceIndex);
+        blockHalo.swap(VirtualDeviceIndex());
     }
 
     return 0;
