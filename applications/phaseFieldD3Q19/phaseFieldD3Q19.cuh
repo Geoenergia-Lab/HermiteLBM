@@ -52,7 +52,7 @@ SourceFiles
 #define __MBLBM_PHASEFIELDD3Q19_CUH
 
 #include "../../src/LBMIncludes.cuh"
-#include "../../src/LBMTypedefs.cuh"
+#include "../../src/typedefs/typedefs.cuh"
 #include "../../src/streaming/streaming.cuh"
 #include "../../src/collision/collision.cuh"
 #include "../../src/blockHalo/blockHalo.cuh"
@@ -64,7 +64,7 @@ SourceFiles
 
 namespace LBM
 {
-    using VelocitySet = D3Q19;
+    using VelocitySet = D3Q19<Isothermal>;
     using PhaseVelocitySet = D3Q7;
     using Collision = secondOrder;
     using HydroHalo = device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>;

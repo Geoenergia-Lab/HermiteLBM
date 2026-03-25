@@ -43,12 +43,12 @@ Namespace
     LBM::host, LBM::device
 
 SourceFiles
-    momentBasedLBM.cuh
+    kernel.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_MOMENTBASEDLBM_CUH
-#define __MBLBM_MOMENTBASEDLBM_CUH
+#ifndef __MBLBM_KERNEL_CUH
+#define __MBLBM_KERNEL_CUH
 
 namespace LBM
 {
