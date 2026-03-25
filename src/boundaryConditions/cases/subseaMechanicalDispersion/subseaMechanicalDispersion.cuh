@@ -53,6 +53,11 @@ SourceFiles
 namespace LBM
 {
     /**
+     * @brief New definition of the inlet plane
+     * **/
+    __device__ __host__ [[nodiscard]] inline consteval bool new_inlet() noexcept { return true; }
+
+    /**
      * @class subseaMechanicalDispersion
      *
      * @brief Applies boundary conditions for subsea mechanical dispersion simulations using moment representation
@@ -70,6 +75,13 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval subseaMechanicalDispersion(){};
 
         /**
+         * @brief Periodic boundary definitions
+         **/
+        __device__ __host__ [[nodiscard]] static inline consteval bool periodicX() noexcept { return true; }
+        __device__ __host__ [[nodiscard]] static inline consteval bool periodicY() noexcept { return false; }
+        __device__ __host__ [[nodiscard]] static inline consteval bool periodicZ() noexcept { return false; }
+
+        /**
          * @brief Calculate moment variables at boundary nodes
          * @tparam VelocitySet Velocity set configuration defining lattice structure
          * @param[in] pop Population density array at current lattice node
@@ -84,26 +96,16 @@ namespace LBM
          * moments from available population information, ensuring mass conservation
          * and appropriate stress conditions at boundaries.
          **/
-        template <class VelocitySet, class PhaseVelocitySet>
+        template <class VelocitySet, class PhaseVelocitySet, class SharedBuffer>
         __device__ static inline constexpr void calculate_moments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS<true>()> &moments,
             const normalVector &boundaryNormal,
             const scalar_t *const ptrRestrict shared_buffer,
-            const label_t step) noexcept
+            const thread::coordinate &Tx,
+            const device::pointCoordinate &point) noexcept
         {
-#include "ssmdBoundaryCondition.cuh"
-        }
-
-        template <class VelocitySet, class PhaseVelocitySet, const label_t N>
-        __device__ static inline constexpr void calculate_moments(
-            const thread::array<scalar_t, VelocitySet::Q()> &pop,
-            thread::array<scalar_t, NUMBER_MOMENTS<true>()> &moments,
-            const normalVector &boundaryNormal,
-            const thread::array<scalar_t, N> &shared_buffer,
-            const label_t step) noexcept
-        {
-#include "ssmdBoundaryCondition.cuh"
+#include "boundaryCondition.cuh"
         }
 
     private:

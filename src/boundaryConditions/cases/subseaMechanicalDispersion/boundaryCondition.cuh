@@ -40,7 +40,7 @@ Description
     Header file to avoid repeated definition of the boundary condition function
 
 SourceFiles
-    jetBoundaryCondition.cuh
+    ssmdBoundaryCondition.cuh
 
 Notes
     This file is intended to be included directly inside a switch-case block.
@@ -51,7 +51,7 @@ Notes
 assertions::velocitySet::validate<VelocitySet>();
 assertions::velocitySet::validate<PhaseVelocitySet>();
 
-if (!(boundaryNormal.isBack() || boundaryNormal.isFront()))
+if (!(boundaryNormal.isBack() || boundaryNormal.isFront() || boundaryNormal.isSouth() || boundaryNormal.isNorth()))
 {
     // moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];
     moments[m_i<0>()] = rho0();
@@ -60,16 +60,38 @@ if (!(boundaryNormal.isBack() || boundaryNormal.isFront()))
 
 const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
 const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
-const device::label_t tid = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), block::nz() - 2);
+const device::label_t tid = boundaryNormal.isFront()
+                                ? block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), block::nz() - 2)
+                                : block::idx(Tx.value<axis::X>(), block::ny() - 2, Tx.value<axis::Z>());
 
-const scalar_t is_jet = static_cast<scalar_t>(boundaryNormal.isBack() && rms_sq(point.value<axis::X, scalar_t>() - center_x(), point.value<axis::Y, scalar_t>() - center_y()) <= r2());
+const scalar_t is_jet = static_cast<scalar_t>(
+    (boundaryNormal.isBack() &&
+     rms_sq(
+         point.value<axis::X, scalar_t>() - center_x(),
+         point.value<axis::Y, scalar_t>() - center_y()) <= r2()) ||
+    (boundaryNormal.isSouth() &&
+     rms_sq(
+         point.value<axis::X, scalar_t>() - center_x(),
+         point.value<axis::Z, scalar_t>() - center_z()) <= r2()));
 
-const scalar_t is_outlet = static_cast<scalar_t>(boundaryNormal.isFront());
+const scalar_t is_outlet = static_cast<scalar_t>(boundaryNormal.isFront() || boundaryNormal.isNorth());
 
 moments[m_i<0>()] = (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()]);
-moments[m_i<1>()] = (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()]) + (is_jet * device::U_Back[0]);
-moments[m_i<2>()] = (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()]) + (is_jet * device::U_Back[1]);
-moments[m_i<3>()] = (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()]) + (is_jet * device::U_Back[2]);
+
+moments[m_i<1>()] =
+    (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()]) +
+    static_cast<scalar_t>(boundaryNormal.isBack()) * is_jet * device::U_Back[0] +
+    static_cast<scalar_t>(boundaryNormal.isSouth()) * is_jet * device::U_South[0];
+
+moments[m_i<2>()] =
+    (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()]) +
+    static_cast<scalar_t>(boundaryNormal.isBack()) * is_jet * device::U_Back[1] +
+    static_cast<scalar_t>(boundaryNormal.isSouth()) * is_jet * device::U_South[1];
+
+moments[m_i<3>()] =
+    (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()]) +
+    static_cast<scalar_t>(boundaryNormal.isBack()) * is_jet * device::U_Back[2] +
+    static_cast<scalar_t>(boundaryNormal.isSouth()) * is_jet * device::U_South[2];
 
 // Set equilibrium velocities
 moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];
@@ -84,7 +106,7 @@ moments[m_i<10>()] = static_cast<scalar_t>(0);
 
 switch (boundaryNormal.nodeType())
 {
-// Round inflow + no-slip
+// Oil inflow + no-slip
 case normalVector::BACK():
 {
     if constexpr (new_inlet())
@@ -93,8 +115,6 @@ case normalVector::BACK():
 
         const scalar_t mxz_I = velocitySet::calculate_moment<VelocitySet, axis::X, axis::Z>(pop, boundaryNormal) * inv_rho_I;
         const scalar_t myz_I = velocitySet::calculate_moment<VelocitySet, axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
-
-        const scalar_t A = static_cast<scalar_t>(3) * (device::U_Back[2] * (device::U_Back[2] * device::U_Back[2]));
 
         // Density
         // moments[m_i<0>()] = (static_cast<scalar_t>(6) * rho_I) / (static_cast<scalar_t>(-5) + (A * is_jet));
@@ -112,10 +132,8 @@ case normalVector::BACK():
         // Moments
         // moments[m_i<4>()] = static_cast<scalar_t>(0);
         // moments[m_i<5>()] = static_cast<scalar_t>(0);
-        moments[m_i<6>()] = ((static_cast<scalar_t>(5) * mxz_I) - (A * mxz_I)) / static_cast<scalar_t>(3);
         moments[m_i<6>()] = static_cast<scalar_t>(2) * mxz_I * rho_I / moments[m_i<0>()];
         // moments[m_i<7>()] = static_cast<scalar_t>(0);
-        moments[m_i<8>()] = ((static_cast<scalar_t>(5) * myz_I) - (A * myz_I)) / static_cast<scalar_t>(3);
         moments[m_i<8>()] = static_cast<scalar_t>(2) * myz_I * rho_I / moments[m_i<0>()];
         // moments[m_i<9>()] = is_jet * (moments[m_i<0>()] * device::U_Back[2] * device::U_Back[2]);
 
@@ -137,12 +155,46 @@ case normalVector::BACK():
         // moments[m_i<3>()] = is_jet * device::U_Back[2];                             // uz
         // moments[m_i<4>()] = static_cast<scalar_t>(0);                               // mxx
         // moments[m_i<5>()] = static_cast<scalar_t>(0);                               // mxy
-        // moments[m_i<6>()] = mxz;                                                    // mxz
+        moments[m_i<6>()] = mxz; // mxz
         // moments[m_i<7>()] = static_cast<scalar_t>(0);                               // myy
-        // moments[m_i<8>()] = myz;                                                    // myz
+        moments[m_i<8>()] = myz; // myz
         // moments[m_i<9>()] = is_jet * (rho * device::U_Back[2] * device::U_Back[2]); // mzz
 
         moments[m_i<10>()] = static_cast<scalar_t>(1);
+    }
+
+    return;
+}
+
+// Water inflow + no-slip
+case normalVector::SOUTH():
+{
+    if constexpr (new_inlet())
+    {
+        const scalar_t mxy_I = velocitySet::calculate_moment<VelocitySet, axis::X, axis::Y>(pop, boundaryNormal) * inv_rho_I;
+        const scalar_t myz_I = velocitySet::calculate_moment<VelocitySet, axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
+
+        moments[m_i<0>()] = shared_buffer[block::idx(Tx.value<axis::X>(), 1, Tx.value<axis::Z>()) * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];
+
+        moments[m_i<5>()] = static_cast<scalar_t>(2) * mxy_I * rho_I / moments[m_i<0>()];
+        moments[m_i<8>()] = static_cast<scalar_t>(2) * myz_I * rho_I / moments[m_i<0>()];
+
+        moments[m_i<10>()] = static_cast<scalar_t>(0);
+    }
+    else
+    {
+        const scalar_t mxy_I = velocitySet::calculate_moment<VelocitySet, axis::X, axis::Y>(pop, boundaryNormal) * inv_rho_I;
+        const scalar_t myz_I = velocitySet::calculate_moment<VelocitySet, axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
+
+        const scalar_t rho = rho0();
+        const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
+        const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+
+        moments[m_i<0>()] = rho; // rho
+        moments[m_i<5>()] = mxy; // mxy
+        moments[m_i<8>()] = myz; // myz
+
+        moments[m_i<10>()] = is_jet * static_cast<scalar_t>(0); // phi
     }
 
     return;

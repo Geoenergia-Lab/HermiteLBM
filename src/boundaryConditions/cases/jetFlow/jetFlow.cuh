@@ -105,7 +105,7 @@ namespace LBM
             const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept
         {
-#include "jetBoundaryCondition.cuh"
+#include "boundaryCondition.cuh"
         }
 
     private:

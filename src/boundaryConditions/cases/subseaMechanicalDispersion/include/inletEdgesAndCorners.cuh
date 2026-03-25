@@ -48,7 +48,7 @@ Notes
 
 \*---------------------------------------------------------------------------*/
 
-case normalVector::WEST_SOUTH_BACK():
+case normalVector::SOUTH_WEST_BACK():
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -72,7 +72,7 @@ case normalVector::WEST_SOUTH_BACK():
     return;
 }
 
-case normalVector::WEST_SOUTH_FRONT():
+case normalVector::SOUTH_WEST_FRONT():
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -96,7 +96,7 @@ case normalVector::WEST_SOUTH_FRONT():
     return;
 }
 
-case normalVector::EAST_SOUTH_BACK():
+case normalVector::SOUTH_EAST_BACK():
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -120,7 +120,7 @@ case normalVector::EAST_SOUTH_BACK():
     return;
 }
 
-case normalVector::EAST_SOUTH_FRONT():
+case normalVector::SOUTH_EAST_FRONT():
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -144,7 +144,7 @@ case normalVector::EAST_SOUTH_FRONT():
     return;
 }
 
-case normalVector::WEST_NORTH_BACK():
+case normalVector::NORTH_WEST_BACK():
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -168,7 +168,7 @@ case normalVector::WEST_NORTH_BACK():
     return;
 }
 
-case normalVector::EAST_NORTH_BACK():
+case normalVector::NORTH_EAST_BACK():
 {
     if constexpr (VelocitySet::Q() == 19)
     {
