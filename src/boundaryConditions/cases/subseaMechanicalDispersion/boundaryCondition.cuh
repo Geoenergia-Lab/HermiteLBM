@@ -68,11 +68,11 @@ const scalar_t is_jet = static_cast<scalar_t>(
     (boundaryNormal.isBack() &&
      rms_sq(
          point.value<axis::X, scalar_t>() - center_x(),
-         point.value<axis::Y, scalar_t>() - center_y()) <= r2()) ||
+         point.value<axis::Y, scalar_t>() - oil_pos()) <= r2_oil()) ||
     (boundaryNormal.isSouth() &&
      rms_sq(
          point.value<axis::X, scalar_t>() - center_x(),
-         point.value<axis::Z, scalar_t>() - center_z()) <= r2()));
+         point.value<axis::Z, scalar_t>() - water_pos()) <= r2_water()));
 
 const scalar_t is_outlet = static_cast<scalar_t>(boundaryNormal.isFront() || boundaryNormal.isNorth());
 
@@ -93,6 +93,8 @@ moments[m_i<3>()] =
     static_cast<scalar_t>(boundaryNormal.isBack()) * is_jet * device::U_Back[2] +
     static_cast<scalar_t>(boundaryNormal.isSouth()) * is_jet * device::U_South[2];
 
+moments[m_i<10>()] = (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]);
+
 // Set equilibrium velocities
 moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];
 moments[m_i<5>()] = moments[m_i<1>()] * moments[m_i<2>()];
@@ -100,9 +102,6 @@ moments[m_i<6>()] = moments[m_i<1>()] * moments[m_i<3>()];
 moments[m_i<7>()] = moments[m_i<2>()] * moments[m_i<2>()];
 moments[m_i<8>()] = moments[m_i<2>()] * moments[m_i<3>()];
 moments[m_i<9>()] = moments[m_i<3>()] * moments[m_i<3>()];
-
-// Set equilibrium phase field
-moments[m_i<10>()] = static_cast<scalar_t>(0);
 
 switch (boundaryNormal.nodeType())
 {
