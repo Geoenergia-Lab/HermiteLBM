@@ -87,17 +87,20 @@ namespace LBM
         /**
          * @brief Class for managing total kinetic energy scalar calculations in LBM simulations
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
-         * @tparam N The number of streams (compile-time constant)
          **/
         template <class VelocitySet>
-        class moments
+        class moments : public FunctionObjectBase<VelocitySet, M::N>
         {
         public:
+            using BaseType = FunctionObjectBase<VelocitySet, M::N>;
+
             /**
-             * @brief Constructs a total kinetic energy scalar object
+             * @brief Constructs a collection of the solution variables object
+             * @param[in] hostWriteBuffer Reference to the host-side write buffer
              * @param[in] mesh The lattice mesh
-             * @param[in] devPtrs Device pointer collection for memory access
-             * @param[in] streamsLBM Stream handler for CUDA operations
+             * @param[in] rho, ... References to the 10 solution variables
+             * @param[in] streamsLBM Stream handler for LBM operations
+             * @param[in] programCtrl The program control object
              **/
             __host__ [[nodiscard]] moments(
                 host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
@@ -114,20 +117,10 @@ namespace LBM
                 const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mzz,
                 const streamHandler &streamsLBM,
                 const programControl &programCtrl) noexcept
-                : hostWriteBuffer_(hostWriteBuffer),
-                  mesh_(mesh),
-                  rho_(rho),
-                  u_(u),
-                  v_(v),
-                  w_(w),
-                  mxx_(mxx),
-                  mxy_(mxy),
-                  mxz_(mxz),
-                  myy_(myy),
-                  myz_(myz),
-                  mzz_(mzz),
-                  streamsLBM_(streamsLBM),
-                  calculateMean_(initialiserSwitch(fieldNameMean_)),
+                : BaseType(
+                      "moments",
+                      hostWriteBuffer, mesh, rho, u, v, w,
+                      mxx, mxy, mxz, myy, myz, mzz, streamsLBM),
                   rhoMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[0], mesh, calculateMean_, programCtrl)),
                   uMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[1], mesh, calculateMean_, programCtrl)),
                   vMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[2], mesh, calculateMean_, programCtrl)),
@@ -139,231 +132,90 @@ namespace LBM
                   myzMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[8], mesh, calculateMean_, programCtrl)),
                   mzzMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[9], mesh, calculateMean_, programCtrl))
             {
-                // Set the cache config to prefer L1
                 programCtrl.configure<0, false>(momentsDetail::instantaneous);
                 programCtrl.configure<0, false>(momentsDetail::instantaneousAndMean);
                 programCtrl.configure<0, false>(momentsDetail::mean);
-            };
+            }
 
             /**
-             * @brief Default destructor
+             * @brief Bring base members into scope
              **/
-            ~moments() {}
+            using BaseType::calculate_;
+            using BaseType::calculateMean_;
+            using BaseType::componentNames_;
+            using BaseType::componentNamesMean_;
+            using BaseType::hostWriteBuffer_;
+            using BaseType::mesh_;
+            using BaseType::mxx_;
+            using BaseType::mxy_;
+            using BaseType::mxz_;
+            using BaseType::myy_;
+            using BaseType::myz_;
+            using BaseType::mzz_;
+            using BaseType::name_;
+            using BaseType::nameMean_;
+            using BaseType::rho_;
+            using BaseType::streamsLBM_;
+            using BaseType::u_;
+            using BaseType::v_;
+            using BaseType::w_;
 
             /**
              * @brief Disable copying
              **/
+            ~moments() = default;
             __host__ [[nodiscard]] moments(const moments &) = delete;
             __host__ [[nodiscard]] moments &operator=(const moments &) = delete;
 
             /**
-             * @brief Check if instantaneous calculation is enabled
-             * @return True if instantaneous calculation is enabled
-             **/
-            __host__ [[nodiscard]] inline constexpr bool doInstantaneous() const noexcept
-            {
-                return calculate_;
-            }
-
-            /**
-             * @brief Check if mean calculation is enabled
-             * @return True if mean calculation is enabled
-             **/
-            __host__ [[nodiscard]] inline constexpr bool doMean() const noexcept
-            {
-                return calculateMean_;
-            }
-
-            /**
-             * @brief Calculate instantaneous total kinetic energy
-             * @param[in] timeStep Current simulation time step
-             **/
-            __host__ void calculateInstantaneous() noexcept
-            {
-                return;
-            }
-
-            /**
-             * @brief Calculate time-averaged total kinetic energy
-             * @param[in] timeStep Current simulation time step
+             * @brief Calculate the time-averaged moments
              **/
             __host__ void calculateMean() noexcept
             {
                 const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(rhoMean_.meanCount() + 1);
-
-                for (host::label_t stream = 0; stream < streamsLBM_.streams().size(); stream++)
+                for (host::label_t stream = 0; stream < streamsLBM_.streams().size(); ++stream)
                 {
                     momentsDetail::mean<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
-                        {rho_.ptr(stream),
-                         u_.ptr(stream),
-                         v_.ptr(stream),
-                         w_.ptr(stream),
-                         mxx_.ptr(stream),
-                         mxy_.ptr(stream),
-                         mxz_.ptr(stream),
-                         myy_.ptr(stream),
-                         myz_.ptr(stream),
-                         mzz_.ptr(stream)},
-                        {rhoMean_.ptr(stream),
-                         uMean_.ptr(stream),
-                         vMean_.ptr(stream),
-                         wMean_.ptr(stream),
-                         mxxMean_.ptr(stream),
-                         mxyMean_.ptr(stream),
-                         mxzMean_.ptr(stream),
-                         myyMean_.ptr(stream),
-                         myzMean_.ptr(stream),
-                         mzzMean_.ptr(stream)},
+                        {rho_.ptr(stream), u_.ptr(stream), v_.ptr(stream), w_.ptr(stream),
+                         mxx_.ptr(stream), mxy_.ptr(stream), mxz_.ptr(stream),
+                         myy_.ptr(stream), myz_.ptr(stream), mzz_.ptr(stream)},
+                        {rhoMean_.ptr(stream), uMean_.ptr(stream), vMean_.ptr(stream), wMean_.ptr(stream),
+                         mxxMean_.ptr(stream), mxyMean_.ptr(stream), mxzMean_.ptr(stream),
+                         myyMean_.ptr(stream), myzMean_.ptr(stream), mzzMean_.ptr(stream)},
                         invNewCount);
                 }
-
                 rhoMean_.meanCountRef()++;
             }
 
             /**
-             * @brief Calculate both the instantaneous and time-averaged total kinetic energy
-             * @param[in] timeStep Current simulation time step
-             **/
-            __host__ void calculateInstantaneousAndMean() noexcept
-            {
-                return;
-            }
-
-            /**
-             * @brief Saves the instantaneous total kinetic energy to file
-             * @param[in] timeStep Current simulation time step
-             **/
-            __host__ void saveInstantaneous([[maybe_unused]] const host::label_t timeStep) noexcept
-            {
-                return;
-            }
-
-            /**
-             * @brief Saves the mean total kinetic energy to file
-             * @param[in] timeStep Current simulation time step
+             * @brief Save the time-averaged moments to a file
              **/
             __host__ void saveMean(const host::label_t timeStep) noexcept
             {
-                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < rhoMean_.programCtrl().deviceList().size(); virtualDeviceIndex++)
+                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < rhoMean_.programCtrl().deviceList().size(); ++virtualDeviceIndex)
                 {
                     hostWriteBuffer_.copy_from_device(
                         device::ptrCollection<10, scalar_t>(
-                            rhoMean_.ptr(virtualDeviceIndex),
-                            uMean_.ptr(virtualDeviceIndex),
-                            vMean_.ptr(virtualDeviceIndex),
-                            wMean_.ptr(virtualDeviceIndex),
-                            mxxMean_.ptr(virtualDeviceIndex),
-                            mxyMean_.ptr(virtualDeviceIndex),
-                            mxzMean_.ptr(virtualDeviceIndex),
-                            myyMean_.ptr(virtualDeviceIndex),
-                            myzMean_.ptr(virtualDeviceIndex),
-                            mzzMean_.ptr(virtualDeviceIndex)),
-                        mesh_,
-                        virtualDeviceIndex);
+                            rhoMean_.ptr(virtualDeviceIndex), uMean_.ptr(virtualDeviceIndex),
+                            vMean_.ptr(virtualDeviceIndex), wMean_.ptr(virtualDeviceIndex),
+                            mxxMean_.ptr(virtualDeviceIndex), mxyMean_.ptr(virtualDeviceIndex),
+                            mxzMean_.ptr(virtualDeviceIndex), myyMean_.ptr(virtualDeviceIndex),
+                            myzMean_.ptr(virtualDeviceIndex), mzzMean_.ptr(virtualDeviceIndex)),
+                        mesh_, virtualDeviceIndex);
                 }
-
                 postProcess::LBMBin::write<time::timeAverage>(
-                    fieldNameMean_ + "_" + std::to_string(timeStep) + ".LBMBin",
-                    mesh_,
-                    componentNamesMean_,
-                    hostWriteBuffer_.data(),
-                    timeStep,
-                    rhoMean_.meanCount());
+                    nameMean_ + "_" + std::to_string(timeStep) + ".LBMBin",
+                    mesh_, componentNamesMean_, hostWriteBuffer_.data(), timeStep, rhoMean_.meanCount());
             }
 
             /**
-             * @brief Get the field name for instantaneous moments
-             * @return Field name string
+             * @brief Unused functions - this object does not calculate its instantaneous or mean
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr const name_t &fieldName() const noexcept
-            {
-                return fieldName_;
-            }
-
-            /**
-             * @brief Get the field name for mean moments
-             * @return Field name string
-             **/
-            __device__ __host__ [[nodiscard]] inline constexpr const name_t &fieldNameMean() const noexcept
-            {
-                return fieldNameMean_;
-            }
-
-            /**
-             * @brief Get the component names for instantaneous moments
-             * @return Vector of component names
-             **/
-            __device__ __host__ [[nodiscard]] inline constexpr const words_t &componentNames() const noexcept
-            {
-                return componentNames_;
-            }
-
-            /**
-             * @brief Get the component names for mean moments
-             * @return Vector of component names
-             **/
-            __device__ __host__ [[nodiscard]] inline constexpr const words_t &componentNamesMean() const noexcept
-            {
-                return componentNamesMean_;
-            }
+            __host__ static void calculateInstantaneous() noexcept {}
+            __host__ static void calculateInstantaneousAndMean() noexcept {}
+            __host__ static void saveInstantaneous([[maybe_unused]] const host::label_t timeStep) noexcept {}
 
         private:
-            host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer_;
-
-            /**
-             * @brief Field name for instantaneous scalar
-             **/
-            const name_t fieldName_ = "moments";
-
-            /**
-             * @brief Field name for mean scalar
-             **/
-            const name_t fieldNameMean_ = fieldName_ + "Mean";
-
-            /**
-             * @brief Instantaneous scalar name
-             **/
-            const words_t componentNames_ = solutionVariableNames;
-
-            /**
-             * @brief Mean scalar name
-             **/
-            const words_t componentNamesMean_ = string::catenate(componentNames_, "Mean");
-
-            /**
-             * @brief Reference to lattice mesh
-             **/
-            const host::latticeMesh &mesh_;
-
-            /**
-             * @brief Device pointer collection
-             **/
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &rho_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &u_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &v_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &w_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxx_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxy_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxz_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myy_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myz_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mzz_;
-
-            /**
-             * @brief Stream handler for CUDA operations
-             **/
-            const streamHandler &streamsLBM_;
-
-            /**
-             * @brief Flag for instantaneous calculation
-             **/
-            static constexpr const bool calculate_ = false;
-
-            /**
-             * @brief Flag for mean calculation
-             **/
-            const bool calculateMean_;
-
             /**
              * @brief Time-averaged moments
              **/

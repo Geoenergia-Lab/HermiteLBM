@@ -41,7 +41,7 @@ Description
     we cannot template CUDA kernels and annotate with launch bounds at the same
     time due to the compiler apparently not noticing that the argument
     preceding the launch bounds is a specification of a template parameter.
-    Instead, we have to do this preprocessor nonsense. We live in a cruel world.
+    Instead we have to do this preprocessor nonsense. We live in a cruel world.
 
 Namespace
     LBM::functionObjects
@@ -57,7 +57,7 @@ SourceFiles
  * @param[out] resultMeanPtrs Device pointer collection for the time averaged quantity
  * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
  **/
-__launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP()) __global__ void mean(
+__launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP()) __global__ static void mean(
     const device::ptrCollection<10, const scalar_t> devPtrs,
     const device::ptrCollection<This::N, scalar_t> resultMeanPtrs,
     const scalar_t invNewCount)
@@ -72,7 +72,7 @@ __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP()) __global__ voi
  * @param[out] resultMeanPtrs Device pointer collection for the time averaged quantity
  * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
  **/
-__launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP()) static __global__ void instantaneousAndMean(
+__launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP()) __global__ static void instantaneousAndMean(
     const device::ptrCollection<10, const scalar_t> devPtrs,
     const device::ptrCollection<This::N, scalar_t> resultPtrs,
     const device::ptrCollection<This::N, scalar_t> resultMeanPtrs,
@@ -86,7 +86,7 @@ __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP()) static __globa
  * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
  * @param[out] resulPtrs Device pointer collection for the instantaneous quantity
  **/
-__launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP()) static __global__ void instantaneous(
+__launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP()) __global__ static void instantaneous(
     const device::ptrCollection<10, const scalar_t> devPtrs,
     const device::ptrCollection<This::N, scalar_t> resultPtrs)
 {

@@ -264,16 +264,8 @@ namespace LBM
          * @param[in] name The name of the variable to construct
          * @param[in] mesh The lattice mesh
          * @param[in] allocate Determines whether or not to allocate the variable
+         * @param[in] programCtrl The program control object
          **/
-        template <class VelocitySet, const time::type TimeType>
-        __host__ [[nodiscard]] device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType> objectAllocator(
-            const name_t &name,
-            const host::latticeMesh &mesh,
-            const programControl &programCtrl)
-        {
-            return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh, 0, programCtrl, initialiserSwitch(name));
-        }
-
         template <class VelocitySet, const time::type TimeType>
         __host__ [[nodiscard]] device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType> objectAllocator(
             const name_t &name,

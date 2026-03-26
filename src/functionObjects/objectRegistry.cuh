@@ -55,6 +55,7 @@ SourceFiles
 #include "../strings.cuh"
 #include "../postProcess/postProcess.cuh"
 #include "functionObjects.cuh"
+#include "functionObjectBase.cuh"
 #include "moments.cuh"
 #include "strainRateTensor.cuh"
 #include "kineticEnergy.cuh"
@@ -75,7 +76,7 @@ namespace LBM
          * @param[in] devPtrs Device pointer collection for memory management
          * @param[in] streamsLBM Stream handler for LBM operations
          **/
-        [[nodiscard]] objectRegistry(
+        __host__ [[nodiscard]] objectRegistry(
             host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
             const host::latticeMesh &mesh,
             const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &rho,
@@ -166,10 +167,10 @@ namespace LBM
          * @param[in] S Reference to strain rate tensor object
          * @return Vector of function objects to be executed
          **/
-        __host__ [[nodiscard]] const std::vector<functionObjects::calculateFunction> functionObjectCallInitialiser(
+        __host__ [[nodiscard]] static const std::vector<functionObjects::calculateFunction> functionObjectCallInitialiser(
             functionObjects::moments<VelocitySet> &moments,
             functionObjects::strainRateTensor<VelocitySet> &S,
-            functionObjects::kineticEnergy<VelocitySet> &k) const noexcept
+            functionObjects::kineticEnergy<VelocitySet> &k) noexcept
         {
             std::vector<functionObjects::calculateFunction> calls;
 
@@ -181,7 +182,7 @@ namespace LBM
         }
 
         template <class C>
-        __host__ void addObjectCall(std::vector<functionObjects::calculateFunction> &calls, C &object) const noexcept
+        __host__ static void addObjectCall(std::vector<functionObjects::calculateFunction> &calls, C &object) noexcept
         {
             // If both instantaneous and mean calculations are enabled, calculate both in one call
             // Only do this for variables other than the 10 moments
@@ -231,10 +232,10 @@ namespace LBM
          * @param[in] S Reference to strain rate tensor object
          * @return Vector of function objects to be executed
          **/
-        __host__ [[nodiscard]] const std::vector<functionObjects::saveFunction> functionObjectSaveInitialiser(
+        __host__ [[nodiscard]] static const std::vector<functionObjects::saveFunction> functionObjectSaveInitialiser(
             functionObjects::moments<VelocitySet> &moments,
             functionObjects::strainRateTensor<VelocitySet> &S,
-            functionObjects::kineticEnergy<VelocitySet> &k) const noexcept
+            functionObjects::kineticEnergy<VelocitySet> &k) noexcept
         {
             std::vector<functionObjects::saveFunction> calls;
 
@@ -246,7 +247,7 @@ namespace LBM
         }
 
         template <class C>
-        __host__ void addSaveCall(std::vector<functionObjects::saveFunction> &calls, C &object) const noexcept
+        __host__ static void addSaveCall(std::vector<functionObjects::saveFunction> &calls, C &object) noexcept
         {
             if constexpr (!std::is_same_v<C, functionObjects::moments<VelocitySet>>)
             {
