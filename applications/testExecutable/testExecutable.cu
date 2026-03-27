@@ -201,14 +201,6 @@ int main(const int argc, const char *const argv[])
         const host::blockLabel EastDeviceSourceBlock(0, 0, 0);
         const host::label_t EastSourceID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, EastDeviceSourceBlock, nxb, nyb);
 
-        errorHandler::check(cudaMemcpyPeerAsync(
-            &(blockHalo.writeBuffer(WestDevice).ptr<WestPtr_x0>()[WestDestinationID]),
-            programCtrl.deviceList()[WestDevice],
-            &(blockHalo.writeBuffer(EastDevice).ptr<WestPtr_x0>()[EastSourceID]),
-            programCtrl.deviceList()[EastDevice],
-            Size,
-            streamsLBM.streams()[WestDevice]));
-
         // West to East exchange
         // Destination z block: located at bz = 0
         // Pretty sure this is right
@@ -219,6 +211,14 @@ int main(const int argc, const char *const argv[])
         // Pretty sure this is right
         const host::blockLabel WestDeviceSourceBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
         const host::label_t WestSourceID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, WestDeviceSourceBlock, nxb, nyb);
+
+        errorHandler::check(cudaMemcpyPeerAsync(
+            &(blockHalo.writeBuffer(WestDevice).ptr<WestPtr_x0>()[WestDestinationID]),
+            programCtrl.deviceList()[WestDevice],
+            &(blockHalo.writeBuffer(EastDevice).ptr<WestPtr_x0>()[EastSourceID]),
+            programCtrl.deviceList()[EastDevice],
+            Size,
+            streamsLBM.streams()[WestDevice]));
 
         errorHandler::check(cudaMemcpyPeerAsync(
             &(blockHalo.writeBuffer(EastDevice).ptr<EastPtr_x1>()[EastDestinationID]),
