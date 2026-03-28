@@ -111,19 +111,12 @@ namespace LBM
             using BaseType::componentNamesMean_;
             using BaseType::hostWriteBuffer_;
             using BaseType::mesh_;
-            using BaseType::mxx_;
-            using BaseType::mxy_;
-            using BaseType::mxz_;
-            using BaseType::myy_;
-            using BaseType::myz_;
-            using BaseType::mzz_;
             using BaseType::name_;
             using BaseType::nameMean_;
+            using BaseType::Pi_;
             using BaseType::rho_;
             using BaseType::streamsLBM_;
-            using BaseType::u_;
-            using BaseType::v_;
-            using BaseType::w_;
+            using BaseType::U_;
 
             /**
              * @brief Constructs a collection of the solution variables object
@@ -136,32 +129,15 @@ namespace LBM
             __host__ [[nodiscard]] moments(
                 host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
                 const host::latticeMesh &mesh,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &rho,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &u,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &v,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &w,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxx,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxy,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxz,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myy,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myz,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mzz,
+                const device::scalarField<VelocitySet, time::instantaneous> &rho,
+                const device::vectorField<VelocitySet, time::instantaneous> &U,
+                const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
                 const streamHandler &streamsLBM,
                 const programControl &programCtrl) noexcept
-                : BaseType(
-                      "moments",
-                      hostWriteBuffer, mesh, rho, u, v, w,
-                      mxx, mxy, mxz, myy, myz, mzz, streamsLBM),
-                  rhoMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[0], mesh, calculateMean_, programCtrl)),
-                  uMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[1], mesh, calculateMean_, programCtrl)),
-                  vMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[2], mesh, calculateMean_, programCtrl)),
-                  wMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[3], mesh, calculateMean_, programCtrl)),
-                  mxxMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[4], mesh, calculateMean_, programCtrl)),
-                  mxyMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[5], mesh, calculateMean_, programCtrl)),
-                  mxzMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[6], mesh, calculateMean_, programCtrl)),
-                  myyMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[7], mesh, calculateMean_, programCtrl)),
-                  myzMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[8], mesh, calculateMean_, programCtrl)),
-                  mzzMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[9], mesh, calculateMean_, programCtrl))
+                : BaseType("moments", hostWriteBuffer, mesh, rho, U, Pi, streamsLBM),
+                  rhoMean_("rhoMean", mesh, programCtrl, calculateMean_),
+                  UMean_("UMean", mesh, programCtrl, calculateMean_),
+                  PiMean_("PiMean", mesh, programCtrl, calculateMean_)
             {
                 BaseType::template configure<Kernel>(programCtrl);
             }
@@ -186,7 +162,9 @@ namespace LBM
              **/
             __host__ void saveMean(const host::label_t timeStep) noexcept
             {
-                BaseType::saveMean(timeStep, nameMean_, componentNamesMean_, rhoMean_.programCtrl().deviceList().size(), rhoMean_.meanCount(), rhoMean_, uMean_, vMean_, wMean_, mxxMean_, mxyMean_, mxzMean_, myyMean_, myzMean_, mzzMean_);
+                BaseType::saveMean(timeStep, nameMean_, componentNamesMean_, rhoMean_.self().programCtrl().deviceList().size(), rhoMean_.meanCount(), rhoMean_);
+                BaseType::saveMean(timeStep, nameMean_, componentNamesMean_, UMean_.x().programCtrl().deviceList().size(), UMean_.meanCount(), UMean_.x(), UMean_.y(), UMean_.z());
+                BaseType::saveMean(timeStep, nameMean_, componentNamesMean_, PiMean_.xx().programCtrl().deviceList().size(), PiMean_.meanCount(), PiMean_.xx(), PiMean_.xy(), PiMean_.xz(), PiMean_.yy(), PiMean_.yz(), PiMean_.zz());
             }
 
             /**
@@ -198,23 +176,16 @@ namespace LBM
 
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
             {
-                return {rhoMean_.ptr(idx), uMean_.ptr(idx), vMean_.ptr(idx), wMean_.ptr(idx), mxxMean_.ptr(idx), mxyMean_.ptr(idx), mxzMean_.ptr(idx), myyMean_.ptr(idx), myzMean_.ptr(idx), mzzMean_.ptr(idx)};
+                return {rhoMean_.self().ptr(idx), UMean_.x().ptr(idx), UMean_.y().ptr(idx), UMean_.z().ptr(idx), PiMean_.xx().ptr(idx), PiMean_.xy().ptr(idx), PiMean_.xz().ptr(idx), PiMean_.yy().ptr(idx), PiMean_.yz().ptr(idx), PiMean_.zz().ptr(idx)};
             }
 
         private:
             /**
              * @brief Time-averaged moments
              **/
-            device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> rhoMean_;
-            device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> uMean_;
-            device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> vMean_;
-            device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> wMean_;
-            device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> mxxMean_;
-            device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> mxyMean_;
-            device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> mxzMean_;
-            device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> myyMean_;
-            device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> myzMean_;
-            device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::timeAverage> mzzMean_;
+            device::scalarField<VelocitySet, time::timeAverage> rhoMean_;
+            device::vectorField<VelocitySet, time::timeAverage> UMean_;
+            device::symmetricTensorField<VelocitySet, time::timeAverage> PiMean_;
         };
     }
 }

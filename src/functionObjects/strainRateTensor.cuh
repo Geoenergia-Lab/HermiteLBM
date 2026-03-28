@@ -137,19 +137,12 @@ namespace LBM
             using BaseType::componentNamesMean_;
             using BaseType::hostWriteBuffer_;
             using BaseType::mesh_;
-            using BaseType::mxx_;
-            using BaseType::mxy_;
-            using BaseType::mxz_;
-            using BaseType::myy_;
-            using BaseType::myz_;
-            using BaseType::mzz_;
             using BaseType::name_;
             using BaseType::nameMean_;
+            using BaseType::Pi_;
             using BaseType::rho_;
             using BaseType::streamsLBM_;
-            using BaseType::u_;
-            using BaseType::v_;
-            using BaseType::w_;
+            using BaseType::U_;
 
             /**
              * @brief Constructs a strain rate tensor object
@@ -162,22 +155,12 @@ namespace LBM
             __host__ [[nodiscard]] strainRateTensor(
                 host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
                 const host::latticeMesh &mesh,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &rho,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &u,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &v,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &w,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxx,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxy,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxz,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myy,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myz,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mzz,
+                const device::scalarField<VelocitySet, time::instantaneous> &rho,
+                const device::vectorField<VelocitySet, time::instantaneous> &U,
+                const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
                 const streamHandler &streamsLBM,
                 const programControl &programCtrl) noexcept
-                : BaseType(
-                      "S",
-                      hostWriteBuffer, mesh, rho, u, v, w,
-                      mxx, mxy, mxz, myy, myz, mzz, streamsLBM),
+                : BaseType("S", hostWriteBuffer, mesh, rho, U, Pi, streamsLBM),
                   S_(name_, mesh_, calculate_, programCtrl),
                   SMean_(nameMean_, mesh_, calculate_, programCtrl)
             {
@@ -220,10 +203,7 @@ namespace LBM
              **/
             __host__ void saveInstantaneous(const host::label_t timeStep) noexcept
             {
-                BaseType::saveInstantaneous(
-                    timeStep, name_, componentNames_,
-                    S_.xx().programCtrl().deviceList().size(),
-                    S_.xx(), S_.xy(), S_.xz(), S_.yy(), S_.yz(), S_.zz());
+                BaseType::saveInstantaneous(timeStep, name_, componentNames_, S_.xx().programCtrl().deviceList().size(), S_.xx(), S_.xy(), S_.xz(), S_.yy(), S_.yz(), S_.zz());
             }
 
             /**
@@ -231,11 +211,7 @@ namespace LBM
              **/
             __host__ void saveMean(const host::label_t timeStep) noexcept
             {
-                BaseType::saveMean(
-                    timeStep, nameMean_, componentNamesMean_,
-                    SMean_.xx().programCtrl().deviceList().size(),
-                    SMean_.meanCountRef(),
-                    SMean_.xx(), SMean_.xy(), SMean_.xz(), SMean_.yy(), SMean_.yz(), SMean_.zz());
+                BaseType::saveMean(timeStep, nameMean_, componentNamesMean_, SMean_.xx().programCtrl().deviceList().size(), SMean_.meanCountRef(), SMean_.xx(), SMean_.xy(), SMean_.xz(), SMean_.yy(), SMean_.yz(), SMean_.zz());
             }
 
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> instantaneousPtrs(const host::label_t idx) noexcept

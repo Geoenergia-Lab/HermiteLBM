@@ -69,29 +69,33 @@ int main(const int argc, const char *const argv[])
 
     VelocitySet::print();
 
+    device::scalarField<VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
+    device::vectorField<VelocitySet, time::instantaneous> U("U", mesh, programCtrl);
+    device::symmetricTensorField<VelocitySet, time::instantaneous> Pi("Pi", mesh, programCtrl);
+
     // Allocate the arrays on the device
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> u("u", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> v("v", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> w("w", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxx("m_xx", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxy("m_xy", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxz("m_xz", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> myy("m_yy", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
+    // device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
+    // device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> u("u", mesh, programCtrl);
+    // device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> v("v", mesh, programCtrl);
+    // device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> w("w", mesh, programCtrl);
+    // device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxx("m_xx", mesh, programCtrl);
+    // device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxy("m_xy", mesh, programCtrl);
+    // device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxz("m_xz", mesh, programCtrl);
+    // device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> myy("m_yy", mesh, programCtrl);
+    // device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
+    // device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
 
     const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs(
-        rho.ptr(VirtualDeviceIndex()),
-        u.ptr(VirtualDeviceIndex()),
-        v.ptr(VirtualDeviceIndex()),
-        w.ptr(VirtualDeviceIndex()),
-        mxx.ptr(VirtualDeviceIndex()),
-        mxy.ptr(VirtualDeviceIndex()),
-        mxz.ptr(VirtualDeviceIndex()),
-        myy.ptr(VirtualDeviceIndex()),
-        myz.ptr(VirtualDeviceIndex()),
-        mzz.ptr(VirtualDeviceIndex()));
+        rho.self().ptr(VirtualDeviceIndex()),
+        U.x().ptr(VirtualDeviceIndex()),
+        U.y().ptr(VirtualDeviceIndex()),
+        U.z().ptr(VirtualDeviceIndex()),
+        Pi.xx().ptr(VirtualDeviceIndex()),
+        Pi.xy().ptr(VirtualDeviceIndex()),
+        Pi.xz().ptr(VirtualDeviceIndex()),
+        Pi.yy().ptr(VirtualDeviceIndex()),
+        Pi.yz().ptr(VirtualDeviceIndex()),
+        Pi.zz().ptr(VirtualDeviceIndex()));
 
     // Setup Streams
     const streamHandler streamsLBM(programCtrl);
@@ -99,7 +103,7 @@ int main(const int argc, const char *const argv[])
     // Allocate a buffer of pinned memory on the host for writing
     host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.size() * NUMBER_MOMENTS(), mesh);
 
-    objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, u, v, w, mxx, mxy, mxz, myy, myz, mzz, streamsLBM, programCtrl);
+    // objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, U, Pi, streamsLBM, programCtrl);
 
     BlockHalo blockHalo(mesh, programCtrl);
 
@@ -121,29 +125,53 @@ int main(const int argc, const char *const argv[])
             // Do this in a loop
             {
                 hostWriteBuffer.copyFromDevice(
-                    device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t>{
-                        rho.ptr(VirtualDeviceIndex()),
-                        u.ptr(VirtualDeviceIndex()),
-                        v.ptr(VirtualDeviceIndex()),
-                        w.ptr(VirtualDeviceIndex()),
-                        mxx.ptr(VirtualDeviceIndex()),
-                        mxy.ptr(VirtualDeviceIndex()),
-                        mxz.ptr(VirtualDeviceIndex()),
-                        myy.ptr(VirtualDeviceIndex()),
-                        myz.ptr(VirtualDeviceIndex()),
-                        mzz.ptr(VirtualDeviceIndex())},
+                    device::ptrCollection<3, const scalar_t>{
+                        U.x().ptr(VirtualDeviceIndex()),
+                        U.y().ptr(VirtualDeviceIndex()),
+                        U.z().ptr(VirtualDeviceIndex())},
                     mesh,
                     VirtualDeviceIndex());
+
+                postProcess::LBMBin::write(
+                    "U_" + std::to_string(timeStep) + ".LBMBin",
+                    mesh,
+                    {U.x().name(), U.y().name(), U.z().name()},
+                    hostWriteBuffer.data(),
+                    timeStep);
+
+                hostWriteBuffer.copyFromDevice(
+                    device::ptrCollection<1, const scalar_t>{
+                        rho.self().ptr(VirtualDeviceIndex())},
+                    mesh,
+                    VirtualDeviceIndex());
+
+                postProcess::LBMBin::write(
+                    "rho_" + std::to_string(timeStep) + ".LBMBin",
+                    mesh,
+                    {rho.self().name()},
+                    hostWriteBuffer.data(),
+                    timeStep);
+
+                hostWriteBuffer.copyFromDevice(
+                    device::ptrCollection<6, const scalar_t>{
+                        Pi.xx().ptr(VirtualDeviceIndex()),
+                        Pi.xy().ptr(VirtualDeviceIndex()),
+                        Pi.xz().ptr(VirtualDeviceIndex()),
+                        Pi.yy().ptr(VirtualDeviceIndex()),
+                        Pi.yz().ptr(VirtualDeviceIndex()),
+                        Pi.yz().ptr(VirtualDeviceIndex())},
+                    mesh,
+                    VirtualDeviceIndex());
+
+                postProcess::LBMBin::write(
+                    "Pi_" + std::to_string(timeStep) + ".LBMBin",
+                    mesh,
+                    {Pi.xx().name(), Pi.xy().name(), Pi.xz().name(), Pi.yy().name(), Pi.yz().name(), Pi.zz().name()},
+                    hostWriteBuffer.data(),
+                    timeStep);
             }
 
-            postProcess::LBMBin::write(
-                programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
-                mesh,
-                functionObjects::solutionVariableNames,
-                hostWriteBuffer.data(),
-                timeStep);
-
-            runTimeObjects.save(timeStep);
+            // runTimeObjects.save(timeStep);
         }
 
         // Main kernel
@@ -157,7 +185,7 @@ int main(const int argc, const char *const argv[])
             });
 
         // Calculate S kernel
-        runTimeObjects.calculate();
+        // runTimeObjects.calculate();
 
         // Halo pointer swap
         blockHalo.swap(VirtualDeviceIndex());

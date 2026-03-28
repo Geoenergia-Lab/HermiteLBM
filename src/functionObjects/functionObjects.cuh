@@ -67,6 +67,9 @@ namespace LBM
          **/
         const std::unordered_map<name_t, words_t> fieldComponentsMap = {
             {"momentsMean", {"rhoMean", "uMean", "vMean", "wMean", "m_xxMean", "m_xyMean", "m_xzMean", "m_yyMean", "m_yzMean", "m_zzMean"}},
+            {"rho", {"rho"}},
+            {"U", {"U_x", "U_y", "U_z"}},
+            {"Pi", {"Pi_xx", "Pi_xy", "Pi_xz", "Pi_yy", "Pi_yz", "Pi_zz"}},
             {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}},
             {"SMean", {"S_xxMean", "S_xyMean", "S_xzMean", "S_yyMean", "S_yzMean", "S_zzMean"}},
             {"k", {"k"}},

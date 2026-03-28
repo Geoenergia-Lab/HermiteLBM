@@ -226,9 +226,17 @@ namespace LBM
                 const bool allocate = true)
                 : self_(name, mesh, value, programCtrl, allocate) {}
 
+            __host__ [[nodiscard]] scalarField(
+                const name_t &name,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl,
+                const bool allocate = true)
+                : self_(name, mesh, programCtrl, allocate) {}
+
             ~scalarField() {}
 
-            __host__ [[nodiscard]] inline constexpr const ComponentType &self() noexcept { return self_; }
+            __host__ [[nodiscard]] inline constexpr ComponentType &self() noexcept { return self_; }
+            __host__ [[nodiscard]] inline constexpr const ComponentType &self() const noexcept { return self_; }
 
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<1, const scalar_t> ptr(const host::label_t idx) const noexcept
             {
@@ -273,11 +281,24 @@ namespace LBM
                   y_(name + "_y", mesh, value, programCtrl, allocate),
                   z_(name + "_z", mesh, value, programCtrl, allocate) {}
 
+            __host__ [[nodiscard]] vectorField(
+                const name_t &name,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl,
+                const bool allocate = true)
+                : x_(name + "_x", mesh, programCtrl, allocate),
+                  y_(name + "_y", mesh, programCtrl, allocate),
+                  z_(name + "_z", mesh, programCtrl, allocate) {}
+
             ~vectorField() {}
 
-            __host__ [[nodiscard]] inline constexpr const ComponentType &x() noexcept { return x_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &y() noexcept { return y_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &z() noexcept { return z_; }
+            __host__ [[nodiscard]] inline constexpr ComponentType &x() noexcept { return x_; }
+            __host__ [[nodiscard]] inline constexpr ComponentType &y() noexcept { return y_; }
+            __host__ [[nodiscard]] inline constexpr ComponentType &z() noexcept { return z_; }
+
+            __host__ [[nodiscard]] inline constexpr const ComponentType &x() const noexcept { return x_; }
+            __host__ [[nodiscard]] inline constexpr const ComponentType &y() const noexcept { return y_; }
+            __host__ [[nodiscard]] inline constexpr const ComponentType &z() const noexcept { return z_; }
 
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<3, const scalar_t> ptr(const host::label_t idx) const noexcept
             {
@@ -327,14 +348,33 @@ namespace LBM
                   yz_(name + "_yz", mesh, value, programCtrl, allocate),
                   zz_(name + "_zz", mesh, value, programCtrl, allocate) {}
 
+            __host__ [[nodiscard]] symmetricTensorField(
+                const name_t &name,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl,
+                const bool allocate = true)
+                : xx_(name + "_xx", mesh, programCtrl, allocate),
+                  xy_(name + "_xy", mesh, programCtrl, allocate),
+                  xz_(name + "_xz", mesh, programCtrl, allocate),
+                  yy_(name + "_yy", mesh, programCtrl, allocate),
+                  yz_(name + "_yz", mesh, programCtrl, allocate),
+                  zz_(name + "_zz", mesh, programCtrl, allocate) {}
+
             ~symmetricTensorField() {}
 
-            __host__ [[nodiscard]] inline constexpr const ComponentType &xx() noexcept { return xx_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &xy() noexcept { return xy_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &xz() noexcept { return xz_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &yy() noexcept { return yy_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &yz() noexcept { return yz_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &zz() noexcept { return zz_; }
+            __host__ [[nodiscard]] inline constexpr ComponentType &xx() noexcept { return xx_; }
+            __host__ [[nodiscard]] inline constexpr ComponentType &xy() noexcept { return xy_; }
+            __host__ [[nodiscard]] inline constexpr ComponentType &xz() noexcept { return xz_; }
+            __host__ [[nodiscard]] inline constexpr ComponentType &yy() noexcept { return yy_; }
+            __host__ [[nodiscard]] inline constexpr ComponentType &yz() noexcept { return yz_; }
+            __host__ [[nodiscard]] inline constexpr ComponentType &zz() noexcept { return zz_; }
+
+            __host__ [[nodiscard]] inline constexpr const ComponentType &xx() const noexcept { return xx_; }
+            __host__ [[nodiscard]] inline constexpr const ComponentType &xy() const noexcept { return xy_; }
+            __host__ [[nodiscard]] inline constexpr const ComponentType &xz() const noexcept { return xz_; }
+            __host__ [[nodiscard]] inline constexpr const ComponentType &yy() const noexcept { return yy_; }
+            __host__ [[nodiscard]] inline constexpr const ComponentType &yz() const noexcept { return yz_; }
+            __host__ [[nodiscard]] inline constexpr const ComponentType &zz() const noexcept { return zz_; }
 
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, const scalar_t> ptr(const host::label_t idx) const noexcept
             {

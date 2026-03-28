@@ -121,19 +121,12 @@ namespace LBM
             using BaseType::componentNamesMean_;
             using BaseType::hostWriteBuffer_;
             using BaseType::mesh_;
-            using BaseType::mxx_;
-            using BaseType::mxy_;
-            using BaseType::mxz_;
-            using BaseType::myy_;
-            using BaseType::myz_;
-            using BaseType::mzz_;
             using BaseType::name_;
             using BaseType::nameMean_;
+            using BaseType::Pi_;
             using BaseType::rho_;
             using BaseType::streamsLBM_;
-            using BaseType::u_;
-            using BaseType::v_;
-            using BaseType::w_;
+            using BaseType::U_;
 
             /**
              * @brief Constructs a kinetic energy object
@@ -146,22 +139,12 @@ namespace LBM
             __host__ [[nodiscard]] kineticEnergy(
                 host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
                 const host::latticeMesh &mesh,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &rho,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &u,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &v,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &w,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxx,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxy,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxz,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myy,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myz,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mzz,
+                const device::scalarField<VelocitySet, time::instantaneous> &rho,
+                const device::vectorField<VelocitySet, time::instantaneous> &U,
+                const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
                 const streamHandler &streamsLBM,
                 const programControl &programCtrl) noexcept
-                : BaseType(
-                      "k",
-                      hostWriteBuffer, mesh, rho, u, v, w,
-                      mxx, mxy, mxz, myy, myz, mzz, streamsLBM),
+                : BaseType("k", hostWriteBuffer, mesh, rho, U, Pi, streamsLBM),
                   k_(name_, mesh_, calculate_, programCtrl),
                   kMean_(nameMean_, mesh, calculateMean_, programCtrl)
             {

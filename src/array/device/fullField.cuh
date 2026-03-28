@@ -97,21 +97,21 @@ namespace LBM
              * @param[in] programCtrl The program control object
              * @param[in] allocate If false, the array is not allocated (ptr_ remains null).
              **/
-            template <const host::mallocType MallocType>
-            __host__ [[nodiscard]] array(
-                const host::array<MallocType, T, VelocitySet, TimeType> &hostArray,
-                const programControl &programCtrl,
-                const bool allocate = true)
-                : arrayBase<T>(
-                      This::allocate_on_devices(
-                          hostArray, allocate, programCtrl),
-                      hostArray.mesh(),
-                      programCtrl),
-                  name_(hostArray.name()),
-                  meanCount_(initialiseMeanCount(programCtrl))
-            {
-                initialise_boundary_condition(name_, programCtrl.deviceList());
-            }
+            // template <const host::mallocType MallocType>
+            // __host__ [[nodiscard]] array(
+            //     const host::array<MallocType, T, VelocitySet, TimeType> &hostArray,
+            //     const programControl &programCtrl,
+            //     const bool allocate = true)
+            //     : arrayBase<T>(
+            //           This::allocate_on_devices(
+            //               hostArray, allocate, programCtrl),
+            //           hostArray.mesh(),
+            //           programCtrl),
+            //       name_(hostArray.name()),
+            //       meanCount_(initialiseMeanCount(programCtrl))
+            // {
+            //     initialise_boundary_condition(name_, programCtrl.deviceList());
+            // }
 
             /**
              * @brief Construct a device array with a uniform value.
@@ -349,9 +349,9 @@ namespace LBM
                 const name_t &name,
                 const std::vector<deviceIndex_t> &deviceList) noexcept
             {
-                if ((name == "u") || (name == "v") || (name == "w"))
+                if ((name == "U_x") || (name == "U_y") || (name == "U_z"))
                 {
-                    const device::label_t i = (name == "u") ? 0 : ((name == "v") ? 1 : 2);
+                    const device::label_t i = (name == "U_x") ? 0 : ((name == "U_y") ? 1 : 2);
 
                     const boundaryValue<VelocitySet, false> North(name, "North");
                     const boundaryValue<VelocitySet, false> South(name, "South");

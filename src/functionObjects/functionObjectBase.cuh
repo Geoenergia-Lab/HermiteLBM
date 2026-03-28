@@ -79,16 +79,9 @@ namespace LBM
             /**
              * @brief Device pointer collection
              **/
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &rho_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &u_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &v_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &w_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxx_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxy_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxz_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myy_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myz_;
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mzz_;
+            const device::scalarField<VelocitySet, time::instantaneous> &rho_;
+            const device::vectorField<VelocitySet, time::instantaneous> &U_;
+            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi_;
 
             /**
              * @brief Stream handler for CUDA operations
@@ -220,7 +213,10 @@ namespace LBM
              **/
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs(const host::label_t idx) const noexcept
             {
-                return {rho_.ptr(idx), u_.ptr(idx), v_.ptr(idx), w_.ptr(idx), mxx_.ptr(idx), mxy_.ptr(idx), mxz_.ptr(idx), myy_.ptr(idx), myz_.ptr(idx), mzz_.ptr(idx)};
+                return {rho_.self().ptr(idx),
+                        U_.x().ptr(idx), U_.y().ptr(idx), U_.z().ptr(idx),
+                        Pi_.xx().ptr(idx), Pi_.xy().ptr(idx), Pi_.xz().ptr(idx),
+                        Pi_.yy().ptr(idx), Pi_.yz().ptr(idx), Pi_.zz().ptr(idx)};
             }
 
             /**
@@ -304,16 +300,9 @@ namespace LBM
                 const name_t &name,
                 host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
                 const host::latticeMesh &mesh,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &rho,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &u,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &v,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &w,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxx,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxy,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxz,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myy,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myz,
-                const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mzz,
+                const device::scalarField<VelocitySet, time::instantaneous> &rho,
+                const device::vectorField<VelocitySet, time::instantaneous> &U,
+                const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
                 const streamHandler &streamsLBM) noexcept
                 : name_(name),
                   nameMean_(name + "Mean"),
@@ -324,15 +313,8 @@ namespace LBM
                   hostWriteBuffer_(hostWriteBuffer),
                   mesh_(mesh),
                   rho_(rho),
-                  u_(u),
-                  v_(v),
-                  w_(w),
-                  mxx_(mxx),
-                  mxy_(mxy),
-                  mxz_(mxz),
-                  myy_(myy),
-                  myz_(myz),
-                  mzz_(mzz),
+                  U_(U),
+                  Pi_(Pi),
                   streamsLBM_(streamsLBM) {}
 
             /**
