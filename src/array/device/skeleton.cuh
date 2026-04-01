@@ -83,6 +83,23 @@ namespace LBM
              **/
             using This = array<field::SKELETON, T, VelocitySet, time::instantaneous>;
 
+            /**
+             * @brief Halo face-depth used for storage allocation
+             * @note D3Q7 needs two packed scalar layers for phi-neighbor stencils
+             **/
+            template <typename ValueType = host::label_t>
+            __host__ __device__ [[nodiscard]] static inline consteval ValueType halo_face_qf() noexcept
+            {
+                if constexpr (VelocitySet::Q() == 7)
+                {
+                    return static_cast<ValueType>(2);
+                }
+                else
+                {
+                    return VelocitySet::template QF<ValueType>();
+                }
+            }
+
         public:
             /**
              * @brief Construct a skeleton device array from host data.
@@ -155,7 +172,7 @@ namespace LBM
                 const host::label_t nyBlocksTrue,
                 const host::label_t nzBlocksTrue) noexcept
             {
-                return VelocitySet::template QF<host::label_t>() * ((static_cast<host::label_t>(nxBlocksTrue) * static_cast<host::label_t>(nyBlocksTrue) * static_cast<host::label_t>(nzBlocksTrue) * block::nx<host::label_t>() * block::ny<host::label_t>() * block::nz<host::label_t>()) / block::n<alpha, host::label_t>());
+                return halo_face_qf<host::label_t>() * ((static_cast<host::label_t>(nxBlocksTrue) * static_cast<host::label_t>(nyBlocksTrue) * static_cast<host::label_t>(nzBlocksTrue) * block::nx<host::label_t>() * block::ny<host::label_t>() * block::nz<host::label_t>()) / block::n<alpha, host::label_t>());
             }
 
             template <const axis::type alpha>
@@ -185,6 +202,8 @@ namespace LBM
                 const host::label_t GPU_y,
                 const host::label_t GPU_z)
             {
+                constexpr host::label_t faceQF = halo_face_qf<host::label_t>();
+
                 // Get the number of non-halo blocks per device
                 const host::label_t nxBlocksPerGPU = mesh.blocksPerDevice<axis::X>();
                 const host::label_t nyBlocksPerGPU = mesh.blocksPerDevice<axis::Y>();
@@ -228,12 +247,12 @@ namespace LBM
                                     const host::blockLabel Bx_global(bx0 + bx, by0 + by, bz0 + bz);
 
                                     // Local index in haloAlloc (same layout, but using local block dimensions)
-                                    for (host::label_t i = 0; i < VelocitySet::QF(); i++)
+                                    for (host::label_t i = 0; i < faceQF; i++)
                                     {
                                         // Linear index in the global matrix
-                                        const host::label_t global_idx = idxPopTest<alpha, VelocitySet::QF()>(i, Tx, Bx_global, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
+                                        const host::label_t global_idx = idxPopTest<alpha, faceQF>(i, Tx, Bx_global, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
 
-                                        const host::label_t local_idx = idxPopTest<alpha, VelocitySet::QF()>(i, Tx, Bx, nxBlocksTrue, nyBlocksTrue);
+                                        const host::label_t local_idx = idxPopTest<alpha, faceQF>(i, Tx, Bx, nxBlocksTrue, nyBlocksTrue);
 
                                         haloAlloc[local_idx] = hostArrayGlobal[global_idx];
                                     }

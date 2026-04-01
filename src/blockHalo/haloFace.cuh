@@ -229,7 +229,10 @@ namespace LBM
 
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
-                std::vector<scalar_t> face(mesh.nFaces<alpha, VelocitySet::QF()>(), 0);
+                constexpr host::label_t faceQF =
+                    (VelocitySet::Q() == 7) ? static_cast<host::label_t>(2) : VelocitySet::template QF<host::label_t>();
+
+                std::vector<scalar_t> face(mesh.nFaces<alpha, faceQF>(), 0);
 
                 // Loop over all the blocks of the global domain
                 for (host::label_t bz = 0; bz < mesh.nBlocks<axis::Z>(); bz++)
@@ -288,10 +291,12 @@ namespace LBM
 
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
+                constexpr host::label_t faceQF =
+                    (VelocitySet::Q() == 7) ? static_cast<host::label_t>(2) : VelocitySet::template QF<host::label_t>();
                 constexpr const thread::array<host::label_t, VelocitySet::QF()> indices = velocitySet::template indices_on_face<VelocitySet, alpha, coeff>();
 
                 // For all velocity coefficients on this face
-                for (host::label_t i = 0; i < VelocitySet::QF(); i++)
+                for (host::label_t i = 0; i < faceQF; i++)
                 {
                     // Second perpendicular axis
                     for (host::label_t tb = 0; tb < block::n<axis::orthogonal<alpha, 1>(), host::label_t>(); tb++)
@@ -359,13 +364,41 @@ namespace LBM
                                 }
                             }
 
-                            const host::label_t j = host::idxPop<alpha, VelocitySet::QF()>(i, Tx, Bx, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
+                            const host::label_t j = host::idxPop<alpha, faceQF>(i, Tx, Bx, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
 
                             if (j >= face.size())
                             {
                                 std::cout << j << " is greater than " << face.size() << std::endl;
                             }
-                            face[j] = pop[indices[i]];
+                            if constexpr (VelocitySet::Q() == 7)
+                            {
+                                if (i == static_cast<host::label_t>(0))
+                                {
+                                    face[j] = pop[indices[0]];
+                                }
+                                else if (phi != nullptr)
+                                {
+                                    const host::label_t alphaLayer1 =
+                                        (coeff == -1)
+                                            ? static_cast<host::label_t>(1)
+                                            : (block::n<alpha, host::label_t>() - static_cast<host::label_t>(2));
+
+                                    const host::blockLabel TxLayer1(
+                                        (alpha == axis::X) ? alphaLayer1 : Tx.x,
+                                        (alpha == axis::Y) ? alphaLayer1 : Tx.y,
+                                        (alpha == axis::Z) ? alphaLayer1 : Tx.z);
+
+                                    face[j] = phi->arr()[host::idx(TxLayer1, Bx, mesh)];
+                                }
+                                else
+                                {
+                                    face[j] = static_cast<scalar_t>(0);
+                                }
+                            }
+                            else
+                            {
+                                face[j] = pop[indices[i]];
+                            }
                         }
                     }
                 }
