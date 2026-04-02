@@ -83,7 +83,8 @@ namespace LBM
         const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
         const device::ptrCollection<6, const scalar_t> ghostHydro,
         const device::ptrCollection<6, const scalar_t> ghostPhase,
-        const device::ptrCollection<6, const scalar_t> ghostPhi)
+        const device::ptrCollection<6, const scalar_t> ghostPhi,
+        const device::ptrCollection<6, scalar_t> ghostPhiWrite)
     {
         extern __shared__ scalar_t hydroShared[];
         __shared__ scalar_t phaseShared[(PhaseVelocitySet::Q() - 1) * block::stride()];
@@ -93,6 +94,7 @@ namespace LBM
             ghostHydro,
             ghostPhase,
             ghostPhi,
+            ghostPhiWrite,
             hydroShared,
             phaseShared);
     }
@@ -104,15 +106,13 @@ namespace LBM
         const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
         const device::ptrCollection<6, scalar_t> ghostHydro,
         const device::ptrCollection<6, scalar_t> ghostPhase,
-        const device::ptrCollection<6, const scalar_t> ghostPhi,
-        const device::ptrCollection<6, scalar_t> ghostPhiWrite)
+        const device::ptrCollection<6, const scalar_t> ghostPhi)
     {
         phaseCollide<BoundaryConditions, VelocitySet, PhaseVelocitySet, Collision, HydroHalo, PhaseHalo>(
             devPtrs,
             ghostHydro,
             ghostPhase,
-            ghostPhi,
-            ghostPhiWrite);
+            ghostPhi);
     }
 
     /**

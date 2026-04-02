@@ -56,6 +56,21 @@ __host__ [[nodiscard]] inline consteval device::label_t NStreams() noexcept { re
 
 constexpr const device::label_t VirtualDeviceIndex = 0;
 
+#ifndef MULTI_GPU
+namespace
+{
+    __host__ [[nodiscard]] inline constexpr device::ptrCollection<6, const scalar_t> nullPhiReadBuffer() noexcept
+    {
+        return {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    }
+
+    __host__ [[nodiscard]] inline constexpr device::ptrCollection<6, scalar_t> nullPhiWriteBuffer() noexcept
+    {
+        return {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    }
+}
+#endif
+
 int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
@@ -119,16 +134,20 @@ int main(const int argc, const char *const argv[])
 
     device::haloSingle<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()> fBlockHalo(mesh, programCtrl);      // Hydrodynamic population halo
     device::haloSingle<PhaseVelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()> gBlockHalo(mesh, programCtrl); // Phase population halo
+#ifdef MULTI_GPU
     device::halo<PhaseVelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()> phiBlockHalo(mesh, programCtrl);     // Scalar phi halo
+#endif
 
     programCtrl.configure<smem_alloc_size<VelocitySet>()>(phaseFieldStream);
 
     const runTimeIO IO(mesh, programCtrl);
 
+#ifdef MULTI_GPU
     phaseFieldPrimePhiHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[0]>>>(
         devPtrs,
         phiBlockHalo.writeBuffer(VirtualDeviceIndex));
     phiBlockHalo.swapNoSync(VirtualDeviceIndex);
+#endif
 
     for (host::label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
@@ -169,25 +188,42 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
+#ifdef MULTI_GPU
                 phaseFieldStream<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[stream]>>>(
                     devPtrs,
                     fBlockHalo.readBuffer(VirtualDeviceIndex),
                     gBlockHalo.readBuffer(VirtualDeviceIndex),
-                    phiBlockHalo.readBuffer(VirtualDeviceIndex));
+                    phiBlockHalo.readBuffer(VirtualDeviceIndex),
+                    phiBlockHalo.writeBuffer(VirtualDeviceIndex));
 
                 phaseFieldCollide<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
                     devPtrs,
                     fBlockHalo.writeBuffer(VirtualDeviceIndex),
                     gBlockHalo.writeBuffer(VirtualDeviceIndex),
-                    phiBlockHalo.readBuffer(VirtualDeviceIndex),
-                    phiBlockHalo.writeBuffer(VirtualDeviceIndex));
+                    phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
+#else
+                phaseFieldStream<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[stream]>>>(
+                    devPtrs,
+                    fBlockHalo.readBuffer(VirtualDeviceIndex),
+                    gBlockHalo.readBuffer(VirtualDeviceIndex),
+                    nullPhiReadBuffer(),
+                    nullPhiWriteBuffer());
+
+                phaseFieldCollide<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
+                    devPtrs,
+                    fBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    gBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    nullPhiReadBuffer());
+#endif
             });
 
         // Calculate S kernel
         runTimeObjects.calculate(timeStep);
 
         // Promote collide-written scalar halos for the next stream/collide step
+#ifdef MULTI_GPU
         phiBlockHalo.swapNoSync(VirtualDeviceIndex);
+#endif
 
         // Do the run-time IO
         if (programCtrl.print(timeStep))

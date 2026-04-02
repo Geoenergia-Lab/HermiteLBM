@@ -142,6 +142,30 @@ namespace LBM
             }
 
             /**
+             * @brief Provides read-only access to the current write halo
+             * @return Collection of const pointers to write halo faces (x0, x1, y0, y1, z0, z1)
+             **/
+            __device__ __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, const scalar_t> writeBufferConst(const host::label_t i) const noexcept
+            {
+                return {writeBuffer_.x0Const(i), writeBuffer_.x1Const(i), writeBuffer_.y0Const(i), writeBuffer_.y1Const(i), writeBuffer_.z0Const(i), writeBuffer_.z1Const(i)};
+            }
+
+            /**
+             * @brief Compile-time periodicity query for X direction
+             **/
+            __device__ __host__ [[nodiscard]] static inline consteval bool periodicX() noexcept { return x_periodic; }
+
+            /**
+             * @brief Compile-time periodicity query for Y direction
+             **/
+            __device__ __host__ [[nodiscard]] static inline consteval bool periodicY() noexcept { return y_periodic; }
+
+            /**
+             * @brief Compile-time periodicity query for Z direction
+             **/
+            __device__ __host__ [[nodiscard]] static inline consteval bool periodicZ() noexcept { return z_periodic; }
+
+            /**
              * @brief Loads halo population data from neighboring blocks
              * @param[out] pop Array to store loaded population values
              * @param[in] readBuffer Collection of pointers to the halo faces
@@ -301,6 +325,87 @@ namespace LBM
                 }
 
                 return __ldg(&(readBuffer.ptr<static_cast<host::label_t>(pointerIndex<axis::Z, -1>())>()[faceIdx]));
+            }
+
+            /**
+             * @brief Loads a scalar value without halo-face buffers (single-GPU path)
+             * @tparam dx X-offset of the requested neighbor (-2..+2)
+             * @tparam dy Y-offset of the requested neighbor (-2..+2)
+             * @tparam dz Z-offset of the requested neighbor (-2..+2)
+             **/
+            template <const int dx, const int dy, const int dz>
+            __device__ static inline constexpr scalar_t pull_scalar_local(
+                const scalar_t *const ptrRestrict scalarField,
+                const thread::coordinate &Tx,
+                const block::coordinate &Bx,
+                const device::pointCoordinate &point) noexcept
+            {
+                constexpr int scalarHaloDepth = 2;
+
+                static_assert((dx >= -scalarHaloDepth) && (dx <= scalarHaloDepth), "dx must be in [-2, 2].");
+                static_assert((dy >= -scalarHaloDepth) && (dy <= scalarHaloDepth), "dy must be in [-2, 2].");
+                static_assert((dz >= -scalarHaloDepth) && (dz <= scalarHaloDepth), "dz must be in [-2, 2].");
+
+                if constexpr (dx == 0 && dy == 0 && dz == 0)
+                {
+                    return __ldg(&(scalarField[device::idx(Tx, Bx)]));
+                }
+
+                const int nX = static_cast<int>(block::n<axis::X>());
+                const int nY = static_cast<int>(block::n<axis::Y>());
+                const int nZ = static_cast<int>(block::n<axis::Z>());
+
+                const int shiftedX = static_cast<int>(Tx.value<axis::X>()) + dx;
+                const int shiftedY = static_cast<int>(Tx.value<axis::Y>()) + dy;
+                const int shiftedZ = static_cast<int>(Tx.value<axis::Z>()) + dz;
+
+                if constexpr (!x_periodic)
+                {
+                    const int gx = static_cast<int>(point.value<axis::X>()) + dx;
+                    if ((gx < 0) || (gx >= static_cast<int>(device::n<axis::X>())))
+                    {
+                        return static_cast<scalar_t>(0);
+                    }
+                }
+
+                if constexpr (!y_periodic)
+                {
+                    const int gy = static_cast<int>(point.value<axis::Y>()) + dy;
+                    if ((gy < 0) || (gy >= static_cast<int>(device::n<axis::Y>())))
+                    {
+                        return static_cast<scalar_t>(0);
+                    }
+                }
+
+                if constexpr (!z_periodic)
+                {
+                    const int gz = static_cast<int>(point.value<axis::Z>()) + dz;
+                    if ((gz < 0) || (gz >= static_cast<int>(device::n<axis::Z>())))
+                    {
+                        return static_cast<scalar_t>(0);
+                    }
+                }
+
+                const bool crossMinusX = shiftedX < 0;
+                const bool crossMinusY = shiftedY < 0;
+                const bool crossMinusZ = shiftedZ < 0;
+
+                const bool crossPlusX = shiftedX >= nX;
+                const bool crossPlusY = shiftedY >= nY;
+                const bool crossPlusZ = shiftedZ >= nZ;
+
+                const device::label_t tx = static_cast<device::label_t>(crossMinusX ? (shiftedX + nX) : (crossPlusX ? (shiftedX - nX) : shiftedX));
+                const device::label_t ty = static_cast<device::label_t>(crossMinusY ? (shiftedY + nY) : (crossPlusY ? (shiftedY - nY) : shiftedY));
+                const device::label_t tz = static_cast<device::label_t>(crossMinusZ ? (shiftedZ + nZ) : (crossPlusZ ? (shiftedZ - nZ) : shiftedZ));
+
+                const device::label_t bx =
+                    crossMinusX ? Bx.shifted_block<axis::X, -1>() : (crossPlusX ? Bx.shifted_block<axis::X, +1>() : Bx.value<axis::X>());
+                const device::label_t by =
+                    crossMinusY ? Bx.shifted_block<axis::Y, -1>() : (crossPlusY ? Bx.shifted_block<axis::Y, +1>() : Bx.value<axis::Y>());
+                const device::label_t bz =
+                    crossMinusZ ? Bx.shifted_block<axis::Z, -1>() : (crossPlusZ ? Bx.shifted_block<axis::Z, +1>() : Bx.value<axis::Z>());
+
+                return __ldg(&(scalarField[device::idx(tx, ty, tz, bx, by, bz)]));
             }
 
             /**

@@ -117,7 +117,12 @@ namespace LBM
             return hydroShared[tid * sharedStride + phiSharedOffset];
         }
 
+#ifdef MULTI_GPU
         return PhaseHalo::template pull_scalar<dx, dy, dz>(phi, phiBuffer, Tx, Bx, point);
+#else
+        (void)phiBuffer;
+        return PhaseHalo::template pull_scalar_local<dx, dy, dz>(phi, Tx, Bx, point);
+#endif
     }
 
     /**
@@ -242,6 +247,7 @@ namespace LBM
      * @param[in] hydroBuffer Collection of pointers to the block halo faces used during hydrodynamic streaming
      * @param[in] phaseBuffer Collection of pointers to the block halo faces used during phase-field streaming
      * @param[in] phiBuffer Collection of pointers to scalar phase-field halo faces used by normal calculation
+     * @param[in] phiWriteBuffer Collection of writable pointers to scalar phase-field halo faces for next-step neighbor stencils
      * @param[in] hydroShared Inline or externally stored shared memory buffer
      **/
     template <class BoundaryConditions, class VelocitySet, class PhaseVelocitySet, class HydroHalo, class PhaseHalo, class HydroShared, class PhaseShared>
@@ -250,6 +256,7 @@ namespace LBM
         const device::ptrCollection<6, const scalar_t> &hydroBuffer,
         const device::ptrCollection<6, const scalar_t> &phaseBuffer,
         const device::ptrCollection<6, const scalar_t> &phiBuffer,
+        const device::ptrCollection<6, scalar_t> &phiWriteBuffer,
         HydroShared &hydroShared,
         PhaseShared &phaseShared)
     {
@@ -461,6 +468,13 @@ namespace LBM
                     devPtrs.ptr<moment>()[idx] = moments[moment];
                 }
             });
+
+        // Save scalar phi for neighbor-gradient stencils used by the next collide/stream step
+#ifdef MULTI_GPU
+        PhaseHalo::save_scalar(moments[m_i<10>()], phiWriteBuffer, Tx, Bx, point);
+#else
+        (void)phiWriteBuffer;
+#endif
     }
 
     /**
@@ -473,16 +487,14 @@ namespace LBM
      * @param[in] devPtrs Collection of 11 pointers to device arrays on the GPU
      * @param[in] hydroBuffer Collection of writable pointers to hydrodynamic halo faces
      * @param[in] phaseBuffer Collection of writable pointers to phase-population halo faces
-     * @param[in] phiBuffer Collection of read-only pointers to scalar phase-field halo faces
-     * @param[in] phiWriteBuffer Collection of writable pointers to scalar phase-field halo faces
+     * @param[in] phiBuffer Collection of read-only pointers to scalar phase-field halo faces (freshly written in phaseStream)
      **/
     template <class BoundaryConditions, class VelocitySet, class PhaseVelocitySet, class Collision, class HydroHalo, class PhaseHalo>
     __device__ inline void phaseCollide(
         const device::ptrCollection<11, scalar_t> &devPtrs,
         const device::ptrCollection<6, scalar_t> &hydroBuffer,
         const device::ptrCollection<6, scalar_t> &phaseBuffer,
-        const device::ptrCollection<6, const scalar_t> &phiBuffer,
-        const device::ptrCollection<6, scalar_t> &phiWriteBuffer)
+        const device::ptrCollection<6, const scalar_t> &phiBuffer)
     {
         static_assert(std::is_same_v<HydroHalo, device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>>);
         static_assert(std::is_same_v<PhaseHalo, device::halo<PhaseVelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>>);
@@ -612,9 +624,6 @@ namespace LBM
 
         // Save the phase populations to the block halo
         PhaseHalo::save(pop_g, hydroMoments, phaseBuffer, Tx, Bx, point);
-
-        // Save scalar phi for neighbor-gradient stencils in the next stream/collide step
-        PhaseHalo::save_scalar(phi_, phiWriteBuffer, Tx, Bx, point);
     }
 }
 
