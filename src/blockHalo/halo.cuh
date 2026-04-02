@@ -545,6 +545,35 @@ namespace LBM
                 save_direction<axis::Z, z_periodic>(pop, writeBuffer, Tx, Bx, point);
             }
 
+            /**
+             * @brief Saves population data to halo regions for neighboring blocks
+             * @param[in] pop Array containing population values to save
+             * @param[out] writeBuffer Collection of pointers to the halo faces
+             *
+             * This device function saves population values to halo regions for
+             * neighboring blocks to read.
+             **/
+            __device__ static inline constexpr void save(
+                thread::array<scalar_t, VelocitySet::Q()> &pop,
+                const thread::array<scalar_t, 11> &moments,
+                const device::ptrCollection<6, scalar_t> &writeBuffer,
+                const thread::coordinate &Tx,
+                const block::coordinate &Bx,
+                const device::pointCoordinate &point) noexcept
+            {
+                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG_NOTE(device::halo::save, "Potential issue with condition checking (e.g. West, East, etc)."));
+                if constexpr (VelocitySet::Q() != 7)
+                {
+                    VelocitySet::template reconstruct<false>(pop, moments);
+                }
+
+                save_direction<axis::X, x_periodic>(pop, writeBuffer, Tx, Bx, point);
+
+                save_direction<axis::Y, y_periodic>(pop, writeBuffer, Tx, Bx, point);
+
+                save_direction<axis::Z, z_periodic>(pop, writeBuffer, Tx, Bx, point);
+            }
+
 #include "haloSharedMemoryOperations.cuh"
 
         private:
