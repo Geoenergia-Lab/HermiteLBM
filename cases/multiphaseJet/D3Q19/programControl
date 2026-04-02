@@ -11,9 +11,9 @@
 
 caseName        multiphaseJet;
 
-Re_A            1000;
+Re_A            3000;
 
-Re_B            1000;
+Re_B            3000;
 
 We              500;
 

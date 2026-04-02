@@ -111,12 +111,16 @@ namespace LBM
             __host__ inline void swap(const host::label_t i) noexcept
             {
                 errorHandler::checkInline(cudaDeviceSynchronize());
-                std::swap(readBuffer_.x0Ref(i), writeBuffer_.x0Ref(i));
-                std::swap(readBuffer_.x1Ref(i), writeBuffer_.x1Ref(i));
-                std::swap(readBuffer_.y0Ref(i), writeBuffer_.y0Ref(i));
-                std::swap(readBuffer_.y1Ref(i), writeBuffer_.y1Ref(i));
-                std::swap(readBuffer_.z0Ref(i), writeBuffer_.z0Ref(i));
-                std::swap(readBuffer_.z1Ref(i), writeBuffer_.z1Ref(i));
+                swapPointers(i);
+            }
+
+            /**
+             * @brief Swaps read and write halo buffers without device synchronization
+             * @note Safe when producer/consumer kernels are stream-ordered
+             **/
+            __host__ inline void swapNoSync(const host::label_t i) noexcept
+            {
+                swapPointers(i);
             }
 
             /**
@@ -439,6 +443,19 @@ namespace LBM
 #include "haloSharedMemoryOperations.cuh"
 
         private:
+            /**
+             * @brief Swaps read/write face pointers
+             **/
+            __host__ inline void swapPointers(const host::label_t i) noexcept
+            {
+                std::swap(readBuffer_.x0Ref(i), writeBuffer_.x0Ref(i));
+                std::swap(readBuffer_.x1Ref(i), writeBuffer_.x1Ref(i));
+                std::swap(readBuffer_.y0Ref(i), writeBuffer_.y0Ref(i));
+                std::swap(readBuffer_.y1Ref(i), writeBuffer_.y1Ref(i));
+                std::swap(readBuffer_.z0Ref(i), writeBuffer_.z0Ref(i));
+                std::swap(readBuffer_.z1Ref(i), writeBuffer_.z1Ref(i));
+            }
+
             /**
              * @brief The individual halo objects
              **/

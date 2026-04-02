@@ -52,7 +52,7 @@ SourceFiles
 
 using namespace LBM;
 
-__host__ [[nodiscard]] inline consteval label_t NStreams() noexcept { return 1; }
+__host__ [[nodiscard]] inline consteval device::label_t NStreams() noexcept { return 1; }
 
 constexpr const device::label_t VirtualDeviceIndex = 0;
 
@@ -117,21 +117,21 @@ int main(const int argc, const char *const argv[])
 
     objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, u, v, w, mxx, mxy, mxz, myy, myz, mzz, streamsLBM, programCtrl);
 
-    device::haloSingle<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()> fBlockHalo(mesh, programCtrl);      // Hydrodynamic halo
-    device::haloSingle<PhaseVelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()> gBlockHalo(mesh, programCtrl); // Phase field halo
+    device::haloSingle<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()> fBlockHalo(mesh, programCtrl);      // Hydrodynamic population halo
+    device::haloSingle<PhaseVelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()> gBlockHalo(mesh, programCtrl); // Phase population halo
+    device::halo<PhaseVelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()> phiBlockHalo(mesh, programCtrl);     // Scalar phi halo
 
     programCtrl.configure<smem_alloc_size<VelocitySet>()>(phaseFieldStream);
 
     const runTimeIO IO(mesh, programCtrl);
 
+    phaseFieldPrimePhiHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[0]>>>(
+        devPtrs,
+        phiBlockHalo.writeBuffer(VirtualDeviceIndex));
+    phiBlockHalo.swapNoSync(VirtualDeviceIndex);
+
     for (host::label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
-        // Do the run-time IO
-        if (programCtrl.print(timeStep))
-        {
-            std::cout << "Time: " << timeStep << std::endl;
-        }
-
         // Checkpoint
         if (programCtrl.save(timeStep))
         {
@@ -171,17 +171,29 @@ int main(const int argc, const char *const argv[])
             {
                 phaseFieldStream<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[stream]>>>(
                     devPtrs,
-                    fBlockHalo.buffer(VirtualDeviceIndex),
-                    gBlockHalo.buffer(VirtualDeviceIndex));
+                    fBlockHalo.readBuffer(VirtualDeviceIndex),
+                    gBlockHalo.readBuffer(VirtualDeviceIndex),
+                    phiBlockHalo.readBuffer(VirtualDeviceIndex));
 
                 phaseFieldCollide<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
                     devPtrs,
-                    fBlockHalo.buffer(),
-                    gBlockHalo.buffer());
+                    fBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    gBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    phiBlockHalo.readBuffer(VirtualDeviceIndex),
+                    phiBlockHalo.writeBuffer(VirtualDeviceIndex));
             });
 
         // Calculate S kernel
         runTimeObjects.calculate(timeStep);
+
+        // Promote collide-written scalar halos for the next stream/collide step
+        phiBlockHalo.swapNoSync(VirtualDeviceIndex);
+
+        // Do the run-time IO
+        if (programCtrl.print(timeStep))
+        {
+            std::cout << "Time: " << timeStep << std::endl;
+        }
     }
 
     return 0;

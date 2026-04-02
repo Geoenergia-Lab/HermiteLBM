@@ -381,7 +381,70 @@ namespace LBM
 
             if (boundaryNormal.isBoundary())
             {
-                BoundaryConditions::template calculate_moments<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, hydroShared, Tx, point);
+                const scalar_t *const hydroSharedPtr = hydroShared;
+
+                if constexpr (requires
+                              {
+                                  BoundaryConditions::template calculate_moments<VelocitySet, PhaseVelocitySet, const scalar_t *>(
+                                      pop,
+                                      moments,
+                                      boundaryNormal,
+                                      hydroSharedPtr,
+                                      Tx,
+                                      point);
+                              })
+                {
+                    BoundaryConditions::template calculate_moments<VelocitySet, PhaseVelocitySet, const scalar_t *>(
+                        pop,
+                        moments,
+                        boundaryNormal,
+                        hydroSharedPtr,
+                        Tx,
+                        point);
+                }
+                else if constexpr (requires
+                                   {
+                                       BoundaryConditions::template calculate_moments<VelocitySet, PhaseVelocitySet>(
+                                           pop,
+                                           moments,
+                                           boundaryNormal,
+                                           hydroShared,
+                                           Tx,
+                                           point);
+                                   })
+                {
+                    BoundaryConditions::template calculate_moments<VelocitySet, PhaseVelocitySet>(
+                        pop,
+                        moments,
+                        boundaryNormal,
+                        hydroShared,
+                        Tx,
+                        point);
+                }
+                else
+                {
+                    thread::array<scalar_t, NUMBER_MOMENTS<false>()> hydroMoments;
+
+                    device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
+                        [&](const auto moment)
+                        {
+                            hydroMoments[moment] = moments[moment];
+                        });
+
+                    BoundaryConditions::template calculate_moments<VelocitySet>(
+                        pop,
+                        hydroMoments,
+                        boundaryNormal,
+                        hydroShared,
+                        Tx,
+                        point);
+
+                    device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
+                        [&](const auto moment)
+                        {
+                            moments[moment] = hydroMoments[moment];
+                        });
+                }
             }
         }
 
