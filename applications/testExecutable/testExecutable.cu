@@ -105,17 +105,11 @@ int main(const int argc, const char *const argv[])
             runTimeObjects.save(timeStep);
         }
 
-        // for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
-        // {
-        //     errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
-        //     errorHandler::checkInline(cudaDeviceSynchronize());
-        //     streamsLBM.synchronize(VirtualDeviceIndex);
-        // }
-
         // Main kernel
         for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
         {
             errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
+            errorHandler::checkInline(cudaDeviceSynchronize());
             streamsLBM.synchronize(VirtualDeviceIndex);
 
             const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs(
@@ -168,12 +162,12 @@ int main(const int argc, const char *const argv[])
             // East to West exchange
             // Destination z block: located at bz = nzBlocks
             // Pretty sure this is right, not 100%
-            const host::blockLabel WestDeviceDestinationBlock(0, 0, 0);
+            constexpr const host::blockLabel WestDeviceDestinationBlock(0, 0, 0);
             const host::label_t WestDestinationID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, WestDeviceDestinationBlock, nxb, nyb);
 
             // Source z block: located at bz = 0
             // Pretty sure this is right
-            const host::blockLabel EastDeviceSourceBlock(0, 0, 0);
+            constexpr const host::blockLabel EastDeviceSourceBlock(0, 0, 0);
             const host::label_t EastSourceID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, EastDeviceSourceBlock, nxb, nyb);
 
             // West to East exchange
@@ -212,14 +206,7 @@ int main(const int argc, const char *const argv[])
             }
 
             // Halo pointer swap
-            for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
-            {
-                errorHandler::checkInline(cudaDeviceSynchronize());
-                errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
-                errorHandler::checkInline(cudaDeviceSynchronize());
-                blockHalo.swap(VirtualDeviceIndex);
-                errorHandler::checkInline(cudaDeviceSynchronize());
-            }
+            blockHalo.swap(programCtrl);
         }
     }
 

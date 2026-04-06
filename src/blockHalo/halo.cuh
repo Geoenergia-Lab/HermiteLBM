@@ -122,17 +122,32 @@ namespace LBM
 
             /**
              * @brief Swaps read and write halo buffers
+             * @param[in] deviceIdx Index of the GPU device for which to swap the buffers
              * @note Synchronizes device before swapping to ensure all operations complete
              **/
-            __host__ inline void swap(const host::label_t i) noexcept
+            __host__ inline void swap(const host::label_t deviceIdx) noexcept
             {
-                errorHandler::checkInline(cudaDeviceSynchronize());
-                std::swap(readBuffer_.x0Ref(i), writeBuffer_.x0Ref(i));
-                std::swap(readBuffer_.x1Ref(i), writeBuffer_.x1Ref(i));
-                std::swap(readBuffer_.y0Ref(i), writeBuffer_.y0Ref(i));
-                std::swap(readBuffer_.y1Ref(i), writeBuffer_.y1Ref(i));
-                std::swap(readBuffer_.z0Ref(i), writeBuffer_.z0Ref(i));
-                std::swap(readBuffer_.z1Ref(i), writeBuffer_.z1Ref(i));
+                std::swap(readBuffer_.x0Ref(deviceIdx), writeBuffer_.x0Ref(deviceIdx));
+                std::swap(readBuffer_.x1Ref(deviceIdx), writeBuffer_.x1Ref(deviceIdx));
+                std::swap(readBuffer_.y0Ref(deviceIdx), writeBuffer_.y0Ref(deviceIdx));
+                std::swap(readBuffer_.y1Ref(deviceIdx), writeBuffer_.y1Ref(deviceIdx));
+                std::swap(readBuffer_.z0Ref(deviceIdx), writeBuffer_.z0Ref(deviceIdx));
+                std::swap(readBuffer_.z1Ref(deviceIdx), writeBuffer_.z1Ref(deviceIdx));
+            }
+
+            /**
+             * @brief Swaps read and write halo buffers across all devices in the program control
+             * @param[in] programCtrl The program control object
+             **/
+            __host__ inline void swap(const programControl &programCtrl) noexcept
+            {
+                for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
+                {
+                    errorHandler::checkInline(cudaDeviceSynchronize());
+                    errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
+                    errorHandler::checkInline(cudaDeviceSynchronize());
+                    swap(deviceIdx);
+                }
             }
 
             /**
