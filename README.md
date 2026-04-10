@@ -1,13 +1,17 @@
-# cudaLBM
+![HermiteLBM Logo](HermiteLBM.jpg)
 
-`cudaLBM` is a high-performance computing project that implements the moment representation of the Lattice Boltzmann Method (LBM) on a single Nvidia GPU using CUDA. This project is currently under development and is primarily focused on Linux-based systems.
+# HermiteLBM
+
+`HermiteLBM` is a high-performance computing project that implements the moment representation of the Lattice Boltzmann Method (LBM) on NVIDIA GPUs using CUDA. The code supports both single‑GPU and multi‑GPU execution (via domain decomposition and peer‑to‑peer memory transfers). This project is under active development and is primarily targeted at Linux‑based systems.
 
 ## 🚀 Features
 
-* **Lattice Boltzmann Method:** Implements the LBM for fluid dynamics simulations.
-* **D3Q19 and D3Q27 Models:** Implements both **D3Q19** and **D3Q27** velocity sets for complex three-dimensional simulations.
-* **High-Order Regularization Models:** Will implement high-order regularization models for improved accuracy.
-* **Example Cases:** Includes a lid-driven cavity case to demonstrate the solver's capabilities, with more cases to be added in the future.
+* **Lattice Boltzmann Method:** Implements the moment‑based LBM for fluid dynamics simulations.
+* **D3Q19 and D3Q27 Velocity Sets:** Both **D3Q19** and **D3Q27** lattices are fully supported for three‑dimensional simulations.
+* **Multi‑GPU Support:** Scales across multiple GPUs using domain decomposition. The communication between GPUs is currently synchronous and not overlapped with computation.
+* **Example Cases:** Two validation cases are provided:
+  * **Lid‑Driven Cavity:** Standard benchmark for 3D flows.
+  * **Jet Flow:** A submerged jet configuration demonstrating shear‑layer dynamics.
 
 ## ⚡ Performance
 
