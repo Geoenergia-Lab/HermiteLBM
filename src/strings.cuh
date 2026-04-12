@@ -70,7 +70,7 @@ namespace LBM
 
             for (host::label_t i = 0; i < S_new.size(); i++)
             {
-                S_new[i] = s + S_new[i];
+                S_new[i] = s + S[i];
             }
 
             return S_new;

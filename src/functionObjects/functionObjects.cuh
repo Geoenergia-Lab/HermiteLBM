@@ -58,24 +58,6 @@ namespace LBM
         using saveFunction = std::function<void(const host::label_t)>;
 
         /**
-         * @brief The names of the 10 solution variables of the moment representation
-         **/
-        const words_t solutionVariableNames{"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
-
-        /**
-         * @brief Maps the name of function objects to lists of the names of their individual components
-         **/
-        const std::unordered_map<name_t, words_t> fieldComponentsMap = {
-            {"momentsMean", {"rhoMean", "uMean", "vMean", "wMean", "m_xxMean", "m_xyMean", "m_xzMean", "m_yyMean", "m_yzMean", "m_zzMean"}},
-            {"rho", {"rho"}},
-            {"U", {"U_x", "U_y", "U_z"}},
-            {"Pi", {"Pi_xx", "Pi_xy", "Pi_xz", "Pi_yy", "Pi_yz", "Pi_zz"}},
-            {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}},
-            {"SMean", {"S_xxMean", "S_xyMean", "S_xzMean", "S_yyMean", "S_yzMean", "S_zzMean"}},
-            {"k", {"k"}},
-            {"kMean", {"kMean"}}};
-
-        /**
          * @brief Reads an arbitrary list of pointers from devPtrs
          * @tparam ptrIndices The indices of the pointers to read
          * @param[in] devPtrs The pointers to read from
@@ -260,28 +242,6 @@ namespace LBM
         {
             return std::filesystem::exists("functionObjects") ? string::containsString(string::trim<true>(string::eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), objectName) : false;
         }
-
-        // template <class VelocitySet, const time::type TimeType>
-        // __host__ [[nodiscard]] const device::scalarField<VelocitySet, TimeType> objectInitialiser(
-        //     const device::scalarField<VelocitySet, TimeType> &defaultObject)
-        // {
-        //     // If we want to initilise it
-        //     if (initialiserSwitch(defaultObject.name()))
-        //     {
-        //         // Check if there are checkpointed files
-        //         if (fileIO::hasIndexedFiles(defaultObject.name()))
-        //         {
-        //         }
-
-        //         // Must be no checkpointed files
-        //         return device::scalarField<VelocitySet, TimeType>(defaultObject.name());
-        //     }
-        //     else
-        //     {
-        //         // Return an empty
-        //         return device::scalarField<VelocitySet, TimeType>(defaultObject.name(), defaultObject.self().mesh(), defaultObject.self().programCtrl(), false);
-        //     }
-        // }
     }
 }
 

@@ -254,6 +254,73 @@ namespace LBM
         {
             return getStartIndex(fileNamePrefix, programCtrl.input().isArgPresent("-latestTime"));
         }
+
+        /**
+         * @brief Counts lines before the first occurrence of a target line.
+         * @param[in] file Input file stream (position advanced).
+         * @param[in] target The line content that stops counting (excluded).
+         * @return Number of lines read before target; if target not found, returns total lines.
+         **/
+        __host__ [[nodiscard]] host::label_t line_count(std::ifstream &file, const name_t &target)
+        {
+            name_t line;
+            host::label_t result = 0;
+            // bool found = false;
+
+            while (std::getline(file, line))
+            {
+                if (line == target)
+                {
+                    // found = true;
+                    break;
+                }
+                ++result;
+            }
+
+            return result;
+        }
+
+        /**
+         * @brief Reads a file line by line and returns a vector of all lines that appear
+         * before the first line exactly equal to the target string.
+         * If the target is not found, all lines from the file are returned.
+         *
+         * The function performs two passes:
+         * 1. Count how many lines precede the target (or the whole file if target absent).
+         * 2. Reserve that many slots in the vector and read the lines again, storing them.
+         *
+         * @param[in] filename Path to the file.
+         * @param[in] target The exact line content at which to stop reading (not included).
+         * @return Vector of strings containing the lines before the target.
+         **/
+        __host__ [[nodiscard]] const words_t read_until(const name_t &filename, const name_t &target)
+        {
+            std::ifstream file(filename);
+            if (!file.is_open())
+            {
+                return {}; // return empty vector on open failure
+            }
+
+            // Count lines before target
+            // If target not found, lineCount already holds total lines in file.
+            const host::label_t lineCount = line_count(file, target);
+
+            // Read and store exactly lineCount lines
+            file.clear();                 // clear EOF and error flags
+            file.seekg(0, std::ios::beg); // rewind to beginning
+
+            name_t line;
+            words_t lines;
+            lines.reserve(lineCount); // allocate once
+
+            for (host::label_t i = 0; i < lineCount; i++)
+            {
+                std::getline(file, line);
+                lines.push_back(std::move(line));
+            }
+
+            return lines;
+        }
     }
 }
 

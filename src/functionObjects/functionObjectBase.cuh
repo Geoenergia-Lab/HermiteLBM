@@ -120,11 +120,6 @@ namespace LBM
                 {
                     return string::catenate(name, {"_xx", "_xy", "_xz", "_yy", "_yz", "_zz"});
                 }
-
-                if constexpr (N == 10)
-                {
-                    return solutionVariableNames;
-                }
             }
 
             /**

@@ -222,6 +222,45 @@ namespace LBM
                 return fieldNames_;
             }
 
+            __host__ [[nodiscard]] static const words_t readFieldNames(
+                const name_t &fieldName,
+                const name_t &fileName)
+            {
+                return readFieldNames(fieldName, read_until(fileName, "fieldData"));
+            }
+
+            __host__ [[nodiscard]] static const words_t readFieldNames(
+                const name_t &fieldName,
+                const words_t &fieldInfoLines)
+            {
+                if (!fieldInfoLines.empty())
+                {
+                    // Otherwise we switch based on the number of fields
+
+                    const host::label_t N = read<host::label_t>(fieldInfoLines, "nFields");
+
+                    // If it is 1, then it is a scalar
+                    if (N == 1)
+                    {
+                        return {fieldName};
+                    }
+
+                    // If it is 3, then it is a vector
+                    if (N == 3)
+                    {
+                        return string::catenate(fieldName, {"_x", "_y", "_z"});
+                    }
+
+                    // If it is 6, then it is a symmetric tensor
+                    if (N == 6)
+                    {
+                        return string::catenate(fieldName, {"_xx", "_xy", "_xz", "_yy", "_yz", "_zz"});
+                    }
+                }
+
+                return {};
+            }
+
         private:
             /**
              * @brief The time step of the saved fields as a size_t.
@@ -253,8 +292,13 @@ namespace LBM
              * @param[in] fieldInfoLines The lines of the field information block.
              * @return A vector containing the field names.
              **/
-            __host__ [[nodiscard]] static words_t readFieldNames(const words_t &fieldInfoLines, const host::label_t N)
+            __host__ [[nodiscard]] static const words_t readFieldNames(const words_t &fieldInfoLines, const host::label_t N)
             {
+                if (fieldInfoLines.empty())
+                {
+                    return {};
+                }
+
                 words_t B = string::extractBlock(fieldInfoLines, "fieldNames[" + std::to_string(N) + "]", 0);
 
                 for (host::label_t i = 1; i < B.size() - 1; i++)

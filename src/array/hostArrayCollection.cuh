@@ -60,59 +60,13 @@ namespace LBM
          * @tparam T Data type of array elements
          * @tparam cType Constructor type specification
          **/
-        template <typename T, const ctorType::type cType>
+        template <typename T>
         class arrayCollection
         {
         public:
-            /**
-             * @brief Construct from program control and variable names
-             * @param[in] programCtrl The program control object
-             * @param[in] varNames Names of variables to include in collection
-             * @param[in] mesh The lattice mesh
-             **/
-            __host__ [[nodiscard]] arrayCollection(const programControl &programCtrl, const words_t &varNames, const host::latticeMesh &mesh)
-                : arr_(initialiseVector(programCtrl, mesh)),
-                  varNames_(varNames) {}
-
-            /**
-             * @brief Construct from specific time index
-             * @param[in] programCtrl The program control object
-             * @param[in] varNames Names of variables to include
-             * @param[in] timeIndex Specific time index to read from
-             **/
-            __host__ [[nodiscard]] arrayCollection(
-                const programControl &programCtrl,
-                const words_t &varNames,
-                const host::label_t timeIndex)
-                : arr_(initialiseVector(programCtrl, timeIndex)),
-                  varNames_(varNames) {}
-
-            /**
-             * @brief Construct from latest available time
-             * @param[in] programCtrl The program control object
-             * @param[in] varNames Names of variables to include
-             **/
-            __host__ [[nodiscard]] arrayCollection(
-                const programControl &programCtrl,
-                const words_t &varNames)
-                : arr_(initialiseVector(programCtrl)),
-                  varNames_(varNames) {}
-
-            /**
-             * @brief Construct from a file prefix
-             * @param[in] fileNamePrefix The prefix of the file
-             * @param[in] varNames Names of variables to include
-             * @param[in] timeIndex Specific time index to read from
-             **/
-            __host__ [[nodiscard]] arrayCollection(
-                const name_t &fileNamePrefix,
-                const words_t &varNames,
-                const host::label_t timeIndex)
-                : arr_(initialiseVector(fileNamePrefix, timeIndex)),
-                  varNames_(varNames) {}
-
             __host__ [[nodiscard]] arrayCollection(const name_t &fileName, const words_t &varNames)
-                : arr_(initialiseVector(fileName)),
+                : empty_(!(std::filesystem::exists(fileName))),
+                  arr_(initialiseVector(fileName, empty_)),
                   varNames_(varNames) {}
 
             /**
@@ -138,7 +92,14 @@ namespace LBM
                 return varNames_;
             }
 
+            __host__ [[nodiscard]] inline constexpr bool empty() const noexcept
+            {
+                return empty_;
+            }
+
         private:
+            const bool empty_;
+
             /**
              * @brief The underlying std::vector
              **/
@@ -156,71 +117,16 @@ namespace LBM
              * @return Initialized data vector
              * @throws std::runtime_error if indexed files not found
              **/
-            __host__ [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl, const host::latticeMesh &mesh) const
+            __host__ [[nodiscard]] static const std::vector<T> initialiseVector(const name_t &fileName, const bool empty)
             {
-                static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");
-
-                // Get the latest time step
-                if (!fileIO::hasIndexedFiles(programCtrl.caseName()))
+                if (empty)
                 {
-                    throw std::runtime_error("Did not find indexed case files");
-                }
-
-                const name_t fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin";
-                return fileIO::readFieldFile<T>(fileName);
-            }
-
-            __host__ [[nodiscard]] const std::vector<T> initialiseVector(const name_t &fileNamePrefix, const host::label_t timeIndex) const
-            {
-                static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");
-
-                // Get the latest time step
-                if (!fileIO::hasIndexedFiles(fileNamePrefix))
-                {
-                    throw std::runtime_error("Did not find indexed case files");
-                }
-                const name_t fileName = fileNamePrefix + "_" + std::to_string(fileIO::timeIndices(fileNamePrefix)[timeIndex]) + ".LBMBin";
-                return fileIO::readFieldFile<T>(fileName);
-            }
-
-            __host__ [[nodiscard]] const std::vector<T> initialiseVector(const name_t &fileName) const
-            {
-                static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");
-
-                return fileIO::readFieldFile<T>(fileName);
-            }
-
-            /**
-             * @brief Initialize vector from specific time index
-             * @param[in] programCtrl The program control object
-             * @param[in] timeIndex Time index to read from
-             * @return Initialized data vector
-             * @throws std::runtime_error if indexed files not found
-             **/
-            __host__ [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl, const host::label_t timeIndex) const
-            {
-                static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");
-
-                // Get the correct time index
-                if (fileIO::hasIndexedFiles(programCtrl.caseName()))
-                {
-                    const name_t fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::timeIndices(programCtrl.caseName())[timeIndex]) + ".LBMBin";
-                    return fileIO::readFieldFile<T>(fileName);
+                    return std::vector<T>(); // Return an empty vector if the file was not found
                 }
                 else
                 {
-                    throw std::runtime_error("Did not find indexed case files");
+                    return fileIO::readFieldFile<T>(fileName);
                 }
-            }
-
-            /**
-             * @brief Initialize vector from latest time
-             * @param[in] programCtrl The program control object
-             * @return Initialized data vector
-             **/
-            __host__ [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl) const
-            {
-                return initialiseVector(programCtrl, fileIO::getStartIndex(programCtrl, true));
             }
         };
     }

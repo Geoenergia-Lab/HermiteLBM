@@ -95,62 +95,6 @@ namespace LBM
         return errorMsg;
     }
 
-    /**
-     * @brief Returns the field names based on the provided prefix and whether a custom field is specified
-     * @param[in] fileNamePrefix The prefix for the field names
-     * @param[in] doCustomField Boolean indicating if a custom field is specified
-     * @return A reference to a vector of field names
-     * @throws std::runtime_error if an invalid field name is provided
-     **/
-    __host__ [[nodiscard]] inline host::arrayCollection<scalar_t, ctorType::MUST_READ> initialiseArrays(
-        const name_t &fileNamePrefix,
-        const programControl &programCtrl,
-        const words_t &fieldNames,
-        const host::label_t timeStep)
-    {
-        // Construct from a custom field name
-        if (programCtrl.input().isArgPresent("-fieldName"))
-        {
-            return host::arrayCollection<scalar_t, ctorType::MUST_READ>(fileNamePrefix, fieldNames, timeStep);
-        }
-        // Otherwise construct from default field names
-        else
-        {
-            return host::arrayCollection<scalar_t, ctorType::MUST_READ>(programCtrl, fieldNames, timeStep);
-        }
-    }
-
-    /**
-     * @brief Returns the field names based on the provided prefix and whether a custom field is specified
-     * @param[in] fileNamePrefix The prefix for the field names
-     * @param[in] doCustomField Boolean indicating if a custom field is specified
-     * @return A reference to a vector of field names
-     * @throws std::runtime_error if an invalid field name is provided
-     **/
-    __host__ [[nodiscard]] inline const words_t &getFieldNames(
-        const name_t &fileNamePrefix,
-        const bool doCustomField)
-    {
-        if (!doCustomField)
-        {
-            return functionObjects::solutionVariableNames;
-        }
-        else
-        {
-            const std::unordered_map<name_t, words_t>::const_iterator namesIterator = functionObjects::fieldComponentsMap.find(fileNamePrefix);
-            const bool foundField = namesIterator != functionObjects::fieldComponentsMap.end();
-            if (!foundField)
-            {
-                // Throw an exception: invalid field name
-                throw std::runtime_error("Invalid argument passed to -fieldName");
-            }
-            else
-            {
-                return namesIterator->second;
-            }
-        }
-    }
-
     __host__ [[nodiscard]] axis::type cutPlaneDirection(const programControl &programCtrl) noexcept
     {
         const name_t cutPlanePrefix = programCtrl.getArgument("-cutPlane");
@@ -313,11 +257,11 @@ namespace LBM
         }
     }
 
-    __host__ [[nodiscard]] inline const std::vector<std::vector<scalar_t>> processFields(
-        const host::arrayCollection<scalar_t, ctorType::MUST_READ> &hostMoments,
+    __host__ [[nodiscard]] const std::vector<std::vector<scalar_t>> processFields(
+        const host::arrayCollection<scalar_t> &hostMoments,
         const host::latticeMesh &mesh,
         const programControl &programCtrl,
-        const bool doCutPlane)
+        const bool doCutPlane = false)
     {
         if (doCutPlane)
         {
@@ -340,7 +284,7 @@ namespace LBM
         }
     }
 
-    __host__ [[nodiscard]] inline const host::latticeMesh processMesh(
+    __host__ [[nodiscard]] const host::latticeMesh processMesh(
         const host::latticeMesh &mesh,
         const programControl &programCtrl,
         const bool cutPlane)
@@ -357,7 +301,7 @@ namespace LBM
         }
     }
 
-    __host__ [[nodiscard]] inline const name_t processName(const programControl &programCtrl, const name_t &fileNamePrefix, const host::label_t nameIndex, const bool cutPlane)
+    __host__ [[nodiscard]] const name_t processName(const programControl &programCtrl, const name_t &fileNamePrefix, const host::label_t nameIndex, const bool cutPlane = false)
     {
         // Get the file name at the present time step
         if (cutPlane)

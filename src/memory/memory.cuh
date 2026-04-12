@@ -96,10 +96,10 @@ namespace LBM
 
             allocateMemory(&ptr, nPoints);
 
-            // if constexpr (verbose())
-            // {
-            //     allocateMessage("host::allocate", nPoints, ptr);
-            // }
+            if constexpr (verbose())
+            {
+                allocateMessage("host::allocate", nPoints, ptr);
+            }
 
             std::uninitialized_fill_n(ptr, nPoints, val);
 

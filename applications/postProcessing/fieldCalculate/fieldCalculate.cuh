@@ -52,7 +52,7 @@ SourceFiles
 
 #include "../../../src/LBMIncludes.cuh"
 #include "../../../src/typedefs/typedefs.cuh"
-#include "../../../src/array/threadArray.cuh"
+#include "../../../src/array/array.cuh"
 #include "../../../src/collision/collision.cuh"
 #include "../../../src/blockHalo/blockHalo.cuh"
 #include "../../../src/fileIO/fileIO.cuh"
@@ -90,10 +90,11 @@ namespace LBM
      * @param[in] timeStep The current time step for logging purposes
      **/
     __host__ void containsNaN(
-        const host::arrayCollection<scalar_t, ctorType::MUST_READ> &variables,
+        const host::arrayCollection<scalar_t> &variables,
         const host::latticeMesh &mesh,
         const host::label_t timeStep) noexcept
     {
+
         // De-interleave the fields
         const std::vector<std::vector<scalar_t>> fields = fileIO::deinterleaveAoS(variables.arr(), mesh);
 
@@ -148,7 +149,7 @@ namespace LBM
      * @param[in] timeStep The current time step for logging purposes
      **/
     __host__ void spatialMean(
-        const host::arrayCollection<scalar_t, ctorType::MUST_READ> &variables,
+        const host::arrayCollection<scalar_t> &variables,
         const host::latticeMesh &mesh,
         const host::label_t timeStep) noexcept
     {
@@ -166,6 +167,18 @@ namespace LBM
 
         std::cout << "};" << std::endl;
     }
+
+    using calculateFunction = void (*)(
+        const host::arrayCollection<scalar_t> &,
+        const host::latticeMesh &,
+        const host::label_t);
+
+    /**
+     * @brief Unordered map of the writer types to the appropriate functions
+     **/
+    const std::unordered_map<name_t, calculateFunction> calculators = {
+        {"containsNaN", containsNaN},
+        {"spatialMean", spatialMean}};
 }
 
 #endif
