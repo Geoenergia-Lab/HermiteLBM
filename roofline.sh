@@ -122,6 +122,9 @@ RESULT_DIR="./profiling_results/${EXE_NAME}_${TIMESTAMP}_${NUM_GPUS}GPU_${GPU_NA
 mkdir -p "$RESULT_DIR"
 echo "Results will be saved to: $(realpath "$RESULT_DIR")"
 
+# Copy hardware information for reference
+cp "$HARDWARE_INFO" "$RESULT_DIR/hardware.info"
+
 # ------------------------------------------------------------------------------
 #  Run Nsight Compute with roofline metrics
 # ------------------------------------------------------------------------------

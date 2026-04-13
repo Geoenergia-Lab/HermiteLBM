@@ -162,10 +162,10 @@ int main(const int argc, const char *const argv[])
             outputFile << "GPU_MAX_THREADS_PER_BLOCK_" << i << " = " << props.maxThreadsPerBlock << std::endl;
             outputFile << "GPU_MULTIPROCESSOR_COUNT_" << i << " = " << props.multiProcessorCount << std::endl;
             outputFile << std::endl;
-
-            outputFile << "# Consolidated architecture flags for all found GPUs (no duplicates)" << std::endl;
-            outputFile << "NVCXX_ALL_ARCHFLAGS = " << all_arch_flags << std::endl;
         }
+
+        outputFile << "# Consolidated architecture flags for all found GPUs (no duplicates)" << std::endl;
+        outputFile << "NVCXX_ALL_ARCHFLAGS = " << all_arch_flags << std::endl;
     }
 
     outputFile.close();
