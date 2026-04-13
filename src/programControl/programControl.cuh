@@ -412,21 +412,14 @@ namespace LBM
          * @param[in] varName The name of the variable to read
          **/
         template <typename T>
-        __host__ [[nodiscard]] T initialiseConst(const name_t &varName) const noexcept
+        __host__ [[nodiscard]] static inline T initialiseConst(const name_t &varName) noexcept
         {
             return string::extractParameter<T>(string::readFile("programControl"), varName);
         }
 
         __host__ [[nodiscard]] static inline host::label_t latestSaved()
         {
-            if (savedTimeSteps("timeStep").empty())
-            {
-                return 0;
-            }
-            else
-            {
-                return savedTimeSteps("timeStep").back();
-            }
+            return savedTimeSteps("timeStep").empty() ? 0 : savedTimeSteps("timeStep").back();
         }
     };
 }

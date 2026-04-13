@@ -129,7 +129,7 @@ namespace LBM
 
             const fileIO::fieldInformation fieldInfo(string::extractBlock(lines, "fieldInformation", 0));
 
-            return static_cast<host::label_t>(fieldInfo.meanCount());
+            return fieldInfo.meanCount();
         }
         else
         {

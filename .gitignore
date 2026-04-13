@@ -43,6 +43,7 @@ build
 # Case directory ignores
 cases/*/*/timeStep
 cases/*/*/postProcess
+cases/*/*/profiling_results
 
 # Unit test directory ignores
 unitTests/ComputeSanitizerTest/*.LBMBin

@@ -158,7 +158,7 @@ namespace LBM
     {
         axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-        return (static_cast<scalar_t>(mesh.dimension<alpha>()) * (pointCoordinate / mesh.L().value<alpha>())) - static_cast<scalar_t>(1);
+        return (static_cast<scalar_t>(mesh.dimension<alpha>() - static_cast<host::label_t>(1)) * (pointCoordinate / mesh.L().value<alpha>())) - static_cast<scalar_t>(1);
     }
 
     template <typename T>
