@@ -97,6 +97,9 @@ fi
 # ------------------------------------------------------------------------------
 IFS=',' read -ra GPU_IDS <<< "$GPU_LIST"
 
+# Number of GPUs used
+NUM_GPUS=${#GPU_IDS[@]}
+
 declare -a GPU_NAMES
 for id in "${GPU_IDS[@]}"; do
     gpu_line=$(grep -E "^GPU_NAME_$id\s*=" "$HARDWARE_INFO" | head -n1)
@@ -115,11 +118,9 @@ GPU_NAMES_STR=$(IFS=_; echo "${GPU_NAMES[*]}")
 #  Create timestamped output directory
 # ------------------------------------------------------------------------------
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-RESULT_DIR="./profiling_results/${EXE_NAME}_${TIMESTAMP}_${GPU_NAMES_STR}"
+RESULT_DIR="./profiling_results/${EXE_NAME}_${TIMESTAMP}_${NUM_GPUS}GPU_${GPU_NAMES_STR}"
 mkdir -p "$RESULT_DIR"
 echo "Results will be saved to: $(realpath "$RESULT_DIR")"
-
-cp "$HARDWARE_INFO" "$RESULT_DIR/hardware.info"
 
 # ------------------------------------------------------------------------------
 #  Run Nsight Compute with roofline metrics
@@ -148,6 +149,7 @@ ncu -i "$REPORT_BASE.ncu-rep" --csv --page raw > "$RESULT_DIR/metrics_raw.csv" 2
     echo "Executable:     $EXE_NAME"
     echo "Command:        $EXE_NAME ${EXE_ARGS[*]}"
     echo "GPU list:       $GPU_LIST"
+    echo "GPU count:      $NUM_GPUS"
     echo "GPU names:      ${GPU_NAMES[*]}"
     echo ""
     echo "Metrics (aggregate over all kernel launches):"
