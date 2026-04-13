@@ -56,7 +56,7 @@ field U_x
 
     North
     {
-        value   0.0256;
+        value   0.0255;
     };
 
     South
