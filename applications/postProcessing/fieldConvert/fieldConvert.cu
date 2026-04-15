@@ -76,7 +76,7 @@ int main(const int argc, const char *const argv[])
     const name_t fieldName = programCtrl.getArgument("-fieldName");
 
     // Get the time indices
-    const std::vector<host::label_t> fileNameIndices = programControl::savedTimeSteps("timeStep");
+    const std::vector<host::label_t> fileNameIndices = timeStepIndices(programCtrl);
 
     // If we have supplied the -cutPlane argument, set the flag to true
     const bool doCutPlane = programCtrl.input().isArgPresent("-cutPlane");

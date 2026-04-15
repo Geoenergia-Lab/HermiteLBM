@@ -64,6 +64,21 @@ SourceFiles
 
 namespace LBM
 {
+
+    __host__ [[nodiscard]] const std::vector<host::label_t> timeStepIndices(const programControl &programCtrl)
+    {
+        const std::vector<host::label_t> fileNameIndices = programControl::savedTimeSteps("timeStep");
+
+        if (programCtrl.input().isArgPresent("-fieldName"))
+        {
+            return {fileNameIndices.back()};
+        }
+        else
+        {
+            return fileNameIndices;
+        }
+    }
+
     /**
      * @brief Creates an error message for invalid writer types
      * @param[in] writerNames Unordered map of the writer types to the appropriate functions
