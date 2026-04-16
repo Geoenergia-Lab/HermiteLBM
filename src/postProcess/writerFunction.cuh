@@ -54,6 +54,9 @@ namespace LBM
 {
     namespace postProcess
     {
+        /**
+         * @brief Type definition for the writer function pointer
+         **/
         using writerFunction = void (*)(
             const std::vector<std::vector<scalar_t>> &,
             const name_t &,

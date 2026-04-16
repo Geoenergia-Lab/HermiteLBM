@@ -77,17 +77,17 @@ int main(const int argc, const char *const argv[])
     const name_t fieldName = programCtrl.getArgument("-fieldName");
 
     // Get the time indices
-    const std::vector<host::label_t> fileNameIndices = timeStepIndices(programCtrl);
+    const std::vector<host::label_t> fileNameIndices = programCtrl.timeStepIndices();
 
     // Parse the argument if present, otherwise set to empty string
     const name_t calculationTypeString = programCtrl.getArgument("-calculationType");
 
     // Get the calculation function
-    const std::unordered_map<name_t, calculateFunction>::const_iterator it = calculators.find(calculationTypeString);
+    const std::unordered_map<name_t, calculator::functionType>::const_iterator it = calculators.find(calculationTypeString);
 
     if (it != calculators.end())
     {
-        const calculateFunction calculation = it->second;
+        const calculator::functionType calculation = it->second;
 
         if (!fileNameIndices.empty())
         {
