@@ -3,13 +3,20 @@
 #  HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method      #
 #  Developed at UDESC - State University of Santa Catarina                    #
 #  Website: https://www.udesc.br                                              #
-#  Github: https://github.com/geoenergiaUDESC/cudaLBM                         #
+#  Github: https://github.com/Geoenergia-Lab/cudaLBM                          #
 #                                                                             #
 # --------------------------------------------------------------------------- #
 
 # --------------------------------------------------------------------------- #
 #  USER-DEFINED ENVIRONMENT VARIABLES
 # --------------------------------------------------------------------------- #
+
+# The Linux distribution name (e.g., "ubuntu2404", "debian12", etc.)
+export HERMITELBM_DISTRO="ubuntu2404"
+
+# CUDA version (major and minor)
+export HERMITELBM_CUDA_VERSION_MAJOR="13"
+export HERMITELBM_CUDA_VERSION_MINOR="0"
 
 # Architecture detection mode: "Automatic" or "Manual"
 export HERMITELBM_ARCHITECTURE_DETECTION="Automatic"
@@ -32,6 +39,10 @@ export HERMITELBM_INCLUDE_DIR="$HERMITELBM_BUILD_DIR/include"
 # --------------------------------------------------------------------------- #
 #  CUDA Toolkit
 # --------------------------------------------------------------------------- #
+export HERMITELBM_CUDA_DIR="/usr/local/cuda-${HERMITELBM_CUDA_VERSION_MAJOR}.${HERMITELBM_CUDA_VERSION_MINOR}"
+export PATH="$HERMITELBM_CUDA_DIR/bin:$PATH"
+export LD_LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LD_LIBRARY_PATH"
+export LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LIBRARY_PATH"
 if command -v nvcc > /dev/null 2>&1; then
     NVCC_PATH=$(command -v nvcc)
     RESOLVED_NVCC_PATH=$(readlink -f "$NVCC_PATH" 2>/dev/null || echo "$NVCC_PATH")
@@ -40,10 +51,6 @@ else
     echo "Error: nvcc not found. Ensure CUDA is installed and in your PATH." >&2
     return 1
 fi
-
-export PATH="$HERMITELBM_CUDA_DIR/bin:$PATH"
-export LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LIBRARY_PATH"
-export LD_LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LD_LIBRARY_PATH"
 
 # --------------------------------------------------------------------------- #
 #  UCX (Unified Communication X)
