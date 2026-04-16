@@ -31,7 +31,7 @@ graceful_exit() {
 #  Check required environment variables
 # --------------------------------------------------------------------------- #
 missing_vars=()
-for var in CUDALBM_PROJECT_DIR CUDALBM_BUILD_DIR CUDALBM_BIN_DIR CUDALBM_INCLUDE_DIR; do
+for var in HERMITELBM_PROJECT_DIR HERMITELBM_BUILD_DIR HERMITELBM_BIN_DIR HERMITELBM_INCLUDE_DIR; do
     if [ -z "${!var}" ]; then
         missing_vars+=("$var")
     fi
@@ -59,8 +59,8 @@ EXE_NAME="$1"
 shift  # Remove executable name; remaining arguments are passed to the executable
 EXE_ARGS=("$@")
 
-EXE_PATH="$CUDALBM_BIN_DIR/$EXE_NAME"
-HARDWARE_INFO="$CUDALBM_INCLUDE_DIR/hardware.info"
+EXE_PATH="$HERMITELBM_BIN_DIR/$EXE_NAME"
+HARDWARE_INFO="$HERMITELBM_INCLUDE_DIR/hardware.info"
 
 if [ ! -f "$EXE_PATH" ]; then
     echo "ERROR: Executable not found: $EXE_PATH"

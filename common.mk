@@ -2,7 +2,7 @@
 NVCXX = nvcc
 CXX = g++
 
--include $(CUDALBM_INCLUDE_DIR)/hardware.info
+-include $(HERMITELBM_INCLUDE_DIR)/hardware.info
 
 # CUDA Compiler Flags
 NVCXX_STANDARD = -std c++20

@@ -1,11 +1,11 @@
-#*---------------------------------------------------------------------------*#
+# --------------------------------------------------------------------------- #
 #                                                                             #
-#  cudaLBM: CUDA-based moment representation Lattice Boltzmann Method         #
+#  HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method      #
 #  Developed at UDESC - State University of Santa Catarina                    #
 #  Website: https://www.udesc.br                                              #
-#  Github: https://github.com/geoenergiaUDESC/cudaLBM                         #
+#  Github: https://github.com/Geoenergia-Lab/cudaLBM                          #
 #                                                                             #
-#*---------------------------------------------------------------------------*#
+# --------------------------------------------------------------------------- #
 
 # --------------------------------------------------------------------------- #
 #  CUDA Toolkit Installer for Debian‑based distributions
@@ -18,9 +18,9 @@
 #    make install DISTRO=ubuntu2404 CUDA_VERSION=13-0
 #    make install DISTRO=debian12 CUDA_VERSION=12-6
 #    make install DISTRO=wsl-ubuntu
-# ============================================================
+# --------------------------------------------------------------------------- #
 
-# Required: distribution repository code (e.g., ubuntu2404, debian12, wsl-ubuntu)
+# Required: distribution repository code (e.g., ubuntu2404, debian12)
 DISTRO ?= 
 
 # CUDA version in major-minor format (default 13.0)

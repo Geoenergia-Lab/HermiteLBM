@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -88,10 +88,10 @@ namespace LBM
 
             std::cout << "/*---------------------------------------------------------------------------*\\" << std::endl;
             std::cout << "|                                                                             |" << std::endl;
-            std::cout << "| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |" << std::endl;
+            std::cout << "| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |" << std::endl;
             std::cout << "| Developed at UDESC - State University of Santa Catarina                     |" << std::endl;
             std::cout << "| Website: https://www.udesc.br                                               |" << std::endl;
-            std::cout << "| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |" << std::endl;
+            std::cout << "| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |" << std::endl;
             std::cout << "|                                                                             |" << std::endl;
             std::cout << "\\*---------------------------------------------------------------------------*/" << std::endl;
             std::cout << std::endl;

@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -78,28 +78,28 @@ int main(const int argc, const char *const argv[])
         return 0;
     }
 
-    const name_t CUDALBM_ARCHITECTURE_DETECTION = getEnvironmentVariable("CUDALBM_ARCHITECTURE_DETECTION", "Automatic");
-    const name_t CUDALBM_ARCHITECTURE_VERSION = getEnvironmentVariable("CUDALBM_ARCHITECTURE_VERSION");
-    const name_t CUDALBM_BUILD_DIR = getEnvironmentVariable("CUDALBM_BUILD_DIR");
-    const name_t CUDALBM_BIN_DIR = getEnvironmentVariable("CUDALBM_BIN_DIR");
-    const name_t CUDALBM_INCLUDE_DIR = getEnvironmentVariable("CUDALBM_INCLUDE_DIR");
+    const name_t HERMITELBM_ARCHITECTURE_DETECTION = getEnvironmentVariable("HERMITELBM_ARCHITECTURE_DETECTION", "Automatic");
+    const name_t HERMITELBM_ARCHITECTURE_VERSION = getEnvironmentVariable("HERMITELBM_ARCHITECTURE_VERSION");
+    const name_t HERMITELBM_BUILD_DIR = getEnvironmentVariable("HERMITELBM_BUILD_DIR");
+    const name_t HERMITELBM_BIN_DIR = getEnvironmentVariable("HERMITELBM_BIN_DIR");
+    const name_t HERMITELBM_INCLUDE_DIR = getEnvironmentVariable("HERMITELBM_INCLUDE_DIR");
 
     // Now handle the file path setup
     // If the path doesn't exist, create it
-    if (!std::filesystem::exists(CUDALBM_BUILD_DIR))
+    if (!std::filesystem::exists(HERMITELBM_BUILD_DIR))
     {
-        std::filesystem::create_directory(CUDALBM_BUILD_DIR);
+        std::filesystem::create_directory(HERMITELBM_BUILD_DIR);
     }
-    if (!std::filesystem::exists(CUDALBM_INCLUDE_DIR))
+    if (!std::filesystem::exists(HERMITELBM_INCLUDE_DIR))
     {
-        std::filesystem::create_directory(CUDALBM_INCLUDE_DIR);
+        std::filesystem::create_directory(HERMITELBM_INCLUDE_DIR);
     }
-    if (!std::filesystem::exists(CUDALBM_BIN_DIR))
+    if (!std::filesystem::exists(HERMITELBM_BIN_DIR))
     {
-        std::filesystem::create_directory(CUDALBM_BIN_DIR);
+        std::filesystem::create_directory(HERMITELBM_BIN_DIR);
     }
 
-    const std::filesystem::path outputFilePath = CUDALBM_INCLUDE_DIR + "/hardware.info";
+    const std::filesystem::path outputFilePath = HERMITELBM_INCLUDE_DIR + "/hardware.info";
     std::ofstream outputFile(outputFilePath);
 
     const time_t time_now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -109,10 +109,10 @@ int main(const int argc, const char *const argv[])
     outputFile << "# Executed on: " << std::put_time(std::localtime(&time_now), "%Y-%m-%d %H:%M:%S") << std::endl;
     outputFile << std::endl;
 
-    if (CUDALBM_ARCHITECTURE_DETECTION == "Manual")
+    if (HERMITELBM_ARCHITECTURE_DETECTION == "Manual")
     {
-        const name_t all_arch_flags = "-gencode arch=compute_" + CUDALBM_ARCHITECTURE_VERSION + ",code=sm_" + CUDALBM_ARCHITECTURE_VERSION;
-        const name_t all_lto_flags = "-gencode arch=compute_" + CUDALBM_ARCHITECTURE_VERSION + ",code=lto_" + CUDALBM_ARCHITECTURE_VERSION;
+        const name_t all_arch_flags = "-gencode arch=compute_" + HERMITELBM_ARCHITECTURE_VERSION + ",code=sm_" + HERMITELBM_ARCHITECTURE_VERSION;
+        const name_t all_lto_flags = "-gencode arch=compute_" + HERMITELBM_ARCHITECTURE_VERSION + ",code=lto_" + HERMITELBM_ARCHITECTURE_VERSION;
         outputFile << "# Consolidated architecture flags for all found GPUs (no duplicates)" << std::endl;
         outputFile << "NVCXX_ALL_ARCHFLAGS = " << all_arch_flags << " " << all_lto_flags << std::endl;
     }
