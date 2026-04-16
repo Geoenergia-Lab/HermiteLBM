@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -315,13 +315,22 @@ namespace LBM
             return static_cast<T>(static_cast<double>(bytes) / static_cast<double>(1024 * 1024));
         }
 
+        /**
+         * @brief Create a directory if it does not exist
+         * @param[in] dir Path to the directory to create
+         * @return true if the directory exists or was created successfully, false otherwise
+         **/
+        template <const bool ThrowOnFailure = true>
         __host__ [[nodiscard]] bool makeDirectory(const name_t &dir)
         {
             if (!std::filesystem::is_directory(dir))
             {
                 if (!std::filesystem::create_directory(dir))
                 {
-                    throw std::runtime_error("Error: unable to create directory" + dir);
+                    if constexpr (ThrowOnFailure)
+                    {
+                        throw std::runtime_error("Error: unable to create directory" + dir);
+                    }
                     return false;
                 }
                 else

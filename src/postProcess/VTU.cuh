@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -125,12 +125,12 @@ namespace LBM
 
                 for (const auto &varData : solutionVars)
                 {
-                    writeBinaryBlock(varData, outFile);
+                    fileIO::writeBinaryBlock(varData, outFile);
                 }
-                writeBinaryBlock(points, outFile);
-                writeBinaryBlock(connectivity, outFile);
-                writeBinaryBlock(offsets, outFile);
-                writeBinaryBlock(types, outFile);
+                fileIO::writeBinaryBlock(points, outFile);
+                fileIO::writeBinaryBlock(connectivity, outFile);
+                fileIO::writeBinaryBlock(offsets, outFile);
+                fileIO::writeBinaryBlock(types, outFile);
 
                 outFile << "</AppendedData>\n";
                 outFile << "</VTKFile>\n";

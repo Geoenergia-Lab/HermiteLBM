@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -75,7 +75,7 @@ namespace LBM
               nTimeSteps_(string::extractParameter<host::label_t>(string::readFile("programControl"), "nTimeSteps")),
               saveInterval_(string::extractParameter<host::label_t>(string::readFile("programControl"), "saveInterval")),
               infoInterval_(string::extractParameter<host::label_t>(string::readFile("programControl"), "infoInterval")),
-              latestTime_(fileIO::latestTime(caseName_))
+              latestTime_(latestSaved())
         {
             types::assertions::validate<scalar_t>();
             types::assertions::validate<device::label_t>();
@@ -88,10 +88,10 @@ namespace LBM
 
             std::cout << "/*---------------------------------------------------------------------------*\\" << std::endl;
             std::cout << "|                                                                             |" << std::endl;
-            std::cout << "| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |" << std::endl;
+            std::cout << "| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |" << std::endl;
             std::cout << "| Developed at UDESC - State University of Santa Catarina                     |" << std::endl;
             std::cout << "| Website: https://www.udesc.br                                               |" << std::endl;
-            std::cout << "| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |" << std::endl;
+            std::cout << "| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |" << std::endl;
             std::cout << "|                                                                             |" << std::endl;
             std::cout << "\\*---------------------------------------------------------------------------*/" << std::endl;
             std::cout << std::endl;
@@ -310,7 +310,7 @@ namespace LBM
          * @tparam T The function type (e.g., a lambda or a function pointer)
          * @param[in] func The kernel function to configure
          **/
-        template <const host::label_t smem_alloc_size, class T>
+        template <const host::label_t smem_alloc_size, const bool PreferShared = true, class T>
         __host__ void configure(T *func) const
         {
             for (host::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < deviceList().size(); VirtualDeviceIndex++)
@@ -318,10 +318,31 @@ namespace LBM
                 errorHandler::check(cudaDeviceSynchronize());
                 errorHandler::check(cudaSetDevice(deviceList()[VirtualDeviceIndex]));
                 errorHandler::check(cudaDeviceSynchronize());
-                errorHandler::check(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
+                if constexpr (PreferShared)
+                {
+                    errorHandler::check(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
+                }
+                else
+                {
+                    errorHandler::check(cudaFuncSetCacheConfig(func, cudaFuncCachePreferL1));
+                }
                 errorHandler::check(cudaDeviceSynchronize());
                 errorHandler::check(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
                 errorHandler::check(cudaDeviceSynchronize());
+            }
+        }
+
+        __host__ [[nodiscard]] const std::vector<host::label_t> timeStepIndices() const
+        {
+            const std::vector<host::label_t> fileNameIndices = savedTimeSteps("timeStep");
+
+            if (input().isArgPresent("-fieldName"))
+            {
+                return {fileNameIndices.back()};
+            }
+            else
+            {
+                return fileNameIndices;
             }
         }
 
@@ -365,9 +386,54 @@ namespace LBM
          * @param[in] varName The name of the variable to read
          **/
         template <typename T>
-        __host__ [[nodiscard]] T initialiseConst(const name_t &varName) const noexcept
+        __host__ [[nodiscard]] static inline T initialiseConst(const name_t &varName) noexcept
         {
             return string::extractParameter<T>(string::readFile("programControl"), varName);
+        }
+
+        __host__ [[nodiscard]] static const std::vector<host::label_t> savedTimeSteps(const std::string &dir_path)
+        {
+            std::vector<host::label_t> numbers;
+
+            // Check if the given path exists and is a directory
+            if (!std::filesystem::exists(dir_path) || !std::filesystem::is_directory(dir_path))
+            {
+                return numbers; // return empty vector if invalid
+            }
+
+            for (const auto &entry : std::filesystem::directory_iterator(dir_path))
+            {
+                // Only consider subdirectories (ignore files, symlinks, etc.)
+                if (entry.is_directory())
+                {
+                    const name_t name = entry.path().filename().string();
+                    try
+                    {
+                        // Convert name to host::label_t
+                        // std::stoul handles leading/trailing whitespace? No, but we assume clean names.
+                        // Use std::stoul for unsigned long, then cast to host::label_t.
+                        const host::label_t num = std::stoull(name);
+                        numbers.push_back(num);
+                    }
+                    catch (const std::invalid_argument &)
+                    {
+                        // Name is not a number – skip
+                    }
+                    catch (const std::out_of_range &)
+                    {
+                        // Number is too large for unsigned long – skip
+                    }
+                }
+            }
+
+            std::sort(numbers.begin(), numbers.end());
+
+            return numbers;
+        }
+
+        __host__ [[nodiscard]] static inline host::label_t latestSaved()
+        {
+            return savedTimeSteps("timeStep").empty() ? 0 : savedTimeSteps("timeStep").back();
         }
     };
 }

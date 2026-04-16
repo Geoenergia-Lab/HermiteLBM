@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -93,6 +93,19 @@ namespace LBM
                   North_(initialise_pop<axis::Y, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Y>(), integralConstant<int, +1>()),
                   Back_(initialise_pop<axis::Z, -1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Z>(), integralConstant<int, -1>()),
                   Front_(initialise_pop<axis::Z, +1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Z>(), integralConstant<int, +1>()) {}
+
+            __host__ [[nodiscard]] haloFace(
+                const host::scalarField<host::PAGED, VelocitySet, time::instantaneous> &rho,
+                const host::vectorField<host::PAGED, VelocitySet, time::instantaneous> &U,
+                const host::symmetricTensorField<host::PAGED, VelocitySet, time::instantaneous> &Pi,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl) noexcept
+                : West_(initialise_pop<axis::X, -1>(rho, U, Pi, mesh), mesh, programCtrl, integralConstant<axis::type, axis::X>(), integralConstant<int, -1>()),
+                  East_(initialise_pop<axis::X, +1>(rho, U, Pi, mesh), mesh, programCtrl, integralConstant<axis::type, axis::X>(), integralConstant<int, +1>()),
+                  South_(initialise_pop<axis::Y, -1>(rho, U, Pi, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Y>(), integralConstant<int, -1>()),
+                  North_(initialise_pop<axis::Y, +1>(rho, U, Pi, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Y>(), integralConstant<int, +1>()),
+                  Back_(initialise_pop<axis::Z, -1>(rho, U, Pi, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Z>(), integralConstant<int, -1>()),
+                  Front_(initialise_pop<axis::Z, +1>(rho, U, Pi, mesh), mesh, programCtrl, integralConstant<axis::type, axis::Z>(), integralConstant<int, +1>()) {}
 
             /**
              * @brief Destructor - releases all allocated device memory
@@ -249,6 +262,20 @@ namespace LBM
                 }
 
                 return face;
+            }
+
+            template <const axis::type alpha, const int coeff>
+            __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop(
+                const host::scalarField<host::PAGED, VelocitySet, time::instantaneous> &rho,
+                const host::vectorField<host::PAGED, VelocitySet, time::instantaneous> &U,
+                const host::symmetricTensorField<host::PAGED, VelocitySet, time::instantaneous> &Pi,
+                const host::latticeMesh &mesh) const noexcept
+            {
+                return initialise_pop<alpha, coeff>(
+                    rho.self(),
+                    U.x(), U.y(), U.z(),
+                    Pi.xx(), Pi.xy(), Pi.xz(), Pi.yy(), Pi.yz(), Pi.zz(),
+                    mesh);
             }
 
             /**

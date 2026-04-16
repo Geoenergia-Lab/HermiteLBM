@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -69,7 +69,7 @@ namespace LBM
          **/
         template <class BoundaryConditions, class VelocitySet, class Collision, class BlockHalo, class SharedBuffer>
         __device__ inline void momentBasedLBM(
-            const device::ptrCollection<10, scalar_t> &devPtrs,
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> &devPtrs,
             const device::ptrCollection<6, const scalar_t> &readBuffer,
             const device::ptrCollection<6, scalar_t> &writeBuffer,
             SharedBuffer &sharedBuffer)
@@ -229,7 +229,7 @@ namespace LBM
          **/
         __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP<VelocitySet>())
             __global__ void momentBasedLBM(
-                const device::ptrCollection<10, scalar_t> devPtrs,
+                const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
                 const device::ptrCollection<6, const scalar_t> readBuffer,
                 const device::ptrCollection<6, scalar_t> writeBuffer)
         {

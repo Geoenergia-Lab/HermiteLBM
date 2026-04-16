@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -95,8 +95,17 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
                 : arrayBase<T, VelocitySet, TimeType>(name, mesh),
-                  arr_(initialise_array(mesh, name, programCtrl)),
-                  meanCount_(initialiseMeanCount(programCtrl)) {}
+                  arr_(initialise_array(mesh, name, name, programCtrl)),
+                  meanCount_(initialiseMeanCount(name, programCtrl)) {}
+
+            __host__ [[nodiscard]] array(
+                const name_t &name,
+                const name_t &componentName,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl)
+                : arrayBase<T, VelocitySet, TimeType>(name, mesh),
+                  arr_(initialise_array(mesh, name, componentName, programCtrl)),
+                  meanCount_(initialiseMeanCount(name, programCtrl)) {}
 
             /**
              * @brief Destructor
@@ -153,26 +162,30 @@ namespace LBM
              **/
             host::label_t meanCount_;
 
-            /**
-             * @brief Initialise array from file or initial conditions.
-             * @param[in] mesh The lattice mesh
-             * @param[in] fieldName Name of the field.
-             * @param[in] programCtrl The program control object
-             * @return Initialised vector.
-             **/
-            __host__ [[nodiscard]] const std::vector<T> initialise_array(
+            __host__ [[nodiscard]] static const std::vector<T> initialise_array(
                 const host::latticeMesh &mesh,
                 const name_t &fieldName,
+                const name_t &componentName,
                 const programControl &programCtrl)
             {
-                if (fileIO::hasIndexedFiles(programCtrl.caseName()))
+                if (!std::filesystem::is_directory("timeStep/" + std::to_string(programCtrl.latestTime())))
                 {
-                    const name_t fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin";
-                    return fileIO::readFieldByName<T>(fileName, fieldName);
+                    if constexpr (verbose())
+                    {
+                        std::cout << "Did not find directory timeStep/" << std::to_string(programCtrl.latestTime()) << std::endl;
+                    }
+                    return initialConditions(mesh, componentName);
                 }
                 else
                 {
-                    return initialConditions(mesh, fieldName);
+                    if constexpr (verbose())
+                    {
+                        std::cout << "Reading field " << componentName << " from file " << fieldName << " for time step " << programCtrl.latestTime() << std::endl;
+                    }
+
+                    const name_t resolvedFileName = "timeStep/" + std::to_string(programCtrl.latestTime()) + "/" + fieldName + ".LBMBin";
+
+                    return fileIO::readFieldByName<T>(resolvedFileName, componentName);
                 }
             }
 
@@ -182,7 +195,7 @@ namespace LBM
              * @param[in] fieldName Field name (for boundary look‑up).
              * @return Vector containing the initial field.
              **/
-            __host__ [[nodiscard]] const std::vector<T> initialConditions(
+            __host__ [[nodiscard]] static const std::vector<T> initialConditions(
                 const host::latticeMesh &mesh,
                 const name_t &fieldName)
             {

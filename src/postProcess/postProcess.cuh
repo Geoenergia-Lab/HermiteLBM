@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -203,22 +203,6 @@ namespace LBM
                 return "Unknown";
             }
         }
-
-        /**
-         * @brief Write a std::vector of type T to an ofstream object
-         * @tparam T The type of the vector
-         * @param[in] vec The vector to write
-         * @param[out] outFile The output ofstream object
-         **/
-        template <typename T>
-        __host__ void writeBinaryBlock(const std::vector<T> &vec, std::ofstream &outFile)
-        {
-            const host::label_t blockSize = vec.size() * sizeof(T);
-
-            outFile.write(reinterpret_cast<const char *>(&blockSize), sizeof(host::label_t));
-
-            outFile.write(reinterpret_cast<const char *>(vec.data()), static_cast<std::streamsize>(blockSize));
-        };
     }
 
     class writer

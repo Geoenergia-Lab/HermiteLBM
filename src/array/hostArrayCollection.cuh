@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -60,55 +60,13 @@ namespace LBM
          * @tparam T Data type of array elements
          * @tparam cType Constructor type specification
          **/
-        template <typename T, const ctorType::type cType>
+        template <typename T>
         class arrayCollection
         {
         public:
-            /**
-             * @brief Construct from program control and variable names
-             * @param[in] programCtrl The program control object
-             * @param[in] varNames Names of variables to include in collection
-             * @param[in] mesh The lattice mesh
-             **/
-            __host__ [[nodiscard]] arrayCollection(const programControl &programCtrl, const words_t &varNames, const host::latticeMesh &mesh)
-                : arr_(initialiseVector(programCtrl, mesh)),
-                  varNames_(varNames) {}
-
-            /**
-             * @brief Construct from specific time index
-             * @param[in] programCtrl The program control object
-             * @param[in] varNames Names of variables to include
-             * @param[in] timeIndex Specific time index to read from
-             **/
-            __host__ [[nodiscard]] arrayCollection(
-                const programControl &programCtrl,
-                const words_t &varNames,
-                const host::label_t timeIndex)
-                : arr_(initialiseVector(programCtrl, timeIndex)),
-                  varNames_(varNames) {}
-
-            /**
-             * @brief Construct from latest available time
-             * @param[in] programCtrl The program control object
-             * @param[in] varNames Names of variables to include
-             **/
-            __host__ [[nodiscard]] arrayCollection(
-                const programControl &programCtrl,
-                const words_t &varNames)
-                : arr_(initialiseVector(programCtrl)),
-                  varNames_(varNames) {}
-
-            /**
-             * @brief Construct from a file prefix
-             * @param[in] fileNamePrefix The prefix of the file
-             * @param[in] varNames Names of variables to include
-             * @param[in] timeIndex Specific time index to read from
-             **/
-            __host__ [[nodiscard]] arrayCollection(
-                const name_t &fileNamePrefix,
-                const words_t &varNames,
-                const host::label_t timeIndex)
-                : arr_(initialiseVector(fileNamePrefix, timeIndex)),
+            __host__ [[nodiscard]] arrayCollection(const name_t &fileName, const words_t &varNames)
+                : empty_(!(std::filesystem::exists(fileName))),
+                  arr_(initialiseVector(fileName, empty_)),
                   varNames_(varNames) {}
 
             /**
@@ -134,7 +92,87 @@ namespace LBM
                 return varNames_;
             }
 
+            /**
+             * @brief Check if the collection is empty (i.e., if the file was not found)
+             * @return True if empty, false otherwise
+             **/
+            __host__ [[nodiscard]] inline constexpr bool empty() const noexcept
+            {
+                return empty_;
+            }
+
+            /**
+             * @brief Convert Array of Structures (AoS) to Structure of Arrays (SoA)
+             * @param[in] mesh The lattice mesh
+             * @return Vector of vectors where each inner vector contains all values for one variable
+             * @throws std::invalid_argument if input size doesn't match mesh dimensions
+             *
+             * This function reorganizes data from AoS format (where all variables for
+             * each point are stored together) to SoA format (where each variable's values
+             * are stored in separate contiguous arrays).
+             **/
+            __host__ [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoS(const host::latticeMesh &mesh) const
+            {
+                const host::label_t nNodes = mesh.dimension<axis::X>() * mesh.dimension<axis::Y>() * mesh.dimension<axis::Z>();
+                if (arr().size() % nNodes != 0)
+                {
+                    throw std::invalid_argument("fMom size (" + std::to_string(arr().size()) + ") is not divisible by mesh points (" + std::to_string(nNodes) + ")");
+                }
+                const host::label_t nFields = arr().size() / nNodes;
+
+                std::vector<std::vector<T>> soa(nFields, std::vector<T>(nNodes, 0));
+
+                const host::label_t nxGPUs = mesh.nDevices<axis::X>();
+                const host::label_t nyGPUs = mesh.nDevices<axis::Y>();
+                const host::label_t nzGPUs = mesh.nDevices<axis::Z>();
+
+                const host::label_t nxBlocksPerDevice = mesh.nBlocks<axis::X>() / nxGPUs;
+                const host::label_t nyBlocksPerDevice = mesh.nBlocks<axis::Y>() / nyGPUs;
+                const host::label_t nzBlocksPerDevice = mesh.nBlocks<axis::Z>() / nzGPUs;
+
+                const host::label_t pointsPerBlock = block::size<host::label_t>();
+                const host::label_t nPointsPerDevice = nxBlocksPerDevice * nyBlocksPerDevice * nzBlocksPerDevice * pointsPerBlock;
+
+                GPU::forAll(
+                    mesh.nDevices(),
+                    [&](const host::label_t GPU_x, const host::label_t GPU_y, const host::label_t GPU_z)
+                    {
+                        const host::label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+
+                        host::forAll(
+                            mesh.blocksPerDevice(),
+                            [&](const host::label_t bx, const host::label_t by, const host::label_t bz,
+                                const host::label_t tx, const host::label_t ty, const host::label_t tz)
+                            {
+                                // Global coordinates (for output)
+                                const host::label_t x = (GPU_x * nxBlocksPerDevice + bx) * block::nx<host::label_t>() + tx;
+                                const host::label_t y = (GPU_y * nyBlocksPerDevice + by) * block::ny<host::label_t>() + ty;
+                                const host::label_t z = (GPU_z * nzBlocksPerDevice + bz) * block::nz<host::label_t>() + tz;
+
+                                const host::label_t idxGlobal = global::idx(x, y, z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
+
+                                // Local index within this GPU's storage (block‑major order)
+                                const host::label_t blockLin = (bz * nyBlocksPerDevice + by) * nxBlocksPerDevice + bx;
+                                const host::label_t threadLin = (tz * block::ny<host::label_t>() + ty) * block::nx<host::label_t>() + tx;
+                                const host::label_t localIdx = blockLin * pointsPerBlock + threadLin;
+
+                                for (host::label_t field = 0; field < nFields; field++)
+                                {
+                                    const host::label_t srcIdx = field * nNodes + virtualDeviceIndex * nPointsPerDevice + localIdx;
+                                    soa[field][idxGlobal] = arr()[srcIdx];
+                                }
+                            });
+                    });
+
+                return soa;
+            }
+
         private:
+            /**
+             * @brief Flag indicating whether the collection is empty (i.e., if the file was not found)
+             **/
+            const bool empty_;
+
             /**
              * @brief The underlying std::vector
              **/
@@ -152,64 +190,16 @@ namespace LBM
              * @return Initialized data vector
              * @throws std::runtime_error if indexed files not found
              **/
-            __host__ [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl, const host::latticeMesh &mesh) const
+            __host__ [[nodiscard]] static const std::vector<T> initialiseVector(const name_t &fileName, const bool empty)
             {
-                static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");
-
-                // Get the latest time step
-                if (!fileIO::hasIndexedFiles(programCtrl.caseName()))
+                if (empty)
                 {
-                    throw std::runtime_error("Did not find indexed case files");
-                }
-
-                const name_t fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin";
-                return fileIO::readFieldFile<T>(fileName);
-            }
-
-            __host__ [[nodiscard]] const std::vector<T> initialiseVector(const name_t &fileNamePrefix, const host::label_t timeIndex) const
-            {
-                static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");
-
-                // Get the latest time step
-                if (!fileIO::hasIndexedFiles(fileNamePrefix))
-                {
-                    throw std::runtime_error("Did not find indexed case files");
-                }
-                const name_t fileName = fileNamePrefix + "_" + std::to_string(fileIO::timeIndices(fileNamePrefix)[timeIndex]) + ".LBMBin";
-                return fileIO::readFieldFile<T>(fileName);
-            }
-
-            /**
-             * @brief Initialize vector from specific time index
-             * @param[in] programCtrl The program control object
-             * @param[in] timeIndex Time index to read from
-             * @return Initialized data vector
-             * @throws std::runtime_error if indexed files not found
-             **/
-            __host__ [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl, const host::label_t timeIndex) const
-            {
-                static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");
-
-                // Get the correct time index
-                if (fileIO::hasIndexedFiles(programCtrl.caseName()))
-                {
-                    const name_t fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::timeIndices(programCtrl.caseName())[timeIndex]) + ".LBMBin";
-                    return fileIO::readFieldFile<T>(fileName);
+                    return std::vector<T>(); // Return an empty vector if the file was not found
                 }
                 else
                 {
-                    throw std::runtime_error("Did not find indexed case files");
+                    return fileIO::readFieldFile<T>(fileName);
                 }
-            }
-
-            /**
-             * @brief Initialize vector from latest time
-             * @param[in] programCtrl The program control object
-             * @return Initialized data vector
-             **/
-            __host__ [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl) const
-            {
-                return initialiseVector(programCtrl, fileIO::getStartIndex(programCtrl, true));
             }
         };
     }

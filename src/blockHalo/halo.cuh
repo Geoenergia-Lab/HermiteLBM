@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -75,29 +75,15 @@ namespace LBM
              **/
             __host__ [[nodiscard]] halo(const host::latticeMesh &mesh, const programControl &programCtrl) noexcept
                 : readBuffer_(haloFace<VelocitySet>(
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
+                      host::scalarField<host::PAGED, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
+                      host::vectorField<host::PAGED, VelocitySet, time::instantaneous>("U", mesh, programCtrl),
+                      host::symmetricTensorField<host::PAGED, VelocitySet, time::instantaneous>("Pi", mesh, programCtrl),
                       mesh,
                       programCtrl)),
                   writeBuffer_(haloFace<VelocitySet>(
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
-                      host::array<host::PAGED, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
+                      host::scalarField<host::PAGED, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
+                      host::vectorField<host::PAGED, VelocitySet, time::instantaneous>("U", mesh, programCtrl),
+                      host::symmetricTensorField<host::PAGED, VelocitySet, time::instantaneous>("Pi", mesh, programCtrl),
                       mesh,
                       programCtrl)) {}
 
@@ -108,17 +94,32 @@ namespace LBM
 
             /**
              * @brief Swaps read and write halo buffers
+             * @param[in] deviceIdx Index of the GPU device for which to swap the buffers
              * @note Synchronizes device before swapping to ensure all operations complete
              **/
-            __host__ inline void swap(const host::label_t i) noexcept
+            __host__ inline void swap(const host::label_t deviceIdx) noexcept
             {
-                errorHandler::checkInline(cudaDeviceSynchronize());
-                std::swap(readBuffer_.x0Ref(i), writeBuffer_.x0Ref(i));
-                std::swap(readBuffer_.x1Ref(i), writeBuffer_.x1Ref(i));
-                std::swap(readBuffer_.y0Ref(i), writeBuffer_.y0Ref(i));
-                std::swap(readBuffer_.y1Ref(i), writeBuffer_.y1Ref(i));
-                std::swap(readBuffer_.z0Ref(i), writeBuffer_.z0Ref(i));
-                std::swap(readBuffer_.z1Ref(i), writeBuffer_.z1Ref(i));
+                std::swap(readBuffer_.x0Ref(deviceIdx), writeBuffer_.x0Ref(deviceIdx));
+                std::swap(readBuffer_.x1Ref(deviceIdx), writeBuffer_.x1Ref(deviceIdx));
+                std::swap(readBuffer_.y0Ref(deviceIdx), writeBuffer_.y0Ref(deviceIdx));
+                std::swap(readBuffer_.y1Ref(deviceIdx), writeBuffer_.y1Ref(deviceIdx));
+                std::swap(readBuffer_.z0Ref(deviceIdx), writeBuffer_.z0Ref(deviceIdx));
+                std::swap(readBuffer_.z1Ref(deviceIdx), writeBuffer_.z1Ref(deviceIdx));
+            }
+
+            /**
+             * @brief Swaps read and write halo buffers across all devices in the program control
+             * @param[in] programCtrl The program control object
+             **/
+            __host__ inline void swap(const programControl &programCtrl) noexcept
+            {
+                for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
+                {
+                    errorHandler::checkInline(cudaDeviceSynchronize());
+                    errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
+                    errorHandler::checkInline(cudaDeviceSynchronize());
+                    swap(deviceIdx);
+                }
             }
 
             /**

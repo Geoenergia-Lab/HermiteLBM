@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -114,91 +114,29 @@ namespace LBM
     }
 
     /**
-     * @brief Counts lines before the first occurrence of a target line.
-     * @param[in] file Input file stream (position advanced).
-     * @param[in] target The line content that stops counting (excluded).
-     * @return Number of lines read before target; if target not found, returns total lines.
-     **/
-    __host__ [[nodiscard]] host::label_t line_count(std::ifstream &file, const name_t &target)
-    {
-        name_t line;
-        host::label_t result = 0;
-        // bool found = false;
-
-        while (std::getline(file, line))
-        {
-            if (line == target)
-            {
-                // found = true;
-                break;
-            }
-            ++result;
-        }
-
-        return result;
-    }
-
-    /**
-     * @brief Reads a file line by line and returns a vector of all lines that appear
-     * before the first line exactly equal to the target string.
-     * If the target is not found, all lines from the file are returned.
-     *
-     * The function performs two passes:
-     * 1. Count how many lines precede the target (or the whole file if target absent).
-     * 2. Reserve that many slots in the vector and read the lines again, storing them.
-     *
-     * @param[in] filename Path to the file.
-     * @param[in] target The exact line content at which to stop reading (not included).
-     * @return Vector of strings containing the lines before the target.
-     **/
-    __host__ [[nodiscard]] const words_t read_until(const name_t &filename, const name_t &target)
-    {
-        std::ifstream file(filename);
-        if (!file.is_open())
-        {
-            return {}; // return empty vector on open failure
-        }
-
-        // Count lines before target
-        // If target not found, lineCount already holds total lines in file.
-        const host::label_t lineCount = line_count(file, target);
-
-        // Read and store exactly lineCount lines
-        file.clear();                 // clear EOF and error flags
-        file.seekg(0, std::ios::beg); // rewind to beginning
-
-        name_t line;
-        words_t lines;
-        lines.reserve(lineCount); // allocate once
-
-        for (host::label_t i = 0; i < lineCount; i++)
-        {
-            std::getline(file, line);
-            lines.push_back(std::move(line));
-        }
-
-        return lines;
-    }
-
-    /**
      * @brief Initialises the mean counter from a file.
+     * @param[in] fieldName The name of the field for which to initialise the mean counter
      * @param[in] programCtrl The program control object
      * @returns The mean counter as a device::label_t.
      **/
-    __host__ [[nodiscard]] device::label_t initialiseMeanCount(const programControl &programCtrl)
+    __host__ [[nodiscard]] host::label_t initialiseMeanCount(const name_t &fieldName, const programControl &programCtrl)
     {
-        if (fileIO::hasIndexedFiles(programCtrl.caseName()))
+        if (std::filesystem::exists("timeStep/" + std::to_string(programCtrl.latestTime()) + "/" + fieldName + ".LBMBin"))
         {
-            const name_t fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin";
+            const name_t fileName = "timeStep/" + std::to_string(programCtrl.latestTime()) + "/" + fieldName + ".LBMBin";
 
-            const words_t lines = read_until(fileName, "fieldData");
+            const words_t lines = fileIO::read_until(fileName, "fieldData");
 
             const fileIO::fieldInformation fieldInfo(string::extractBlock(lines, "fieldInformation", 0));
 
-            return static_cast<device::label_t>(fieldInfo.meanCount());
+            return fieldInfo.meanCount();
         }
         else
         {
+            if constexpr (verbose())
+            {
+                std::cout << "Returning 0 from initialiseMeanCount for field " << fieldName << " because no file was found." << std::endl;
+            }
             return 0;
         }
     }
@@ -207,5 +145,7 @@ namespace LBM
 #include "host/array.cuh"
 #include "device/array.cuh"
 #include "hostArrayCollection.cuh"
+#include "deviceField.cuh"
+#include "hostField.cuh"
 
 #endif

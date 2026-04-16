@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -61,96 +61,10 @@ SourceFiles
 #include "../../../src/postProcess/postProcess.cuh"
 #include "../../../src/programControl/programControl.cuh"
 #include "../../../src/functionObjects/functionObjects.cuh"
+#include "../../../src/numericalSchemes/numericalSchemes.cuh"
 
 namespace LBM
 {
-    /**
-     * @brief Creates an error message for invalid writer types
-     * @param[in] writerNames Unordered map of the writer types to the appropriate functions
-     * @param[in] conversion The invalid conversion type provided by the user
-     * @return A formatted error message listing the supported formats
-     **/
-    __host__ [[nodiscard]] const name_t invalidWriter(const std::unordered_map<name_t, postProcess::writerFunction> &writerNames, const name_t &conversion) noexcept
-    {
-        words_t supportedFormats;
-        for (const auto &pair : writerNames)
-        {
-            supportedFormats.push_back(pair.first);
-        }
-
-        // Sort them alphabetically
-        std::sort(supportedFormats.begin(), supportedFormats.end());
-
-        // Create the error message with supported formats
-        name_t errorMsg = "Unsupported conversion format: " + conversion + "\nSupported formats are: ";
-        for (host::label_t i = 0; i < supportedFormats.size(); ++i)
-        {
-            if (i != 0)
-            {
-                errorMsg += ", ";
-            }
-            errorMsg += supportedFormats[i];
-        }
-
-        return errorMsg;
-    }
-
-    /**
-     * @brief Returns the field names based on the provided prefix and whether a custom field is specified
-     * @param[in] fileNamePrefix The prefix for the field names
-     * @param[in] doCustomField Boolean indicating if a custom field is specified
-     * @return A reference to a vector of field names
-     * @throws std::runtime_error if an invalid field name is provided
-     **/
-    __host__ [[nodiscard]] inline host::arrayCollection<scalar_t, ctorType::MUST_READ> initialiseArrays(
-        const name_t &fileNamePrefix,
-        const programControl &programCtrl,
-        const words_t &fieldNames,
-        const host::label_t timeStep)
-    {
-        // Construct from a custom field name
-        if (programCtrl.input().isArgPresent("-fieldName"))
-        {
-            return host::arrayCollection<scalar_t, ctorType::MUST_READ>(fileNamePrefix, fieldNames, timeStep);
-        }
-        // Otherwise construct from default field names
-        else
-        {
-            return host::arrayCollection<scalar_t, ctorType::MUST_READ>(programCtrl, fieldNames, timeStep);
-        }
-    }
-
-    /**
-     * @brief Returns the field names based on the provided prefix and whether a custom field is specified
-     * @param[in] fileNamePrefix The prefix for the field names
-     * @param[in] doCustomField Boolean indicating if a custom field is specified
-     * @return A reference to a vector of field names
-     * @throws std::runtime_error if an invalid field name is provided
-     **/
-    __host__ [[nodiscard]] inline const words_t &getFieldNames(
-        const name_t &fileNamePrefix,
-        const bool doCustomField)
-    {
-        if (!doCustomField)
-        {
-            return functionObjects::solutionVariableNames;
-        }
-        else
-        {
-            const std::unordered_map<name_t, words_t>::const_iterator namesIterator = functionObjects::fieldComponentsMap.find(fileNamePrefix);
-            const bool foundField = namesIterator != functionObjects::fieldComponentsMap.end();
-            if (!foundField)
-            {
-                // Throw an exception: invalid field name
-                throw std::runtime_error("Invalid argument passed to -fieldName");
-            }
-            else
-            {
-                return namesIterator->second;
-            }
-        }
-    }
-
     __host__ [[nodiscard]] axis::type cutPlaneDirection(const programControl &programCtrl) noexcept
     {
         const name_t cutPlanePrefix = programCtrl.getArgument("-cutPlane");
@@ -214,13 +128,7 @@ namespace LBM
     {
         axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-        return (static_cast<scalar_t>(mesh.dimension<alpha>()) * (pointCoordinate / mesh.L().value<alpha>())) - static_cast<scalar_t>(1);
-    }
-
-    template <typename T>
-    __host__ [[nodiscard]] inline constexpr T linearInterpolate(const T f0, const T f1, const T weight) noexcept
-    {
-        return ((static_cast<T>(1) - weight) * f0) + (weight * f1);
+        return (static_cast<scalar_t>(mesh.dimension<alpha>() - static_cast<host::label_t>(1)) * (pointCoordinate / mesh.L().value<alpha>())) - static_cast<scalar_t>(1);
     }
 
     template <const axis::type alpha>
@@ -248,7 +156,7 @@ namespace LBM
                     mesh.dimensions(),
                     [&](const host::label_t i, const host::label_t j)
                     {
-                        const host::blockLabel Tx = axis::to_3d<alpha>(i, j, index_0);
+                        const host::pointLabel Tx = axis::to_3d<alpha>(i, j, index_0);
 
                         const host::label_t idx = global::idx(Tx.x, Tx.y, Tx.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
 
@@ -267,8 +175,8 @@ namespace LBM
                     mesh.dimensions(),
                     [&](const host::label_t i, const host::label_t j)
                     {
-                        const host::blockLabel Tx_0 = axis::to_3d<alpha>(i, j, index_0);
-                        const host::blockLabel Tx_1 = axis::to_3d<alpha>(i, j, index_1);
+                        const host::pointLabel Tx_0 = axis::to_3d<alpha>(i, j, index_0);
+                        const host::pointLabel Tx_1 = axis::to_3d<alpha>(i, j, index_1);
 
                         const host::label_t idx_0 = global::idx(Tx_0.x, Tx_0.y, Tx_0.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
                         const host::label_t idx_1 = global::idx(Tx_1.x, Tx_1.y, Tx_1.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
@@ -278,7 +186,7 @@ namespace LBM
 
                         const host::label_t id = i + (j * mesh.dimension<axis ::orthogonal<alpha, 0>()>());
 
-                        cutPlane[field][id] = linearInterpolate(f0, f1, weight);
+                        cutPlane[field][id] = numericalSchemes::interpolate<scalar_t>::linear(f0, f1, weight);
                     });
             }
         }
@@ -313,8 +221,8 @@ namespace LBM
         }
     }
 
-    __host__ [[nodiscard]] inline const std::vector<std::vector<scalar_t>> processFields(
-        const host::arrayCollection<scalar_t, ctorType::MUST_READ> &hostMoments,
+    __host__ [[nodiscard]] const std::vector<std::vector<scalar_t>> processFields(
+        const host::arrayCollection<scalar_t> &hostMoments,
         const host::latticeMesh &mesh,
         const programControl &programCtrl,
         const bool doCutPlane)
@@ -329,18 +237,18 @@ namespace LBM
             const axis::type alpha = cutPlaneDirection(programCtrl);
 
             return extractCutPlane(
-                fileIO::deinterleaveAoS(hostMoments.arr(), mesh),
+                hostMoments.deinterleaveAoS(mesh),
                 mesh,
                 alpha,
                 planeCoordinate);
         }
         else
         {
-            return fileIO::deinterleaveAoS(hostMoments.arr(), mesh);
+            return hostMoments.deinterleaveAoS(mesh);
         }
     }
 
-    __host__ [[nodiscard]] inline const host::latticeMesh processMesh(
+    __host__ [[nodiscard]] const host::latticeMesh processMesh(
         const host::latticeMesh &mesh,
         const programControl &programCtrl,
         const bool cutPlane)
@@ -357,7 +265,7 @@ namespace LBM
         }
     }
 
-    __host__ [[nodiscard]] inline const name_t processName(const programControl &programCtrl, const name_t &fileNamePrefix, const host::label_t nameIndex, const bool cutPlane)
+    __host__ [[nodiscard]] const name_t processName(const programControl &programCtrl, const name_t &fileNamePrefix, const host::label_t nameIndex, const bool cutPlane)
     {
         // Get the file name at the present time step
         if (cutPlane)

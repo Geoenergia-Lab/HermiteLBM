@@ -2,29 +2,29 @@
 OPENMPI_VERSION = 5.0.7
 
 # Check if required environment variables are set
-ifeq ($(CUDALBM_BUILD_DIR),)
-$(error CUDALBM_BUILD_DIR is not set. Please run "source bashrc" in the project directory first)
+ifeq ($(HERMITELBM_BUILD_DIR),)
+$(error HERMITELBM_BUILD_DIR is not set. Please run "source bashrc" in the project directory first)
 endif
 
-ifeq ($(CUDALBM_BIN_DIR),)
-$(error CUDALBM_BIN_DIR is not set. Please run "source bashrc" in the project directory first)
+ifeq ($(HERMITELBM_BIN_DIR),)
+$(error HERMITELBM_BIN_DIR is not set. Please run "source bashrc" in the project directory first)
 endif
 
-ifeq ($(CUDALBM_INCLUDE_DIR),)
-$(error CUDALBM_INCLUDE_DIR is not set. Please run "source bashrc" in the project directory first)
+ifeq ($(HERMITELBM_INCLUDE_DIR),)
+$(error HERMITELBM_INCLUDE_DIR is not set. Please run "source bashrc" in the project directory first)
 endif
 
-ifeq ($(CUDALBM_CUDA_DIR),)
-$(error CUDALBM_CUDA_DIR is not set. Please run "source bashrc" in the project directory first)
+ifeq ($(HERMITELBM_CUDA_DIR),)
+$(error HERMITELBM_CUDA_DIR is not set. Please run "source bashrc" in the project directory first)
 endif
 
 # Check UCX and MPI directory variables
-ifeq ($(CUDALBM_UCX_DIR),)
-$(error CUDALBM_UCX_DIR is not set. Please run "source bashrc" in the project directory first)
+ifeq ($(HERMITELBM_UCX_DIR),)
+$(error HERMITELBM_UCX_DIR is not set. Please run "source bashrc" in the project directory first)
 endif
 
-ifeq ($(CUDALBM_MPI_DIR),)
-$(error CUDALBM_MPI_DIR is not set. Please run "source bashrc" in the project directory first)
+ifeq ($(HERMITELBM_MPI_DIR),)
+$(error HERMITELBM_MPI_DIR is not set. Please run "source bashrc" in the project directory first)
 endif
 
 # Compiler and flags
@@ -36,11 +36,11 @@ FCFLAGS = $(OPTFLAGS) $(MFLAGS)
 FFLAGS = $(OPTFLAGS) $(MFLAGS)
 
 UCX_SRC_DIR = ucx
-UCX_INSTALL_DIR = $(CUDALBM_UCX_DIR)
+UCX_INSTALL_DIR = $(HERMITELBM_UCX_DIR)
 
 OPENMPI_SRC_DIR = openmpi-$(OPENMPI_VERSION)
 OPENMPI_TARBALL = openmpi-$(OPENMPI_VERSION).tar.gz
-OPENMPI_INSTALL_DIR = $(CUDALBM_MPI_DIR)
+OPENMPI_INSTALL_DIR = $(HERMITELBM_MPI_DIR)
 
 .PHONY: all clean uninstall install ucx-build openmpi-build ucx-install openmpi-install
 
@@ -54,7 +54,7 @@ ucx-build:
 	cd $(UCX_SRC_DIR) && \
 	CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" FCFLAGS="$(FCFLAGS)" FFLAGS="$(FFLAGS)" \
 	./autogen.sh && \
-	./contrib/configure-release --prefix=$(UCX_INSTALL_DIR) --with-cuda=$(CUDALBM_CUDA_DIR) && \
+	./contrib/configure-release --prefix=$(UCX_INSTALL_DIR) --with-cuda=$(HERMITELBM_CUDA_DIR) && \
 	$(MAKE)
 
 # Build OpenMPI without installing (depends on UCX being built)
@@ -64,7 +64,7 @@ openmpi-build: ucx-build
 	tar -xvf $(OPENMPI_TARBALL)
 	cd $(OPENMPI_SRC_DIR) && \
 	CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" FCFLAGS="$(FCFLAGS)" FFLAGS="$(FFLAGS)" \
-	./configure --prefix=$(OPENMPI_INSTALL_DIR) --with-cuda=$(CUDALBM_CUDA_DIR) --with-ucx=$(UCX_INSTALL_DIR) && \
+	./configure --prefix=$(OPENMPI_INSTALL_DIR) --with-cuda=$(HERMITELBM_CUDA_DIR) --with-ucx=$(UCX_INSTALL_DIR) && \
 	$(MAKE)
 
 # Install UCX (assumes it's already built)
