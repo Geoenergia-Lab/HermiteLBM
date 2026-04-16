@@ -182,7 +182,7 @@ namespace LBM
             /**
              * @brief Time-averaged density field
              **/
-            device::symmetricTensorField<VelocitySet, time::instantaneous> PiMean_;
+            device::symmetricTensorField<VelocitySet, time::timeAverage> PiMean_;
         };
     }
 }

@@ -94,6 +94,7 @@ namespace LBM
     }
 }
 
+#include "interpolationSchemes.cuh"
 #include "derivativeSchemes/derivativeSchemes.cuh"
 #include "integrationSchemes/fieldIntegrate.cuh"
 

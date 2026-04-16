@@ -92,12 +92,85 @@ namespace LBM
                 return varNames_;
             }
 
+            /**
+             * @brief Check if the collection is empty (i.e., if the file was not found)
+             * @return True if empty, false otherwise
+             **/
             __host__ [[nodiscard]] inline constexpr bool empty() const noexcept
             {
                 return empty_;
             }
 
+            /**
+             * @brief Convert Array of Structures (AoS) to Structure of Arrays (SoA)
+             * @param[in] mesh The lattice mesh
+             * @return Vector of vectors where each inner vector contains all values for one variable
+             * @throws std::invalid_argument if input size doesn't match mesh dimensions
+             *
+             * This function reorganizes data from AoS format (where all variables for
+             * each point are stored together) to SoA format (where each variable's values
+             * are stored in separate contiguous arrays).
+             **/
+            __host__ [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoS(const host::latticeMesh &mesh) const
+            {
+                const host::label_t nNodes = mesh.dimension<axis::X>() * mesh.dimension<axis::Y>() * mesh.dimension<axis::Z>();
+                if (arr().size() % nNodes != 0)
+                {
+                    throw std::invalid_argument("fMom size (" + std::to_string(arr().size()) + ") is not divisible by mesh points (" + std::to_string(nNodes) + ")");
+                }
+                const host::label_t nFields = arr().size() / nNodes;
+
+                std::vector<std::vector<T>> soa(nFields, std::vector<T>(nNodes, 0));
+
+                const host::label_t nxGPUs = mesh.nDevices<axis::X>();
+                const host::label_t nyGPUs = mesh.nDevices<axis::Y>();
+                const host::label_t nzGPUs = mesh.nDevices<axis::Z>();
+
+                const host::label_t nxBlocksPerDevice = mesh.nBlocks<axis::X>() / nxGPUs;
+                const host::label_t nyBlocksPerDevice = mesh.nBlocks<axis::Y>() / nyGPUs;
+                const host::label_t nzBlocksPerDevice = mesh.nBlocks<axis::Z>() / nzGPUs;
+
+                const host::label_t pointsPerBlock = block::size<host::label_t>();
+                const host::label_t nPointsPerDevice = nxBlocksPerDevice * nyBlocksPerDevice * nzBlocksPerDevice * pointsPerBlock;
+
+                GPU::forAll(
+                    mesh.nDevices(),
+                    [&](const host::label_t GPU_x, const host::label_t GPU_y, const host::label_t GPU_z)
+                    {
+                        const host::label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+
+                        host::forAll(
+                            mesh.blocksPerDevice(),
+                            [&](const host::label_t bx, const host::label_t by, const host::label_t bz,
+                                const host::label_t tx, const host::label_t ty, const host::label_t tz)
+                            {
+                                // Global coordinates (for output)
+                                const host::label_t x = (GPU_x * nxBlocksPerDevice + bx) * block::nx<host::label_t>() + tx;
+                                const host::label_t y = (GPU_y * nyBlocksPerDevice + by) * block::ny<host::label_t>() + ty;
+                                const host::label_t z = (GPU_z * nzBlocksPerDevice + bz) * block::nz<host::label_t>() + tz;
+
+                                const host::label_t idxGlobal = global::idx(x, y, z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
+
+                                // Local index within this GPU's storage (block‑major order)
+                                const host::label_t blockLin = (bz * nyBlocksPerDevice + by) * nxBlocksPerDevice + bx;
+                                const host::label_t threadLin = (tz * block::ny<host::label_t>() + ty) * block::nx<host::label_t>() + tx;
+                                const host::label_t localIdx = blockLin * pointsPerBlock + threadLin;
+
+                                for (host::label_t field = 0; field < nFields; field++)
+                                {
+                                    const host::label_t srcIdx = field * nNodes + virtualDeviceIndex * nPointsPerDevice + localIdx;
+                                    soa[field][idxGlobal] = arr()[srcIdx];
+                                }
+                            });
+                    });
+
+                return soa;
+            }
+
         private:
+            /**
+             * @brief Flag indicating whether the collection is empty (i.e., if the file was not found)
+             **/
             const bool empty_;
 
             /**

@@ -182,7 +182,7 @@ namespace LBM
             /**
              * @brief Time-averaged density field
              **/
-            device::scalarField<VelocitySet, time::instantaneous> rhoMean_;
+            device::scalarField<VelocitySet, time::timeAverage> rhoMean_;
         };
     }
 }

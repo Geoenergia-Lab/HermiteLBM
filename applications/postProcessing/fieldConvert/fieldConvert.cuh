@@ -61,55 +61,10 @@ SourceFiles
 #include "../../../src/postProcess/postProcess.cuh"
 #include "../../../src/programControl/programControl.cuh"
 #include "../../../src/functionObjects/functionObjects.cuh"
+#include "../../../src/numericalSchemes/numericalSchemes.cuh"
 
 namespace LBM
 {
-
-    __host__ [[nodiscard]] const std::vector<host::label_t> timeStepIndices(const programControl &programCtrl)
-    {
-        const std::vector<host::label_t> fileNameIndices = programControl::savedTimeSteps("timeStep");
-
-        if (programCtrl.input().isArgPresent("-fieldName"))
-        {
-            return {fileNameIndices.back()};
-        }
-        else
-        {
-            return fileNameIndices;
-        }
-    }
-
-    /**
-     * @brief Creates an error message for invalid writer types
-     * @param[in] writerNames Unordered map of the writer types to the appropriate functions
-     * @param[in] conversion The invalid conversion type provided by the user
-     * @return A formatted error message listing the supported formats
-     **/
-    __host__ [[nodiscard]] const name_t invalidWriter(const std::unordered_map<name_t, postProcess::writerFunction> &writerNames, const name_t &conversion) noexcept
-    {
-        words_t supportedFormats;
-        for (const auto &pair : writerNames)
-        {
-            supportedFormats.push_back(pair.first);
-        }
-
-        // Sort them alphabetically
-        std::sort(supportedFormats.begin(), supportedFormats.end());
-
-        // Create the error message with supported formats
-        name_t errorMsg = "Unsupported conversion format: " + conversion + "\nSupported formats are: ";
-        for (host::label_t i = 0; i < supportedFormats.size(); ++i)
-        {
-            if (i != 0)
-            {
-                errorMsg += ", ";
-            }
-            errorMsg += supportedFormats[i];
-        }
-
-        return errorMsg;
-    }
-
     __host__ [[nodiscard]] axis::type cutPlaneDirection(const programControl &programCtrl) noexcept
     {
         const name_t cutPlanePrefix = programCtrl.getArgument("-cutPlane");
@@ -176,12 +131,6 @@ namespace LBM
         return (static_cast<scalar_t>(mesh.dimension<alpha>() - static_cast<host::label_t>(1)) * (pointCoordinate / mesh.L().value<alpha>())) - static_cast<scalar_t>(1);
     }
 
-    template <typename T>
-    __host__ [[nodiscard]] inline constexpr T linearInterpolate(const T f0, const T f1, const T weight) noexcept
-    {
-        return ((static_cast<T>(1) - weight) * f0) + (weight * f1);
-    }
-
     template <const axis::type alpha>
     __host__ [[nodiscard]] const std::vector<std::vector<scalar_t>> extractCutPlane(
         const std::vector<std::vector<scalar_t>> &fields,
@@ -207,7 +156,7 @@ namespace LBM
                     mesh.dimensions(),
                     [&](const host::label_t i, const host::label_t j)
                     {
-                        const host::blockLabel Tx = axis::to_3d<alpha>(i, j, index_0);
+                        const host::pointLabel Tx = axis::to_3d<alpha>(i, j, index_0);
 
                         const host::label_t idx = global::idx(Tx.x, Tx.y, Tx.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
 
@@ -226,8 +175,8 @@ namespace LBM
                     mesh.dimensions(),
                     [&](const host::label_t i, const host::label_t j)
                     {
-                        const host::blockLabel Tx_0 = axis::to_3d<alpha>(i, j, index_0);
-                        const host::blockLabel Tx_1 = axis::to_3d<alpha>(i, j, index_1);
+                        const host::pointLabel Tx_0 = axis::to_3d<alpha>(i, j, index_0);
+                        const host::pointLabel Tx_1 = axis::to_3d<alpha>(i, j, index_1);
 
                         const host::label_t idx_0 = global::idx(Tx_0.x, Tx_0.y, Tx_0.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
                         const host::label_t idx_1 = global::idx(Tx_1.x, Tx_1.y, Tx_1.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
@@ -237,7 +186,7 @@ namespace LBM
 
                         const host::label_t id = i + (j * mesh.dimension<axis ::orthogonal<alpha, 0>()>());
 
-                        cutPlane[field][id] = linearInterpolate(f0, f1, weight);
+                        cutPlane[field][id] = numericalSchemes::interpolate<scalar_t>::linear(f0, f1, weight);
                     });
             }
         }
@@ -276,7 +225,7 @@ namespace LBM
         const host::arrayCollection<scalar_t> &hostMoments,
         const host::latticeMesh &mesh,
         const programControl &programCtrl,
-        const bool doCutPlane = false)
+        const bool doCutPlane)
     {
         if (doCutPlane)
         {
@@ -288,14 +237,14 @@ namespace LBM
             const axis::type alpha = cutPlaneDirection(programCtrl);
 
             return extractCutPlane(
-                fileIO::deinterleaveAoS(hostMoments.arr(), mesh),
+                hostMoments.deinterleaveAoS(mesh),
                 mesh,
                 alpha,
                 planeCoordinate);
         }
         else
         {
-            return fileIO::deinterleaveAoS(hostMoments.arr(), mesh);
+            return hostMoments.deinterleaveAoS(mesh);
         }
     }
 
@@ -316,7 +265,7 @@ namespace LBM
         }
     }
 
-    __host__ [[nodiscard]] const name_t processName(const programControl &programCtrl, const name_t &fileNamePrefix, const host::label_t nameIndex, const bool cutPlane = false)
+    __host__ [[nodiscard]] const name_t processName(const programControl &programCtrl, const name_t &fileNamePrefix, const host::label_t nameIndex, const bool cutPlane)
     {
         // Get the file name at the present time step
         if (cutPlane)

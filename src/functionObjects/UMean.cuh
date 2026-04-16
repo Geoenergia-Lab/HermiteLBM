@@ -182,7 +182,7 @@ namespace LBM
             /**
              * @brief Time-averaged velocity vector field
              **/
-            device::vectorField<VelocitySet, time::instantaneous> UMean_;
+            device::vectorField<VelocitySet, time::timeAverage> UMean_;
         };
     }
 }
