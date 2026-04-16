@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -68,7 +68,7 @@ namespace LBM
     public:
         /**
          * @brief Constructs a boundary value from configuration data
-         * @param[in] fieldName Name of the field (e.g., "rho", "u", "m_xx")
+         * @param[in] fieldName Name of the field (e.g., "rho", "U_x", "m_xx")
          * @param[in] regionName Name of the boundary region (e.g., "North", "West")
          * @throws std::runtime_error if field name is invalid or configuration is malformed
          **/
@@ -160,7 +160,7 @@ namespace LBM
             // Try fixing its value
             if (string::isNumber(value_))
             {
-                const std::unordered_set<name_t> allowed = {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
+                const std::unordered_set<name_t> allowed = {"rho", "U_x", "U_y", "U_z", "Pi_xx", "Pi_xy", "Pi_xz", "Pi_yy", "Pi_yz", "Pi_zz"};
 
                 const bool isMember = allowed.find(fieldName) != allowed.end();
 
@@ -170,7 +170,7 @@ namespace LBM
                     {
                         return string::extractParameter<scalar_t>(regionFieldBlock, "value");
                     }
-                    if ((fieldName == "u") | (fieldName == "v") | (fieldName == "w"))
+                    if ((fieldName == "U_x") | (fieldName == "U_y") | (fieldName == "U_z"))
                     {
                         if constexpr (Scaled)
                         {
@@ -181,7 +181,7 @@ namespace LBM
                             return string::extractParameter<scalar_t>(regionFieldBlock, "value");
                         }
                     }
-                    if ((fieldName == "m_xx") | (fieldName == "m_yy") | (fieldName == "m_zz"))
+                    if ((fieldName == "Pi_xx") | (fieldName == "Pi_yy") | (fieldName == "Pi_zz"))
                     {
                         if constexpr (Scaled)
                         {
@@ -192,7 +192,7 @@ namespace LBM
                             return string::extractParameter<scalar_t>(regionFieldBlock, "value");
                         }
                     }
-                    if ((fieldName == "m_xy") | (fieldName == "m_xz") | (fieldName == "m_yz"))
+                    if ((fieldName == "Pi_xy") | (fieldName == "Pi_xz") | (fieldName == "Pi_yz"))
                     {
                         if constexpr (Scaled)
                         {
@@ -211,44 +211,44 @@ namespace LBM
             else if (value_ == "equilibrium")
             {
                 // Check to see if the variable is one of the moments
-                const std::unordered_set<name_t> allowed = {"m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
+                const std::unordered_set<name_t> allowed = {"Pi_xx", "Pi_xy", "Pi_xz", "Pi_yy", "Pi_yz", "Pi_zz"};
                 const bool isMember = allowed.find(fieldName) != allowed.end();
 
                 // It is an equilibrium moment
                 if (isMember)
                 {
                     // Store second-order moments
-                    if (fieldName == "m_xx")
+                    if (fieldName == "Pi_xx")
                     {
-                        const scalar_t u = extractParameter<true>("u", regionName, initialConditionsName);
+                        const scalar_t u = extractParameter<true>("U_x", regionName, initialConditionsName);
                         return velocitySet::scale_ii<scalar_t>() * ((u * u)) / rho0();
                     }
-                    else if (fieldName == "m_xy")
+                    else if (fieldName == "Pi_xy")
                     {
-                        const scalar_t u = extractParameter<true>("u", regionName, initialConditionsName);
-                        const scalar_t v = extractParameter<true>("v", regionName, initialConditionsName);
+                        const scalar_t u = extractParameter<true>("U_x", regionName, initialConditionsName);
+                        const scalar_t v = extractParameter<true>("U_y", regionName, initialConditionsName);
                         return velocitySet::scale_ii<scalar_t>() * ((u * v)) / rho0();
                     }
-                    else if (fieldName == "m_xz")
+                    else if (fieldName == "Pi_xz")
                     {
-                        const scalar_t u = extractParameter<true>("u", regionName, initialConditionsName);
-                        const scalar_t w = extractParameter<true>("w", regionName, initialConditionsName);
+                        const scalar_t u = extractParameter<true>("U_x", regionName, initialConditionsName);
+                        const scalar_t w = extractParameter<true>("U_z", regionName, initialConditionsName);
                         return velocitySet::scale_ii<scalar_t>() * ((u * w)) / rho0();
                     }
-                    else if (fieldName == "m_yy")
+                    else if (fieldName == "Pi_yy")
                     {
-                        const scalar_t v = extractParameter<true>("v", regionName, initialConditionsName);
+                        const scalar_t v = extractParameter<true>("U_y", regionName, initialConditionsName);
                         return velocitySet::scale_ii<scalar_t>() * ((v * v)) / rho0();
                     }
-                    else if (fieldName == "m_yz")
+                    else if (fieldName == "Pi_yz")
                     {
-                        const scalar_t v = extractParameter<true>("v", regionName, initialConditionsName);
-                        const scalar_t w = extractParameter<true>("w", regionName, initialConditionsName);
+                        const scalar_t v = extractParameter<true>("U_y", regionName, initialConditionsName);
+                        const scalar_t w = extractParameter<true>("U_z", regionName, initialConditionsName);
                         return velocitySet::scale_ii<scalar_t>() * ((v * w)) / rho0();
                     }
-                    else if (fieldName == "m_zz")
+                    else if (fieldName == "Pi_zz")
                     {
-                        const scalar_t w = extractParameter<true>("w", regionName, initialConditionsName);
+                        const scalar_t w = extractParameter<true>("U_z", regionName, initialConditionsName);
                         return velocitySet::scale_ii<scalar_t>() * ((w * w)) / rho0();
                     }
                     return 0; // Should never get here

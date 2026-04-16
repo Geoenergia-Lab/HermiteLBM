@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -59,6 +59,28 @@ namespace LBM
 {
     namespace fileIO
     {
+        /**
+         * @brief Safely converts an integer of type T to a std::streamsize
+         * @param[in] size The size to convert
+         **/
+        template <typename T>
+        __host__ [[nodiscard]] std::streamsize to_streamsize(const T size)
+        {
+            types::assertions::validate<T>();
+
+            static_assert(std::is_integral_v<T>, "Conversion to std::streamsize must be from an integral type");
+
+            if (size > static_cast<T>(std::numeric_limits<std::streamsize>::max()))
+            {
+                throw std::runtime_error("Data size " + std::to_string(size) + " exceeds maximum stream size");
+                return 0;
+            }
+            else
+            {
+                return static_cast<std::streamsize>(size);
+            }
+        }
+
         /**
          * @brief Validates if a string represents a valid integer
          * @param[in] intStr String to validate
@@ -202,19 +224,17 @@ namespace LBM
          * @param[in] isLatestTime Flag indicating whether to start from latest time
          * @return Starting index (0 for earliest, last index for latest)
          **/
-        template <class ProgramControl>
-        __host__ [[nodiscard]] host::label_t getStartIndex(const ProgramControl &programCtrl, const bool isLatestTime)
-        {
-            const std::vector<host::label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
-
-            return isLatestTime ? static_cast<host::label_t>(fileNameIndices.size() - 1) : 0;
-        }
-
         __host__ [[nodiscard]] host::label_t getStartIndex(const name_t &fileNamePrefix, const bool isLatestTime)
         {
             const std::vector<host::label_t> fileNameIndices = fileIO::timeIndices(fileNamePrefix);
 
             return isLatestTime ? static_cast<host::label_t>(fileNameIndices.size() - 1) : 0;
+        }
+
+        template <class ProgramControl>
+        __host__ [[nodiscard]] host::label_t getStartIndex(const ProgramControl &programCtrl, const bool isLatestTime)
+        {
+            return getStartIndex(programCtrl.caseName(), isLatestTime);
         }
 
         /**
@@ -233,6 +253,73 @@ namespace LBM
         __host__ [[nodiscard]] host::label_t getStartIndex(const name_t &fileNamePrefix, const ProgramControl &programCtrl)
         {
             return getStartIndex(fileNamePrefix, programCtrl.input().isArgPresent("-latestTime"));
+        }
+
+        /**
+         * @brief Counts lines before the first occurrence of a target line.
+         * @param[in] file Input file stream (position advanced).
+         * @param[in] target The line content that stops counting (excluded).
+         * @return Number of lines read before target; if target not found, returns total lines.
+         **/
+        __host__ [[nodiscard]] host::label_t line_count(std::ifstream &file, const name_t &target)
+        {
+            name_t line;
+            host::label_t result = 0;
+            // bool found = false;
+
+            while (std::getline(file, line))
+            {
+                if (line == target)
+                {
+                    // found = true;
+                    break;
+                }
+                ++result;
+            }
+
+            return result;
+        }
+
+        /**
+         * @brief Reads a file line by line and returns a vector of all lines that appear
+         * before the first line exactly equal to the target string.
+         * If the target is not found, all lines from the file are returned.
+         *
+         * The function performs two passes:
+         * 1. Count how many lines precede the target (or the whole file if target absent).
+         * 2. Reserve that many slots in the vector and read the lines again, storing them.
+         *
+         * @param[in] filename Path to the file.
+         * @param[in] target The exact line content at which to stop reading (not included).
+         * @return Vector of strings containing the lines before the target.
+         **/
+        __host__ [[nodiscard]] const words_t read_until(const name_t &filename, const name_t &target)
+        {
+            std::ifstream file(filename);
+            if (!file.is_open())
+            {
+                return {}; // return empty vector on open failure
+            }
+
+            // Count lines before target
+            // If target not found, lineCount already holds total lines in file.
+            const host::label_t lineCount = line_count(file, target);
+
+            // Read and store exactly lineCount lines
+            file.clear();                 // clear EOF and error flags
+            file.seekg(0, std::ios::beg); // rewind to beginning
+
+            name_t line;
+            words_t lines;
+            lines.reserve(lineCount); // allocate once
+
+            for (host::label_t i = 0; i < lineCount; i++)
+            {
+                std::getline(file, line);
+                lines.push_back(std::move(line));
+            }
+
+            return lines;
         }
     }
 }

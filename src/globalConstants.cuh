@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -71,6 +71,43 @@ namespace LBM
     {
         return static_cast<T>(1);
     }
+
+    struct systemInfo
+    {
+    public:
+        __host__ [[nodiscard]] static inline consteval host::label_t scalarSize() noexcept
+        {
+            return static_cast<host::label_t>(sizeof(scalar_t)) * static_cast<host::label_t>(8);
+        }
+
+        __host__ [[nodiscard]] static inline consteval host::label_t labelSize() noexcept
+        {
+            return static_cast<host::label_t>(sizeof(device::label_t)) * static_cast<host::label_t>(8);
+        }
+
+        __host__ [[nodiscard]] static inline consteval const char *binaryType() noexcept
+        {
+            return endian::nameString();
+        }
+
+        __host__ static void print(std::ostream &out)
+        {
+            out << "systemInformation" << std::endl;
+            out << "{" << std::endl;
+            out << "    binaryType\t" << binaryType() << ";" << std::endl;
+            out << std::endl;
+            out << "    scalarSize\t" << scalarSize() << ";" << std::endl;
+            out << std::endl;
+            out << "    labelSize\t" << labelSize() << ";" << std::endl;
+            out << "};" << std::endl;
+            out << std::endl;
+        }
+
+        __host__ static void print()
+        {
+            print(std::cout);
+        }
+    };
 
     namespace device
     {

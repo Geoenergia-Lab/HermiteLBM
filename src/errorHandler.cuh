@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -53,6 +53,15 @@ SourceFiles
 namespace LBM
 {
     /**
+     * @brief Enumeration for indicating whether a function throws an exception or not.
+     **/
+    typedef enum throwsEnum : bool
+    {
+        NO_THROW = false,
+        THROWS = true
+    } throws;
+
+    /**
      * @brief Utility class for handling CUDA and general runtime errors.
      *
      * Provides static methods to check error codes and terminate with a
@@ -70,7 +79,7 @@ namespace LBM
          **/
         [[nodiscard]] errorHandler(const cudaError_t err) noexcept
         {
-            check(err);
+            check<throws::THROWS>(err);
         }
 
         /**
@@ -83,7 +92,7 @@ namespace LBM
          **/
         [[nodiscard]] errorHandler(const int err, const name_t &errorString) noexcept
         {
-            check(err, errorString);
+            check<throws::THROWS>(err, errorString);
         }
 
         ~errorHandler() noexcept = default;
@@ -96,13 +105,15 @@ namespace LBM
          * This version is not marked inline, suitable for calls outside
          * performance-critical loops.
          **/
+        template <const throws Throws = throws::THROWS>
         static void check(const cudaError_t err, const std::source_location &loc = std::source_location::current()) noexcept
         {
-            checkImpl(err, loc);
+            checkImpl<Throws>(err, loc);
         }
+        template <const throws Throws = throws::THROWS>
         static inline void checkLast(const std::source_location &loc = std::source_location::current()) noexcept
         {
-            check(cudaGetLastError(), loc);
+            check<Throws>(cudaGetLastError(), loc);
         }
 
         /**
@@ -112,13 +123,15 @@ namespace LBM
          * Identical to check() but gives the compiler an inline hint.
          * Use this in tight loops where function call overhead matters.
          **/
+        template <const throws Throws = throws::THROWS>
         static inline void checkInline(const cudaError_t err, const std::source_location &loc = std::source_location::current()) noexcept
         {
-            checkImpl(err, loc);
+            checkImpl<Throws>(err, loc);
         }
+        template <const throws Throws = throws::THROWS>
         static inline void checkLastInline(const std::source_location &loc = std::source_location::current()) noexcept
         {
-            checkInline(cudaGetLastError(), loc);
+            checkInline<Throws>(cudaGetLastError(), loc);
         }
 
         /**
@@ -128,31 +141,34 @@ namespace LBM
          *
          * If err != 0, prints a report including the given string and calls std::exit().
          **/
+        template <const throws Throws = throws::THROWS>
         static void check(const int err, const name_t &errorString, const std::source_location &loc = std::source_location::current()) noexcept
         {
-            checkImpl(err, errorString, loc);
+            checkImpl<Throws>(err, errorString, loc);
         }
 
     private:
         /**
          * @brief Implementation of check(cudaError_t)
          **/
+        template <const throws Throws = throws::THROWS>
         static inline void checkImpl(const cudaError_t err, const std::source_location &loc) noexcept
         {
             if (err != cudaSuccess)
             {
-                exit(err, loc);
+                exit<Throws>(err, loc);
             }
         }
 
         /**
          * @brief Implementation of check(int, errorString)
          **/
+        template <const throws Throws = throws::THROWS>
         static inline void checkImpl(const int err, const name_t &errorString, const std::source_location &loc) noexcept
         {
             if (err != 0)
             {
-                exit(err, errorString, loc);
+                exit<Throws>(err, errorString, loc);
             }
         }
 
@@ -163,6 +179,7 @@ namespace LBM
          *
          * Outputs error details to stderr and calls std::exit(err).
          **/
+        template <const throws Throws>
         static inline void exit(const int err, const name_t &errorString, const std::source_location &loc) noexcept
         {
             std::cerr << std::endl;
@@ -175,7 +192,10 @@ namespace LBM
             std::cerr << "    errorMessage: " << errorString << std::endl;
             std::cerr << "};" << std::endl;
             std::cerr << std::endl;
-            std::exit(err);
+            if constexpr (Throws == throws::THROWS)
+            {
+                std::exit(err);
+            }
         }
 
         /**
@@ -184,9 +204,10 @@ namespace LBM
          *
          * Converts the CUDA error to an integer and a string, then calls exit(int,string).
          **/
+        template <const throws Throws = throws::THROWS>
         static inline void exit(const cudaError_t err, const std::source_location &loc) noexcept
         {
-            exit(static_cast<int>(err), cudaGetErrorString(err), loc);
+            exit<Throws>(static_cast<int>(err), cudaGetErrorString(err), loc);
         }
     };
 

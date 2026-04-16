@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -81,6 +81,36 @@ namespace LBM
             {
                 swapEndian(value);
             }
+        }
+
+        /**
+         * @brief Read from an istream object to a pointer of type T
+         * @tparam T The type of the pointer
+         * @param[in] ptr The pointer to read to
+         * @param[in] size The length of the data to read
+         * @param[in] in The input istream object
+         **/
+        template <typename T>
+        __host__ void readBinaryBlock(
+            T *const ptrRestrict ptr,
+            const host::label_t size,
+            std::ifstream &in)
+        {
+            in.read(reinterpret_cast<char *>(ptr), to_streamsize(size));
+        }
+
+        /**
+         * @brief Read from an istream object to a std::vector of type T
+         * @tparam T The type of the vector
+         * @param[out] vec The vector to read to
+         * @param[in] in The input istream object
+         **/
+        template <typename T>
+        __host__ void readBinaryBlock(std::vector<T> &vec, std::ifstream &in)
+        {
+            const host::label_t size = vec.size() * static_cast<host::label_t>(sizeof(T));
+
+            readBinaryBlock(vec.data(), size, in);
         }
 
         /**
@@ -142,7 +172,7 @@ namespace LBM
             {
                 throw std::runtime_error("Data size exceeds maximum stream size");
             }
-            in.read(reinterpret_cast<char *>(data.data()), static_cast<std::streamsize>(byteCount));
+            readBinaryBlock(data, in);
 
             if (!in.good() || in.gcount() != static_cast<std::streamsize>(byteCount))
             {
@@ -304,7 +334,7 @@ namespace LBM
                 throw std::runtime_error("Field data size exceeds maximum stream size");
             }
 
-            in.read(reinterpret_cast<char *>(fieldData.data()), static_cast<std::streamsize>(byteCount));
+            readBinaryBlock(fieldData, in);
 
             if (!in.good())
             {
@@ -325,77 +355,6 @@ namespace LBM
 
             return fieldData;
         }
-
-        /**
-         * @brief Convert Array of Structures (AoS) to Structure of Arrays (SoA)
-         * @tparam T Data type of array elements
-         * @tparam M Mesh type providing dimension information
-         * @param[in] fMom Input data in AoS format (all variables interleaved per point)
-         * @param[in] mesh The lattice mesh
-         * @return Vector of vectors where each inner vector contains all values for one variable
-         * @throws std::invalid_argument if input size doesn't match mesh dimensions
-         *
-         * This function reorganizes data from AoS format (where all variables for
-         * each point are stored together) to SoA format (where each variable's values
-         * are stored in separate contiguous arrays).
-         **/
-        template <typename T, class LatticeMesh>
-        __host__ [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoS(const std::vector<T> &fMom, const LatticeMesh &mesh)
-        {
-            const host::label_t nNodes = mesh.template dimension<axis::X>() * mesh.template dimension<axis::Y>() * mesh.template dimension<axis::Z>();
-            if (fMom.size() % nNodes != 0)
-            {
-                throw std::invalid_argument("fMom size (" + std::to_string(fMom.size()) + ") is not divisible by mesh points (" + std::to_string(nNodes) + ")");
-            }
-            const host::label_t nFields = fMom.size() / nNodes;
-
-            std::vector<std::vector<T>> soa(nFields, std::vector<T>(nNodes, 0));
-
-            const host::label_t nxGPUs = mesh.template nDevices<axis::X>();
-            const host::label_t nyGPUs = mesh.template nDevices<axis::Y>();
-            const host::label_t nzGPUs = mesh.template nDevices<axis::Z>();
-
-            const host::label_t nxBlocksPerDevice = mesh.template nBlocks<axis::X>() / nxGPUs;
-            const host::label_t nyBlocksPerDevice = mesh.template nBlocks<axis::Y>() / nyGPUs;
-            const host::label_t nzBlocksPerDevice = mesh.template nBlocks<axis::Z>() / nzGPUs;
-
-            const host::label_t pointsPerBlock = block::size<host::label_t>();
-            const host::label_t nPointsPerDevice = nxBlocksPerDevice * nyBlocksPerDevice * nzBlocksPerDevice * pointsPerBlock;
-
-            GPU::forAll(
-                mesh.nDevices(),
-                [&](const host::label_t GPU_x, const host::label_t GPU_y, const host::label_t GPU_z)
-                {
-                    const host::label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
-
-                    host::forAll(
-                        mesh.blocksPerDevice(),
-                        [&](const host::label_t bx, const host::label_t by, const host::label_t bz,
-                            const host::label_t tx, const host::label_t ty, const host::label_t tz)
-                        {
-                            // Global coordinates (for output)
-                            const host::label_t x = (GPU_x * nxBlocksPerDevice + bx) * block::nx<host::label_t>() + tx;
-                            const host::label_t y = (GPU_y * nyBlocksPerDevice + by) * block::ny<host::label_t>() + ty;
-                            const host::label_t z = (GPU_z * nzBlocksPerDevice + bz) * block::nz<host::label_t>() + tz;
-
-                            const host::label_t idxGlobal = global::idx(x, y, z, mesh.template dimension<axis::X>(), mesh.template dimension<axis::Y>());
-
-                            // Local index within this GPU's storage (block‑major order)
-                            const host::label_t blockLin = (bz * nyBlocksPerDevice + by) * nxBlocksPerDevice + bx;
-                            const host::label_t threadLin = (tz * block::ny<host::label_t>() + ty) * block::nx<host::label_t>() + tx;
-                            const host::label_t localIdx = blockLin * pointsPerBlock + threadLin;
-
-                            for (host::label_t field = 0; field < nFields; field++)
-                            {
-                                const host::label_t srcIdx = field * nNodes + virtualDeviceIndex * nPointsPerDevice + localIdx;
-                                soa[field][idxGlobal] = fMom[srcIdx];
-                            }
-                        });
-                });
-
-            return soa;
-        }
-
     }
 
 }

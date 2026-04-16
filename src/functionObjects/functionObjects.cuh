@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -54,29 +54,71 @@ namespace LBM
 {
     namespace functionObjects
     {
-        using save_function_signature = std::function<void(const host::label_t)>;
+        using calculateFunction = std::function<void()>;
+        using saveFunction = std::function<void(const host::label_t)>;
 
         /**
-         * @brief The names of the 10 solution variables of the moment representation
+         * @brief Reads an arbitrary list of pointers from devPtrs
+         * @tparam ptrIndices The indices of the pointers to read
+         * @param[in] devPtrs The pointers to read from
+         * @param[in] idx Spatial index
+         * @return The values at location idx
          **/
-        const words_t solutionVariableNames{"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
+        template <const host::label_t... ptrIndices>
+        __device__ [[nodiscard]] inline constexpr const thread::array<scalar_t, sizeof...(ptrIndices)> read_from_moments(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
+            const device::label_t idx) noexcept
+        {
+            return {devPtrs.ptr<ptrIndices>()[idx]...};
+        }
 
         /**
-         * @brief Maps the name of function objects to lists of the names of their individual components
+         * @brief Reads all pointers from devPtrs
+         * @param[in] devPtrs The pointers to read from
+         * @param[in] idx Spatial index
+         * @return The values at location idx
          **/
-        const std::unordered_map<name_t, words_t> fieldComponentsMap = {
-            {"momentsMean", {"rhoMean", "uMean", "vMean", "wMean", "m_xxMean", "m_xyMean", "m_xzMean", "m_yyMean", "m_yzMean", "m_zzMean"}},
-            {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}},
-            {"SMean", {"S_xxMean", "S_xyMean", "S_xzMean", "S_yyMean", "S_yzMean", "S_zzMean"}},
-            {"k", {"k"}},
-            {"kMean", {"kMean"}}};
+        template <const host::label_t N>
+        __device__ [[nodiscard]] inline constexpr const thread::array<scalar_t, N> read(
+            const device::ptrCollection<N, scalar_t> &devPtrs,
+            device::label_t idx) noexcept
+        {
+            thread::array<scalar_t, N> result;
+
+            device::constexpr_for<0, N>(
+                [&](const auto i)
+                {
+                    result[i] = devPtrs.template ptr<i>()[idx];
+                });
+
+            return result;
+        }
+
+        /**
+         * @brief Saves all results to resultPtrs
+         * @param[in] result The result to save
+         * @param[out] resultPtrs The pointers to save to
+         * @param[in] idx Spatial index
+         **/
+        template <const host::label_t N>
+        __device__ inline void save(
+            const thread::array<scalar_t, N> &result,
+            const device::ptrCollection<N, scalar_t> resultPtrs,
+            const device::label_t idx) noexcept
+        {
+            device::constexpr_for<0, N>(
+                [&](const auto i)
+                {
+                    resultPtrs.template ptr<i>()[idx] = result[q_i<i>()];
+                });
+        }
 
         /**
          * @brief Calculates the time average of a variable
-         * @return The updated time average
          * @param[in] fMean The current time average value
          * @param[in] f The current instantaneous value
          * @param[in] invNewCount The reciprocal of (nTimeSteps + 1)
+         * @return The updated time average
          **/
         template <typename T>
         __device__ [[nodiscard]] inline constexpr T timeAverage(const T fMean, const T f, const T invNewCount) noexcept
@@ -84,8 +126,18 @@ namespace LBM
             return fMean + (f - fMean) * invNewCount;
         }
 
+        /**
+         * @brief Calculates the time average of an array
+         * @param[in] fMean The current time average value
+         * @param[in] f The current instantaneous value
+         * @param[in] invNewCount The reciprocal of (nTimeSteps + 1)
+         * @return The updated time average
+         **/
         template <typename T, const host::label_t N>
-        __device__ [[nodiscard]] inline constexpr const thread::array<T, N> timeAverage(const thread::array<T, N> &fMean, const thread::array<T, N> &f, const T invNewCount) noexcept
+        __device__ [[nodiscard]] inline constexpr const thread::array<T, N> timeAverage(
+            const thread::array<T, N> &fMean,
+            const thread::array<T, N> &f,
+            const T invNewCount) noexcept
         {
             thread::array<T, N> newMean;
 
@@ -99,6 +151,89 @@ namespace LBM
         }
 
         /**
+         * @brief Device-side function for calculating the time averaged quantity only
+         * @tparam FunctionObject The function object to calculate
+         * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
+         * @param[out] resultMeanPtrs Device pointer collection for the time averaged quantity
+         * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
+         **/
+        template <class FunctionObject>
+        __device__ inline void mean(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
+            const device::ptrCollection<FunctionObject::N, scalar_t> &resultMeanPtrs,
+            const scalar_t invNewCount) noexcept
+        {
+            // Calculate the index
+            const device::label_t idx = device::idx(thread::coordinate(), block::coordinate());
+
+            // Calculate the instantaneous
+            const thread::array<scalar_t, FunctionObject::N> resultInstantaneous = FunctionObject::calculate(devPtrs, idx);
+
+            // Read the mean values from global memory
+            const thread::array<scalar_t, FunctionObject::N> resultMean = read(resultMeanPtrs, idx);
+
+            // Update the mean value and write back to global
+            const thread::array<scalar_t, FunctionObject::N> resultMeanNew = timeAverage(resultMean, resultInstantaneous, invNewCount);
+
+            save(resultMeanNew, resultMeanPtrs, idx);
+        }
+
+        /**
+         * @brief Device-side function for calculating the instantaneous and time averaged quantity
+         * @tparam FunctionObject The function object to calculate
+         * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
+         * @param[out] resulPtrs Device pointer collection for the instantaneous quantity
+         * @param[out] resultMeanPtrs Device pointer collection for the time averaged quantity
+         * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
+         **/
+        template <class FunctionObject>
+        __device__ inline void instantaneousAndMean(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
+            const device::ptrCollection<FunctionObject::N, scalar_t> &resultPtrs,
+            const device::ptrCollection<FunctionObject::N, scalar_t> &resultMeanPtrs,
+            const scalar_t invNewCount) noexcept
+        {
+            // Calculate the index
+            const device::label_t idx = device::idx(thread::coordinate(), block::coordinate());
+
+            // Calculate the instantaneous
+            const thread::array<scalar_t, FunctionObject::N> resultInstantaneous = FunctionObject::calculate(devPtrs, idx);
+
+            // Save the instantaneous to global memory
+            save(resultInstantaneous, resultPtrs, idx);
+
+            // Read the mean values from global memory
+            const thread::array<scalar_t, FunctionObject::N> resultMean = read(resultMeanPtrs, idx);
+
+            // Update the mean value
+            const thread::array<scalar_t, FunctionObject::N> resultMeanNew = timeAverage(resultMean, resultInstantaneous, invNewCount);
+
+            // Write the mean value back to global
+            save(resultMeanNew, resultMeanPtrs, idx);
+        }
+
+        /**
+         * @brief Device-side function for calculating the instantaneous quantity only
+         * @tparam FunctionObject The function object to calculate
+         * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
+         * @param[out] resulPtrs Device pointer collection for the instantaneous quantity
+         **/
+        template <class FunctionObject>
+        __device__ inline void instantaneous(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
+            const device::ptrCollection<FunctionObject::N, scalar_t> &resultPtrs) noexcept
+        {
+            // Calculate the index
+            const device::label_t idx = device::idx(thread::coordinate(), block::coordinate());
+
+            // Calculate the instantaneous
+            const thread::array<scalar_t, FunctionObject::N> resultInstantaneous = FunctionObject::calculate(devPtrs, idx);
+
+            // Save the instantaneous to global memory
+            save(resultInstantaneous, resultPtrs, idx);
+        }
+
+        /**
          * @brief Initializes calculation switches based on function object configuration
          * @param[in] objectName Name of the function object to check
          * @return True if the object is enabled in configuration
@@ -106,32 +241,6 @@ namespace LBM
         __host__ [[nodiscard]] bool initialiserSwitch(const name_t &objectName) noexcept
         {
             return std::filesystem::exists("functionObjects") ? string::containsString(string::trim<true>(string::eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), objectName) : false;
-        }
-
-        /**
-         * @brief Allocates either a regular or zero-initialized device array based on the allocate flag
-         * @return A device::array either allocated to a uniform value or non-allocated
-         * @param[in] name The name of the variable to construct
-         * @param[in] mesh The lattice mesh
-         * @param[in] allocate Determines whether or not to allocate the variable
-         **/
-        template <class VelocitySet, const time::type TimeType>
-        __host__ [[nodiscard]] device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType> objectAllocator(
-            const name_t &name,
-            const host::latticeMesh &mesh,
-            const programControl &programCtrl)
-        {
-            return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh, 0, programCtrl, initialiserSwitch(name));
-        }
-
-        template <class VelocitySet, const time::type TimeType>
-        __host__ [[nodiscard]] device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType> objectAllocator(
-            const name_t &name,
-            const host::latticeMesh &mesh,
-            const bool allocate,
-            const programControl &programCtrl)
-        {
-            return device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>(name, mesh, 0, programCtrl, allocate);
         }
     }
 }

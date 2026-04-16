@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -70,28 +70,21 @@ int main(const int argc, const char *const argv[])
     VelocitySet::print();
 
     // Allocate the arrays on the device
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> u("u", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> v("v", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> w("w", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxx("m_xx", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxy("m_xy", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mxz("m_xz", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> myy("m_yy", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
-    device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
+    device::scalarField<VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
+    device::vectorField<VelocitySet, time::instantaneous> U("U", mesh, programCtrl);
+    device::symmetricTensorField<VelocitySet, time::instantaneous> Pi("Pi", mesh, programCtrl);
 
-    const device::ptrCollection<10, scalar_t> devPtrs(
-        rho.ptr(VirtualDeviceIndex()),
-        u.ptr(VirtualDeviceIndex()),
-        v.ptr(VirtualDeviceIndex()),
-        w.ptr(VirtualDeviceIndex()),
-        mxx.ptr(VirtualDeviceIndex()),
-        mxy.ptr(VirtualDeviceIndex()),
-        mxz.ptr(VirtualDeviceIndex()),
-        myy.ptr(VirtualDeviceIndex()),
-        myz.ptr(VirtualDeviceIndex()),
-        mzz.ptr(VirtualDeviceIndex()));
+    const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs(
+        rho.self().ptr(VirtualDeviceIndex()),
+        U.x().ptr(VirtualDeviceIndex()),
+        U.y().ptr(VirtualDeviceIndex()),
+        U.z().ptr(VirtualDeviceIndex()),
+        Pi.xx().ptr(VirtualDeviceIndex()),
+        Pi.xy().ptr(VirtualDeviceIndex()),
+        Pi.xz().ptr(VirtualDeviceIndex()),
+        Pi.yy().ptr(VirtualDeviceIndex()),
+        Pi.yz().ptr(VirtualDeviceIndex()),
+        Pi.zz().ptr(VirtualDeviceIndex()));
 
     // Setup Streams
     const streamHandler streamsLBM(programCtrl);
@@ -99,7 +92,7 @@ int main(const int argc, const char *const argv[])
     // Allocate a buffer of pinned memory on the host for writing
     host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.size() * NUMBER_MOMENTS(), mesh);
 
-    objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, u, v, w, mxx, mxy, mxz, myy, myz, mzz, streamsLBM, programCtrl);
+    objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, U, Pi, streamsLBM, programCtrl);
 
     BlockHalo blockHalo(mesh, programCtrl);
 
@@ -118,31 +111,11 @@ int main(const int argc, const char *const argv[])
         // Checkpoint
         if (programCtrl.save(timeStep))
         {
-            // Do this in a loop
-            {
-                hostWriteBuffer.copy_from_device(
-                    device::ptrCollection<10, scalar_t>{
-                        rho.ptr(VirtualDeviceIndex()),
-                        u.ptr(VirtualDeviceIndex()),
-                        v.ptr(VirtualDeviceIndex()),
-                        w.ptr(VirtualDeviceIndex()),
-                        mxx.ptr(VirtualDeviceIndex()),
-                        mxy.ptr(VirtualDeviceIndex()),
-                        mxz.ptr(VirtualDeviceIndex()),
-                        myy.ptr(VirtualDeviceIndex()),
-                        myz.ptr(VirtualDeviceIndex()),
-                        mzz.ptr(VirtualDeviceIndex())},
-                    mesh,
-                    VirtualDeviceIndex());
-            }
+            rho.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
 
-            postProcess::LBMBin::writeFile<time::instantaneous>(
-                programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
-                mesh,
-                functionObjects::solutionVariableNames,
-                hostWriteBuffer.data(),
-                timeStep,
-                rho.meanCount());
+            U.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
+
+            Pi.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
 
             runTimeObjects.save(timeStep);
         }
@@ -158,7 +131,7 @@ int main(const int argc, const char *const argv[])
             });
 
         // Calculate S kernel
-        runTimeObjects.calculate(timeStep);
+        runTimeObjects.calculate();
 
         // Halo pointer swap
         blockHalo.swap(VirtualDeviceIndex());

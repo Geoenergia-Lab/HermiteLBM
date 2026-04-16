@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -90,7 +90,7 @@ case normalVector::BACK():
         const scalar_t mxz_I = velocitySet::calculate_moment<VelocitySet, axis::X, axis::Z>(pop, boundaryNormal) * inv_rho_I;
         const scalar_t myz_I = velocitySet::calculate_moment<VelocitySet, axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
 
-        const scalar_t A = static_cast<scalar_t>(3) * (device::U_Back[2] * (device::U_Back[2] * device::U_Back[2]));
+        // const scalar_t A = static_cast<scalar_t>(3) * (device::U_Back[2] * (device::U_Back[2] * device::U_Back[2]));
 
         // Density
         // moments[m_i<0>()] = (static_cast<scalar_t>(6) * rho_I) / (static_cast<scalar_t>(-5) + (A * is_jet));
@@ -108,10 +108,10 @@ case normalVector::BACK():
         // Moments
         // moments[m_i<4>()] = static_cast<scalar_t>(0);
         // moments[m_i<5>()] = static_cast<scalar_t>(0);
-        moments[m_i<6>()] = ((static_cast<scalar_t>(5) * mxz_I) - (A * mxz_I)) / static_cast<scalar_t>(3);
+        // moments[m_i<6>()] = ((static_cast<scalar_t>(5) * mxz_I) - (A * mxz_I)) / static_cast<scalar_t>(3);
         moments[m_i<6>()] = static_cast<scalar_t>(2) * mxz_I * rho_I / moments[m_i<0>()];
         // moments[m_i<7>()] = static_cast<scalar_t>(0);
-        moments[m_i<8>()] = ((static_cast<scalar_t>(5) * myz_I) - (A * myz_I)) / static_cast<scalar_t>(3);
+        // moments[m_i<8>()] = ((static_cast<scalar_t>(5) * myz_I) - (A * myz_I)) / static_cast<scalar_t>(3);
         moments[m_i<8>()] = static_cast<scalar_t>(2) * myz_I * rho_I / moments[m_i<0>()];
         // moments[m_i<9>()] = is_jet * (moments[m_i<0>()] * device::U_Back[2] * device::U_Back[2]);
     }

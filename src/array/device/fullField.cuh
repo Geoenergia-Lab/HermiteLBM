@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -97,21 +97,21 @@ namespace LBM
              * @param[in] programCtrl The program control object
              * @param[in] allocate If false, the array is not allocated (ptr_ remains null).
              **/
-            template <const host::mallocType MallocType>
-            __host__ [[nodiscard]] array(
-                const host::array<MallocType, T, VelocitySet, TimeType> &hostArray,
-                const programControl &programCtrl,
-                const bool allocate = true)
-                : arrayBase<T>(
-                      This::allocate_on_devices(
-                          hostArray, allocate, programCtrl),
-                      hostArray.mesh(),
-                      programCtrl),
-                  name_(hostArray.name()),
-                  meanCount_(initialiseMeanCount(programCtrl))
-            {
-                initialise_boundary_condition(name_, programCtrl.deviceList());
-            }
+            // template <const host::mallocType MallocType>
+            // __host__ [[nodiscard]] array(
+            //     const host::array<MallocType, T, VelocitySet, TimeType> &hostArray,
+            //     const programControl &programCtrl,
+            //     const bool allocate = true)
+            //     : arrayBase<T>(
+            //           This::allocate_on_devices(
+            //               hostArray, allocate, programCtrl),
+            //           hostArray.mesh(),
+            //           programCtrl),
+            //       name_(hostArray.name()),
+            //       meanCount_(initialiseMeanCount(programCtrl))
+            // {
+            //     initialise_boundary_condition(name_, programCtrl.deviceList());
+            // }
 
             /**
              * @brief Construct a device array with a uniform value.
@@ -133,7 +133,7 @@ namespace LBM
                       mesh,
                       programCtrl),
                   name_(name),
-                  meanCount_(initialiseMeanCount(programCtrl))
+                  meanCount_(initialiseMeanCount(name, programCtrl))
             {
                 initialise_boundary_condition(name_, programCtrl.deviceList());
             }
@@ -157,9 +157,45 @@ namespace LBM
                       mesh,
                       programCtrl),
                   name_(name),
-                  meanCount_(initialiseMeanCount(programCtrl))
+                  meanCount_(initialiseMeanCount(name, programCtrl))
             {
                 initialise_boundary_condition(name_, programCtrl.deviceList());
+            }
+
+            __host__ [[nodiscard]] array(
+                const name_t &name,
+                const name_t &componentName,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl,
+                const bool allocate = true)
+                : arrayBase<T>(
+                      This::allocate_on_devices(
+                          host::array<host::PAGED, T, VelocitySet, TimeType>(name, componentName, mesh, programCtrl),
+                          allocate, programCtrl),
+                      mesh,
+                      programCtrl),
+                  name_(componentName),
+                  meanCount_(initialiseMeanCount(name, programCtrl))
+            {
+                initialise_boundary_condition(componentName, programCtrl.deviceList());
+            }
+
+            __host__ [[nodiscard]] array(
+                const name_t &name,
+                const name_t &componentName,
+                const host::latticeMesh &mesh,
+                const T value,
+                const programControl &programCtrl,
+                const bool allocate = true)
+                : arrayBase<T>(
+                      This::allocate_on_devices(
+                          mesh, value, allocate, programCtrl),
+                      mesh,
+                      programCtrl),
+                  name_(componentName),
+                  meanCount_(initialiseMeanCount(name, programCtrl))
+            {
+                initialise_boundary_condition(componentName, programCtrl.deviceList());
             }
 
             /**
@@ -278,7 +314,7 @@ namespace LBM
              * @param[in] programCtrl The program control object
              * @return Host array of device pointers, or nullptr if not allocated.
              **/
-            __host__ [[nodiscard]] static T **allocate_on_devices(
+            __host__ [[nodiscard]] static inline T **allocate_on_devices(
                 const host::latticeMesh &mesh,
                 const T *hostArrayGlobal,
                 const bool allocate,
@@ -296,7 +332,7 @@ namespace LBM
              * @param[in] programCtrl The program control object
              * @return Host array of device pointers.
              **/
-            __host__ [[nodiscard]] static T **allocate_on_devices(
+            __host__ [[nodiscard]] static inline T **allocate_on_devices(
                 const host::latticeMesh &mesh,
                 const std::vector<T> &hostArrayGlobal,
                 const bool allocate,
@@ -314,7 +350,7 @@ namespace LBM
              * @return Host array of device pointers.
              **/
             template <const host::mallocType MallocType>
-            __host__ [[nodiscard]] T **allocate_on_devices(
+            __host__ [[nodiscard]] static inline T **allocate_on_devices(
                 const host::array<MallocType, T, VelocitySet, TimeType> &hostArrayGlobal,
                 const bool allocate,
                 const programControl &programCtrl)
@@ -330,7 +366,7 @@ namespace LBM
              * @param[in] programCtrl The program control object
              * @return Host array of device pointers.
              **/
-            __host__ [[nodiscard]] T **allocate_on_devices(
+            __host__ [[nodiscard]] static inline T **allocate_on_devices(
                 const host::latticeMesh &mesh,
                 const T val,
                 const bool allocate,
@@ -349,9 +385,9 @@ namespace LBM
                 const name_t &name,
                 const std::vector<deviceIndex_t> &deviceList) noexcept
             {
-                if ((name == "u") || (name == "v") || (name == "w"))
+                if ((name == "U_x") || (name == "U_y") || (name == "U_z"))
                 {
-                    const device::label_t i = (name == "u") ? 0 : ((name == "v") ? 1 : 2);
+                    const device::label_t i = (name == "U_x") ? 0 : ((name == "U_y") ? 1 : 2);
 
                     const boundaryValue<VelocitySet, false> North(name, "North");
                     const boundaryValue<VelocitySet, false> South(name, "South");

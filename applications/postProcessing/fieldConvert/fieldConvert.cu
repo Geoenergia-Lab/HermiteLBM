@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -56,23 +56,33 @@ int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
 
+    // If the field name argument is not present, we cannot proceed, so we should print an error message and return
+    if (!programCtrl.input().isArgPresent("-fieldName"))
+    {
+        errorHandler::check<throws::NO_THROW>(-1, "Unspecified field name. Please provide an argument using the -fieldName argument.");
+        return 0;
+    }
+
+    // If the file type argument is not present, we cannot proceed, so we should print an error message and return
+    if (!programCtrl.input().isArgPresent("-fileType"))
+    {
+        errorHandler::check<throws::NO_THROW>(-1, "Unspecified file type. Please provide an argument using the -fileType argument.");
+        return 0;
+    }
+
     const host::latticeMesh mesh(programCtrl);
 
     // If we have supplied a -fieldName argument, replace programCtrl.caseName() with the fieldName
-    const bool doCustomField = programCtrl.input().isArgPresent("-fieldName");
-    const name_t fileNamePrefix = doCustomField ? programCtrl.getArgument("-fieldName") : programCtrl.caseName();
+    const name_t fieldName = programCtrl.getArgument("-fieldName");
+
+    // Get the time indices
+    const std::vector<host::label_t> fileNameIndices = programCtrl.timeStepIndices();
 
     // If we have supplied the -cutPlane argument, set the flag to true
     const bool doCutPlane = programCtrl.input().isArgPresent("-cutPlane");
 
     // Get the mesh for processing
     const host::latticeMesh newMesh = processMesh(mesh, programCtrl, doCutPlane);
-
-    // Now get the std::vector of std::strings corresponding to the prefix
-    const words_t &fieldNames = getFieldNames(fileNamePrefix, doCustomField);
-
-    // Get the time indices
-    const std::vector<host::label_t> fileNameIndices = fileIO::timeIndices(fileNamePrefix);
 
     // Get the conversion type
     const name_t conversion = programCtrl.getArgument("-fileType");
@@ -83,36 +93,55 @@ int main(const int argc, const char *const argv[])
     // Check if the writer is valid
     if (it != postProcess::writers.end())
     {
+        // Get the writer function
         const postProcess::writerFunction writer = it->second;
 
-        for (host::label_t timeStep = fileIO::getStartIndex(fileNamePrefix, programCtrl); timeStep < fileNameIndices.size(); timeStep++)
+        if (!fileNameIndices.empty())
         {
-            const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments = initialiseArrays(
-                fileNamePrefix,
-                programCtrl,
-                fieldNames,
-                timeStep);
+            bool foundField = false;
 
-            const std::vector<std::vector<scalar_t>> fields = processFields(hostMoments, mesh, programCtrl, doCutPlane);
-
-            const name_t fileName = processName(programCtrl, fileNamePrefix, fileNameIndices[timeStep], doCutPlane);
-
-            writer(
-                fields,
-                fileName,
-                newMesh,
-                fieldNames);
-
-            if (timeStep < fileNameIndices.size() - 1)
+            for (const host::label_t timeStep : fileNameIndices)
             {
-                std::cout << std::endl;
+                const name_t fileName = "timeStep/" + std::to_string(timeStep) + "/" + fieldName + ".LBMBin";
+                const words_t fieldNames = fileIO::fieldInformation::readFieldNames(fieldName, fileName);
+
+                // Initialise the fields to be processed
+                const host::arrayCollection<scalar_t> hostMoments(fileName, fieldNames);
+
+                if (!hostMoments.empty())
+                {
+                    foundField = true;
+
+                    // Process the fields
+                    const std::vector<std::vector<scalar_t>> fields = processFields(hostMoments, mesh, programCtrl, doCutPlane);
+
+                    // Get the output file name
+                    const name_t fileNameOut = processName(programCtrl, fieldName, timeStep, doCutPlane);
+
+                    // Write the output file
+                    writer(fields, fileNameOut, newMesh, fieldNames);
+
+                    if (!(timeStep == fileNameIndices.back()))
+                    {
+                        std::cout << std::endl;
+                    }
+                }
             }
+
+            if (!foundField)
+            {
+                errorHandler::check<throws::NO_THROW>(-1, "Specified field name not found in any time step directory.");
+            }
+        }
+        else
+        {
+            errorHandler::check<throws::NO_THROW>(-1, "Empty timeStep directory.");
         }
     }
     else
     {
-        // Throw
-        throw std::runtime_error(invalidWriter(postProcess::writers, conversion));
+        // We don't actually need to throw, we can just print the error message
+        errorHandler::check<throws::NO_THROW>(-1, "Invalid writer function for conversion type: " + conversion);
     }
 
     return 0;

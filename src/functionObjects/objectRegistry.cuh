@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -55,9 +55,13 @@ SourceFiles
 #include "../strings.cuh"
 #include "../postProcess/postProcess.cuh"
 #include "functionObjects.cuh"
+#include "functionObjectBase.cuh"
 #include "moments.cuh"
 #include "strainRateTensor.cuh"
 #include "kineticEnergy.cuh"
+#include "rhoMean.cuh"
+#include "UMean.cuh"
+#include "PiMean.cuh"
 
 namespace LBM
 {
@@ -75,28 +79,23 @@ namespace LBM
          * @param[in] devPtrs Device pointer collection for memory management
          * @param[in] streamsLBM Stream handler for LBM operations
          **/
-        [[nodiscard]] objectRegistry(
+        __host__ [[nodiscard]] objectRegistry(
             host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
             const host::latticeMesh &mesh,
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &rho,
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &u,
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &v,
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &w,
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxx,
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxy,
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mxz,
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myy,
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &myz,
-            const device::array<field::FULL_FIELD, scalar_t, VelocitySet, time::instantaneous> &mzz,
+            const device::scalarField<VelocitySet, time::instantaneous> &rho,
+            const device::vectorField<VelocitySet, time::instantaneous> &U,
+            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
             const streamHandler &streamsLBM,
             const programControl &programCtrl)
             : hostWriteBuffer_(hostWriteBuffer),
               mesh_(mesh),
-              M_(hostWriteBuffer, mesh, rho, u, v, w, mxx, mxy, mxz, myy, myz, mzz, streamsLBM, programCtrl),
-              S_(hostWriteBuffer, mesh, rho, u, v, w, mxx, mxy, mxz, myy, myz, mzz, streamsLBM, programCtrl),
-              k_(hostWriteBuffer, mesh, rho, u, v, w, mxx, mxy, mxz, myy, myz, mzz, streamsLBM, programCtrl),
-              functionVector_(functionObjectCallInitialiser(M_, S_, k_)),
-              saveVector_(functionObjectSaveInitialiser(M_, S_, k_)) {}
+              rho_(hostWriteBuffer, mesh, rho, U, Pi, streamsLBM, programCtrl),
+              U_(hostWriteBuffer, mesh, rho, U, Pi, streamsLBM, programCtrl),
+              Pi_(hostWriteBuffer, mesh, rho, U, Pi, streamsLBM, programCtrl),
+              S_(hostWriteBuffer, mesh, rho, U, Pi, streamsLBM, programCtrl),
+              k_(hostWriteBuffer, mesh, rho, U, Pi, streamsLBM, programCtrl),
+              functionVector_(functionObjectCallInitialiser(rho_, U_, Pi_, S_, k_)),
+              saveVector_(functionObjectSaveInitialiser(rho_, U_, Pi_, S_, k_)) {}
 
         /**
          * @brief Default destructor
@@ -113,12 +112,11 @@ namespace LBM
          * @brief Executes all registered function object calculations for given time step
          * @param[in] timeStep The current simulation time step
          **/
-        inline void calculate(const host::label_t timeStep) noexcept
+        inline void calculate() noexcept
         {
-            // std::cout << "Length of functionVector_: " << functionVector_.size() << std::endl;
             for (const auto &func : functionVector_)
             {
-                func(timeStep); // Call each function with the timeStep
+                func(); // Call each function with the timeStep
             }
         }
 
@@ -143,123 +141,120 @@ namespace LBM
         const host::latticeMesh &mesh_;
 
         /**
-         * @brief Moments function object
+         * @brief Moments
          **/
-        functionObjects::moments::collection<VelocitySet> M_;
+        functionObjects::density<VelocitySet> rho_;
+        functionObjects::velocityVector<VelocitySet> U_;
+        functionObjects::secondOrderMoments<VelocitySet> Pi_;
 
         /**
          * @brief Strain rate tensor function object
          **/
-        functionObjects::strainRate::tensor<VelocitySet> S_;
+        functionObjects::strainRateTensor<VelocitySet> S_;
 
         /**
          * @brief Kinetic energy function object
          **/
-        functionObjects::kineticEnergy::scalar<VelocitySet> k_;
+        functionObjects::kineticEnergy<VelocitySet> k_;
 
         /**
          * @brief Registry of function objects to invoke
          **/
-        const std::vector<functionObjects::save_function_signature> functionVector_;
+        const std::vector<functionObjects::calculateFunction> functionVector_;
 
         /**
          * @brief Initializes function calls based on strain rate tensor configuration
-         * @param[in] S Reference to strain rate tensor object
+         * @param[in] args References to the objects contained in the registry
          * @return Vector of function objects to be executed
          **/
-        __host__ [[nodiscard]] const std::vector<functionObjects::save_function_signature> functionObjectCallInitialiser(
-            functionObjects::moments::collection<VelocitySet> &moments,
-            functionObjects::strainRate::tensor<VelocitySet> &S,
-            functionObjects::kineticEnergy::scalar<VelocitySet> &k) const noexcept
+        template <typename... Args>
+        __host__ [[nodiscard]] static const std::vector<functionObjects::calculateFunction> functionObjectCallInitialiser(Args &...args) noexcept
         {
-            std::vector<functionObjects::save_function_signature> calls;
-
-            addObjectCall(calls, moments);
-            addObjectCall(calls, S);
-            addObjectCall(calls, k);
-
+            std::vector<functionObjects::calculateFunction> calls;
+            (addObjectCall(calls, args), ...);
             return calls;
         }
 
         template <class C>
-        __host__ void addObjectCall(std::vector<functionObjects::save_function_signature> &calls, C &object) const noexcept
+        __host__ static void addObjectCall(std::vector<functionObjects::calculateFunction> &calls, C &object) noexcept
         {
             // If both instantaneous and mean calculations are enabled, calculate both in one call
             // Only do this for variables other than the 10 moments
-            if constexpr (!std::is_same_v<C, functionObjects::moments::collection<VelocitySet>>)
+            if constexpr (C::ObjectType::canCalculateInstantaneous)
             {
-                if ((object.calculate()) && (object.calculateMean()))
+                if ((object.doInstantaneous()) && (object.doMean()))
                 {
                     calls.push_back(
-                        [&object](const host::label_t label)
-                        { object.calculateInstantaneousAndMean(label); });
+                        [&object]()
+                        {
+                            object.calculateInstantaneousAndMean();
+                        });
                 }
             }
 
             // Must be only saving instantaneous, so just calculate instantaneous without saving mean
-            if constexpr (!std::is_same_v<C, functionObjects::moments::collection<VelocitySet>>)
+            if constexpr (C::ObjectType::canCalculateInstantaneous)
             {
-                if (object.calculate() && !(object.calculateMean()))
+                if (object.doInstantaneous() && !(object.doMean()))
                 {
                     calls.push_back(
-                        [&object](const host::label_t label)
-                        { object.calculateInstantaneous(label); });
+                        [&object]()
+                        {
+                            object.calculateInstantaneous();
+                        });
                 }
             }
 
             // Must be only saving the mean, so just calculate mean without saving instantaneous
-            if (object.calculateMean() && !(object.calculate()))
+            if (object.doMean() && !(object.doInstantaneous()))
             {
-                // std::cout << "Pushing back " << object.fieldName() << ".saveMean" << std::endl;
                 calls.push_back(
-                    [&object](const host::label_t label)
-                    { object.calculateMean(label); });
+                    [&object]()
+                    {
+                        object.calculateMean();
+                    });
             }
         }
 
         /**
          * @brief Registry of function objects to save
          **/
-        const std::vector<functionObjects::save_function_signature> saveVector_;
+        const std::vector<functionObjects::saveFunction> saveVector_;
 
         /**
          * @brief Initializes save calls based on strain rate tensor configuration
-         * @param[in] S Reference to strain rate tensor object
+         * @param[in] args References to the objects contained in the registry
          * @return Vector of function objects to be executed
          **/
-        __host__ [[nodiscard]] const std::vector<functionObjects::save_function_signature> functionObjectSaveInitialiser(
-            functionObjects::moments::collection<VelocitySet> &moments,
-            functionObjects::strainRate::tensor<VelocitySet> &S,
-            functionObjects::kineticEnergy::scalar<VelocitySet> &k) const noexcept
+        template <typename... Args>
+        __host__ [[nodiscard]] static const std::vector<functionObjects::saveFunction> functionObjectSaveInitialiser(Args &...args) noexcept
         {
-            std::vector<functionObjects::save_function_signature> calls;
-
-            addSaveCall(calls, moments);
-            addSaveCall(calls, S);
-            addSaveCall(calls, k);
-
+            std::vector<functionObjects::saveFunction> calls;
+            (addSaveCall(calls, args), ...);
             return calls;
         }
 
         template <class C>
-        __host__ void addSaveCall(std::vector<functionObjects::save_function_signature> &calls, C &object) const noexcept
+        __host__ static void addSaveCall(std::vector<functionObjects::saveFunction> &calls, C &object) noexcept
         {
-            if constexpr (!std::is_same_v<C, functionObjects::moments::collection<VelocitySet>>)
+            if constexpr (C::ObjectType::canCalculateInstantaneous)
             {
-                if (object.calculate())
+                if (object.doInstantaneous())
                 {
-                    // std::cout << "Pushing back saveInstantaneous" << std::endl;
                     calls.push_back(
                         [&object](const host::label_t label)
-                        { object.saveInstantaneous(label); });
+                        {
+                            object.saveInstantaneous(label);
+                        });
                 }
             }
-            if (object.calculateMean())
+            if (object.doMean())
             {
-                // std::cout << "Pushing back " << object.fieldName() << ".calculateMean" << std::endl;
                 calls.push_back(
                     [&object](const host::label_t label)
-                    { object.saveMean(label); });
+                    {
+                        object.saveMean(label);
+                    });
             }
         }
     };
