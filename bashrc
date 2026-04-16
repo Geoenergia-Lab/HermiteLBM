@@ -7,9 +7,9 @@
 #                                                                             #
 #*---------------------------------------------------------------------------*#
 
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 #  USER-DEFINED ENVIRONMENT VARIABLES
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 
 # Architecture detection mode: "Automatic" or "Manual"
 export CUDALBM_ARCHITECTURE_DETECTION="Automatic"
@@ -17,9 +17,9 @@ export CUDALBM_ARCHITECTURE_DETECTION="Automatic"
 # Manual architecture version (used only if CUDALBM_ARCHITECTURE_DETECTION="Manual")
 export CUDALBM_ARCHITECTURE_VERSION="89"
 
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 #  AUTOMATIC SETUP – DO NOT MODIFY BELOW UNLESS YOU KNOW WHAT YOU ARE DOING
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 
 # Project root directory (where this bashrc file lives)
 export CUDALBM_PROJECT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -29,9 +29,9 @@ export CUDALBM_BUILD_DIR="$CUDALBM_PROJECT_DIR/build"
 export CUDALBM_BIN_DIR="$CUDALBM_BUILD_DIR/bin"
 export CUDALBM_INCLUDE_DIR="$CUDALBM_BUILD_DIR/include"
 
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 #  CUDA Toolkit
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 if command -v nvcc > /dev/null 2>&1; then
     NVCC_PATH=$(command -v nvcc)
     RESOLVED_NVCC_PATH=$(readlink -f "$NVCC_PATH" 2>/dev/null || echo "$NVCC_PATH")
@@ -45,17 +45,17 @@ export PATH="$CUDALBM_CUDA_DIR/bin:$PATH"
 export LIBRARY_PATH="$CUDALBM_CUDA_DIR/lib64:$LIBRARY_PATH"
 export LD_LIBRARY_PATH="$CUDALBM_CUDA_DIR/lib64:$LD_LIBRARY_PATH"
 
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 #  UCX (Unified Communication X)
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 export CUDALBM_UCX_DIR="$CUDALBM_BUILD_DIR/ucx"
 export PATH="$CUDALBM_UCX_DIR/bin:$PATH"
 export LIBRARY_PATH="$CUDALBM_UCX_DIR/lib:$LIBRARY_PATH"
 export LD_LIBRARY_PATH="$CUDALBM_UCX_DIR/lib:$LD_LIBRARY_PATH"
 
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 #  OpenMPI
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 export CUDALBM_MPI_DIR="$CUDALBM_BUILD_DIR/OpenMPI"
 export PATH="$CUDALBM_MPI_DIR/bin:$PATH"
 export LIBRARY_PATH="$CUDALBM_MPI_DIR/lib:$LIBRARY_PATH"
@@ -63,14 +63,14 @@ export LD_LIBRARY_PATH="$CUDALBM_MPI_DIR/lib:$LD_LIBRARY_PATH"
 export C_INCLUDE_PATH="$CUDALBM_MPI_DIR/include:$C_INCLUDE_PATH"
 export CPLUS_INCLUDE_PATH="$CUDALBM_MPI_DIR/include:$CPLUS_INCLUDE_PATH"
 
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 #  Add project executables to PATH
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 export PATH="$CUDALBM_BIN_DIR:$PATH"
 
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 #  Utility Functions
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 
 # cleanCase: Remove timeStep and postProcess directories if inside a case folder
 cleanCase()
