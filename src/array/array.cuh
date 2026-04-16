@@ -3,7 +3,7 @@
 | HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
+| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -38,7 +38,7 @@ License
 
 Description
     Top-level header file containing relevant includes and definitions for the
-    array classes used in cudaLBM. The array classes are designed to manage
+    array classes used in HermiteLBM. The array classes are designed to manage
     field data on both the host and device, with specializations for different
     types of fields (block halos and full fields) and memory allocation
     strategies (pinned and pageable). This file also includes utility functions
