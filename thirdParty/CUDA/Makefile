@@ -11,25 +11,36 @@
 #  CUDA Toolkit Installer for Debian‑based distributions
 # --------------------------------------------------------------------------- #
 #  Usage:
-#    make install DISTRO=<code> [CUDA_VERSION=<major-minor>]
-#    make clean
+#    (1) Edit bashrc and set HERMITELBM_DISTRO, HERMITELBM_CUDA_VERSION_MAJOR,
+#        and HERMITELBM_CUDA_VERSION_MINOR.
+#    (2) source bashrc
+#    (3) make install
 #
-#  Example:
+#  Or override on command line:
 #    make install DISTRO=ubuntu2404 CUDA_VERSION=13-0
-#    make install DISTRO=debian12 CUDA_VERSION=12-6
-#    make install DISTRO=wsl-ubuntu
-# --------------------------------------------------------------------------- #
+# ============================================================
 
-# Required: distribution repository code (e.g., ubuntu2404, debian12)
-DISTRO ?= 
+# Read from environment (set by bashrc)
+DISTRO ?= $(HERMITELBM_DISTRO)
+MAJOR ?= $(HERMITELBM_CUDA_VERSION_MAJOR)
+MINOR ?= $(HERMITELBM_CUDA_VERSION_MINOR)
 
-# CUDA version in major-minor format (default 13.0)
-CUDA_VERSION ?= 13-0
+# Construct CUDA version string for package name (major-minor)
+ifneq ($(MAJOR),)
+    ifneq ($(MINOR),)
+        CUDA_VERSION = $(MAJOR)-$(MINOR)
+    endif
+endif
 
-# Architecture (adjust if not x86_64)
+# Fallback defaults if environment variables are missing
+ifeq ($(DISTRO),)
+    DISTRO = ubuntu2404
+endif
+ifeq ($(CUDA_VERSION),)
+    CUDA_VERSION = 13-0
+endif
+
 ARCH ?= x86_64
-
-# Repository base URL and keyring package name
 CUDA_REPO_BASE = https://developer.download.nvidia.com/compute/cuda/repos
 KEYRING_DEB = cuda-keyring_1.1-1_all.deb
 
@@ -39,18 +50,21 @@ help:
 	@echo "CUDA Toolkit Installer for Debian‑based distributions"
 	@echo ""
 	@echo "Usage:"
-	@echo "  make install DISTRO=<code> [CUDA_VERSION=<major-minor>]"
+	@echo "  1. Set HERMITELBM_DISTRO, HERMITELBM_CUDA_VERSION_MAJOR, and"
+	@echo "     HERMITELBM_CUDA_VERSION_MINOR in bashrc"
+	@echo "  2. source bashrc"
+	@echo "  3. make install"
+	@echo ""
+	@echo "Or override on command line:"
+	@echo "  make install DISTRO=<code> CUDA_VERSION=<major-minor>"
+	@echo ""
+	@echo "Other targets:"
 	@echo "  make list-distros       # Show supported Debian‑based codes"
 	@echo "  make clean              # Remove downloaded .deb files"
 	@echo ""
-	@echo "Examples:"
-	@echo "  make install DISTRO=ubuntu2404 CUDA_VERSION=13-0"
-	@echo "  make install DISTRO=debian12"
-	@echo "  make install DISTRO=wsl-ubuntu CUDA_VERSION=12-6"
-	@echo ""
-	@echo "After installation, add the following to your shell profile:"
-	@echo "  export PATH=/usr/local/cuda-\$$(echo $(CUDA_VERSION) | tr - .)/bin:\$$PATH"
-	@echo "  export LD_LIBRARY_PATH=/usr/local/cuda-\$$(echo $(CUDA_VERSION) | tr - .)/lib64:\$$LD_LIBRARY_PATH"
+	@echo "Current settings:"
+	@echo "  DISTRO       = $(DISTRO)"
+	@echo "  CUDA_VERSION = $(CUDA_VERSION)"
 
 list-distros:
 	@echo "Supported Debian‑based distribution codes:"
@@ -67,16 +81,16 @@ install: check-distro check-apt
 	rm -f $(KEYRING_DEB)
 	@echo ""
 	@echo "==> CUDA $(CUDA_VERSION) installation complete."
-	@cuda_path="/usr/local/cuda-$$(echo $(CUDA_VERSION) | tr '-' '.')"; \
-	echo "Add the following to your shell profile (~/.bashrc, ~/.zshrc, etc.):"; \
-	echo "  export PATH=$$cuda_path/bin:\$$PATH"; \
-	echo "  export LD_LIBRARY_PATH=$$cuda_path/lib64:\$$LD_LIBRARY_PATH"
+	@echo ""
+	@echo "==> To activate the CUDA environment, run:"
+	@echo "    source bashrc"
+	@echo "or start a new shell session."
 
 check-distro:
 	@if [ -z "$(DISTRO)" ]; then \
-		echo "Error: DISTRO is required."; \
+		echo "Error: DISTRO is not set."; \
+		echo "Please set HERMITELBM_DISTRO in bashrc or pass DISTRO=<code> on command line."; \
 		echo "Run 'make list-distros' to see supported codes."; \
-		echo "Usage: make install DISTRO=<code>"; \
 		exit 1; \
 	fi
 

@@ -39,7 +39,7 @@ MLUPS stands for Million Lattice Updates Per Second. There is still room for imp
 1.  Clone the repository:
 
     ```bash
-    git clone [https://github.com/geoenergiaUDESC/cudaLBM.git](https://github.com/geoenergiaUDESC/cudaLBM.git)
+    git clone [https://github.com/Geoenergia-Lab/cudaLBM.git](https://github.com/Geoenergia-Lab/cudaLBM.git)
     ```
 2.  Navigate to the project directory and load the bashrc file:
    
