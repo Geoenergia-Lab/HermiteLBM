@@ -338,7 +338,14 @@ namespace LBM
 
             if (input().isArgPresent("-fieldName"))
             {
-                return {fileNameIndices.back()};
+                if (input().isArgPresent("-latestTime"))
+                {
+                    return {fileNameIndices.back()};
+                }
+                else
+                {
+                    return fileNameIndices;
+                }
             }
             else
             {
