@@ -295,6 +295,7 @@ namespace LBM
 #include "Tecplot.cuh"
 #include "VTU.cuh"
 #include "VTS.cuh"
+#include "VTI.cuh"
 #include "LBMBin.cuh"
 #include "writerFunction.cuh"
 
