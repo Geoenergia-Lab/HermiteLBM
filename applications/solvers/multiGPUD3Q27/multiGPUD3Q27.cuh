@@ -37,20 +37,20 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Function definitions and includes specific to the fieldCalculate executable
+    Implementation of the moment representation with the D3Q27 velocity set
 
 Namespace
     LBM
 
 SourceFiles
-    testExecutable.cuh
+    multiGPUD3Q27.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_TESTEXECUTABLE_CUH
-#define __MBLBM_TESTEXECUTABLE_CUH
+#ifndef __MBLBM_MULTIGPUD3Q27_CUH
+#define __MBLBM_MULTIGPUD3Q27_CUH
 
-#include "../solvers/momentBasedD3Q27/momentBasedD3Q27.cuh"
+#include "../momentBasedD3Q27/momentBasedD3Q27.cuh"
 
 namespace LBM
 {
