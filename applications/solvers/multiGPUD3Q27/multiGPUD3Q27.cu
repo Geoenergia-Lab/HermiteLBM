@@ -3,7 +3,7 @@
 | HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
+| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -37,19 +37,17 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Post-processing utility to calculate derived fields from saved moment fields
-    Supported calculations: velocity magnitude, velocity divergence, vorticity,
-    vorticity magnitude, integrated vorticity
+    Implementation of the moment representation with the D3Q27 velocity set
 
 Namespace
     LBM
 
 SourceFiles
-    testExecutable.cu
+    multiGPUD3Q27.cu
 
 \*---------------------------------------------------------------------------*/
 
-#include "testExecutable.cuh"
+#include "multiGPUD3Q27.cuh"
 
 using namespace LBM;
 
@@ -132,6 +130,16 @@ int main(const int argc, const char *const argv[])
 
             // errorHandler::checkLast();
         }
+
+        // Sync all devices and streams
+        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
+        {
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
+            errorHandler::checkInline(cudaDeviceSynchronize());
+            streamsLBM.synchronize(VirtualDeviceIndex);
+        }
+
+        runTimeObjects.calculate();
 
         // Sync all devices and streams
         for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)

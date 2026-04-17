@@ -3,7 +3,7 @@
 | HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
+| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -91,7 +91,7 @@ namespace LBM
             std::cout << "| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |" << std::endl;
             std::cout << "| Developed at UDESC - State University of Santa Catarina                     |" << std::endl;
             std::cout << "| Website: https://www.udesc.br                                               |" << std::endl;
-            std::cout << "| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |" << std::endl;
+            std::cout << "| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |" << std::endl;
             std::cout << "|                                                                             |" << std::endl;
             std::cout << "\\*---------------------------------------------------------------------------*/" << std::endl;
             std::cout << std::endl;
@@ -338,7 +338,14 @@ namespace LBM
 
             if (input().isArgPresent("-fieldName"))
             {
-                return {fileNameIndices.back()};
+                if (input().isArgPresent("-latestTime"))
+                {
+                    return {fileNameIndices.back()};
+                }
+                else
+                {
+                    return fileNameIndices;
+                }
             }
             else
             {

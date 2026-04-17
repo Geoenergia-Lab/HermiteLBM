@@ -3,7 +3,7 @@
 | HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
+| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -37,7 +37,7 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A list of typedefs used throughout the cudaLBM source code
+    A list of typedefs used throughout the HermiteLBM source code
 
 Namespace
     LBM
