@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -91,29 +91,6 @@ namespace LBM
 
         public:
             /**
-             * @brief Construct a device array from an existing host array.
-             * @tparam MallocType Type of host memory allocation (e.g., PAGED, PINNED).
-             * @param[in] hostArray Source host array.
-             * @param[in] programCtrl The program control object
-             * @param[in] allocate If false, the array is not allocated (ptr_ remains null).
-             **/
-            // template <const host::mallocType MallocType>
-            // __host__ [[nodiscard]] array(
-            //     const host::array<MallocType, T, VelocitySet, TimeType> &hostArray,
-            //     const programControl &programCtrl,
-            //     const bool allocate = true)
-            //     : arrayBase<T>(
-            //           This::allocate_on_devices(
-            //               hostArray, allocate, programCtrl),
-            //           hostArray.mesh(),
-            //           programCtrl),
-            //       name_(hostArray.name()),
-            //       meanCount_(initialiseMeanCount(programCtrl))
-            // {
-            //     initialise_boundary_condition(name_, programCtrl.deviceList());
-            // }
-
-            /**
              * @brief Construct a device array with a uniform value.
              * @param[in] name Name of the field.
              * @param[in] mesh The lattice mesh
@@ -132,8 +109,7 @@ namespace LBM
                           mesh, value, allocate, programCtrl),
                       mesh,
                       programCtrl),
-                  name_(name),
-                  meanCount_(initialiseMeanCount(name, programCtrl))
+                  name_(name)
             {
                 initialise_boundary_condition(name_, programCtrl.deviceList());
             }
@@ -156,8 +132,7 @@ namespace LBM
                           allocate, programCtrl),
                       mesh,
                       programCtrl),
-                  name_(name),
-                  meanCount_(initialiseMeanCount(name, programCtrl))
+                  name_(name)
             {
                 initialise_boundary_condition(name_, programCtrl.deviceList());
             }
@@ -174,14 +149,13 @@ namespace LBM
                           allocate, programCtrl),
                       mesh,
                       programCtrl),
-                  name_(componentName),
-                  meanCount_(initialiseMeanCount(name, programCtrl))
+                  name_(componentName)
             {
                 initialise_boundary_condition(componentName, programCtrl.deviceList());
             }
 
             __host__ [[nodiscard]] array(
-                const name_t &name,
+                [[maybe_unused]] const name_t &name,
                 const name_t &componentName,
                 const host::latticeMesh &mesh,
                 const T value,
@@ -192,8 +166,7 @@ namespace LBM
                           mesh, value, allocate, programCtrl),
                       mesh,
                       programCtrl),
-                  name_(componentName),
-                  meanCount_(initialiseMeanCount(name, programCtrl))
+                  name_(componentName)
             {
                 initialise_boundary_condition(componentName, programCtrl.deviceList());
             }
@@ -260,24 +233,6 @@ namespace LBM
             }
 
             /**
-             * @brief Get the current averaging count (for time‑averaged fields).
-             * @return Number of time steps averaged so far.
-             **/
-            __host__ [[nodiscard]] inline constexpr host::label_t meanCount() const noexcept
-            {
-                return meanCount_;
-            }
-
-            /**
-             * @brief Get a reference to the averaging count (for modification).
-             * @return Reference to meanCount_.
-             **/
-            __host__ [[nodiscard]] inline constexpr host::label_t &meanCountRef() noexcept
-            {
-                return meanCount_;
-            }
-
-            /**
              * @brief Copy the device array to a user‑supplied host pointer.
              * @param[in] hostPtr Destination pointer (host memory).
              * @note Assumes hostPtr has enough space (size() elements).
@@ -300,11 +255,6 @@ namespace LBM
              * @brief Name of the field
              **/
             const name_t name_;
-
-            /**
-             * @brief Number of time steps averaged over (for time‑averaged fields)
-             **/
-            host::label_t meanCount_;
 
             /**
              * @brief Allocate all GPU segments for a full field from a raw host pointer.

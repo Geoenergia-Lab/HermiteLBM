@@ -7,7 +7,7 @@ unset TOTAL_TESTS FAILED_COUNT SKIPPED_COUNT PASSED_COUNT EXIT_STATUS
 
 # Check if computeVersion exists - exit if not found
 if ! command -v computeVersion >/dev/null 2>&1; then
-    printf "CUDALBM_CUDA_DIR is not set. Please run \"source bashrc\" in the project directory first\n" >&2
+    printf "HERMITELBM_CUDA_DIR is not set. Please run \"source bashrc\" in the project directory first\n" >&2
     unset DEVICES_OUTPUT CLEAN_DEVICES GPUS COMMON_FLAGS TOOLS TIMESTAMP LOG_DIR
     unset RESULTS FAILED_TESTS SKIPPED_TESTS GPU TOOL TEST_NAME LOG_FILE EXIT_CODE
     unset TOTAL_TESTS FAILED_COUNT SKIPPED_COUNT PASSED_COUNT EXIT_STATUS
@@ -35,7 +35,7 @@ fi
 cd D3Q27
 rm -rf logs
 
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 # Common flags for all tools (general + output verbosity + error exit code)
 COMMON_FLAGS="--print-limit=0 --print-level=info --num-callers-device=0 \
               --num-callers-host=0 --strip-paths=no --backtrace-short=no \
@@ -55,7 +55,7 @@ INITCHECK_FLAGS="--check-api-memory-access=yes --check-optix \
 
 SYNCCHECK_FLAGS="--missing-barrier-init-is-fatal=yes"
 
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 
 # Define tools to test
 TOOLS=("memcheck" "initcheck" "synccheck")
@@ -76,10 +76,10 @@ GPU_LIST=$(IFS=,; echo "${GPUS[*]}")
 # Print header
 printf "/*---------------------------------------------------------------------------*\\ \n"
 printf "|                                                                             |\n"
-printf "| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |\n"
+printf "| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |\n"
 printf "| Developed at UDESC - State University of Santa Catarina                     |\n"
 printf "| Website: https://www.udesc.br                                               |\n"
-printf "| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |\n"
+printf "| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |\n"
 printf "|                                                                             |\n"
 printf "\\*---------------------------------------------------------------------------*/\n"
 printf "\n"

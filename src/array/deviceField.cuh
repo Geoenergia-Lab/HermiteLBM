@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------*\
 |                                                                             |
-| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -21,9 +21,9 @@ This implementation is derived from concepts and algorithms developed in:
   Licensed under GNU General Public License version 2
 
 License
-    This file is part of cudaLBM.
+    This file is part of HermiteLBM.
 
-    cudaLBM is free software: you can redistribute it and/or modify it
+    HermiteLBM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -55,9 +55,54 @@ namespace LBM
     namespace device
     {
         template <class VelocitySet, const time::type TimeType>
-        class scalarField
+        class fieldBase
         {
+        protected:
             using ComponentType = device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>;
+
+            const name_t name_;
+            host::label_t meanCount_;
+
+            __host__ fieldBase(const name_t &name, const programControl &programCtrl)
+                : name_(name),
+                  meanCount_(initialiseMeanCount(name, programCtrl)) {}
+
+        public:
+            /**
+             * @brief Get the field name.
+             * @return Const reference to the name string.
+             **/
+            __host__ [[nodiscard]] inline constexpr const name_t &name() const noexcept
+            {
+                return name_;
+            }
+
+            /**
+             * @brief Get the current averaging count (for time‑averaged fields).
+             * @return Number of time steps averaged so far.
+             **/
+            __host__ [[nodiscard]] inline constexpr host::label_t meanCount() const noexcept
+            {
+                return meanCount_;
+            }
+
+            /**
+             * @brief Get a reference to the averaging count (for modification).
+             * @return Reference to meanCount_.
+             **/
+            __host__ [[nodiscard]] inline constexpr host::label_t &meanCountRef() noexcept
+            {
+                return meanCount_;
+            }
+
+            ~fieldBase() {}
+        };
+
+        template <class VelocitySet, const time::type TimeType>
+        class scalarField : public fieldBase<VelocitySet, TimeType>
+        {
+            using Base = fieldBase<VelocitySet, TimeType>;
+            using typename Base::ComponentType;
 
         public:
             __host__ [[nodiscard]] scalarField(
@@ -66,7 +111,7 @@ namespace LBM
                 const scalar_t value,
                 const programControl &programCtrl,
                 const bool allocate = true)
-                : name_(name),
+                : Base(name, programCtrl),
                   self_(name, mesh, value, programCtrl, allocate) {}
 
             __host__ [[nodiscard]] scalarField(
@@ -74,7 +119,7 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl,
                 const bool allocate = true)
-                : name_(name),
+                : Base(name, programCtrl),
                   self_(name, name, mesh, programCtrl, allocate) {}
 
             ~scalarField() {}
@@ -95,7 +140,7 @@ namespace LBM
                 if constexpr (TimeType == time::instantaneous)
                 {
                     Writer::write(
-                        name_,
+                        Base::name_,
                         self_.mesh(),
                         {self_.name()},
                         hostWriteBuffer.data(),
@@ -104,12 +149,12 @@ namespace LBM
                 else
                 {
                     Writer::write(
-                        name_,
+                        Base::name_,
                         self_.mesh(),
                         {self_.name()},
                         hostWriteBuffer.data(),
                         timeStep,
-                        meanCount());
+                        Base::meanCount());
                 }
             }
 
@@ -126,24 +171,7 @@ namespace LBM
                 return {self_.ptr(idx)};
             }
 
-            __host__ [[nodiscard]] inline constexpr host::label_t meanCount() const noexcept
-            {
-                return self_.meanCount();
-            }
-
-            __host__ [[nodiscard]] inline constexpr host::label_t &meanCountRef() noexcept
-            {
-                return self_.meanCountRef();
-            }
-
-            __host__ [[nodiscard]] inline constexpr const name_t &name() const noexcept
-            {
-                return name_;
-            }
-
         private:
-            const name_t name_;
-
             /**
              * @brief Components of the vector field
              **/
@@ -151,9 +179,10 @@ namespace LBM
         };
 
         template <class VelocitySet, const time::type TimeType>
-        class vectorField
+        class vectorField : public fieldBase<VelocitySet, TimeType>
         {
-            using ComponentType = device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>;
+            using Base = fieldBase<VelocitySet, TimeType>;
+            using typename Base::ComponentType;
 
         public:
             __host__ [[nodiscard]] vectorField(
@@ -162,7 +191,7 @@ namespace LBM
                 const scalar_t value,
                 const programControl &programCtrl,
                 const bool allocate = true)
-                : name_(name),
+                : Base(name, programCtrl),
                   x_(name, name + "_x", mesh, value, programCtrl, allocate),
                   y_(name, name + "_y", mesh, value, programCtrl, allocate),
                   z_(name, name + "_z", mesh, value, programCtrl, allocate) {}
@@ -172,7 +201,7 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl,
                 const bool allocate = true)
-                : name_(name),
+                : Base(name, programCtrl),
                   x_(name, name + "_x", mesh, programCtrl, allocate),
                   y_(name, name + "_y", mesh, programCtrl, allocate),
                   z_(name, name + "_z", mesh, programCtrl, allocate) {}
@@ -195,7 +224,7 @@ namespace LBM
                 if constexpr (TimeType == time::instantaneous)
                 {
                     Writer::write(
-                        name_,
+                        Base::name_,
                         x_.mesh(),
                         {x_.name(), y_.name(), z_.name()},
                         hostWriteBuffer.data(),
@@ -204,12 +233,12 @@ namespace LBM
                 else
                 {
                     Writer::write(
-                        name_,
+                        Base::name_,
                         x_.mesh(),
                         {x_.name(), y_.name(), z_.name()},
                         hostWriteBuffer.data(),
                         timeStep,
-                        meanCount());
+                        Base::meanCount());
                 }
             }
 
@@ -231,24 +260,7 @@ namespace LBM
                 return {x_.ptr(idx), y_.ptr(idx), z_.ptr(idx)};
             }
 
-            __host__ [[nodiscard]] inline constexpr host::label_t meanCount() const noexcept
-            {
-                return x_.meanCount();
-            }
-
-            __host__ [[nodiscard]] inline constexpr host::label_t &meanCountRef() noexcept
-            {
-                return x_.meanCountRef();
-            }
-
-            __host__ [[nodiscard]] inline constexpr const name_t &name() const noexcept
-            {
-                return name_;
-            }
-
         private:
-            const name_t name_;
-
             /**
              * @brief Components of the vector field
              **/
@@ -258,9 +270,10 @@ namespace LBM
         };
 
         template <class VelocitySet, const time::type TimeType>
-        class symmetricTensorField
+        class symmetricTensorField : public fieldBase<VelocitySet, TimeType>
         {
-            using ComponentType = device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>;
+            using Base = fieldBase<VelocitySet, TimeType>;
+            using typename Base::ComponentType;
 
         public:
             __host__ [[nodiscard]] symmetricTensorField(
@@ -269,7 +282,7 @@ namespace LBM
                 const scalar_t value,
                 const programControl &programCtrl,
                 const bool allocate = true)
-                : name_(name),
+                : Base(name, programCtrl),
                   xx_(name, name + "_xx", mesh, value, programCtrl, allocate),
                   xy_(name, name + "_xy", mesh, value, programCtrl, allocate),
                   xz_(name, name + "_xz", mesh, value, programCtrl, allocate),
@@ -282,7 +295,7 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl,
                 const bool allocate = true)
-                : name_(name),
+                : Base(name, programCtrl),
                   xx_(name, name + "_xx", mesh, programCtrl, allocate),
                   xy_(name, name + "_xy", mesh, programCtrl, allocate),
                   xz_(name, name + "_xz", mesh, programCtrl, allocate),
@@ -308,7 +321,7 @@ namespace LBM
                 if constexpr (TimeType == time::instantaneous)
                 {
                     Writer::write(
-                        name_,
+                        Base::name_,
                         xx_.mesh(),
                         {xx_.name(), xy_.name(), xz_.name(), yy_.name(), yz_.name(), zz_.name()},
                         hostWriteBuffer.data(),
@@ -317,12 +330,12 @@ namespace LBM
                 else
                 {
                     Writer::write(
-                        name_,
+                        Base::name_,
                         xx_.mesh(),
                         {xx_.name(), xy_.name(), xz_.name(), yy_.name(), yz_.name(), zz_.name()},
                         hostWriteBuffer.data(),
                         timeStep,
-                        meanCount());
+                        Base::meanCount());
                 }
             }
 
@@ -350,24 +363,7 @@ namespace LBM
                 return {xx_.ptr(idx), xy_.ptr(idx), xz_.ptr(idx), yy_.ptr(idx), yz_.ptr(idx), zz_.ptr(idx)};
             }
 
-            __host__ [[nodiscard]] inline constexpr host::label_t meanCount() const noexcept
-            {
-                return xx_.meanCount();
-            }
-
-            __host__ [[nodiscard]] inline constexpr host::label_t &meanCountRef() noexcept
-            {
-                return xx_.meanCountRef();
-            }
-
-            __host__ [[nodiscard]] inline constexpr const name_t &name() const noexcept
-            {
-                return name_;
-            }
-
         private:
-            const name_t name_;
-
             /**
              * @brief Components of the vector field
              **/

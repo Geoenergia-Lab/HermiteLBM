@@ -1,11 +1,11 @@
-#*---------------------------------------------------------------------------*#
+# --------------------------------------------------------------------------- #
 #                                                                             #
-# cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          #
+# HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       #
 # Developed at UDESC - State University of Santa Catarina                     #
 # Website: https://www.udesc.br                                               #
-# Github: https://github.com/geoenergiaUDESC/cudaLBM                          #
+# Github: https://github.com/Geoenergia-Lab/HermiteLBM                        #
 #                                                                             #
-#*---------------------------------------------------------------------------*#
+# --------------------------------------------------------------------------- #
 
 #!/bin/bash
 
@@ -16,7 +16,7 @@ unset TOTAL_TESTS FAILED_COUNT SKIPPED_COUNT PASSED_COUNT EXIT_STATUS
 
 # Check if computeVersion exists - exit if not found
 if ! command -v computeVersion >/dev/null 2>&1; then
-    printf "CUDALBM_CUDA_DIR is not set. Please run \"source bashrc\" in the project directory first\n" >&2
+    printf "HERMITELBM_CUDA_DIR is not set. Please run \"source bashrc\" in the project directory first\n" >&2
     # Clean up all variables at the end
     unset DEVICES_OUTPUT CLEAN_DEVICES GPUS COMMON_FLAGS TOOLS TIMESTAMP LOG_DIR
     unset RESULTS FAILED_TESTS SKIPPED_TESTS GPU TOOL TEST_NAME LOG_FILE EXIT_CODE
@@ -64,10 +64,10 @@ SKIPPED_TESTS=()
 # Print header using printf
 printf "/*---------------------------------------------------------------------------*\\ \n"
 printf "|                                                                             |\n"
-printf "| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |\n"
+printf "| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |\n"
 printf "| Developed at UDESC - State University of Santa Catarina                     |\n"
 printf "| Website: https://www.udesc.br                                               |\n"
-printf "| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |\n"
+printf "| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |\n"
 printf "|                                                                             |\n"
 printf "\\*---------------------------------------------------------------------------*/\n"
 printf "\n"
