@@ -53,7 +53,7 @@ SourceFiles
 #include "invalidBoundaryCondition.cuh"
 #include "jetFlow/jetFlow.cuh"
 #include "lidDrivenCavity/lidDrivenCavity.cuh"
-#include "multiphaseJet/multiphaseJet.cuh"
+#include "twoPhaseJet/twoPhaseJet.cuh"
 #include "subseaMechanicalDispersion/subseaMechanicalDispersion.cuh"
 
 // Monophase defines
@@ -224,7 +224,7 @@ namespace LBM
             /**
              * @brief Specialization of traits for the MULTIPHASE_JET case.
              *
-             * Provides the type alias `type` defined as `multiphaseJet`.
+             * Provides the type alias `type` defined as `twoPhaseJet`.
              **/
             template <>
             class traits<boundaryCondition_t::MULTIPHASE_JET>
@@ -233,7 +233,7 @@ namespace LBM
                 /**
                  * @brief Concrete type associated with the MULTIPHASE_JET boundary condition.
                  **/
-                using type = multiphaseJet;
+                using type = twoPhaseJet;
             };
 
             /**
@@ -277,7 +277,7 @@ namespace LBM
             /**
              * @brief Compile‑time evaluation of the active boundary condition.
              *
-             * This function uses preprocessor macros (`MULTIPHASEJET` or `SUBSEAMECHANICALDISPERSION`) to
+             * This function uses preprocessor macros (`twoPhaseJet` or `SUBSEAMECHANICALDISPERSION`) to
              * determine which boundary condition is selected at compile time. It is marked
              * `consteval`, guaranteeing that its result is a compile‑time constant usable
              * as a template argument (e.g., for `traits`).
@@ -286,7 +286,7 @@ namespace LBM
              * and `[[nodiscard]]` to warn if the return value is ignored.
              *
              * @return The boundary condition enumerator corresponding to the defined macro.
-             * @note Exactly one of `MULTIPHASEJET` or `SUBSEAMECHANICALDISPERSION` should be defined;
+             * @note Exactly one of `twoPhaseJet` or `SUBSEAMECHANICALDISPERSION` should be defined;
              *       if neither is defined, the function falls back to `MULTIPHASE_JET` (or could
              *       trigger a compile‑time error).
              **/

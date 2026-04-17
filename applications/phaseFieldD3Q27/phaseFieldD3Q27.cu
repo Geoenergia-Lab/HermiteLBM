@@ -54,8 +54,6 @@ using namespace LBM;
 
 __host__ [[nodiscard]] inline consteval device::label_t NStreams() noexcept { return 1; }
 
-constexpr const device::label_t VirtualDeviceIndex = 0;
-
 int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
@@ -83,31 +81,6 @@ int main(const int argc, const char *const argv[])
 
     // Phase field arrays
     device::array<field::FULL_FIELD, scalar_t, PhaseVelocitySet, time::instantaneous> phi("phi", mesh, programCtrl);
-
-    const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs(
-        rho.ptr(VirtualDeviceIndex),
-        u.ptr(VirtualDeviceIndex),
-        v.ptr(VirtualDeviceIndex),
-        w.ptr(VirtualDeviceIndex),
-        mxx.ptr(VirtualDeviceIndex),
-        mxy.ptr(VirtualDeviceIndex),
-        mxz.ptr(VirtualDeviceIndex),
-        myy.ptr(VirtualDeviceIndex),
-        myz.ptr(VirtualDeviceIndex),
-        mzz.ptr(VirtualDeviceIndex),
-        phi.ptr(VirtualDeviceIndex));
-
-    const device::ptrCollection<NUMBER_MOMENTS<false>(), scalar_t> hydroPtrs(
-        rho.ptr(VirtualDeviceIndex),
-        u.ptr(VirtualDeviceIndex),
-        v.ptr(VirtualDeviceIndex),
-        w.ptr(VirtualDeviceIndex),
-        mxx.ptr(VirtualDeviceIndex),
-        mxy.ptr(VirtualDeviceIndex),
-        mxz.ptr(VirtualDeviceIndex),
-        myy.ptr(VirtualDeviceIndex),
-        myz.ptr(VirtualDeviceIndex),
-        mzz.ptr(VirtualDeviceIndex));
 
     // Setup Streams
     const streamHandler streamsLBM(programCtrl);
@@ -139,11 +112,96 @@ int main(const int argc, const char *const argv[])
 
     if (enableScalarHalo)
     {
-        phaseFieldPrimePhiHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[0]>>>(
-            devPtrs,
-            phiBlockHalo.writeBuffer(VirtualDeviceIndex));
+        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
+        {
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
 
-        phiBlockHalo.swapNoSync(VirtualDeviceIndex);
+            const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs(
+                rho.ptr(VirtualDeviceIndex),
+                u.ptr(VirtualDeviceIndex),
+                v.ptr(VirtualDeviceIndex),
+                w.ptr(VirtualDeviceIndex),
+                mxx.ptr(VirtualDeviceIndex),
+                mxy.ptr(VirtualDeviceIndex),
+                mxz.ptr(VirtualDeviceIndex),
+                myy.ptr(VirtualDeviceIndex),
+                myz.ptr(VirtualDeviceIndex),
+                mzz.ptr(VirtualDeviceIndex),
+                phi.ptr(VirtualDeviceIndex));
+
+            phaseFieldPrimePhiHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[VirtualDeviceIndex]>>>(
+                devPtrs,
+                phiBlockHalo.writeBuffer(VirtualDeviceIndex));
+
+            errorHandler::checkLast();
+        }
+
+        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
+        {
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
+            errorHandler::checkInline(cudaDeviceSynchronize());
+            streamsLBM.synchronize(VirtualDeviceIndex);
+        }
+
+        if (mesh.nDevices<axis::Z>() > static_cast<host::label_t>(1))
+        {
+            if ((mesh.nDevices<axis::X>() != static_cast<host::label_t>(1)) ||
+                (mesh.nDevices<axis::Y>() != static_cast<host::label_t>(1)))
+            {
+                throw std::runtime_error("phaseField exchange currently mirrors testExecutable and supports Z-only device decomposition.");
+            }
+
+            const host::label_t nxb = mesh.nBlocks<axis::X>();
+            const host::label_t nyb = mesh.nBlocks<axis::Y>();
+
+            constexpr const host::threadLabel threadStart(
+                static_cast<host::label_t>(0),
+                static_cast<host::label_t>(0),
+                static_cast<host::label_t>(0));
+
+            const host::label_t Size = static_cast<host::label_t>(sizeof(scalar_t)) * static_cast<host::label_t>(2) * block::nx<host::label_t>() * block::ny<host::label_t>() * mesh.blocksPerDevice<axis::X>() * mesh.blocksPerDevice<axis::Y>();
+
+            const host::blockLabel destinationBackBlock(0, 0, 0);
+            const host::label_t destinationBackID = host::idxPop<axis::Z, static_cast<host::label_t>(2)>(0, threadStart, destinationBackBlock, nxb, nyb);
+            const host::blockLabel sourceBackBlock(0, 0, 0);
+            const host::label_t sourceBackID = host::idxPop<axis::Z, static_cast<host::label_t>(2)>(0, threadStart, sourceBackBlock, nxb, nyb);
+
+            const host::blockLabel destinationFrontBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
+            const host::label_t destinationFrontID = host::idxPop<axis::Z, static_cast<host::label_t>(2)>(0, threadStart, destinationFrontBlock, nxb, nyb);
+            const host::blockLabel sourceFrontBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
+            const host::label_t sourceFrontID = host::idxPop<axis::Z, static_cast<host::label_t>(2)>(0, threadStart, sourceFrontBlock, nxb, nyb);
+
+            for (host::label_t westDevice = 0; westDevice + 1 < mesh.nDevices<axis::Z>(); westDevice++)
+            {
+                const host::label_t eastDevice = westDevice + 1;
+
+                errorHandler::check(cudaMemcpyPeer(
+                    &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(4)>()[destinationBackID]),
+                    programCtrl.deviceList()[westDevice],
+                    &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(4)>()[sourceBackID]),
+                    programCtrl.deviceList()[eastDevice],
+                    Size));
+
+                errorHandler::check(cudaMemcpyPeer(
+                    &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(5)>()[destinationFrontID]),
+                    programCtrl.deviceList()[eastDevice],
+                    &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(5)>()[sourceFrontID]),
+                    programCtrl.deviceList()[westDevice],
+                    Size));
+            }
+        }
+
+        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
+        {
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
+            errorHandler::checkInline(cudaDeviceSynchronize());
+            streamsLBM.synchronize(VirtualDeviceIndex);
+        }
+
+        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
+        {
+            phiBlockHalo.swapNoSync(VirtualDeviceIndex);
+        }
     }
 
     for (host::label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
@@ -152,6 +210,7 @@ int main(const int argc, const char *const argv[])
         if (programCtrl.save(timeStep))
         {
             // Do this in a loop
+            for (host::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
             {
                 hostWriteBuffer.copy_from_device(
                     device::ptrCollection<11, scalar_t>{
@@ -181,41 +240,254 @@ int main(const int argc, const char *const argv[])
             runTimeObjects.save(timeStep);
         }
 
-        // Main kernels
-        host::constexpr_for<0, NStreams()>(
-            [&](const auto stream)
+        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
+        {
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
+            errorHandler::checkInline(cudaDeviceSynchronize());
+            streamsLBM.synchronize(VirtualDeviceIndex);
+        }
+
+        // Stream kernel (per GPU)
+        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
+        {
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
+            streamsLBM.synchronize(VirtualDeviceIndex);
+
+            const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs{
+                rho.ptr(VirtualDeviceIndex),
+                u.ptr(VirtualDeviceIndex),
+                v.ptr(VirtualDeviceIndex),
+                w.ptr(VirtualDeviceIndex),
+                mxx.ptr(VirtualDeviceIndex),
+                mxy.ptr(VirtualDeviceIndex),
+                mxz.ptr(VirtualDeviceIndex),
+                myy.ptr(VirtualDeviceIndex),
+                myz.ptr(VirtualDeviceIndex),
+                mzz.ptr(VirtualDeviceIndex),
+                phi.ptr(VirtualDeviceIndex)};
+
+            if (enableScalarHalo)
             {
-                if (enableScalarHalo)
-                {
-                    phaseFieldStreamScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[stream]>>>(
-                        devPtrs,
-                        fBlockHalo.readBuffer(VirtualDeviceIndex),
-                        gBlockHalo.readBuffer(VirtualDeviceIndex),
-                        phiBlockHalo.readBuffer(VirtualDeviceIndex),
-                        phiBlockHalo.writeBuffer(VirtualDeviceIndex));
+                phaseFieldStreamScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[VirtualDeviceIndex]>>>(
+                    devPtrs,
+                    fBlockHalo.readBuffer(VirtualDeviceIndex),
+                    gBlockHalo.readBuffer(VirtualDeviceIndex),
+                    phiBlockHalo.readBuffer(VirtualDeviceIndex),
+                    phiBlockHalo.writeBuffer(VirtualDeviceIndex));
+            }
+            else
+            {
+                phaseFieldStreamLocal<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[VirtualDeviceIndex]>>>(
+                    devPtrs,
+                    fBlockHalo.readBuffer(VirtualDeviceIndex),
+                    gBlockHalo.readBuffer(VirtualDeviceIndex),
+                    phiBlockHalo.readBuffer(VirtualDeviceIndex),
+                    phiBlockHalo.writeBuffer(VirtualDeviceIndex));
+            }
 
-                    phaseFieldCollideScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
-                        devPtrs,
-                        fBlockHalo.writeBuffer(VirtualDeviceIndex),
-                        gBlockHalo.writeBuffer(VirtualDeviceIndex),
-                        phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
-                }
-                else
-                {
-                    phaseFieldStreamLocal<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[stream]>>>(
-                        devPtrs,
-                        fBlockHalo.readBuffer(VirtualDeviceIndex),
-                        gBlockHalo.readBuffer(VirtualDeviceIndex),
-                        phiBlockHalo.readBuffer(VirtualDeviceIndex),
-                        phiBlockHalo.writeBuffer(VirtualDeviceIndex));
+            errorHandler::checkLast();
+        }
 
-                    phaseFieldCollideLocal<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
-                        devPtrs,
-                        fBlockHalo.writeBuffer(VirtualDeviceIndex),
-                        gBlockHalo.writeBuffer(VirtualDeviceIndex),
-                        phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
+        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
+        {
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
+            errorHandler::checkInline(cudaDeviceSynchronize());
+            streamsLBM.synchronize(VirtualDeviceIndex);
+        }
+
+        // Extra phase-specific exchange required between stream and collide.
+        if (enableScalarHalo)
+        {
+            if (mesh.nDevices<axis::Z>() > static_cast<host::label_t>(1))
+            {
+                if ((mesh.nDevices<axis::X>() != static_cast<host::label_t>(1)) ||
+                    (mesh.nDevices<axis::Y>() != static_cast<host::label_t>(1)))
+                {
+                    throw std::runtime_error("phaseField exchange currently mirrors testExecutable and supports Z-only device decomposition.");
                 }
-            });
+
+                const host::label_t nxb = mesh.nBlocks<axis::X>();
+                const host::label_t nyb = mesh.nBlocks<axis::Y>();
+
+                constexpr const host::threadLabel threadStart(
+                    static_cast<host::label_t>(0),
+                    static_cast<host::label_t>(0),
+                    static_cast<host::label_t>(0));
+
+                const host::label_t Size = static_cast<host::label_t>(sizeof(scalar_t)) * static_cast<host::label_t>(2) * block::nx<host::label_t>() * block::ny<host::label_t>() * mesh.blocksPerDevice<axis::X>() * mesh.blocksPerDevice<axis::Y>();
+
+                const host::blockLabel destinationBackBlock(0, 0, 0);
+                const host::label_t destinationBackID = host::idxPop<axis::Z, static_cast<host::label_t>(2)>(0, threadStart, destinationBackBlock, nxb, nyb);
+                const host::blockLabel sourceBackBlock(0, 0, 0);
+                const host::label_t sourceBackID = host::idxPop<axis::Z, static_cast<host::label_t>(2)>(0, threadStart, sourceBackBlock, nxb, nyb);
+
+                const host::blockLabel destinationFrontBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
+                const host::label_t destinationFrontID = host::idxPop<axis::Z, static_cast<host::label_t>(2)>(0, threadStart, destinationFrontBlock, nxb, nyb);
+                const host::blockLabel sourceFrontBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
+                const host::label_t sourceFrontID = host::idxPop<axis::Z, static_cast<host::label_t>(2)>(0, threadStart, sourceFrontBlock, nxb, nyb);
+
+                for (host::label_t westDevice = 0; westDevice + 1 < mesh.nDevices<axis::Z>(); westDevice++)
+                {
+                    const host::label_t eastDevice = westDevice + 1;
+
+                    errorHandler::check(cudaMemcpyPeer(
+                        &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(4)>()[destinationBackID]),
+                        programCtrl.deviceList()[westDevice],
+                        &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(4)>()[sourceBackID]),
+                        programCtrl.deviceList()[eastDevice],
+                        Size));
+
+                    errorHandler::check(cudaMemcpyPeer(
+                        &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(5)>()[destinationFrontID]),
+                        programCtrl.deviceList()[eastDevice],
+                        &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(5)>()[sourceFrontID]),
+                        programCtrl.deviceList()[westDevice],
+                        Size));
+                }
+            }
+        }
+
+        // Collide kernel (per GPU)
+        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
+        {
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
+            streamsLBM.synchronize(VirtualDeviceIndex);
+
+            const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs{
+                rho.ptr(VirtualDeviceIndex),
+                u.ptr(VirtualDeviceIndex),
+                v.ptr(VirtualDeviceIndex),
+                w.ptr(VirtualDeviceIndex),
+                mxx.ptr(VirtualDeviceIndex),
+                mxy.ptr(VirtualDeviceIndex),
+                mxz.ptr(VirtualDeviceIndex),
+                myy.ptr(VirtualDeviceIndex),
+                myz.ptr(VirtualDeviceIndex),
+                mzz.ptr(VirtualDeviceIndex),
+                phi.ptr(VirtualDeviceIndex)};
+
+            if (enableScalarHalo)
+            {
+                phaseFieldCollideScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[VirtualDeviceIndex]>>>(
+                    devPtrs,
+                    fBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    gBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
+            }
+            else
+            {
+                phaseFieldCollideLocal<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[VirtualDeviceIndex]>>>(
+                    devPtrs,
+                    fBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    gBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
+            }
+
+            errorHandler::checkLast();
+        }
+
+        // Sync all devices and streams
+        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
+        {
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
+            errorHandler::checkInline(cudaDeviceSynchronize());
+            streamsLBM.synchronize(VirtualDeviceIndex);
+        }
+
+        if (enableScalarHalo)
+        {
+            // Mirrors testExecutable exchange placement for population halos.
+            if (mesh.nDevices<axis::Z>() > static_cast<host::label_t>(1))
+            {
+                if ((mesh.nDevices<axis::X>() != static_cast<host::label_t>(1)) ||
+                    (mesh.nDevices<axis::Y>() != static_cast<host::label_t>(1)))
+                {
+                    throw std::runtime_error("phaseField exchange currently mirrors testExecutable and supports Z-only device decomposition.");
+                }
+
+                const host::label_t nxb = mesh.nBlocks<axis::X>();
+                const host::label_t nyb = mesh.nBlocks<axis::Y>();
+
+                constexpr const host::threadLabel threadStart(
+                    static_cast<host::label_t>(0),
+                    static_cast<host::label_t>(0),
+                    static_cast<host::label_t>(0));
+
+                {
+                    const host::label_t Size = static_cast<host::label_t>(sizeof(scalar_t)) * VelocitySet::QF<host::label_t>() * block::nx<host::label_t>() * block::ny<host::label_t>() * mesh.blocksPerDevice<axis::X>() * mesh.blocksPerDevice<axis::Y>();
+
+                    const host::blockLabel destinationBackBlock(0, 0, 0);
+                    const host::label_t destinationBackID = host::idxPop<axis::Z, VelocitySet::QF<host::label_t>()>(0, threadStart, destinationBackBlock, nxb, nyb);
+                    const host::blockLabel sourceBackBlock(0, 0, 0);
+                    const host::label_t sourceBackID = host::idxPop<axis::Z, VelocitySet::QF<host::label_t>()>(0, threadStart, sourceBackBlock, nxb, nyb);
+
+                    const host::blockLabel destinationFrontBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
+                    const host::label_t destinationFrontID = host::idxPop<axis::Z, VelocitySet::QF<host::label_t>()>(0, threadStart, destinationFrontBlock, nxb, nyb);
+                    const host::blockLabel sourceFrontBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
+                    const host::label_t sourceFrontID = host::idxPop<axis::Z, VelocitySet::QF<host::label_t>()>(0, threadStart, sourceFrontBlock, nxb, nyb);
+
+                    for (host::label_t westDevice = 0; westDevice + 1 < mesh.nDevices<axis::Z>(); westDevice++)
+                    {
+                        const host::label_t eastDevice = westDevice + 1;
+
+                        errorHandler::check(cudaMemcpyPeer(
+                            &(fBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(4)>()[destinationBackID]),
+                            programCtrl.deviceList()[westDevice],
+                            &(fBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(4)>()[sourceBackID]),
+                            programCtrl.deviceList()[eastDevice],
+                            Size));
+
+                        errorHandler::check(cudaMemcpyPeer(
+                            &(fBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(5)>()[destinationFrontID]),
+                            programCtrl.deviceList()[eastDevice],
+                            &(fBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(5)>()[sourceFrontID]),
+                            programCtrl.deviceList()[westDevice],
+                            Size));
+                    }
+                }
+
+                {
+                    const host::label_t Size = static_cast<host::label_t>(sizeof(scalar_t)) * static_cast<host::label_t>(2) * block::nx<host::label_t>() * block::ny<host::label_t>() * mesh.blocksPerDevice<axis::X>() * mesh.blocksPerDevice<axis::Y>();
+
+                    const host::blockLabel destinationBackBlock(0, 0, 0);
+                    const host::label_t destinationBackID = host::idxPop<axis::Z, static_cast<host::label_t>(2)>(0, threadStart, destinationBackBlock, nxb, nyb);
+                    const host::blockLabel sourceBackBlock(0, 0, 0);
+                    const host::label_t sourceBackID = host::idxPop<axis::Z, static_cast<host::label_t>(2)>(0, threadStart, sourceBackBlock, nxb, nyb);
+
+                    const host::blockLabel destinationFrontBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
+                    const host::label_t destinationFrontID = host::idxPop<axis::Z, static_cast<host::label_t>(2)>(0, threadStart, destinationFrontBlock, nxb, nyb);
+                    const host::blockLabel sourceFrontBlock(0, 0, mesh.blocksPerDevice<axis::Z>() - 1);
+                    const host::label_t sourceFrontID = host::idxPop<axis::Z, static_cast<host::label_t>(2)>(0, threadStart, sourceFrontBlock, nxb, nyb);
+
+                    for (host::label_t westDevice = 0; westDevice + 1 < mesh.nDevices<axis::Z>(); westDevice++)
+                    {
+                        const host::label_t eastDevice = westDevice + 1;
+
+                        errorHandler::check(cudaMemcpyPeer(
+                            &(gBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(4)>()[destinationBackID]),
+                            programCtrl.deviceList()[westDevice],
+                            &(gBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(4)>()[sourceBackID]),
+                            programCtrl.deviceList()[eastDevice],
+                            Size));
+
+                        errorHandler::check(cudaMemcpyPeer(
+                            &(gBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(5)>()[destinationFrontID]),
+                            programCtrl.deviceList()[eastDevice],
+                            &(gBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(5)>()[sourceFrontID]),
+                            programCtrl.deviceList()[westDevice],
+                            Size));
+                    }
+                }
+            }
+        }
+
+        // Sync all devices and streams
+        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
+        {
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
+            errorHandler::checkInline(cudaDeviceSynchronize());
+            streamsLBM.synchronize(VirtualDeviceIndex);
+        }
 
         // Calculate S kernel
         runTimeObjects.calculate(timeStep);
@@ -223,7 +495,14 @@ int main(const int argc, const char *const argv[])
         // Promote collide-written scalar halos for the next stream/collide step
         if (enableScalarHalo)
         {
-            phiBlockHalo.swapNoSync(VirtualDeviceIndex);
+            for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
+            {
+                errorHandler::checkInline(cudaDeviceSynchronize());
+                errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
+                errorHandler::checkInline(cudaDeviceSynchronize());
+                phiBlockHalo.swapNoSync(VirtualDeviceIndex);
+                errorHandler::checkInline(cudaDeviceSynchronize());
+            }
         }
 
         // Do the run-time IO

@@ -43,17 +43,17 @@ Namespace
     LBM
 
 SourceFiles
-    multiphaseJet.cuh
+    twoPhaseJet.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_multiphaseJet_CUH
-#define __MBLBM_multiphaseJet_CUH
+#ifndef __MBLBM_twoPhaseJet_CUH
+#define __MBLBM_twoPhaseJet_CUH
 
 namespace LBM
 {
     /**
-     * @class multiphaseJet
+     * @class twoPhaseJet
      *
      * @brief Applies boundary conditions for multiphase jet flow simulations using moment representation
      *
@@ -61,13 +61,13 @@ namespace LBM
      * It handles static wall, inflow, and outflow boundaries using moment-based boundary conditions
      * derived from the regularized LBM approach.
      **/
-    class multiphaseJet
+    class twoPhaseJet
     {
     public:
         /**
          * @brief Default constructor (constexpr)
          **/
-        __device__ __host__ [[nodiscard]] inline consteval multiphaseJet(){};
+        __device__ __host__ [[nodiscard]] inline consteval twoPhaseJet(){};
 
         /**
          * @brief Periodic boundary definitions
@@ -96,7 +96,7 @@ namespace LBM
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS<true>()> &moments,
             const normalVector &boundaryNormal,
-            const scalar_t *const ptrRestrict shared_buffer,
+            const SharedBuffer shared_buffer,
             const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept
         {

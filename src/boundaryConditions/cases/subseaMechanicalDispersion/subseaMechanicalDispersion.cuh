@@ -96,7 +96,7 @@ namespace LBM
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS<true>()> &moments,
             const normalVector &boundaryNormal,
-            const scalar_t *const ptrRestrict shared_buffer,
+            const SharedBuffer shared_buffer,
             const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept
         {

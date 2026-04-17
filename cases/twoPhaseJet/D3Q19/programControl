@@ -9,11 +9,11 @@
 
 /*---------------------------------------------------------------------------*\
 
-caseName        multiphaseJet;
+caseName        twoPhaseJet;
 
-Re_A            1000;
+Re_A            3000;
 
-Re_B            1000;
+Re_B            3000;
 
 We              500;
 
@@ -21,17 +21,17 @@ interfaceWidth  3;
 
 u_inf           0.05;
 
-L_char          8;
+L_char          20;
 
 startFrom       latestTime;
 
 startTime       0;
 
-nTimeSteps      10001;
+nTimeSteps      1001;
 
-saveInterval    1000;
+saveInterval    100;
 
-infoInterval    1000;
+infoInterval    100;
 
 multiphase      true;
 

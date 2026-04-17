@@ -93,7 +93,7 @@ SourceFiles
 #define MULTI_GPU_HALO
 
 // Testing switch: force phase scalar-halo runtime path even when deviceDecomposition is 1x1x1
-#define FORCE_MULTI_GPU_SCALAR_HALO_TEST
+// #define FORCE_MULTI_GPU_SCALAR_HALO_TEST
 
 #define MULTI_GPU_MSG_NOTE(func, note) #func " not implemented for multi GPU yet: " note
 
