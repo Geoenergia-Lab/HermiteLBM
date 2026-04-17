@@ -3,7 +3,7 @@
 | HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
 | Developed at UDESC - State University of Santa Catarina                     |
 | Website: https://www.udesc.br                                               |
-| Github: https://github.com/Geoenergia-Lab/cudaLBM                           |
+| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |
 |                                                                             |
 \*---------------------------------------------------------------------------*/
 
@@ -69,6 +69,7 @@ namespace LBM
         const std::unordered_map<name_t, writerFunction> writers = {
             {"vtu", writer::write<VTU>},
             {"vts", writer::write<VTS>},
+            {"vti", writer::write<VTI>},
             {"tecplot", writer::write<Tecplot>}};
     }
 }
