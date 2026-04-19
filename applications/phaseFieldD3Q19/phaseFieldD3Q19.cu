@@ -52,10 +52,6 @@ SourceFiles
 
 using namespace LBM;
 
-#ifndef DEBUG_PHI_EXCHANGE
-#define DEBUG_PHI_EXCHANGE 0
-#endif
-
 __host__ [[nodiscard]] inline consteval device::label_t NStreams() noexcept { return 1; }
 
 int main(const int argc, const char *const argv[])
@@ -97,13 +93,13 @@ int main(const int argc, const char *const argv[])
     device::haloSingle<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()> fBlockHalo(mesh, programCtrl);      // Hydrodynamic population halo
     device::haloSingle<PhaseVelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()> gBlockHalo(mesh, programCtrl); // Phase population halo
     device::halo<PhaseVelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()> phiBlockHalo(mesh, programCtrl);     // Scalar phi halo
-#ifdef FORCE_MULTI_GPU_SCALAR_HALO_TEST
+#if defined(FORCE_MULTI_GPU_SCALAR_HALO_TEST)
     const bool enableScalarHalo = true;
 #else
     const bool enableScalarHalo = (mesh.nDevices<axis::X>() * mesh.nDevices<axis::Y>() * mesh.nDevices<axis::Z>()) > static_cast<host::label_t>(1);
 #endif
 
-#if DEBUG_PHI_EXCHANGE
+#ifdef DEBUG_PHI_EXCHANGE
     const auto debugPhiFaceCopy =
         [&](const char *const stage,
             const char *const faceTag,
@@ -143,8 +139,8 @@ int main(const int argc, const char *const argv[])
             errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[destinationDevice]));
             errorHandler::checkInline(cudaMemcpy(&destinationValue, destinationStart + sampleID, sizeof(scalar_t), cudaMemcpyDeviceToHost));
 
-            const bool finiteSource = (sourceValue == sourceValue);
-            const bool finiteDestination = (destinationValue == destinationValue);
+            const bool finiteSource = std::isfinite(sourceValue);
+            const bool finiteDestination = std::isfinite(destinationValue);
 
             if (!(finiteSource && finiteDestination))
             {
@@ -250,7 +246,7 @@ int main(const int argc, const char *const argv[])
             for (host::label_t westDevice = 0; westDevice + 1 < mesh.nDevices<axis::Z>(); westDevice++)
             {
                 const host::label_t eastDevice = westDevice + 1;
-#if DEBUG_PHI_EXCHANGE
+#ifdef DEBUG_PHI_EXCHANGE
                 const host::label_t nValues = Size / static_cast<host::label_t>(sizeof(scalar_t));
 #endif
 
@@ -260,7 +256,7 @@ int main(const int argc, const char *const argv[])
                     &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(4)>()[sourceBackID]),
                     programCtrl.deviceList()[eastDevice],
                     Size));
-#if DEBUG_PHI_EXCHANGE
+#ifdef DEBUG_PHI_EXCHANGE
                 debugPhiFaceCopy(
                     "prime",
                     "back(4)",
@@ -277,7 +273,7 @@ int main(const int argc, const char *const argv[])
                     &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(5)>()[sourceFrontID]),
                     programCtrl.deviceList()[westDevice],
                     Size));
-#if DEBUG_PHI_EXCHANGE
+#ifdef DEBUG_PHI_EXCHANGE
                 debugPhiFaceCopy(
                     "prime",
                     "front(5)",
@@ -428,7 +424,7 @@ int main(const int argc, const char *const argv[])
                 for (host::label_t westDevice = 0; westDevice + 1 < mesh.nDevices<axis::Z>(); westDevice++)
                 {
                     const host::label_t eastDevice = westDevice + 1;
-#if DEBUG_PHI_EXCHANGE
+#ifdef DEBUG_PHI_EXCHANGE
                     const host::label_t nValues = Size / static_cast<host::label_t>(sizeof(scalar_t));
 #endif
 
@@ -438,7 +434,7 @@ int main(const int argc, const char *const argv[])
                         &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(4)>()[sourceBackID]),
                         programCtrl.deviceList()[eastDevice],
                         Size));
-#if DEBUG_PHI_EXCHANGE
+#ifdef DEBUG_PHI_EXCHANGE
                     debugPhiFaceCopy(
                         "stream_to_collide",
                         "back(4)",
@@ -455,7 +451,7 @@ int main(const int argc, const char *const argv[])
                         &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(5)>()[sourceFrontID]),
                         programCtrl.deviceList()[westDevice],
                         Size));
-#if DEBUG_PHI_EXCHANGE
+#ifdef DEBUG_PHI_EXCHANGE
                     debugPhiFaceCopy(
                         "stream_to_collide",
                         "front(5)",

@@ -97,6 +97,9 @@ SourceFiles
 // Testing switch: force phase scalar-halo runtime path even when deviceDecomposition is 1x1x1
 // #define FORCE_MULTI_GPU_SCALAR_HALO_TEST
 
+// Deprecated testing switch (single-GPU loopback phi exchange)
+// #define FORCE_SINGLE_GPU_PHI_LOOPBACK_EXCHANGE
+
 #define MULTI_GPU_MSG_NOTE(func, note) #func " not implemented for multi GPU yet: " note
 
 #define MULTI_GPU_MSG(func) #func " not implemented for multi GPU yet"
