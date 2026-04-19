@@ -210,10 +210,19 @@ namespace LBM
             {
                 std::cout << "    deviceList: [";
 
-                for (host::label_t i = 0; i < deviceList().size() - 1; i++)
+                if (deviceList().size() == 1)
                 {
-                    std::cout << deviceList()[i] << ", ";
+                    std::cout << deviceList()[0];
                 }
+                {
+                    for (host::label_t i = 0; i < deviceList().size() - 1; i++)
+                    {
+                        std::cout << deviceList()[i] << ", ";
+                    }
+                    std::cout << deviceList()[deviceList().size() - 1];
+                }
+
+                std::cout << "];" << std::endl;
             }
             std::cout << "    caseName: " << caseName_ << ";" << std::endl;
             std::cout << "    multiphase: " << (multiphase_ ? "true" : "false") << ";" << std::endl;

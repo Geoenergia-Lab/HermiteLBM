@@ -236,6 +236,7 @@ namespace LBM
 
         const bool haloX = crossMinusX || crossPlusX;
         const bool haloY = crossMinusY || crossPlusY;
+        const bool haloZ = crossMinusZ || crossPlusZ;
         const int bxShift = crossMinusX ? -1 : (crossPlusX ? +1 : 0);
         const int byShift = crossMinusY ? -1 : (crossPlusY ? +1 : 0);
         const int bzShift = crossMinusZ ? -1 : (crossPlusZ ? +1 : 0);
@@ -297,10 +298,11 @@ namespace LBM
         const int localStartY = static_cast<int>(block::n<axis::Y>() * device::BLOCK_OFFSET_Y);
         const int localStartZ = static_cast<int>(block::n<axis::Z>() * device::BLOCK_OFFSET_Z);
 
-        const bool withinLocalSubdomain =
-            (pointShiftX >= localStartX) && (pointShiftX < (localStartX + localSizeX)) &&
-            (pointShiftY >= localStartY) && (pointShiftY < (localStartY + localSizeY)) &&
-            (pointShiftZ >= localStartZ) && (pointShiftZ < (localStartZ + localSizeZ));
+        const bool crossLocalX = (pointShiftX < localStartX) || (pointShiftX >= (localStartX + localSizeX));
+        const bool crossLocalY = (pointShiftY < localStartY) || (pointShiftY >= (localStartY + localSizeY));
+        const bool crossLocalZ = (pointShiftZ < localStartZ) || (pointShiftZ >= (localStartZ + localSizeZ));
+
+        const bool withinLocalSubdomain = !(crossLocalX || crossLocalY || crossLocalZ);
 
         if (withinLocalSubdomain)
         {
@@ -310,6 +312,59 @@ namespace LBM
 
         if constexpr (useScalarHalo)
         {
+            // Prioritize the axis that crossed the local GPU subdomain. This avoids
+            // selecting a wrong face when one offset crosses a block face (local)
+            // while another offset crosses an inter-device face.
+#ifndef FORCE_MULTI_GPU_SCALAR_HALO_TEST
+            if (crossLocalX && haloX)
+            {
+                const device::label_t layer = static_cast<device::label_t>(crossMinusX ? (-shiftedX - 1) : (shiftedX - nX));
+                const device::label_t faceIdx =
+                    (layer == static_cast<device::label_t>(0))
+                        ? device::idxPop<axis::X, 0, scalarHaloDepth>(ty, tz, bx, by, bz)
+                        : device::idxPop<axis::X, 1, scalarHaloDepth>(ty, tz, bx, by, bz);
+
+                if (crossMinusX)
+                {
+                    return __ldg(&(phiBuffer.ptr<1>()[faceIdx]));
+                }
+
+                return __ldg(&(phiBuffer.ptr<0>()[faceIdx]));
+            }
+
+            if (crossLocalY && haloY)
+            {
+                const device::label_t layer = static_cast<device::label_t>(crossMinusY ? (-shiftedY - 1) : (shiftedY - nY));
+                const device::label_t faceIdx =
+                    (layer == static_cast<device::label_t>(0))
+                        ? device::idxPop<axis::Y, 0, scalarHaloDepth>(tx, tz, bx, by, bz)
+                        : device::idxPop<axis::Y, 1, scalarHaloDepth>(tx, tz, bx, by, bz);
+
+                if (crossMinusY)
+                {
+                    return __ldg(&(phiBuffer.ptr<3>()[faceIdx]));
+                }
+
+                return __ldg(&(phiBuffer.ptr<2>()[faceIdx]));
+            }
+
+            if (crossLocalZ && haloZ)
+            {
+                const device::label_t layer = static_cast<device::label_t>(crossMinusZ ? (-shiftedZ - 1) : (shiftedZ - nZ));
+                const device::label_t faceIdx =
+                    (layer == static_cast<device::label_t>(0))
+                        ? device::idxPop<axis::Z, 0, scalarHaloDepth>(tx, ty, bx, by, bz)
+                        : device::idxPop<axis::Z, 1, scalarHaloDepth>(tx, ty, bx, by, bz);
+
+                if (crossMinusZ)
+                {
+                    return __ldg(&(phiBuffer.ptr<5>()[faceIdx]));
+                }
+
+                return __ldg(&(phiBuffer.ptr<4>()[faceIdx]));
+            }
+#endif
+
             if (haloX)
             {
                 const device::label_t layer = static_cast<device::label_t>(crossMinusX ? (-shiftedX - 1) : (shiftedX - nX));
@@ -342,18 +397,23 @@ namespace LBM
                 return __ldg(&(phiBuffer.ptr<2>()[faceIdx]));
             }
 
-            const device::label_t layer = static_cast<device::label_t>(crossMinusZ ? (-shiftedZ - 1) : (shiftedZ - nZ));
-            const device::label_t faceIdx =
-                (layer == static_cast<device::label_t>(0))
-                    ? device::idxPop<axis::Z, 0, scalarHaloDepth>(tx, ty, bx, by, bz)
-                    : device::idxPop<axis::Z, 1, scalarHaloDepth>(tx, ty, bx, by, bz);
-
-            if (crossMinusZ)
+            if (haloZ)
             {
-                return __ldg(&(phiBuffer.ptr<5>()[faceIdx]));
+                const device::label_t layer = static_cast<device::label_t>(crossMinusZ ? (-shiftedZ - 1) : (shiftedZ - nZ));
+                const device::label_t faceIdx =
+                    (layer == static_cast<device::label_t>(0))
+                        ? device::idxPop<axis::Z, 0, scalarHaloDepth>(tx, ty, bx, by, bz)
+                        : device::idxPop<axis::Z, 1, scalarHaloDepth>(tx, ty, bx, by, bz);
+
+                if (crossMinusZ)
+                {
+                    return __ldg(&(phiBuffer.ptr<5>()[faceIdx]));
+                }
+
+                return __ldg(&(phiBuffer.ptr<4>()[faceIdx]));
             }
 
-            return __ldg(&(phiBuffer.ptr<4>()[faceIdx]));
+            return __ldg(&(phi[device::idx(tx, ty, tz, bx, by, bz)]));
         }
         else
         {

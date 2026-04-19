@@ -417,8 +417,8 @@ namespace LBM
                         const device::label_t nzBlocksPerDevice = static_cast<device::label_t>(nBlocks.value<axis::Z>() / nDevices.value<axis::Z>());
 
                         const device::label_t xBlockOffset = static_cast<device::label_t>((nBlocks.value<axis::X>() / nDevices.value<axis::X>()) * dx);
-                        const device::label_t yBlockOffset = static_cast<device::label_t>((nBlocks.value<axis::X>() / nDevices.value<axis::X>()) * dy);
-                        const device::label_t zBlockOffset = static_cast<device::label_t>((nBlocks.value<axis::X>() / nDevices.value<axis::X>()) * dz);
+                        const device::label_t yBlockOffset = static_cast<device::label_t>((nBlocks.value<axis::Y>() / nDevices.value<axis::Y>()) * dy);
+                        const device::label_t zBlockOffset = static_cast<device::label_t>((nBlocks.value<axis::Z>() / nDevices.value<axis::Z>()) * dz);
 
                         // Allocate mesh symbols on the GPU
                         device::copyToSymbol(device::nx, nx);
