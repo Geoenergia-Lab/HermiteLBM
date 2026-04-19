@@ -88,13 +88,13 @@ namespace LBM
                 if (programCtrl.deviceList().size() > 0)
                 {
                     // Perform a block dimensions safety check
-                    validate_block_dimensions(dimensions_);
+                    validate_block_dimensions();
 
                     // Safety check for the mesh dimensions
-                    validate_allocation_size(programCtrl, dimensions_, nDevices_);
+                    validate_allocation_size(programCtrl);
 
                     // Must be safe, so allocate device constants
-                    set_constants(programCtrl, dimensions_, nBlocks(), nDevices_);
+                    set_constants(programCtrl);
                 }
             };
 
@@ -126,7 +126,7 @@ namespace LBM
              * @brief Total number of points in the mesh
              * @tparam T The size type
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr host::label_t size() const noexcept
+            __host__ [[nodiscard]] inline constexpr host::label_t size() const noexcept
             {
                 return dimensions_.size();
             }
@@ -137,7 +137,7 @@ namespace LBM
              * @tparam T The size type
              **/
             template <axis::type alpha>
-            __device__ __host__ [[nodiscard]] inline constexpr host::label_t dimension() const noexcept
+            __host__ [[nodiscard]] inline constexpr host::label_t dimension() const noexcept
             {
                 return dimensions_.value<alpha>();
             }
@@ -145,7 +145,7 @@ namespace LBM
             /**
              * @brief Number of points in the mesh in each specific direction
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr const host::blockLabel &dimensions() const noexcept
+            __host__ [[nodiscard]] inline constexpr const host::blockLabel &dimensions() const noexcept
             {
                 return dimensions_;
             }
@@ -157,7 +157,7 @@ namespace LBM
              * @return The number of blocks in the specified direction
              **/
             template <const axis::type alpha>
-            __device__ __host__ [[nodiscard]] inline constexpr host::label_t nBlocks() const noexcept
+            __host__ [[nodiscard]] inline constexpr host::label_t nBlocks() const noexcept
             {
                 return dimensions_.value<alpha>() / block::n<alpha, host::label_t>();
             }
@@ -166,7 +166,7 @@ namespace LBM
              * @brief Number of blocks in the mesh in each specific direction
              * @return host::blockLabel containing the number of blocks in each direction
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr host::blockLabel nBlocks() const noexcept
+            __host__ [[nodiscard]] inline constexpr host::blockLabel nBlocks() const noexcept
             {
                 return host::blockLabel(nBlocks<axis::X>(), nBlocks<axis::Y>(), nBlocks<axis::Z>());
             }
@@ -184,7 +184,7 @@ namespace LBM
              * @brief Get thread block dimensions for CUDA kernel launches
              * @return dim3 structure with thread block dimensions
              **/
-            __device__ __host__ [[nodiscard]] static inline consteval dim3 threadBlock() noexcept
+            __host__ [[nodiscard]] static inline consteval dim3 threadBlock() noexcept
             {
                 return {block::nx<uint32_t>(), block::ny<uint32_t>(), block::nz<uint32_t>()};
             }
@@ -334,6 +334,10 @@ namespace LBM
                     throw std::runtime_error("block::nx() * nxBlocks() * block::ny() * nyBlocks() * block::nz() * nzBlocks() not equal to mesh.size()\nMesh dimensions should be multiples of 8");
                 }
             }
+            __host__ inline void validate_block_dimensions() const
+            {
+                validate_block_dimensions(dimensions_);
+            }
 
             /**
              * @brief Validates that the mesh dimensions do not exceed the limits of host::label_t
@@ -343,7 +347,7 @@ namespace LBM
              * @param[in] dimensions The dimensions of the mesh
              * @param[in] nDevices The number of devices in each direction for multi-GPU decomposition
              **/
-            static void validate_allocation_size(
+            __host__ static void validate_allocation_size(
                 const programControl &programCtrl,
                 const host::blockLabel &dimensions,
                 const host::blockLabel &nDevices)
@@ -390,13 +394,22 @@ namespace LBM
                 }
             }
 
+            __host__ inline void validate_allocation_size(const programControl &programCtrl) const
+            {
+                validate_allocation_size(programCtrl, dimensions_, nDevices_);
+            }
+
             /**
              * @brief Initializes device constants for each GPU based on the program control and mesh dimensions
              * @param[in] programCtrl The program control object containing simulation parameters
              * @param[in] dimensions The dimensions of the mesh
              * @param[in] nDevices The number of devices in each direction for multi-GPU decomposition
              **/
-            __host__ static void set_constants(const programControl &programCtrl, const host::blockLabel &dimensions, const host::blockLabel &nBlocks, const host::blockLabel &nDevices)
+            __host__ static void set_constants(
+                const programControl &programCtrl,
+                const host::blockLabel &dimensions,
+                const host::blockLabel &nBlocks,
+                const host::blockLabel &nDevices)
             {
                 GPU::forAll(
                     nDevices,
@@ -415,8 +428,8 @@ namespace LBM
                         const device::label_t nzBlocksPerDevice = static_cast<device::label_t>(nBlocks.value<axis::Z>() / nDevices.value<axis::Z>());
 
                         const device::label_t xBlockOffset = static_cast<device::label_t>((nBlocks.value<axis::X>() / nDevices.value<axis::X>()) * dx);
-                        const device::label_t yBlockOffset = static_cast<device::label_t>((nBlocks.value<axis::X>() / nDevices.value<axis::X>()) * dy);
-                        const device::label_t zBlockOffset = static_cast<device::label_t>((nBlocks.value<axis::X>() / nDevices.value<axis::X>()) * dz);
+                        const device::label_t yBlockOffset = static_cast<device::label_t>((nBlocks.value<axis::Y>() / nDevices.value<axis::Y>()) * dy);
+                        const device::label_t zBlockOffset = static_cast<device::label_t>((nBlocks.value<axis::Z>() / nDevices.value<axis::Z>()) * dz);
 
                         // Allocate mesh symbols on the GPU
                         device::copyToSymbol(device::nx, nx);
@@ -429,6 +442,11 @@ namespace LBM
                         device::copyToSymbol(device::BLOCK_OFFSET_Y, yBlockOffset);
                         device::copyToSymbol(device::BLOCK_OFFSET_Z, zBlockOffset);
                     });
+            }
+
+            __host__ inline void set_constants(const programControl &programCtrl) const
+            {
+                set_constants(programCtrl, dimensions_, nBlocks(), nDevices_);
             }
 
             /**
