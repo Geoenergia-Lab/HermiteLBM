@@ -52,6 +52,10 @@ SourceFiles
 
 using namespace LBM;
 
+#ifndef DEBUG_PHI_EXCHANGE
+#define DEBUG_PHI_EXCHANGE 0
+#endif
+
 __host__ [[nodiscard]] inline consteval device::label_t NStreams() noexcept { return 1; }
 
 int main(const int argc, const char *const argv[])
@@ -97,6 +101,78 @@ int main(const int argc, const char *const argv[])
     const bool enableScalarHalo = true;
 #else
     const bool enableScalarHalo = (mesh.nDevices<axis::X>() * mesh.nDevices<axis::Y>() * mesh.nDevices<axis::Z>()) > static_cast<host::label_t>(1);
+#endif
+
+#if DEBUG_PHI_EXCHANGE
+    const auto debugPhiFaceCopy =
+        [&](const char *const stage,
+            const char *const faceTag,
+            const host::label_t destinationDevice,
+            scalar_t *const destinationStart,
+            const host::label_t sourceDevice,
+            const scalar_t *const sourceStart,
+            const host::label_t nValues)
+    {
+        if (nValues == static_cast<host::label_t>(0))
+        {
+            return;
+        }
+
+        const host::label_t sampleIDs[6] = {
+            static_cast<host::label_t>(0),
+            static_cast<host::label_t>(1),
+            nValues / static_cast<host::label_t>(4),
+            nValues / static_cast<host::label_t>(2),
+            (nValues > static_cast<host::label_t>(2)) ? (nValues - static_cast<host::label_t>(2)) : static_cast<host::label_t>(0),
+            nValues - static_cast<host::label_t>(1)};
+
+        host::label_t mismatchedSamples = static_cast<host::label_t>(0);
+        host::label_t nanSamples = static_cast<host::label_t>(0);
+        scalar_t maxAbsDiff = static_cast<scalar_t>(0);
+
+        for (const host::label_t rawID : sampleIDs)
+        {
+            const host::label_t sampleID = (rawID < nValues) ? rawID : (nValues - static_cast<host::label_t>(1));
+
+            scalar_t sourceValue = static_cast<scalar_t>(0);
+            scalar_t destinationValue = static_cast<scalar_t>(0);
+
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[sourceDevice]));
+            errorHandler::checkInline(cudaMemcpy(&sourceValue, sourceStart + sampleID, sizeof(scalar_t), cudaMemcpyDeviceToHost));
+
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[destinationDevice]));
+            errorHandler::checkInline(cudaMemcpy(&destinationValue, destinationStart + sampleID, sizeof(scalar_t), cudaMemcpyDeviceToHost));
+
+            const bool finiteSource = (sourceValue == sourceValue);
+            const bool finiteDestination = (destinationValue == destinationValue);
+
+            if (!(finiteSource && finiteDestination))
+            {
+                nanSamples++;
+                continue;
+            }
+
+            const scalar_t absDiff = (sourceValue > destinationValue) ? (sourceValue - destinationValue) : (destinationValue - sourceValue);
+            maxAbsDiff = (absDiff > maxAbsDiff) ? absDiff : maxAbsDiff;
+
+            if (absDiff > static_cast<scalar_t>(1e-6))
+            {
+                mismatchedSamples++;
+            }
+        }
+
+        if ((mismatchedSamples > static_cast<host::label_t>(0)) || (nanSamples > static_cast<host::label_t>(0)))
+        {
+            std::cout << "[DEBUG_PHI_EXCHANGE] stage=" << stage
+                      << " face=" << faceTag
+                      << " srcDevice=" << sourceDevice
+                      << " dstDevice=" << destinationDevice
+                      << " mismatchSamples=" << mismatchedSamples
+                      << " nanSamples=" << nanSamples
+                      << " maxAbsDiff=" << maxAbsDiff
+                      << std::endl;
+        }
+    };
 #endif
 
     if (enableScalarHalo)
@@ -174,6 +250,9 @@ int main(const int argc, const char *const argv[])
             for (host::label_t westDevice = 0; westDevice + 1 < mesh.nDevices<axis::Z>(); westDevice++)
             {
                 const host::label_t eastDevice = westDevice + 1;
+#if DEBUG_PHI_EXCHANGE
+                const host::label_t nValues = Size / static_cast<host::label_t>(sizeof(scalar_t));
+#endif
 
                 errorHandler::check(cudaMemcpyPeer(
                     &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(4)>()[destinationBackID]),
@@ -181,6 +260,16 @@ int main(const int argc, const char *const argv[])
                     &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(4)>()[sourceBackID]),
                     programCtrl.deviceList()[eastDevice],
                     Size));
+#if DEBUG_PHI_EXCHANGE
+                debugPhiFaceCopy(
+                    "prime",
+                    "back(4)",
+                    westDevice,
+                    &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(4)>()[destinationBackID]),
+                    eastDevice,
+                    &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(4)>()[sourceBackID]),
+                    nValues);
+#endif
 
                 errorHandler::check(cudaMemcpyPeer(
                     &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(5)>()[destinationFrontID]),
@@ -188,6 +277,16 @@ int main(const int argc, const char *const argv[])
                     &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(5)>()[sourceFrontID]),
                     programCtrl.deviceList()[westDevice],
                     Size));
+#if DEBUG_PHI_EXCHANGE
+                debugPhiFaceCopy(
+                    "prime",
+                    "front(5)",
+                    eastDevice,
+                    &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(5)>()[destinationFrontID]),
+                    westDevice,
+                    &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(5)>()[sourceFrontID]),
+                    nValues);
+#endif
             }
         }
 
@@ -329,6 +428,9 @@ int main(const int argc, const char *const argv[])
                 for (host::label_t westDevice = 0; westDevice + 1 < mesh.nDevices<axis::Z>(); westDevice++)
                 {
                     const host::label_t eastDevice = westDevice + 1;
+#if DEBUG_PHI_EXCHANGE
+                    const host::label_t nValues = Size / static_cast<host::label_t>(sizeof(scalar_t));
+#endif
 
                     errorHandler::check(cudaMemcpyPeer(
                         &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(4)>()[destinationBackID]),
@@ -336,6 +438,16 @@ int main(const int argc, const char *const argv[])
                         &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(4)>()[sourceBackID]),
                         programCtrl.deviceList()[eastDevice],
                         Size));
+#if DEBUG_PHI_EXCHANGE
+                    debugPhiFaceCopy(
+                        "stream_to_collide",
+                        "back(4)",
+                        westDevice,
+                        &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(4)>()[destinationBackID]),
+                        eastDevice,
+                        &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(4)>()[sourceBackID]),
+                        nValues);
+#endif
 
                     errorHandler::check(cudaMemcpyPeer(
                         &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(5)>()[destinationFrontID]),
@@ -343,6 +455,16 @@ int main(const int argc, const char *const argv[])
                         &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(5)>()[sourceFrontID]),
                         programCtrl.deviceList()[westDevice],
                         Size));
+#if DEBUG_PHI_EXCHANGE
+                    debugPhiFaceCopy(
+                        "stream_to_collide",
+                        "front(5)",
+                        eastDevice,
+                        &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(5)>()[destinationFrontID]),
+                        westDevice,
+                        &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(5)>()[sourceFrontID]),
+                        nValues);
+#endif
                 }
             }
         }

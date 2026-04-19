@@ -92,6 +92,8 @@ SourceFiles
 
 #define MULTI_GPU_HALO
 
+#define DEBUG_PHI_EXCHANGE
+
 // Testing switch: force phase scalar-halo runtime path even when deviceDecomposition is 1x1x1
 // #define FORCE_MULTI_GPU_SCALAR_HALO_TEST
 
