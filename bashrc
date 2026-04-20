@@ -12,7 +12,7 @@
 # --------------------------------------------------------------------------- #
 
 # The Linux distribution name (e.g., "ubuntu2404", "debian12", etc.)
-export HERMITELBM_DISTRO="ubuntu2404"
+export HERMITELBM_DISTRO="debian13"
 
 # CUDA version (major and minor)
 export HERMITELBM_CUDA_VERSION_MAJOR="13"
@@ -39,10 +39,19 @@ export HERMITELBM_INCLUDE_DIR="$HERMITELBM_BUILD_DIR/include"
 # --------------------------------------------------------------------------- #
 #  CUDA Toolkit
 # --------------------------------------------------------------------------- #
-export HERMITELBM_CUDA_DIR="/usr/local/cuda-${HERMITELBM_CUDA_VERSION_MAJOR}.${HERMITELBM_CUDA_VERSION_MINOR}"
+
+# Determine the correct CUDA directory suffix based on distro and minor version
+CUDA_DIR_SUFFIX="${HERMITELBM_CUDA_VERSION_MAJOR}.${HERMITELBM_CUDA_VERSION_MINOR}"
+if [[ "$HERMITELBM_DISTRO" =~ ^debian ]] && [[ "${HERMITELBM_CUDA_VERSION_MINOR}" == "0" ]]; then
+    CUDA_DIR_SUFFIX="${HERMITELBM_CUDA_VERSION_MAJOR}"
+fi
+
+export HERMITELBM_CUDA_DIR="/usr/local/cuda-${CUDA_DIR_SUFFIX}"
 export PATH="$HERMITELBM_CUDA_DIR/bin:$PATH"
 export LD_LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LD_LIBRARY_PATH"
 export LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LIBRARY_PATH"
+
+# Fallback: If nvcc is found but the default path doesn't exist, resolve from nvcc
 if command -v nvcc > /dev/null 2>&1; then
     NVCC_PATH=$(command -v nvcc)
     RESOLVED_NVCC_PATH=$(readlink -f "$NVCC_PATH" 2>/dev/null || echo "$NVCC_PATH")
