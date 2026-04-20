@@ -11,9 +11,6 @@
 #  USER-DEFINED ENVIRONMENT VARIABLES
 # --------------------------------------------------------------------------- #
 
-# The Linux distribution name (e.g., "ubuntu2404", "debian12", etc.)
-export HERMITELBM_DISTRO="debian13"
-
 # CUDA version (major and minor)
 export HERMITELBM_CUDA_VERSION_MAJOR="13"
 export HERMITELBM_CUDA_VERSION_MINOR="0"
@@ -35,6 +32,36 @@ export HERMITELBM_PROJECT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> 
 export HERMITELBM_BUILD_DIR="$HERMITELBM_PROJECT_DIR/build"
 export HERMITELBM_BIN_DIR="$HERMITELBM_BUILD_DIR/bin"
 export HERMITELBM_INCLUDE_DIR="$HERMITELBM_BUILD_DIR/include"
+
+# --------------------------------------------------------------------------- #
+#  Automatic distro detection
+# --------------------------------------------------------------------------- #
+
+if [[ -z "$HERMITELBM_DISTRO" ]]; then
+    if [[ -f /etc/os-release ]]; then
+        source /etc/os-release
+        case "$ID" in
+            ubuntu)
+                # Remove dots from version (e.g., 24.04 -> 2404)
+                VERSION_NODOTS="${VERSION_ID//./}"
+                HERMITELBM_DISTRO="ubuntu${VERSION_NODOTS}"
+                ;;
+            debian)
+                # Debian VERSION_ID is just the major number (e.g., "13")
+                HERMITELBM_DISTRO="debian${VERSION_ID}"
+                ;;
+            *)
+                echo "Warning: Unsupported distribution '$ID'. Defaulting to ubuntu2404." >&2
+                HERMITELBM_DISTRO="ubuntu2404"
+                ;;
+        esac
+    else
+        echo "Warning: /etc/os-release not found. Defaulting to ubuntu2404." >&2
+        HERMITELBM_DISTRO="ubuntu2404"
+    fi
+    # echo "Auto-detected distribution: $HERMITELBM_DISTRO"
+fi
+export HERMITELBM_DISTRO
 
 # --------------------------------------------------------------------------- #
 #  CUDA Toolkit
