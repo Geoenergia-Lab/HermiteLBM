@@ -133,7 +133,7 @@ REPORT_BASE="$RESULT_DIR/${EXE_NAME}_profile"
 
 echo "Profiling $EXE_NAME on GPU(s) $GPU_LIST with arguments: ${EXE_ARGS[*]}"
 ncu \
-    --metrics sm__sp__ops.sum,dram__bytes.sum,sm__throughput.avg.pct_of_peak_sustained_elapsed \
+    --metrics dram__sectors_write.sum,dram__sectors_read.sum,smsp__sass_thread_inst_executed_op_fadd_pred_on.sum,smsp__sass_thread_inst_executed_op_fmul_pred_on.sum,smsp__sass_thread_inst_executed_op_ffma_pred_on.sum \
     --section SpeedOfLight \
     --set full \
     --export "$REPORT_BASE" \
