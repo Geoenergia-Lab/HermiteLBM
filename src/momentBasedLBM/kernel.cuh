@@ -105,48 +105,33 @@ namespace LBM
                 });
 
             // Coalesced read from global memory
-            thread::array<scalar_t, NUMBER_MOMENTS()> moments;
+            thread::array<scalar_t, NUMBER_MOMENTS()> solutionMoments;
             device::constexpr_for<0, NUMBER_MOMENTS()>(
                 [&](const auto moment)
                 {
                     const device::label_t ID = tid * m_i<NUMBER_MOMENTS() + 1>() + m_i<moment>();
                     sharedBuffer[ID] = devPtrs.ptr<moment>()[idx];
-                    if constexpr (moment == index::rho)
-                    {
-                        moments[moment] = sharedBuffer[ID] + rho0();
-                    }
-                    else
-                    {
-                        moments[moment] = sharedBuffer[ID];
-                    }
+                    solutionMoments[moment] = solutionMoments[moment] + sharedBuffer[ID];
                 });
+            solutionMoments[0] = solutionMoments[0] + rho0();
 
             block::sync();
 
             // Reconstruct the population from the moments
-            thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
+            thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(solutionMoments);
 
-            // Save/pull from shared memory
-            {
-                // Save populations in shared memory
-                streaming::save<VelocitySet>(pop, sharedBuffer, tid);
+            // Save populations in shared memory
+            streaming::save<VelocitySet>(pop, sharedBuffer, tid);
+            block::sync();
 
-                block::sync();
-
-                // Pull from shared memory
-                streaming::pull<VelocitySet>(pop, sharedBuffer, Tx);
-
-                // Pull pop from global memory in cover nodes
-                BlockHalo::pull(pop, readBuffer, Tx, Bx, point);
-
-                block::sync();
-            }
+            // Pull from shared memory and halos
+            streaming::pull<VelocitySet>(pop, sharedBuffer, Tx);
+            BlockHalo::pull(pop, readBuffer, Tx, Bx, point);
+            block::sync();
 
             if constexpr (std::is_same_v<BoundaryConditions, lidDrivenCavity>)
             {
-                // Calculate the moments either at the boundary or interior
-                {
-                    const normalVector boundaryNormal(point);
+                const normalVector boundaryNormal(point);
 
                     velocitySet::calculate_moments<VelocitySet>(pop, moments, boundaryNormal);
 
@@ -160,48 +145,38 @@ namespace LBM
             if constexpr (std::is_same_v<BoundaryConditions, jetFlow>)
             {
                 // Compute post-stream moments
-                velocitySet::calculate_moments<VelocitySet>(pop, moments);
-                {
-                    // Update the shared buffer with the refreshed moments
-                    device::constexpr_for<0, NUMBER_MOMENTS()>(
-                        [&](const auto moment)
-                        {
-                            const device::label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
-                            sharedBuffer[ID] = moments[moment];
-                        });
-                }
+                velocitySet::calculate_moments<VelocitySet>(pop, solutionMoments);
+
+                // Update the shared buffer with the refreshed moments
+                device::constexpr_for<0, NUMBER_MOMENTS()>(
+                    [&](const auto moment)
+                    {
+                        const device::label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
+                        sharedBuffer[ID] = solutionMoments[moment];
+                    });
 
                 block::sync();
 
                 // Calculate the moments at the boundary
+                const normalVector boundaryNormal(point);
+                if (boundaryNormal.isBoundary())
                 {
-                    const normalVector boundaryNormal(point);
-
-                    if (boundaryNormal.isBoundary())
-                    {
-                        BoundaryConditions::template calculate_moments<VelocitySet>(pop, moments, boundaryNormal, sharedBuffer, Tx, point);
-                    }
+                    BoundaryConditions::template calculate_moments<VelocitySet>(pop, solutionMoments, boundaryNormal, sharedBuffer, Tx, point);
                 }
             }
 
             // Scale the moments correctly
-            velocitySet::scale(moments);
+            velocitySet::scale(solutionMoments);
 
             // Collide
-            Collision::collide(moments);
+            Collision::collide(solutionMoments);
 
             // Coalesced write to global memory
+            solutionMoments[0] = solutionMoments[0] - rho0();
             device::constexpr_for<0, NUMBER_MOMENTS()>(
                 [&](const auto moment)
                 {
-                    if constexpr (moment == index::rho)
-                    {
-                        devPtrs.ptr<moment>()[idx] = moments[moment] - rho0();
-                    }
-                    else
-                    {
-                        devPtrs.ptr<moment>()[idx] = moments[moment];
-                    }
+                    devPtrs.ptr<moment>()[idx] = solutionMoments[moment];
                 });
 
             // Save the populations to the block halo
@@ -212,7 +187,7 @@ namespace LBM
             }
             else
             {
-                BlockHalo::save(pop, moments, writeBuffer, Tx, Bx, point);
+                BlockHalo::save(pop, solutionMoments, writeBuffer, Tx, Bx, point);
             }
         }
     }
