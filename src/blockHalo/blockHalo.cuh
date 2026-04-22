@@ -125,7 +125,7 @@ namespace LBM
     }
 }
 
-#include "haloFace.cuh"
 #include "halo.cuh"
+#include "deviceHalo.cuh"
 
 #endif

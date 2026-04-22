@@ -132,7 +132,9 @@ namespace LBM
              * @brief Constructs a collection of the solution variables object
              * @param[in] hostWriteBuffer Reference to the host-side write buffer
              * @param[in] mesh The lattice mesh
-             * @param[in] rho, ... References to the 10 solution variables
+             * @param[in] rho Device scalar field containing the density values on the GPU
+             * @param[in] U Device vector field containing the velocity values on the GPU
+             * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
              * @param[in] streamsLBM Stream handler for LBM operations
              * @param[in] programCtrl The program control object
              **/
