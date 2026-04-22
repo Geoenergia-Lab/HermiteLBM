@@ -71,7 +71,7 @@ namespace LBM
             : input_(inputControl(argc, argv)),
               caseName_(string::extractParameter<name_t>(string::readFile("programControl"), "caseName")),
               Re_(initialiseConst<scalar_t>("Re")),
-              u_inf_(initialiseConst<scalar_t>("u_inf")),
+              Ma_(initialiseConst<scalar_t>("Ma")),
               L_char_(initialiseConst<scalar_t>("L_char")),
               nTimeSteps_(string::extractParameter<host::label_t>(string::readFile("programControl"), "nTimeSteps")),
               saveInterval_(string::extractParameter<host::label_t>(string::readFile("programControl"), "saveInterval")),
@@ -122,6 +122,8 @@ namespace LBM
             }
             std::cout << "    caseName: " << caseName_ << ";" << std::endl;
             std::cout << "    Re = " << Re_ << ";" << std::endl;
+            std::cout << "    Ma = " << Ma_ << ";" << std::endl;
+            std::cout << "    U_inf = " << Ma_ / std::sqrt(static_cast<scalar_t>(3)) << ";" << std::endl;
             std::cout << "    nTimeSteps = " << nTimeSteps_ << ";" << std::endl;
             std::cout << "    saveInterval = " << saveInterval_ << ";" << std::endl;
             std::cout << "    infoInterval = " << infoInterval_ << ";" << std::endl;
@@ -138,7 +140,8 @@ namespace LBM
                     errorHandler::check(cudaSetDevice(deviceList()[virtualDeviceIndex]));
 
                     // Allocate symbols on the GPU
-                    const scalar_t viscosityTemp = u_inf() * L_char() / Re();
+                    const scalar_t U = Ma_ / std::sqrt(static_cast<scalar_t>(3));
+                    const scalar_t viscosityTemp = U * L_char() / Re();
                     const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3) * viscosityTemp;
                     const scalar_t omegaTemp = static_cast<scalar_t>(1) / tauTemp;
                     const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
@@ -210,9 +213,9 @@ namespace LBM
          * @brief Returns the characteristic velocity
          * @return The characteristic velocity
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr scalar_t u_inf() const noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr scalar_t Ma() const noexcept
         {
-            return u_inf_;
+            return Ma_;
         }
 
         /**
@@ -377,9 +380,9 @@ namespace LBM
         const scalar_t Re_;
 
         /**
-         * @brief The characteristic velocity
+         * @brief The characteristic Mach number
          **/
-        const scalar_t u_inf_;
+        const scalar_t Ma_;
 
         /**
          * @brief The characteristic length scale
