@@ -54,6 +54,7 @@ SourceFiles
 #include "../typedefs/typedefs.cuh"
 #include "../strings.cuh"
 #include "inputControl.cuh"
+#include "streamHandler.cuh"
 #include "../fileIO/fileIO.cuh"
 
 namespace LBM
@@ -75,7 +76,8 @@ namespace LBM
               nTimeSteps_(string::extractParameter<host::label_t>(string::readFile("programControl"), "nTimeSteps")),
               saveInterval_(string::extractParameter<host::label_t>(string::readFile("programControl"), "saveInterval")),
               infoInterval_(string::extractParameter<host::label_t>(string::readFile("programControl"), "infoInterval")),
-              latestTime_(latestSaved())
+              latestTime_(latestSaved()),
+              streams_(deviceList())
         {
             types::assertions::validate<scalar_t>();
             types::assertions::validate<device::label_t>();
@@ -353,6 +355,11 @@ namespace LBM
             }
         }
 
+        __host__ [[nodiscard]] inline constexpr const streamHandler &streams() const noexcept
+        {
+            return streams_;
+        }
+
     private:
         /**
          * @brief A reference to the input control object
@@ -386,6 +393,8 @@ namespace LBM
         const host::label_t saveInterval_;
         const host::label_t infoInterval_;
         const host::label_t latestTime_;
+
+        const streamHandler streams_;
 
         /**
          * @brief Reads a variable from the caseInfo file into a parameter of type T
@@ -444,7 +453,5 @@ namespace LBM
         }
     };
 }
-
-#include "streamHandler.cuh"
 
 #endif

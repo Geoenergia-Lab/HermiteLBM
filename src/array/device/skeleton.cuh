@@ -137,6 +137,15 @@ namespace LBM
                 return ptr_[i];
             }
 
+            template <const axis::type alpha>
+            __host__ [[nodiscard]] static inline constexpr host::label_t AllocationSize(
+                const host::label_t nxBlocksTrue,
+                const host::label_t nyBlocksTrue,
+                const host::label_t nzBlocksTrue) noexcept
+            {
+                return VelocitySet::template QF<host::label_t>() * ((static_cast<host::label_t>(nxBlocksTrue) * static_cast<host::label_t>(nyBlocksTrue) * static_cast<host::label_t>(nzBlocksTrue) * block::nx<host::label_t>() * block::ny<host::label_t>() * block::nz<host::label_t>()) / block::n<alpha, host::label_t>());
+            }
+
         private:
             template <const axis::type alpha, const host::label_t QF>
             __host__ [[nodiscard]] static inline host::label_t idxPopTest(
@@ -147,15 +156,6 @@ namespace LBM
                 const host::label_t nyBlocks) noexcept
             {
                 return Tx.value<axis::orthogonal<alpha, 0>()>() + block::n<axis::orthogonal<alpha, 0>()>() * (Tx.value<axis::orthogonal<alpha, 1>()>() + block::n<axis::orthogonal<alpha, 1>()>() * (pop + QF * (Bx.x + nxBlocks * (Bx.y + nyBlocks * Bx.z))));
-            }
-
-            template <const axis::type alpha>
-            __host__ [[nodiscard]] static inline constexpr host::label_t AllocationSize(
-                const host::label_t nxBlocksTrue,
-                const host::label_t nyBlocksTrue,
-                const host::label_t nzBlocksTrue) noexcept
-            {
-                return VelocitySet::template QF<host::label_t>() * ((static_cast<host::label_t>(nxBlocksTrue) * static_cast<host::label_t>(nyBlocksTrue) * static_cast<host::label_t>(nzBlocksTrue) * block::nx<host::label_t>() * block::ny<host::label_t>() * block::nz<host::label_t>()) / block::n<alpha, host::label_t>());
             }
 
             template <const axis::type alpha>

@@ -34,7 +34,7 @@ export HERMITELBM_BIN_DIR="$HERMITELBM_BUILD_DIR/bin"
 export HERMITELBM_INCLUDE_DIR="$HERMITELBM_BUILD_DIR/include"
 
 # --------------------------------------------------------------------------- #
-#  Automatic distro detection
+#  Automatic distro detection (now supports Fedora, RHEL, CentOS)
 # --------------------------------------------------------------------------- #
 
 if [[ -z "$HERMITELBM_DISTRO" ]]; then
@@ -49,6 +49,13 @@ if [[ -z "$HERMITELBM_DISTRO" ]]; then
             debian)
                 # Debian VERSION_ID is just the major number (e.g., "13")
                 HERMITELBM_DISTRO="debian${VERSION_ID}"
+                ;;
+            fedora)
+                HERMITELBM_DISTRO="fedora${VERSION_ID}"
+                ;;
+            rhel|centos)
+                # Use major version only (e.g., "9")
+                HERMITELBM_DISTRO="${ID}${VERSION_ID%%.*}"
                 ;;
             *)
                 echo "Warning: Unsupported distribution '$ID'. Defaulting to ubuntu2404." >&2
@@ -69,7 +76,7 @@ export HERMITELBM_DISTRO
 
 # Determine the correct CUDA directory suffix based on distro and minor version
 CUDA_DIR_SUFFIX="${HERMITELBM_CUDA_VERSION_MAJOR}.${HERMITELBM_CUDA_VERSION_MINOR}"
-if [[ "$HERMITELBM_DISTRO" =~ ^debian ]] && [[ "${HERMITELBM_CUDA_VERSION_MINOR}" == "0" ]]; then
+if [[ "$HERMITELBM_DISTRO" =~ ^(debian|fedora) ]] && [[ "${HERMITELBM_CUDA_VERSION_MINOR}" == "0" ]]; then
     CUDA_DIR_SUFFIX="${HERMITELBM_CUDA_VERSION_MAJOR}"
 fi
 

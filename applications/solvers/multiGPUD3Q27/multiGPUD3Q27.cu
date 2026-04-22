@@ -51,16 +51,69 @@ SourceFiles
 
 using namespace LBM;
 
+__host__ inline void allsync(const programControl &programCtrl)
+{
+    for (host::label_t stream = 0; stream < programCtrl.deviceList().size(); stream++)
+    {
+        errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[stream]));
+        errorHandler::checkInline(cudaDeviceSynchronize());
+        programCtrl.streams().synchronize(stream);
+    }
+}
+
+__host__ inline void launch(
+    const host::latticeMesh &mesh,
+    const programControl &programCtrl,
+    device::scalarField<VelocitySet, time::instantaneous> &rho,
+    device::vectorField<VelocitySet, time::instantaneous> &U,
+    device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
+    const haloBuffer<VelocitySet> &haloPtrs,
+    const host::label_t timeStep) noexcept
+{
+    for (host::label_t stream = 0; stream < programCtrl.deviceList().size(); stream++)
+    {
+        errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[stream]));
+        errorHandler::checkInline(cudaDeviceSynchronize());
+        programCtrl.streams().synchronize(stream);
+
+        const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs(
+            rho.self().ptr(stream),
+            U.x().ptr(stream),
+            U.y().ptr(stream),
+            U.z().ptr(stream),
+            Pi.xx().ptr(stream),
+            Pi.xy().ptr(stream),
+            Pi.xz().ptr(stream),
+            Pi.yy().ptr(stream),
+            Pi.yz().ptr(stream),
+            Pi.zz().ptr(stream));
+
+        kernel::momentBasedLBM<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[stream]>>>(
+            devPtrs,
+            haloPtrs.readBuffer(stream, timeStep),
+            haloPtrs.writeBuffer(stream, timeStep));
+    }
+
+    allsync(programCtrl);
+}
+
 int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
 
-    // Set cuda device
-    errorHandler::check(cudaDeviceSynchronize());
-    errorHandler::check(cudaSetDevice(programCtrl.deviceList()[0]));
-    errorHandler::check(cudaDeviceSynchronize());
-
     const host::latticeMesh mesh(programCtrl);
+
+    if (!((mesh.nDevices<axis::X>() * mesh.nDevices<axis::Y>() * mesh.nDevices<axis::Z>()) == programCtrl.deviceList().size()))
+    {
+        errorHandler::check<throws::NO_THROW>(-1, "Number of GPUs must match the number of devices in the mesh decomposition");
+        return 0;
+    }
+
+    if ((mesh.nDevices<axis::X>() > 1) || (mesh.nDevices<axis::Y>() > 1))
+    {
+        errorHandler::check<throws::NO_THROW>(-1, "HermiteLBM currently only supports decomposition in the z axis");
+        return 0;
+    }
 
     VelocitySet::print();
 
@@ -69,17 +122,13 @@ int main(const int argc, const char *const argv[])
     device::vectorField<VelocitySet, time::instantaneous> U("U", mesh, programCtrl);
     device::symmetricTensorField<VelocitySet, time::instantaneous> Pi("Pi", mesh, programCtrl);
 
-    // Setup Streams
-    const streamHandler streamsLBM(programCtrl);
+    haloBuffer<VelocitySet> haloPtrs(rho, U, Pi, mesh, programCtrl);
 
-    // Allocate a buffer of pinned memory on the host for writing
-    host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.size() * NUMBER_MOMENTS(), mesh);
-
-    objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, U, Pi, streamsLBM, programCtrl);
-
-    BlockHalo blockHalo(mesh, programCtrl);
+    host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.size() * 6, mesh);
 
     programCtrl.configure<smem_alloc_size<VelocitySet>()>(kernel::momentBasedLBM);
+
+    objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, U, Pi, programCtrl.streams(), programCtrl);
 
     const runTimeIO IO(mesh, programCtrl);
 
@@ -104,50 +153,12 @@ int main(const int argc, const char *const argv[])
         }
 
         // Main kernel
-        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
-        {
-            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
-            errorHandler::checkInline(cudaDeviceSynchronize());
-            streamsLBM.synchronize(VirtualDeviceIndex);
-
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs(
-                rho.self().ptr(VirtualDeviceIndex),
-                U.x().ptr(VirtualDeviceIndex),
-                U.y().ptr(VirtualDeviceIndex),
-                U.z().ptr(VirtualDeviceIndex),
-                Pi.xx().ptr(VirtualDeviceIndex),
-                Pi.xy().ptr(VirtualDeviceIndex),
-                Pi.xz().ptr(VirtualDeviceIndex),
-                Pi.yy().ptr(VirtualDeviceIndex),
-                Pi.yz().ptr(VirtualDeviceIndex),
-                Pi.zz().ptr(VirtualDeviceIndex));
-
-            const device::ptrCollection<6, const scalar_t> readBuffer = blockHalo.readBuffer(VirtualDeviceIndex);
-            const device::ptrCollection<6, scalar_t> writeBuffer = blockHalo.writeBuffer(VirtualDeviceIndex);
-
-            // Configure the kernel to run per GPU
-            kernel::momentBasedLBM<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[VirtualDeviceIndex]>>>(devPtrs, readBuffer, writeBuffer);
-
-            // errorHandler::checkLast();
-        }
-
-        // Sync all devices and streams
-        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
-        {
-            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
-            errorHandler::checkInline(cudaDeviceSynchronize());
-            streamsLBM.synchronize(VirtualDeviceIndex);
-        }
+        launch(mesh, programCtrl, rho, U, Pi, haloPtrs, timeStep);
 
         runTimeObjects.calculate();
 
         // Sync all devices and streams
-        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
-        {
-            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
-            errorHandler::checkInline(cudaDeviceSynchronize());
-            streamsLBM.synchronize(VirtualDeviceIndex);
-        }
+        allsync(programCtrl);
 
         if (programCtrl.deviceList().size() > 1)
         {
@@ -190,31 +201,23 @@ int main(const int argc, const char *const argv[])
             const host::label_t WestSourceID = host::idxPop<axis::Z, VelocitySet::QF()>(0, threadStart, WestDeviceSourceBlock, nxb, nyb);
 
             errorHandler::check(cudaMemcpyPeerAsync(
-                &(blockHalo.writeBuffer(WestDevice).ptr<WestPtr_x0>()[WestDestinationID]),
+                &(haloPtrs.writeBuffer(WestDevice, timeStep).ptr<WestPtr_x0>()[WestDestinationID]),
                 programCtrl.deviceList()[WestDevice],
-                &(blockHalo.writeBuffer(EastDevice).ptr<WestPtr_x0>()[EastSourceID]),
+                &(haloPtrs.writeBuffer(EastDevice, timeStep).ptr<WestPtr_x0>()[EastSourceID]),
                 programCtrl.deviceList()[EastDevice],
                 Size,
-                streamsLBM.streams()[WestDevice]));
+                programCtrl.streams()[WestDevice]));
 
             errorHandler::check(cudaMemcpyPeerAsync(
-                &(blockHalo.writeBuffer(EastDevice).ptr<EastPtr_x1>()[EastDestinationID]),
+                &(haloPtrs.writeBuffer(EastDevice, timeStep).ptr<EastPtr_x1>()[EastDestinationID]),
                 programCtrl.deviceList()[EastDevice],
-                &(blockHalo.writeBuffer(WestDevice).ptr<EastPtr_x1>()[WestSourceID]),
+                &(haloPtrs.writeBuffer(WestDevice, timeStep).ptr<EastPtr_x1>()[WestSourceID]),
                 programCtrl.deviceList()[WestDevice],
                 Size,
-                streamsLBM.streams()[EastDevice]));
+                programCtrl.streams()[EastDevice]));
 
             // Sync all devices and streams
-            for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
-            {
-                errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
-                errorHandler::checkInline(cudaDeviceSynchronize());
-                streamsLBM.synchronize(VirtualDeviceIndex);
-            }
-
-            // Halo pointer swap
-            blockHalo.swap(programCtrl);
+            allsync(programCtrl);
         }
     }
 

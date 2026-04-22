@@ -165,6 +165,170 @@ namespace LBM
 
             std::cout << "};" << std::endl;
         }
+
+        __host__ void fieldMax(const std::vector<scalar_t> &field) noexcept
+        {
+            scalar_t maxValue = field[0];
+            for (const scalar_t &value : field)
+            {
+                if (value > maxValue)
+                {
+                    maxValue = value;
+                }
+            }
+            std::cout << "    fieldMax: " << maxValue << ";" << std::endl;
+        }
+
+        /**
+         * @brief Checks if any of the fields in the arrayCollection contain NaN values and prints the result
+         * @param[in] variables The arrayCollection containing the fields to check
+         * @param[in] mesh The lattice mesh
+         * @param[in] timeStep The current time step for logging purposes
+         **/
+        __host__ void fieldMax(
+            const host::arrayCollection<scalar_t> &variables,
+            const host::latticeMesh &mesh,
+            const host::label_t timeStep) noexcept
+        {
+            // De-interleave the fields
+            const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);
+
+            std::cout << "Time: " << timeStep << std::endl;
+            std::cout << "{" << std::endl;
+
+            // Loop over the fields checking for NaN
+            for (host::label_t field = 0; field < fields.size(); field++)
+            {
+                fieldMax(fields[field]);
+            }
+
+            std::cout << "};" << std::endl;
+
+            return;
+        }
+
+        __host__ void fieldMin(const std::vector<scalar_t> &field) noexcept
+        {
+            scalar_t minValue = field[0];
+            for (const scalar_t &value : field)
+            {
+                if (value < minValue)
+                {
+                    minValue = value;
+                }
+            }
+            std::cout << "    fieldMin: " << minValue << ";" << std::endl;
+        }
+
+        /**
+         * @brief Checks if any of the fields in the arrayCollection contain NaN values and prints the result
+         * @param[in] variables The arrayCollection containing the fields to check
+         * @param[in] mesh The lattice mesh
+         * @param[in] timeStep The current time step for logging purposes
+         **/
+        __host__ void fieldMin(
+            const host::arrayCollection<scalar_t> &variables,
+            const host::latticeMesh &mesh,
+            const host::label_t timeStep) noexcept
+        {
+            // De-interleave the fields
+            const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);
+
+            std::cout << "Time: " << timeStep << std::endl;
+            std::cout << "{" << std::endl;
+
+            // Loop over the fields checking for NaN
+            for (host::label_t field = 0; field < fields.size(); field++)
+            {
+                fieldMin(fields[field]);
+            }
+
+            std::cout << "};" << std::endl;
+
+            return;
+        }
+
+        __host__ void fieldAbsMax(const std::vector<scalar_t> &field) noexcept
+        {
+            scalar_t maxValue = std::abs(field[0]);
+            for (const scalar_t &value : field)
+            {
+                if (std::abs(value) > maxValue)
+                {
+                    maxValue = std::abs(value);
+                }
+            }
+            std::cout << "    fieldAbsMax: " << maxValue << ";" << std::endl;
+        }
+
+        /**
+         * @brief Checks if any of the fields in the arrayCollection contain NaN values and prints the result
+         * @param[in] variables The arrayCollection containing the fields to check
+         * @param[in] mesh The lattice mesh
+         * @param[in] timeStep The current time step for logging purposes
+         **/
+        __host__ void fieldAbsMax(
+            const host::arrayCollection<scalar_t> &variables,
+            const host::latticeMesh &mesh,
+            const host::label_t timeStep) noexcept
+        {
+            // De-interleave the fields
+            const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);
+
+            std::cout << "Time: " << timeStep << std::endl;
+            std::cout << "{" << std::endl;
+
+            // Loop over the fields checking for NaN
+            for (host::label_t field = 0; field < fields.size(); field++)
+            {
+                fieldAbsMax(fields[field]);
+            }
+
+            std::cout << "};" << std::endl;
+
+            return;
+        }
+
+        __host__ void fieldAbsMin(const std::vector<scalar_t> &field) noexcept
+        {
+            scalar_t minValue = std::abs(field[0]);
+            for (const scalar_t &value : field)
+            {
+                if (std::abs(value) < minValue)
+                {
+                    minValue = std::abs(value);
+                }
+            }
+            std::cout << "    fieldAbsMin: " << minValue << ";" << std::endl;
+        }
+
+        /**
+         * @brief Checks if any of the fields in the arrayCollection contain NaN values and prints the result
+         * @param[in] variables The arrayCollection containing the fields to check
+         * @param[in] mesh The lattice mesh
+         * @param[in] timeStep The current time step for logging purposes
+         **/
+        __host__ void fieldAbsMin(
+            const host::arrayCollection<scalar_t> &variables,
+            const host::latticeMesh &mesh,
+            const host::label_t timeStep) noexcept
+        {
+            // De-interleave the fields
+            const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);
+
+            std::cout << "Time: " << timeStep << std::endl;
+            std::cout << "{" << std::endl;
+
+            // Loop over the fields checking for NaN
+            for (host::label_t field = 0; field < fields.size(); field++)
+            {
+                fieldAbsMin(fields[field]);
+            }
+
+            std::cout << "};" << std::endl;
+
+            return;
+        }
     }
 }
 
