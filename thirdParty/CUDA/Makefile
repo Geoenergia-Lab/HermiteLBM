@@ -40,6 +40,16 @@ ifeq ($(CUDA_VERSION),)
     CUDA_VERSION = 13-0
 endif
 
+# Determine the correct package name for Debian vs Ubuntu
+CUDA_PKG = cuda-toolkit-$(CUDA_VERSION)
+ifeq ($(findstring debian,$(DISTRO)),debian)
+    # Extract minor version from CUDA_VERSION (second part after '-')
+    CUDA_MINOR = $(word 2,$(subst -, ,$(CUDA_VERSION)))
+    ifeq ($(CUDA_MINOR),0)
+        CUDA_PKG = cuda-toolkit-$(word 1,$(subst -, ,$(CUDA_VERSION)))
+    endif
+endif
+
 ARCH ?= x86_64
 CUDA_REPO_BASE = https://developer.download.nvidia.com/compute/cuda/repos
 KEYRING_DEB = cuda-keyring_1.1-1_all.deb
@@ -65,6 +75,7 @@ help:
 	@echo "Current settings:"
 	@echo "  DISTRO       = $(DISTRO)"
 	@echo "  CUDA_VERSION = $(CUDA_VERSION)"
+	@echo "  CUDA_PKG     = $(CUDA_PKG)"
 
 list-distros:
 	@echo "Supported Debian‑based distribution codes:"
@@ -74,10 +85,11 @@ list-distros:
 
 install: check-distro check-apt
 	@echo "==> Installing CUDA $(CUDA_VERSION) for distribution '$(DISTRO)'"
+	@echo "==> Package to install: $(CUDA_PKG)"
 	wget -q --show-progress $(CUDA_REPO_BASE)/$(DISTRO)/$(ARCH)/$(KEYRING_DEB)
 	sudo dpkg -i $(KEYRING_DEB)
 	sudo apt update
-	sudo apt install -y cuda-toolkit-$(CUDA_VERSION)
+	sudo apt install -y $(CUDA_PKG)
 	rm -f $(KEYRING_DEB)
 	@echo ""
 	@echo "==> CUDA $(CUDA_VERSION) installation complete."
