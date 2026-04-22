@@ -129,10 +129,10 @@ namespace LBM
              **/
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs(const host::label_t idx) const noexcept
             {
-                return {rho_.self().ptr(idx),
-                        U_.x().ptr(idx), U_.y().ptr(idx), U_.z().ptr(idx),
-                        Pi_.xx().ptr(idx), Pi_.xy().ptr(idx), Pi_.xz().ptr(idx),
-                        Pi_.yy().ptr(idx), Pi_.yz().ptr(idx), Pi_.zz().ptr(idx)};
+                return {rho_.self().constPtr(idx),
+                        U_.x().constPtr(idx), U_.y().constPtr(idx), U_.z().constPtr(idx),
+                        Pi_.xx().constPtr(idx), Pi_.xy().constPtr(idx), Pi_.xz().constPtr(idx),
+                        Pi_.yy().constPtr(idx), Pi_.yz().constPtr(idx), Pi_.zz().constPtr(idx)};
             }
 
             /**
@@ -200,16 +200,9 @@ namespace LBM
              * @brief Constructs a function object base with common input data.
              * @param[in] hostWriteBuffer Host buffer for writing output data.
              * @param[in] mesh Lattice mesh.
-             * @param[in] rho Density field.
-             * @param[in] u x‑velocity field.
-             * @param[in] v y‑velocity field.
-             * @param[in] w z‑velocity field.
-             * @param[in] mxx xx‑moment field.
-             * @param[in] mxy xy‑moment field.
-             * @param[in] mxz xz‑moment field.
-             * @param[in] myy yy‑moment field.
-             * @param[in] myz yz‑moment field.
-             * @param[in] mzz zz‑moment field.
+             * @param[in] rho Device scalar field containing the density values on the GPU
+             * @param[in] U Device vector field containing the velocity values on the GPU
+             * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
              * @param[in] streamsLBM Stream handler for LBM operations
              */
             __host__ [[nodiscard]] FunctionObjectBase(

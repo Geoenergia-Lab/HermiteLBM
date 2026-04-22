@@ -163,7 +163,7 @@ namespace LBM
 
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<1, const scalar_t> constPtr(const host::label_t idx) const noexcept
             {
-                return {self_.ptr(idx)};
+                return {self_.constPtr(idx)};
             }
 
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<1, scalar_t> ptr(const host::label_t idx) noexcept
@@ -252,7 +252,7 @@ namespace LBM
 
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<3, const scalar_t> constPtr(const host::label_t idx) const noexcept
             {
-                return {x_.ptr(idx), y_.ptr(idx), z_.ptr(idx)};
+                return {x_.constPtr(idx), y_.constPtr(idx), z_.constPtr(idx)};
             }
 
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<3, scalar_t> ptr(const host::label_t idx) noexcept
@@ -355,7 +355,7 @@ namespace LBM
 
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, const scalar_t> constPtr(const host::label_t idx) const noexcept
             {
-                return {xx_.ptr(idx), xy_.ptr(idx), xz_.ptr(idx), yy_.ptr(idx), yz_.ptr(idx), zz_.ptr(idx)};
+                return {xx_.constPtr(idx), xy_.constPtr(idx), xz_.constPtr(idx), yy_.constPtr(idx), yz_.constPtr(idx), zz_.constPtr(idx)};
             }
 
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, scalar_t> ptr(const host::label_t idx) noexcept

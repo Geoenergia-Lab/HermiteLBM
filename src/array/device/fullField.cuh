@@ -178,7 +178,7 @@ namespace LBM
              * @return Const pointer to device memory.
              **/
             template <typename Idx>
-            __device__ __host__ [[nodiscard]] inline const T *ptr(const Idx idx) const noexcept
+            __device__ __host__ [[nodiscard]] inline const T *constPtr(const Idx idx) const noexcept
             {
                 return ptr_[idx];
             }

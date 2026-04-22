@@ -53,22 +53,6 @@ SourceFiles
 namespace LBM
 {
     /**
-     * @brief Determines the amount of shared memory required for a kernel based on the velocity set
-     **/
-    template <class VelocitySet>
-    __device__ __host__ [[nodiscard]] inline consteval host::label_t smem_alloc_size() noexcept
-    {
-        if constexpr ((std::is_same_v<VelocitySet, D3Q19<Thermal>>) || (std::is_same_v<VelocitySet, D3Q19<Isothermal>>))
-        {
-            return 0;
-        }
-        else
-        {
-            return block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<host::label_t>()>(sizeof(scalar_t));
-        }
-    }
-
-    /**
      * @brief Minimum number of blocks per streaming microprocessor
      **/
     template <class VelocitySet>
