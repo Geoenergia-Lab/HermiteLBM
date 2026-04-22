@@ -54,20 +54,65 @@ namespace LBM
 {
     namespace device
     {
-        template <class VelocitySet, const time::type TimeType>
+        template <class VelocitySet, const time::type TimeType, const host::label_t N>
         class fieldBase
         {
         protected:
+            /**
+             * @brief Type alias for the components of a field
+             **/
             using ComponentType = device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>;
 
+            /**
+             * @brief Name of the field
+             **/
             const name_t name_;
+
+            /**
+             * @brief Count of time steps averaged (for time-averaged fields)
+             **/
             host::label_t meanCount_;
 
-            __host__ fieldBase(const name_t &name, const programControl &programCtrl)
-                : name_(name),
-                  meanCount_(initialiseMeanCount(name, programCtrl)) {}
+            /**
+             * @brief Array of field components
+             **/
+            std::array<ComponentType, N> components_;
 
         public:
+            /**
+             * @brief Constructor for fieldBase
+             * @param[in] name Name of the field
+             * @param[in] mesh Reference to the lattice mesh
+             * @param[in] values Initial values for each component (only used if allocate=true)
+             * @param[in] programCtrl Reference to the program control object
+             * @param[in] allocate Whether to allocate memory and initialize values
+             **/
+            __host__ [[nodiscard]] fieldBase(
+                const name_t &name,
+                const host::latticeMesh &mesh,
+                const std::array<scalar_t, N> values,
+                const programControl &programCtrl,
+                const bool allocate = true)
+                : name_(name),
+                  meanCount_(initialiseMeanCount(name, programCtrl)),
+                  components_(makeComponents(std::make_index_sequence<N>{}, name, mesh, values, programCtrl, allocate)) {}
+
+            /**
+             * @brief Constructor for fieldBase
+             * @param[in] name Name of the field
+             * @param[in] mesh Reference to the lattice mesh
+             * @param[in] programCtrl Reference to the program control object
+             * @param[in] allocate Whether to allocate memory and initialize values
+             **/
+            __host__ [[nodiscard]] fieldBase(
+                const name_t &name,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl,
+                const bool allocate = true)
+                : name_(name),
+                  meanCount_(initialiseMeanCount(name, programCtrl)),
+                  components_(makeComponents(std::make_index_sequence<N>{}, name, mesh, programCtrl, allocate)) {}
+
             /**
              * @brief Get the field name.
              * @return Const reference to the name string.
@@ -95,284 +140,238 @@ namespace LBM
                 return meanCount_;
             }
 
+            /**
+             * @brief Destructor for fieldBase
+             */
             ~fieldBase() {}
-        };
 
-        template <class VelocitySet, const time::type TimeType>
-        class scalarField : public fieldBase<VelocitySet, TimeType>
-        {
-            using Base = fieldBase<VelocitySet, TimeType>;
-            using typename Base::ComponentType;
-
-        public:
-            __host__ [[nodiscard]] scalarField(
-                const name_t &name,
-                const host::latticeMesh &mesh,
-                const scalar_t value,
-                const programControl &programCtrl,
-                const bool allocate = true)
-                : Base(name, programCtrl),
-                  self_(name, mesh, value, programCtrl, allocate) {}
-
-            __host__ [[nodiscard]] scalarField(
-                const name_t &name,
-                const host::latticeMesh &mesh,
-                const programControl &programCtrl,
-                const bool allocate = true)
-                : Base(name, programCtrl),
-                  self_(name, name, mesh, programCtrl, allocate) {}
-
-            ~scalarField() {}
-
+            /**
+             * @brief Save the field data to disk using the provided Writer class.
+             * @tparam Writer Class that implements a static write() method for output.
+             * @param[in] hostWriteBuffer Host buffer used for copying data from the device before writing.
+             * @param[in] timeStep Current time step index (used for output file naming).
+             **/
             template <class Writer>
             __host__ void save(
                 host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
-                const host::label_t timeStep)
+                const host::label_t timeStep) const
             {
-                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < self_.programCtrl().deviceList().size(); virtualDeviceIndex++)
+                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < components_[0].programCtrl().deviceList().size(); virtualDeviceIndex++)
                 {
                     hostWriteBuffer.copyFromDevice(
                         constPtr(virtualDeviceIndex),
-                        self_.mesh(),
+                        components_[0].mesh(),
                         virtualDeviceIndex);
                 }
 
                 if constexpr (TimeType == time::instantaneous)
                 {
                     Writer::write(
-                        Base::name_,
-                        self_.mesh(),
-                        {self_.name()},
+                        name_,
+                        components_[0].mesh(),
+                        makeComponentNames<std::vector<std::string>>(name_),
                         hostWriteBuffer.data(),
                         timeStep);
                 }
                 else
                 {
                     Writer::write(
-                        Base::name_,
-                        self_.mesh(),
-                        {self_.name()},
+                        name_,
+                        components_[0].mesh(),
+                        makeComponentNames<std::vector<std::string>>(name_),
                         hostWriteBuffer.data(),
                         timeStep,
-                        Base::meanCount());
+                        meanCount());
                 }
             }
 
-            __host__ [[nodiscard]] inline constexpr ComponentType &self() noexcept { return self_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &self() const noexcept { return self_; }
-
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<1, const scalar_t> constPtr(const host::label_t idx) const noexcept
+            /**
+             * @brief Get a collection of const device pointers (one per component).
+             * @param[in] idx Virtual device index.
+             * @return ptrCollection with N const scalar_t*.
+             */
+            __host__ [[nodiscard]] inline constexpr device::ptrCollection<N, const scalar_t> constPtr(const host::label_t idx) const noexcept
             {
-                return {self_.constPtr(idx)};
+                return makeConstPtrCollection(idx, std::make_index_sequence<N>{});
             }
 
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<1, scalar_t> ptr(const host::label_t idx) noexcept
+            /**
+             * @brief Get a collection of non-const device pointers (one per component).
+             * @param[in] idx Virtual device index.
+             * @return ptrCollection with N scalar_t*.
+             */
+            __host__ [[nodiscard]] inline constexpr device::ptrCollection<N, scalar_t> ptr(const host::label_t idx) noexcept
             {
-                return {self_.ptr(idx)};
+                return makePtrCollection(idx, std::make_index_sequence<N>{});
             }
 
         private:
             /**
-             * @brief Components of the vector field
-             **/
-            ComponentType self_;
+             * @brief Helper function to generate component names based on the base name and the number of components (N).
+             * @tparam ReturnType The type of the returned collection (e.g., std::array<std::string, N> or std::vector<std::string>).
+             * @param[in] baseName The base name for the field, used to generate component names.
+             * @return A collection of component names corresponding to the field components, following a consistent naming convention based on N.
+             */
+            template <class ReturnType>
+            __host__ [[nodiscard]] static const ReturnType makeComponentNames(const name_t &baseName)
+            {
+                static_assert(N == 1 || N == 3 || N == 6, "Unsupported component count");
+
+                if constexpr (N == 1)
+                {
+                    return {baseName};
+                }
+                else if constexpr (N == 3)
+                {
+                    return {baseName + "_x", baseName + "_y", baseName + "_z"};
+                }
+                else if constexpr (N == 6)
+                {
+                    return {baseName + "_xx", baseName + "_xy", baseName + "_xz", baseName + "_yy", baseName + "_yz", baseName + "_zz"};
+                }
+                else
+                {
+                    static_assert(N == 1 || N == 3 || N == 6, "Unsupported component count");
+                }
+            }
+
+            /**
+             * @brief Helper function to create components using pack expansion.
+             * @tparam Is... Compile-time indices for pack expansion.
+             * @param[in] baseName Base name for the components.
+             * @param[in] mesh Reference to the lattice mesh.
+             * @param[in] values Initial values for each component (only used if allocate=true).
+             * @param[in] programCtrl Reference to the program control object.
+             * @param[in] allocate Whether to allocate memory and initialize values.
+             * @return std::array of ComponentType with N initialized components.
+             */
+            template <const host::label_t... Is>
+            __host__ [[nodiscard]] static const std::array<ComponentType, N> makeComponents(
+                const std::index_sequence<Is...>,
+                const name_t &baseName,
+                const host::latticeMesh &mesh,
+                const std::array<scalar_t, N> values,
+                const programControl &programCtrl,
+                const bool allocate)
+            {
+                const std::array<std::string, N> compNames = makeComponentNames<std::array<std::string, N>>(baseName);
+                // Use pack expansion to construct each element in-place
+                return {ComponentType(baseName, compNames[Is], mesh, values[Is], programCtrl, allocate)...};
+            }
+
+            /**
+             * @brief Helper function to create components using pack expansion.
+             * @tparam Is... Compile-time indices for pack expansion.
+             * @param[in] baseName Base name for the components.
+             * @param[in] mesh Reference to the lattice mesh.
+             * @param[in] programCtrl Reference to the program control object.
+             * @param[in] allocate Whether to allocate memory and initialize values.
+             * @return std::array of ComponentType with N initialized components.
+             */
+            template <const host::label_t... Is>
+            __host__ [[nodiscard]] static const std::array<ComponentType, N> makeComponents(
+                const std::index_sequence<Is...>,
+                const name_t &baseName,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl,
+                const bool allocate)
+            {
+                const std::array<std::string, N> compNames = makeComponentNames<std::array<std::string, N>>(baseName);
+                return {ComponentType(baseName, compNames[Is], mesh, programCtrl, allocate)...};
+            }
+
+            /**
+             * @brief Get a collection of const device pointers (one per component).
+             * @param[in] idx Virtual device index.
+             * @return ptrCollection with N const scalar_t*.
+             */
+            template <const host::label_t... Is>
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<N, const scalar_t> makeConstPtrCollection(const host::label_t idx, std::index_sequence<Is...>) const noexcept
+            {
+                return {components_[Is].constPtr(idx)...};
+            }
+
+            /**
+             * @brief Get a collection of non-const device pointers (one per component).
+             * @param[in] idx Virtual device index.
+             * @return ptrCollection with N scalar_t*.
+             */
+            template <const host::label_t... Is>
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<N, scalar_t> makePtrCollection(const host::label_t idx, std::index_sequence<Is...>) noexcept
+            {
+                return {components_[Is].ptr(idx)...};
+            }
         };
 
         template <class VelocitySet, const time::type TimeType>
-        class vectorField : public fieldBase<VelocitySet, TimeType>
+        class scalarField : public fieldBase<VelocitySet, TimeType, 1>
         {
-            using Base = fieldBase<VelocitySet, TimeType>;
-            using typename Base::ComponentType;
+            using Base = fieldBase<VelocitySet, TimeType, 1>;
 
         public:
-            __host__ [[nodiscard]] vectorField(
-                const name_t &name,
-                const host::latticeMesh &mesh,
-                const scalar_t value,
-                const programControl &programCtrl,
-                const bool allocate = true)
-                : Base(name, programCtrl),
-                  x_(name, name + "_x", mesh, value, programCtrl, allocate),
-                  y_(name, name + "_y", mesh, value, programCtrl, allocate),
-                  z_(name, name + "_z", mesh, value, programCtrl, allocate) {}
+            using Base::Base; // Inherit all constructors from fieldBase
 
-            __host__ [[nodiscard]] vectorField(
-                const name_t &name,
-                const host::latticeMesh &mesh,
-                const programControl &programCtrl,
-                const bool allocate = true)
-                : Base(name, programCtrl),
-                  x_(name, name + "_x", mesh, programCtrl, allocate),
-                  y_(name, name + "_y", mesh, programCtrl, allocate),
-                  z_(name, name + "_z", mesh, programCtrl, allocate) {}
-
-            ~vectorField() {}
-
-            template <class Writer>
-            __host__ void save(
-                host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
-                const host::label_t timeStep)
-            {
-                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < x_.programCtrl().deviceList().size(); virtualDeviceIndex++)
-                {
-                    hostWriteBuffer.copyFromDevice(
-                        constPtr(virtualDeviceIndex),
-                        x_.mesh(),
-                        virtualDeviceIndex);
-                }
-
-                if constexpr (TimeType == time::instantaneous)
-                {
-                    Writer::write(
-                        Base::name_,
-                        x_.mesh(),
-                        {x_.name(), y_.name(), z_.name()},
-                        hostWriteBuffer.data(),
-                        timeStep);
-                }
-                else
-                {
-                    Writer::write(
-                        Base::name_,
-                        x_.mesh(),
-                        {x_.name(), y_.name(), z_.name()},
-                        hostWriteBuffer.data(),
-                        timeStep,
-                        Base::meanCount());
-                }
-            }
-
-            __host__ [[nodiscard]] inline constexpr ComponentType &x() noexcept { return x_; }
-            __host__ [[nodiscard]] inline constexpr ComponentType &y() noexcept { return y_; }
-            __host__ [[nodiscard]] inline constexpr ComponentType &z() noexcept { return z_; }
-
-            __host__ [[nodiscard]] inline constexpr const ComponentType &x() const noexcept { return x_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &y() const noexcept { return y_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &z() const noexcept { return z_; }
-
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<3, const scalar_t> constPtr(const host::label_t idx) const noexcept
-            {
-                return {x_.constPtr(idx), y_.constPtr(idx), z_.constPtr(idx)};
-            }
-
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<3, scalar_t> ptr(const host::label_t idx) noexcept
-            {
-                return {x_.ptr(idx), y_.ptr(idx), z_.ptr(idx)};
-            }
-
-        private:
             /**
-             * @brief Components of the vector field
-             **/
-            ComponentType x_;
-            ComponentType y_;
-            ComponentType z_;
+             * @brief Get a mutable reference to the scalar field.
+             */
+            __host__ [[nodiscard]] inline constexpr Base::ComponentType &self() noexcept { return Base::components_[0]; }
+
+            /**
+             * @brief Get a const reference to the scalar field.
+             */
+            __host__ [[nodiscard]] inline constexpr const Base::ComponentType &self() const noexcept { return Base::components_[0]; }
         };
 
         template <class VelocitySet, const time::type TimeType>
-        class symmetricTensorField : public fieldBase<VelocitySet, TimeType>
+        class vectorField : public fieldBase<VelocitySet, TimeType, 3>
         {
-            using Base = fieldBase<VelocitySet, TimeType>;
-            using typename Base::ComponentType;
+            using Base = fieldBase<VelocitySet, TimeType, 3>;
 
         public:
-            __host__ [[nodiscard]] symmetricTensorField(
-                const name_t &name,
-                const host::latticeMesh &mesh,
-                const scalar_t value,
-                const programControl &programCtrl,
-                const bool allocate = true)
-                : Base(name, programCtrl),
-                  xx_(name, name + "_xx", mesh, value, programCtrl, allocate),
-                  xy_(name, name + "_xy", mesh, value, programCtrl, allocate),
-                  xz_(name, name + "_xz", mesh, value, programCtrl, allocate),
-                  yy_(name, name + "_yy", mesh, value, programCtrl, allocate),
-                  yz_(name, name + "_yz", mesh, value, programCtrl, allocate),
-                  zz_(name, name + "_zz", mesh, value, programCtrl, allocate) {}
+            using Base::Base;
 
-            __host__ [[nodiscard]] symmetricTensorField(
-                const name_t &name,
-                const host::latticeMesh &mesh,
-                const programControl &programCtrl,
-                const bool allocate = true)
-                : Base(name, programCtrl),
-                  xx_(name, name + "_xx", mesh, programCtrl, allocate),
-                  xy_(name, name + "_xy", mesh, programCtrl, allocate),
-                  xz_(name, name + "_xz", mesh, programCtrl, allocate),
-                  yy_(name, name + "_yy", mesh, programCtrl, allocate),
-                  yz_(name, name + "_yz", mesh, programCtrl, allocate),
-                  zz_(name, name + "_zz", mesh, programCtrl, allocate) {}
-
-            ~symmetricTensorField() {}
-
-            template <class Writer>
-            __host__ void save(
-                host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
-                const host::label_t timeStep)
-            {
-                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < xx_.programCtrl().deviceList().size(); virtualDeviceIndex++)
-                {
-                    hostWriteBuffer.copyFromDevice(
-                        constPtr(virtualDeviceIndex),
-                        xx_.mesh(),
-                        virtualDeviceIndex);
-                }
-
-                if constexpr (TimeType == time::instantaneous)
-                {
-                    Writer::write(
-                        Base::name_,
-                        xx_.mesh(),
-                        {xx_.name(), xy_.name(), xz_.name(), yy_.name(), yz_.name(), zz_.name()},
-                        hostWriteBuffer.data(),
-                        timeStep);
-                }
-                else
-                {
-                    Writer::write(
-                        Base::name_,
-                        xx_.mesh(),
-                        {xx_.name(), xy_.name(), xz_.name(), yy_.name(), yz_.name(), zz_.name()},
-                        hostWriteBuffer.data(),
-                        timeStep,
-                        Base::meanCount());
-                }
-            }
-
-            __host__ [[nodiscard]] inline constexpr ComponentType &xx() noexcept { return xx_; }
-            __host__ [[nodiscard]] inline constexpr ComponentType &xy() noexcept { return xy_; }
-            __host__ [[nodiscard]] inline constexpr ComponentType &xz() noexcept { return xz_; }
-            __host__ [[nodiscard]] inline constexpr ComponentType &yy() noexcept { return yy_; }
-            __host__ [[nodiscard]] inline constexpr ComponentType &yz() noexcept { return yz_; }
-            __host__ [[nodiscard]] inline constexpr ComponentType &zz() noexcept { return zz_; }
-
-            __host__ [[nodiscard]] inline constexpr const ComponentType &xx() const noexcept { return xx_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &xy() const noexcept { return xy_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &xz() const noexcept { return xz_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &yy() const noexcept { return yy_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &yz() const noexcept { return yz_; }
-            __host__ [[nodiscard]] inline constexpr const ComponentType &zz() const noexcept { return zz_; }
-
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, const scalar_t> constPtr(const host::label_t idx) const noexcept
-            {
-                return {xx_.constPtr(idx), xy_.constPtr(idx), xz_.constPtr(idx), yy_.constPtr(idx), yz_.constPtr(idx), zz_.constPtr(idx)};
-            }
-
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, scalar_t> ptr(const host::label_t idx) noexcept
-            {
-                return {xx_.ptr(idx), xy_.ptr(idx), xz_.ptr(idx), yy_.ptr(idx), yz_.ptr(idx), zz_.ptr(idx)};
-            }
-
-        private:
             /**
-             * @brief Components of the vector field
-             **/
-            ComponentType xx_;
-            ComponentType xy_;
-            ComponentType xz_;
-            ComponentType yy_;
-            ComponentType yz_;
-            ComponentType zz_;
+             * @brief Get a mutable reference to the components of the vector field.
+             */
+            __host__ [[nodiscard]] inline constexpr Base::ComponentType &x() noexcept { return Base::components_[0]; }
+            __host__ [[nodiscard]] inline constexpr Base::ComponentType &y() noexcept { return Base::components_[1]; }
+            __host__ [[nodiscard]] inline constexpr Base::ComponentType &z() noexcept { return Base::components_[2]; }
+
+            /**
+             * @brief Get a const reference to the components of the vector field.
+             */
+            __host__ [[nodiscard]] inline constexpr const Base::ComponentType &x() const noexcept { return Base::components_[0]; }
+            __host__ [[nodiscard]] inline constexpr const Base::ComponentType &y() const noexcept { return Base::components_[1]; }
+            __host__ [[nodiscard]] inline constexpr const Base::ComponentType &z() const noexcept { return Base::components_[2]; }
+        };
+
+        template <class VelocitySet, const time::type TimeType>
+        class symmetricTensorField : public fieldBase<VelocitySet, TimeType, 6>
+        {
+            using Base = fieldBase<VelocitySet, TimeType, 6>;
+
+        public:
+            using Base::Base;
+
+            /**
+             * @brief Get a mutable reference to the components of the tensor field.
+             */
+            __host__ [[nodiscard]] inline constexpr Base::ComponentType &xx() noexcept { return Base::components_[0]; }
+            __host__ [[nodiscard]] inline constexpr Base::ComponentType &xy() noexcept { return Base::components_[1]; }
+            __host__ [[nodiscard]] inline constexpr Base::ComponentType &xz() noexcept { return Base::components_[2]; }
+            __host__ [[nodiscard]] inline constexpr Base::ComponentType &yy() noexcept { return Base::components_[3]; }
+            __host__ [[nodiscard]] inline constexpr Base::ComponentType &yz() noexcept { return Base::components_[4]; }
+            __host__ [[nodiscard]] inline constexpr Base::ComponentType &zz() noexcept { return Base::components_[5]; }
+
+            /**
+             * @brief Get a const reference to the components of the tensor field.
+             */
+            __host__ [[nodiscard]] inline constexpr const Base::ComponentType &xx() const noexcept { return Base::components_[0]; }
+            __host__ [[nodiscard]] inline constexpr const Base::ComponentType &xy() const noexcept { return Base::components_[1]; }
+            __host__ [[nodiscard]] inline constexpr const Base::ComponentType &xz() const noexcept { return Base::components_[2]; }
+            __host__ [[nodiscard]] inline constexpr const Base::ComponentType &yy() const noexcept { return Base::components_[3]; }
+            __host__ [[nodiscard]] inline constexpr const Base::ComponentType &yz() const noexcept { return Base::components_[4]; }
+            __host__ [[nodiscard]] inline constexpr const Base::ComponentType &zz() const noexcept { return Base::components_[5]; }
         };
     }
 }

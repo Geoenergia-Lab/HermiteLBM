@@ -157,8 +157,8 @@ namespace LBM
                 const streamHandler &streamsLBM,
                 const programControl &programCtrl) noexcept
                 : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, streamsLBM),
-                  k_(name_, mesh_, 0, programCtrl, calculate_),
-                  kMean_(nameMean_, mesh, 0, programCtrl, calculateMean_)
+                  k_(name_, mesh_, {0}, programCtrl, calculate_),
+                  kMean_(nameMean_, mesh, {0}, programCtrl, calculateMean_)
             {
                 BaseType::template configure<Kernel>(programCtrl);
             }
