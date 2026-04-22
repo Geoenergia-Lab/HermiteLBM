@@ -67,9 +67,8 @@ namespace LBM
         /**
          * @brief Default constructor
          **/
-        __host__ [[nodiscard]] streamHandler(const programControl &programCtrl) noexcept
-            : streams_(createCudaStreams(programCtrl)),
-              programCtrl_(programCtrl)
+        __host__ [[nodiscard]] streamHandler(const std::vector<deviceIndex_t> &deviceIndices) noexcept
+            : streams_(createCudaStreams(deviceIndices))
         {
         }
 
@@ -132,7 +131,7 @@ namespace LBM
             errorHandler::checkInline(cudaStreamSynchronize(streams_[stream()]));
         }
 
-        inline void synchronize(const device::label_t i) const noexcept
+        inline void synchronize(const host::label_t i) const noexcept
         {
             errorHandler::checkInline(cudaStreamSynchronize(streams_[i]));
         }
@@ -145,9 +144,13 @@ namespace LBM
          * @warning No bounds checking performed at runtime
          **/
         template <const device::label_t stream_>
-        __device__ cudaStream_t &operator[](const std::integral_constant<device::label_t, stream_> stream) const noexcept
+        __host__ const cudaStream_t &operator[](const std::integral_constant<device::label_t, stream_> stream) const noexcept
         {
             return streams_[stream()];
+        }
+        __host__ const cudaStream_t &operator[](const host::label_t i) const noexcept
+        {
+            return streams_[i];
         }
 
         /**
@@ -167,17 +170,20 @@ namespace LBM
          * Private helper function that handles actual stream creation
          * with proper error checking and device synchronization.
          **/
-        __host__ [[nodiscard]] static const std::vector<cudaStream_t> createCudaStreams(const programControl &programCtrl) noexcept
+        __host__ [[nodiscard]] static const std::vector<cudaStream_t> createCudaStreams(const std::vector<deviceIndex_t> &deviceIndices) noexcept
         {
-            std::vector<cudaStream_t> streams(programCtrl.deviceList().size());
+            std::vector<cudaStream_t> streams(deviceIndices.size());
 
-            for (device::label_t stream = 0; stream < streams.size(); stream++)
+            if (streams.size() > 0)
             {
-                errorHandler::check(cudaDeviceSynchronize());
-                errorHandler::check(cudaSetDevice(programCtrl.deviceList()[stream]));
-                errorHandler::check(cudaDeviceSynchronize());
-                errorHandler::check(cudaStreamCreate(&streams[stream]));
-                errorHandler::check(cudaDeviceSynchronize());
+                for (device::label_t stream = 0; stream < streams.size(); stream++)
+                {
+                    errorHandler::check(cudaDeviceSynchronize());
+                    errorHandler::check(cudaSetDevice(deviceIndices[stream]));
+                    errorHandler::check(cudaDeviceSynchronize());
+                    errorHandler::check(cudaStreamCreate(&streams[stream]));
+                    errorHandler::check(cudaDeviceSynchronize());
+                }
             }
 
             return streams;
@@ -187,11 +193,6 @@ namespace LBM
          * @brief The underlying streams held in a std::array
          **/
         const std::vector<cudaStream_t> streams_;
-
-        /**
-         * @brief Reference to the program control
-         **/
-        const programControl &programCtrl_;
     };
 }
 

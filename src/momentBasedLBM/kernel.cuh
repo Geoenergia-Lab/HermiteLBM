@@ -135,13 +135,11 @@ namespace LBM
                 {
                     const normalVector boundaryNormal(point);
 
+                    velocitySet::calculate_moments<VelocitySet>(pop, moments, boundaryNormal);
+
                     if (boundaryNormal.isBoundary())
                     {
                         BoundaryConditions::template calculate_moments<VelocitySet>(pop, solutionMoments, boundaryNormal, sharedBuffer, Tx, point);
-                    }
-                    else
-                    {
-                        velocitySet::calculate_moments<VelocitySet>(pop, solutionMoments);
                     }
                 }
             }

@@ -69,78 +69,6 @@ namespace LBM
         {
         public:
             /**
-             * @brief Constructs halo regions from moment data and mesh
-             * @param[in] mesh The lattice mesh
-             * @param[in] programCtrl The program control object
-             **/
-            __host__ [[nodiscard]] halo(const host::latticeMesh &mesh, const programControl &programCtrl) noexcept
-                : readBuffer_(haloFace<VelocitySet>(
-                      host::scalarField<host::PAGED, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
-                      host::vectorField<host::PAGED, VelocitySet, time::instantaneous>("U", mesh, programCtrl),
-                      host::symmetricTensorField<host::PAGED, VelocitySet, time::instantaneous>("Pi", mesh, programCtrl),
-                      mesh,
-                      programCtrl)),
-                  writeBuffer_(haloFace<VelocitySet>(
-                      host::scalarField<host::PAGED, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
-                      host::vectorField<host::PAGED, VelocitySet, time::instantaneous>("U", mesh, programCtrl),
-                      host::symmetricTensorField<host::PAGED, VelocitySet, time::instantaneous>("Pi", mesh, programCtrl),
-                      mesh,
-                      programCtrl)) {}
-
-            /**
-             * @brief Default destructor
-             **/
-            __host__ ~halo() {}
-
-            /**
-             * @brief Swaps read and write halo buffers
-             * @param[in] deviceIdx Index of the GPU device for which to swap the buffers
-             * @note Synchronizes device before swapping to ensure all operations complete
-             **/
-            __host__ inline void swap(const host::label_t deviceIdx) noexcept
-            {
-                std::swap(readBuffer_.x0Ref(deviceIdx), writeBuffer_.x0Ref(deviceIdx));
-                std::swap(readBuffer_.x1Ref(deviceIdx), writeBuffer_.x1Ref(deviceIdx));
-                std::swap(readBuffer_.y0Ref(deviceIdx), writeBuffer_.y0Ref(deviceIdx));
-                std::swap(readBuffer_.y1Ref(deviceIdx), writeBuffer_.y1Ref(deviceIdx));
-                std::swap(readBuffer_.z0Ref(deviceIdx), writeBuffer_.z0Ref(deviceIdx));
-                std::swap(readBuffer_.z1Ref(deviceIdx), writeBuffer_.z1Ref(deviceIdx));
-            }
-
-            /**
-             * @brief Swaps read and write halo buffers across all devices in the program control
-             * @param[in] programCtrl The program control object
-             **/
-            __host__ inline void swap(const programControl &programCtrl) noexcept
-            {
-                for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
-                {
-                    errorHandler::checkInline(cudaDeviceSynchronize());
-                    errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
-                    errorHandler::checkInline(cudaDeviceSynchronize());
-                    swap(deviceIdx);
-                }
-            }
-
-            /**
-             * @brief Provides read-only access to the current read halo
-             * @return Collection of const pointers to halo faces (x0, x1, y0, y1, z0, z1)
-             **/
-            __device__ __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, const scalar_t> readBuffer(const host::label_t i) const noexcept
-            {
-                return {readBuffer_.x0Const(i), readBuffer_.x1Const(i), readBuffer_.y0Const(i), readBuffer_.y1Const(i), readBuffer_.z0Const(i), readBuffer_.z1Const(i)};
-            }
-
-            /**
-             * @brief Provides mutable access to the current write halo
-             * @return Collection of mutable pointers to halo faces (x0, x1, y0, y1, z0, z1)
-             **/
-            __device__ __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, scalar_t> writeBuffer(const host::label_t i) noexcept
-            {
-                return {writeBuffer_.x0(i), writeBuffer_.x1(i), writeBuffer_.y0(i), writeBuffer_.y1(i), writeBuffer_.z0(i), writeBuffer_.z1(i)};
-            }
-
-            /**
              * @brief Loads halo population data from neighboring blocks
              * @param[out] pop Array to store loaded population values
              * @param[in] readBuffer Collection of pointers to the halo faces
@@ -190,12 +118,6 @@ namespace LBM
 #include "haloSharedMemoryOperations.cuh"
 
         private:
-            /**
-             * @brief The individual halo objects
-             **/
-            haloFace<VelocitySet> readBuffer_;
-            haloFace<VelocitySet> writeBuffer_;
-
             /**
              * @brief Determines whether the boundary halo is periodic along a particular axis
              * @tparam alpha

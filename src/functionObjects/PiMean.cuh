@@ -132,7 +132,9 @@ namespace LBM
              * @brief Constructs a velocity vector object
              * @param[in] hostWriteBuffer Reference to the host-side write buffer
              * @param[in] mesh The lattice mesh
-             * @param[in] rho, ... References to the 10 solution variables
+             * @param[in] rho Device scalar field containing the density values on the GPU
+             * @param[in] U Device vector field containing the velocity values on the GPU
+             * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
              * @param[in] streamsLBM Stream handler for LBM operations
              * @param[in] programCtrl The program control object
              **/
@@ -145,7 +147,7 @@ namespace LBM
                 const streamHandler &streamsLBM,
                 const programControl &programCtrl) noexcept
                 : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, streamsLBM),
-                  PiMean_(nameMean_, mesh, 0, programCtrl, calculateMean_)
+                  PiMean_(nameMean_, mesh, {0, 0, 0, 0, 0, 0}, programCtrl, calculateMean_)
             {
                 BaseType::template configure<Kernel>(programCtrl);
             }

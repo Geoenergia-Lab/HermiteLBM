@@ -88,6 +88,14 @@ namespace LBM
 
                 return ptrs_[i];
             }
+            __device__ __host__ [[nodiscard]] inline constexpr const T *constPtr(const host::label_t i) const noexcept
+            {
+                return ptrs_[i];
+            }
+            __device__ __host__ [[nodiscard]] inline constexpr T *ptr(const host::label_t i) const noexcept
+            {
+                return ptrs_[i];
+            }
 
             /**
              * @brief Element access operator
@@ -95,7 +103,11 @@ namespace LBM
              * @return Value at index @p i
              * @warning No bounds checking performed
              **/
-            __device__ __host__ [[nodiscard]] inline const T *operator[](const host::label_t i) const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const T *operator[](const host::label_t i) const noexcept
+            {
+                return ptrs_[i];
+            }
+            __device__ __host__ [[nodiscard]] inline constexpr T *operator[](const host::label_t i) noexcept
             {
                 return ptrs_[i];
             }
