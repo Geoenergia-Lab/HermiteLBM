@@ -131,16 +131,13 @@ namespace LBM
 
             if constexpr (std::is_same_v<BoundaryConditions, lidDrivenCavity>)
             {
-                // Calculate the moments either at the boundary or interior
+                const normalVector boundaryNormal(point);
+
+                velocitySet::calculate_moments<VelocitySet>(pop, solutionMoments, boundaryNormal);
+
+                if (boundaryNormal.isBoundary())
                 {
-                    const normalVector boundaryNormal(point);
-
-                    velocitySet::calculate_moments<VelocitySet>(pop, moments, boundaryNormal);
-
-                    if (boundaryNormal.isBoundary())
-                    {
-                        BoundaryConditions::template calculate_moments<VelocitySet>(pop, solutionMoments, boundaryNormal, sharedBuffer, Tx, point);
-                    }
+                    BoundaryConditions::template calculate_moments<VelocitySet>(pop, solutionMoments, boundaryNormal, sharedBuffer, Tx, point);
                 }
             }
 
@@ -160,13 +157,10 @@ namespace LBM
                 block::sync();
 
                 // Calculate the moments at the boundary
+                const normalVector boundaryNormal(point);
+                if (boundaryNormal.isBoundary())
                 {
-                    const normalVector boundaryNormal(point);
-
-                    if (boundaryNormal.isBoundary())
-                    {
-                        BoundaryConditions::template calculate_moments<VelocitySet>(pop, solutionMoments, boundaryNormal, sharedBuffer, Tx, point);
-                    }
+                    BoundaryConditions::template calculate_moments<VelocitySet>(pop, solutionMoments, boundaryNormal, sharedBuffer, Tx, point);
                 }
             }
 
