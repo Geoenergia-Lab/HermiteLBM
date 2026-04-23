@@ -375,7 +375,7 @@ namespace LBM
 
             // Get file size for validation
             in.seekg(0, std::ios::end);
-            const auto fileSizePos = in.tellg();
+            const std::streampos fileSizePos = in.tellg();
             if (fileSizePos == -1)
             {
                 throw std::runtime_error("Cannot determine file size");
@@ -571,7 +571,7 @@ namespace LBM
                         lineNumber++;
 
                         // Record start position of binary data with safety check
-                        const auto dataPos = in.tellg();
+                        const std::streampos dataPos = in.tellg();
                         if (dataPos == -1)
                         {
                             throw std::runtime_error("Error getting file position");

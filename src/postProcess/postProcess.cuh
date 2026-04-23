@@ -71,12 +71,7 @@ namespace LBM
         template <typename T>
         __host__ [[nodiscard]] const std::vector<T> meshCoordinates(const host::latticeMesh &mesh)
         {
-            const host::label_t nx = mesh.dimension<axis::X>();
-            const host::label_t ny = mesh.dimension<axis::Y>();
-            const host::label_t nz = mesh.dimension<axis::Z>();
-            const host::label_t nPoints = nx * ny * nz;
-
-            std::vector<T> coords(nPoints * 3, 0);
+            std::vector<T> coords(mesh.size() * 3, 0);
 
             global::forAll(
                 mesh.dimensions(),
@@ -156,69 +151,22 @@ namespace LBM
 
             return offsets;
         }
-
-        /**
-         * @brief Obtain the name of the type that corresponds to the C++ data type
-         * @tparam T The C++ data type (e.g. float, int64_t)
-         * @return A string containing the name of the VTK type (e.g. "Float32", "Int64")
-         **/
-        template <typename T>
-        __host__ [[nodiscard]] inline consteval const char *getVtkTypeName() noexcept
-        {
-            if constexpr (std::is_same_v<T, float>)
-            {
-                return "Float32";
-            }
-            else if constexpr (std::is_same_v<T, double>)
-            {
-                return "Float64";
-            }
-            else if constexpr (std::is_same_v<T, int32_t>)
-            {
-                return "Int32";
-            }
-            else if constexpr (std::is_same_v<T, uint32_t>)
-            {
-                return "UInt32";
-            }
-            else if constexpr (std::is_same_v<T, int64_t>)
-            {
-                return "Int64";
-            }
-            else if constexpr (std::is_same_v<T, uint64_t>)
-            {
-                return "UInt64";
-            }
-            else if constexpr (std::is_same_v<T, uint8_t>)
-            {
-                return "UInt8";
-            }
-            else if constexpr (std::is_same_v<T, int8_t>)
-            {
-                return "Int8";
-            }
-            else
-            {
-                static_assert(std::is_same_v<T, void>, "Unsupported type for getVtkTypeName");
-                return "Unknown";
-            }
-        }
     }
 
     class writer
     {
     public:
-        __host__ [[nodiscard]] static inline consteval const char *directoryPrefix() noexcept { return "postProcess"; }
+        static constexpr const char *directoryPrefix = "postProcess";
 
         template <class Writer>
         static inline void diskSpaceAssertion(const host::latticeMesh &mesh, const words_t &varNames, const name_t &fileName)
         {
             fileSystem::diskSpaceAssertion<
-                Writer::format(),
-                Writer::hasFields(),
-                Writer::hasPoints(),
-                Writer::hasElements(),
-                Writer::hasOffsets()>(
+                Writer::format,
+                Writer::fields,
+                Writer::points,
+                Writer::elements,
+                Writer::offsets>(
                 mesh,
                 varNames.size(),
                 fileName);
@@ -260,17 +208,17 @@ namespace LBM
                 }
             }
 
-            const name_t trueFileName(name_t(directoryPrefix()) + "/" + fileName + Writer::fileExtension());
+            const name_t trueFileName(name_t(directoryPrefix) + "/" + fileName + Writer::fileExtension);
 
-            std::cout << Writer::name() << std::endl;
+            std::cout << Writer::name << std::endl;
             std::cout << "{" << std::endl;
             std::cout << "    fileName: " << trueFileName << ";" << std::endl;
 
-            const bool directoryStatus = fileSystem::makeDirectory(directoryPrefix());
+            const bool directoryStatus = fileSystem::makeDirectory(directoryPrefix);
 
             printStatus("directory", directoryStatus);
 
-            std::cout << "    fileSize: " << fileSystem::to_MiB<double>(fileSystem::expectedDiskUsage<Writer::format(), Writer::hasFields(), Writer::hasPoints(), Writer::hasElements(), Writer::hasOffsets()>(mesh, solutionVars.size())) << " MiB;" << std::endl;
+            std::cout << "    fileSize: " << fileSystem::to_MiB<double>(fileSystem::expectedDiskUsage<Writer::format, Writer::fields, Writer::points, Writer::elements, Writer::offsets>(mesh, solutionVars.size())) << " MiB;" << std::endl;
 
             // Check if there is enough disk space to store the file
             writer::diskSpaceAssertion<Writer>(mesh, varNames, fileName);
@@ -293,6 +241,7 @@ namespace LBM
 }
 
 #include "Tecplot.cuh"
+#include "VTK.cuh"
 #include "VTU.cuh"
 #include "VTS.cuh"
 #include "VTI.cuh"

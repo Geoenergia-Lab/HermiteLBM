@@ -84,6 +84,11 @@ namespace LBM
     }
 
     /**
+     * @brief Unsigned integral type used for node types in the mesh
+     **/
+    typedef uint8_t nodeType_t;
+
+    /**
      * @brief Label type used for GPU indices
      * @note Has to be int because cudaSetDevice operates on int
      **/

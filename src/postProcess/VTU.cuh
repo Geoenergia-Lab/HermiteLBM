@@ -54,91 +54,11 @@ namespace LBM
 {
     namespace postProcess
     {
-        class VTU : public writer
+        class VTU : public VTK<false, fileSystem::fields::Yes, fileSystem::points::Yes, fileSystem::elements::Yes, fileSystem::offsets::Yes>
         {
         public:
-            __host__ [[nodiscard]] static inline consteval fileSystem::format format() noexcept { return fileSystem::BINARY; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::fields::contained hasFields() noexcept { return fileSystem::fields::Yes; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::points::contained hasPoints() noexcept { return fileSystem::points::Yes; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::elements::contained hasElements() noexcept { return fileSystem::elements::Yes; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::offsets::contained hasOffsets() noexcept { return fileSystem::offsets::Yes; }
-            __host__ [[nodiscard]] static inline consteval const char *fileExtension() noexcept { return ".vtu"; }
-            __host__ [[nodiscard]] static inline consteval const char *name() noexcept { return "VTU"; }
-
-            __host__ [[nodiscard]] inline consteval VTU(){};
-
-            // Write implementation
-            __host__ static bool write(
-                const std::vector<std::vector<scalar_t>> &solutionVars,
-                std::ofstream &outFile,
-                const host::latticeMesh &mesh,
-                const words_t &varNames)
-            {
-                const host::label_t numNodes = mesh.dimension<axis::X>() * mesh.dimension<axis::Y>() * mesh.dimension<axis::Z>();
-                const host::label_t numElements = (mesh.dimension<axis::X>() - 1) * (mesh.dimension<axis::Y>() - 1) * (mesh.dimension<axis::Z>() - 1);
-                const host::label_t numVars = solutionVars.size();
-
-                const std::vector<scalar_t> points = meshCoordinates<scalar_t>(mesh);
-                const std::vector<host::label_t> connectivity = meshConnectivity<false, host::label_t>(mesh);
-                const std::vector<host::label_t> offsets = meshOffsets<host::label_t>(mesh);
-                const std::vector<uint8_t> types(numElements, static_cast<uint8_t>(12));
-
-                {
-                    std::stringstream xml;
-                    host::label_t currentOffset = 0;
-
-                    xml << "<?xml version=\"1.0\"?>\n";
-                    xml << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
-                    xml << "  <UnstructuredGrid>\n";
-                    xml << "    <Piece NumberOfPoints=\"" << numNodes << "\" NumberOfCells=\"" << numElements << "\">\n";
-
-                    xml << "      <PointData Scalars=\"" << (varNames.empty() ? "" : varNames[0]) << "\">\n";
-                    for (host::label_t i = 0; i < numVars; ++i)
-                    {
-                        xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"" << varNames[i] << "\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-                        currentOffset += sizeof(host::label_t) + solutionVars[i].size() * sizeof(scalar_t);
-                    }
-                    xml << "      </PointData>\n";
-
-                    xml << "      <Points>\n";
-                    xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"Coordinates\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-                    xml << "      </Points>\n";
-                    currentOffset += sizeof(host::label_t) + points.size() * sizeof(scalar_t);
-
-                    xml << "      <Cells>\n";
-                    // Usa o indexType para obter o nome do tipo VTK correto
-                    xml << "        <DataArray type=\"" << getVtkTypeName<host::label_t>() << "\" Name=\"connectivity\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-                    currentOffset += sizeof(host::label_t) + connectivity.size() * sizeof(host::label_t);
-
-                    xml << "        <DataArray type=\"" << getVtkTypeName<host::label_t>() << "\" Name=\"offsets\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-                    currentOffset += sizeof(host::label_t) + offsets.size() * sizeof(host::label_t);
-
-                    xml << "        <DataArray type=\"" << getVtkTypeName<uint8_t>() << "\" Name=\"types\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-                    xml << "      </Cells>\n";
-
-                    xml << "    </Piece>\n";
-                    xml << "  </UnstructuredGrid>\n";
-                    xml << "  <AppendedData encoding=\"raw\">_";
-
-                    outFile << xml.str();
-                }
-
-                for (const auto &varData : solutionVars)
-                {
-                    fileIO::writeBinaryBlock(varData, outFile);
-                }
-                fileIO::writeBinaryBlock(points, outFile);
-                fileIO::writeBinaryBlock(connectivity, outFile);
-                fileIO::writeBinaryBlock(offsets, outFile);
-                fileIO::writeBinaryBlock(types, outFile);
-
-                outFile << "</AppendedData>\n";
-                outFile << "</VTKFile>\n";
-
-                outFile.close();
-
-                return outFile.good();
-            }
+            static constexpr const char *fileExtension = ".vtu";
+            static constexpr const char *name = "VTU";
         };
     }
 }
