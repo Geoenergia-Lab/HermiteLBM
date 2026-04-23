@@ -43,7 +43,7 @@ Namespace
     LBM::postProcess
 
 SourceFiles
-    VTS.cuh
+    VTK.cuh
 
 \*---------------------------------------------------------------------------*/
 
