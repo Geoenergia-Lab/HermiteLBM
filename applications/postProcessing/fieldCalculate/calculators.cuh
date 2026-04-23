@@ -72,7 +72,7 @@ namespace LBM
          **/
         __host__ [[nodiscard]] inline bool containsNaN(const std::vector<scalar_t> &field) noexcept
         {
-            for (const auto &value : field)
+            for (const scalar_t &value : field)
             {
                 if (std::isnan(value))
                 {
@@ -133,7 +133,7 @@ namespace LBM
         __host__ [[nodiscard]] inline scalar_t spatialMean(const std::vector<scalar_t> &field) noexcept
         {
             scalar_t sum = static_cast<scalar_t>(0);
-            for (const auto &value : field)
+            for (const scalar_t &value : field)
             {
                 sum += value;
             }

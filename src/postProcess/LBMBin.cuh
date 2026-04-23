@@ -57,15 +57,15 @@ namespace LBM
         class LBMBin : public writer
         {
         public:
-            __host__ [[nodiscard]] static inline consteval fileSystem::format format() noexcept { return fileSystem::BINARY; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::fields::contained hasFields() noexcept { return fileSystem::fields::Yes; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::points::contained hasPoints() noexcept { return fileSystem::points::No; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::elements::contained hasElements() noexcept { return fileSystem::elements::No; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::offsets::contained hasOffsets() noexcept { return fileSystem::offsets::No; }
-            __host__ [[nodiscard]] static inline consteval const char *fileExtension() noexcept { return ".LBMBin"; }
-            __host__ [[nodiscard]] static inline consteval const char *name() noexcept { return "LBMBin"; }
+            static constexpr const fileSystem::format format = fileSystem::BINARY;
+            static constexpr const fileSystem::fields::contained fields = fileSystem::fields::Yes;
+            static constexpr const fileSystem::points::contained points = fileSystem::points::No;
+            static constexpr const fileSystem::elements::contained elements = fileSystem::elements::No;
+            static constexpr const fileSystem::offsets::contained offsets = fileSystem::offsets::No;
+            static constexpr const char *fileExtension = ".LBMBin";
+            static constexpr const char *name = "LBMBin";
 
-            __host__ [[nodiscard]] inline consteval LBMBin(){};
+            __host__ [[nodiscard]] inline consteval LBMBin() {}
 
             using This = LBMBin;
 
@@ -98,7 +98,7 @@ namespace LBM
 
             __host__ static inline const name_t make_filename(const name_t &dirName, const name_t &fieldName)
             {
-                return "timeStep/" + dirName + "/" + fieldName + fileExtension();
+                return "timeStep/" + dirName + "/" + fieldName + fileExtension;
             }
 
             __host__ static inline const name_t make_filename(const host::label_t timeStep, const name_t &fieldName)
