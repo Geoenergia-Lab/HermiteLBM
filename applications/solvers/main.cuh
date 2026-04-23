@@ -163,6 +163,8 @@ int main(const int argc, const char *const argv[])
         // Main kernel
         launch(mesh, programCtrl, rho, U, Pi, haloPtrs, timeStep);
 
+        runTimeObjects.calculate();
+
         errorHandler::check(cudaDeviceSynchronize());
     }
 
