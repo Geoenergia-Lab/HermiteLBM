@@ -13,7 +13,7 @@ caseName        lidDrivenCavity;
 
 Re              10000;
 
-u_inf           0.0255;
+Ma              0.1;
 
 L_char          255;
 
