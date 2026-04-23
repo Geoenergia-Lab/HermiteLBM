@@ -114,7 +114,7 @@ namespace LBM
          **/
         inline void calculate() noexcept
         {
-            for (const auto &func : functionVector_)
+            for (const functionObjects::calculateFunction &func : functionVector_)
             {
                 func(); // Call each function with the timeStep
             }
@@ -126,7 +126,7 @@ namespace LBM
          **/
         inline void save(const host::label_t timeStep) noexcept
         {
-            for (const auto &save : saveVector_)
+            for (const functionObjects::saveFunction &save : saveVector_)
             {
                 save(timeStep); // Call each function with the timeStep
             }

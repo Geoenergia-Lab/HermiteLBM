@@ -57,15 +57,15 @@ namespace LBM
         class Tecplot : public writer
         {
         public:
-            __host__ [[nodiscard]] static inline consteval fileSystem::format format() noexcept { return fileSystem::ASCII; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::fields::contained hasFields() noexcept { return fileSystem::fields::Yes; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::points::contained hasPoints() noexcept { return fileSystem::points::Yes; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::elements::contained hasElements() noexcept { return fileSystem::elements::Yes; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::offsets::contained hasOffsets() noexcept { return fileSystem::offsets::Yes; }
-            __host__ [[nodiscard]] static inline consteval const char *fileExtension() noexcept { return ".dat"; }
-            __host__ [[nodiscard]] static inline consteval const char *name() noexcept { return "Tecplot"; }
+            static constexpr const fileSystem::format format = fileSystem::ASCII;
+            static constexpr const fileSystem::fields::contained fields = fileSystem::fields::Yes;
+            static constexpr const fileSystem::points::contained points = fileSystem::points::Yes;
+            static constexpr const fileSystem::elements::contained elements = fileSystem::elements::Yes;
+            static constexpr const fileSystem::offsets::contained offsets = fileSystem::offsets::Yes;
+            static constexpr const char *fileExtension = ".dat";
+            static constexpr const char *name = "Tecplot";
 
-            __host__ [[nodiscard]] inline consteval Tecplot(){};
+            __host__ [[nodiscard]] inline consteval Tecplot() {}
 
             /**
              * @brief Writes solution data to a Tecplot ASCII file in unstructured grid format
@@ -92,7 +92,7 @@ namespace LBM
              * - File accessibility checks
              **/
 
-            __host__ static bool write(
+            __host__ [[nodiscard]] static bool write(
                 const std::vector<std::vector<scalar_t>> &solutionVars,
                 std::ofstream &outFile,
                 const host::latticeMesh &mesh,
@@ -107,7 +107,7 @@ namespace LBM
                 // Write Tecplot header
                 // outFile << "TITLE = \"" << title << "\"\n";
                 outFile << "VARIABLES = \"X\" \"Y\" \"Z\" ";
-                for (auto &name : varNames)
+                for (const name_t &name : varNames)
                 {
                     outFile << "\"" << name << "\" ";
                 }
@@ -139,9 +139,9 @@ namespace LBM
                 }
 
                 // Write solution variables (each as a separate block)
-                for (const auto &varData : solutionVars)
+                for (const std::vector<scalar_t> &varData : solutionVars)
                 {
-                    for (const auto &value : varData)
+                    for (const scalar_t &value : varData)
                     {
                         outFile << value << "\n";
                     }

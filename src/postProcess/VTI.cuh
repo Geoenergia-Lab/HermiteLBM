@@ -54,80 +54,11 @@ namespace LBM
 {
     namespace postProcess
     {
-        class VTI : public writer
+        class VTI : public VTK<true, fileSystem::fields::Yes, fileSystem::points::No, fileSystem::elements::No, fileSystem::offsets::No>
         {
         public:
-            __host__ [[nodiscard]] static inline consteval fileSystem::format format() noexcept { return fileSystem::BINARY; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::fields::contained hasFields() noexcept { return fileSystem::fields::Yes; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::points::contained hasPoints() noexcept { return fileSystem::points::No; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::elements::contained hasElements() noexcept { return fileSystem::elements::No; }
-            __host__ [[nodiscard]] static inline consteval fileSystem::offsets::contained hasOffsets() noexcept { return fileSystem::offsets::No; }
-            __host__ [[nodiscard]] static inline consteval const char *fileExtension() noexcept { return ".vti"; }
-            __host__ [[nodiscard]] static inline consteval const char *name() noexcept { return "VTI"; }
-
-            __host__ [[nodiscard]] inline consteval VTI(){};
-
-            /**
-             * @brief Auxiliary template function that performs the VTI file writing.
-             */
-            __host__ static bool write(
-                const std::vector<std::vector<scalar_t>> &solutionVars,
-                std::ofstream &outFile,
-                const host::latticeMesh &mesh,
-                const words_t &varNames) noexcept
-            {
-                const host::label_t numVars = solutionVars.size();
-
-                {
-                    std::stringstream xml;
-                    host::label_t currentOffset = 0;
-
-                    // Calculate extents - note the -1 for the maximum indices
-                    const host::label_t dimX = mesh.dimension<axis::X>() - 1;
-                    const host::label_t dimY = mesh.dimension<axis::Y>() - 1;
-                    const host::label_t dimZ = mesh.dimension<axis::Z>() - 1;
-
-                    // ImageData coordinates are implicit
-                    constexpr scalar_t ox = static_cast<scalar_t>(0);
-                    constexpr scalar_t oy = static_cast<scalar_t>(0);
-                    constexpr scalar_t oz = static_cast<scalar_t>(0);
-                    constexpr scalar_t sx = static_cast<scalar_t>(1);
-                    constexpr scalar_t sy = static_cast<scalar_t>(1);
-                    constexpr scalar_t sz = static_cast<scalar_t>(1);
-
-                    xml << "<?xml version=\"1.0\"?>\n";
-                    xml << "<VTKFile type=\"ImageData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
-                    xml << "  <ImageData WholeExtent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\" Origin=\"" << ox << " " << oy << " " << oz << "\" Spacing=\"" << sx << " " << sy << " " << sz << "\">\n";
-                    xml << "    <Piece Extent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">\n";
-
-                    xml << "      <PointData Scalars=\"" << (varNames.empty() ? "" : varNames[0]) << "\">\n";
-                    for (host::label_t i = 0; i < numVars; ++i)
-                    {
-                        xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"" << varNames[i] << "\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-                        currentOffset += sizeof(host::label_t) + solutionVars[i].size() * sizeof(scalar_t);
-                    }
-                    xml << "      </PointData>\n";
-
-                    xml << "    </Piece>\n";
-                    xml << "  </ImageData>\n";
-                    xml << "  <AppendedData encoding=\"raw\">_";
-
-                    outFile << xml.str();
-                }
-
-                // Write point data arrays
-                for (const auto &varData : solutionVars)
-                {
-                    fileIO::writeBinaryBlock(varData, outFile);
-                }
-
-                outFile << "</AppendedData>\n";
-                outFile << "</VTKFile>\n";
-
-                outFile.close();
-
-                return outFile.good();
-            }
+            static constexpr const char *fileExtension = ".vti";
+            static constexpr const char *name = "VTI";
         };
     }
 }

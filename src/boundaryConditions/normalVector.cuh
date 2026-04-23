@@ -55,8 +55,6 @@ SourceFiles
 
 namespace LBM
 {
-    typedef uint8_t nodeType_t;
-
     /**
      * @class normalVector
      * @brief Represents boundary orientation using a bitmask encoding

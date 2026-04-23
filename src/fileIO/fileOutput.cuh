@@ -79,10 +79,7 @@ namespace LBM
          * @param[out] out The output ofstream object
          **/
         template <typename T>
-        __host__ void writeBinaryBlock(
-            const T *const ptrRestrict ptr,
-            const host::label_t size,
-            std::ofstream &out)
+        __host__ void writeBinaryBlock(const T *const ptrRestrict ptr, const host::label_t size, std::ofstream &out)
         {
             out.write(reinterpret_cast<const char *>(ptr), to_streamsize(size));
         }
@@ -101,6 +98,21 @@ namespace LBM
             writeBinaryBlock(&blockSize, static_cast<host::label_t>(sizeof(host::label_t)), out);
 
             writeBinaryBlock(vec.data(), blockSize, out);
+        }
+
+        /**
+         * @brief Write a std::vector of std::vectors of type T to an ofstream object
+         * @tparam T The type of the vector
+         * @param[in] vec The vector of vectors to write from
+         * @param[out] out The output ofstream object
+         **/
+        template <typename T>
+        __host__ void writeBinaryBlock(const std::vector<std::vector<T>> &vec, std::ofstream &out)
+        {
+            for (const std::vector<T> &v : vec)
+            {
+                fileIO::writeBinaryBlock(v, out);
+            }
         }
     }
 }
