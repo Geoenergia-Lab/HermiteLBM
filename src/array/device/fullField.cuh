@@ -111,7 +111,7 @@ namespace LBM
                       programCtrl),
                   name_(name)
             {
-                initialise_boundary_condition(name_, programCtrl.deviceList());
+                initialise_boundary_condition(name_, programCtrl.deviceList(), programCtrl_.Ma() / std::sqrt(static_cast<scalar_t>(3)));
             }
 
             /**
@@ -134,7 +134,7 @@ namespace LBM
                       programCtrl),
                   name_(name)
             {
-                initialise_boundary_condition(name_, programCtrl.deviceList());
+                initialise_boundary_condition(name_, programCtrl.deviceList(), programCtrl_.Ma() / std::sqrt(static_cast<scalar_t>(3)));
             }
 
             __host__ [[nodiscard]] array(
@@ -151,7 +151,7 @@ namespace LBM
                       programCtrl),
                   name_(componentName)
             {
-                initialise_boundary_condition(componentName, programCtrl.deviceList());
+                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl_.Ma() / std::sqrt(static_cast<scalar_t>(3)));
             }
 
             __host__ [[nodiscard]] array(
@@ -168,7 +168,7 @@ namespace LBM
                       programCtrl),
                   name_(componentName)
             {
-                initialise_boundary_condition(componentName, programCtrl.deviceList());
+                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl_.Ma() / std::sqrt(static_cast<scalar_t>(3)));
             }
 
             /**
@@ -333,7 +333,8 @@ namespace LBM
              **/
             __host__ static void initialise_boundary_condition(
                 const name_t &name,
-                const std::vector<deviceIndex_t> &deviceList) noexcept
+                const std::vector<deviceIndex_t> &deviceList,
+                const scalar_t U_inf) noexcept
             {
                 if ((name == "U_x") || (name == "U_y") || (name == "U_z"))
                 {
@@ -349,12 +350,12 @@ namespace LBM
                     for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList.size(); ++virtualDeviceIndex)
                     {
                         errorHandler::check(cudaSetDevice(deviceList[virtualDeviceIndex]));
-                        device::copyToSymbol(device::U_North, North(), i);
-                        device::copyToSymbol(device::U_South, South(), i);
-                        device::copyToSymbol(device::U_East, East(), i);
-                        device::copyToSymbol(device::U_West, West(), i);
-                        device::copyToSymbol(device::U_Back, Back(), i);
-                        device::copyToSymbol(device::U_Front, Front(), i);
+                        device::copyToSymbol(device::U_North, North() * U_inf, i);
+                        device::copyToSymbol(device::U_South, South() * U_inf, i);
+                        device::copyToSymbol(device::U_East, East() * U_inf, i);
+                        device::copyToSymbol(device::U_West, West() * U_inf, i);
+                        device::copyToSymbol(device::U_Back, Back() * U_inf, i);
+                        device::copyToSymbol(device::U_Front, Front() * U_inf, i);
                     }
                 }
             }
