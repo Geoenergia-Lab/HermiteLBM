@@ -179,7 +179,7 @@ namespace LBM
 
             /**
              * @brief Returns the time step of the saved fields.
-             * @return The time step as a size_t.
+             * @return The time step as a host::label_t.
              **/
             __host__ [[nodiscard]] inline constexpr host::label_t timeStep() const noexcept
             {
@@ -197,7 +197,7 @@ namespace LBM
 
             /**
              * @brief Returns the number of fields.
-             * @return The number of fields as a size_t.
+             * @return The number of fields as a host::label_t.
              **/
             __host__ [[nodiscard]] inline constexpr host::label_t meanCount() const noexcept
             {
@@ -206,7 +206,7 @@ namespace LBM
 
             /**
              * @brief Returns the number of fields.
-             * @return The number of fields as a size_t.
+             * @return The number of fields as a host::label_t.
              **/
             __host__ [[nodiscard]] inline constexpr host::label_t nFields() const noexcept
             {
@@ -263,7 +263,7 @@ namespace LBM
 
         private:
             /**
-             * @brief The time step of the saved fields as a size_t.
+             * @brief The time step of the saved fields as a host::label_t.
              **/
             const host::label_t timeStep_;
 
@@ -278,7 +278,7 @@ namespace LBM
             const host::label_t meanCount_;
 
             /**
-             * @brief The number of fields as a size_t.
+             * @brief The number of fields as a host::label_t.
              **/
             const host::label_t nFields_;
 
@@ -313,7 +313,7 @@ namespace LBM
              * @brief Initializes the mean count based on the time type and field information lines
              * @param[in] fieldInfoLines The lines of the field information block
              * @param[in] TimeType The time type (instantaneous or time average)
-             * @return The mean count as a size_t (0 for instantaneous, read from lines for time average)
+             * @return The mean count as a host::label_t (0 for instantaneous, read from lines for time average)
              * @throws std::runtime_error if meanCount is missing or invalid for time average fields
              **/
             __host__ [[nodiscard]] static host::label_t initialiseMeanCount(const words_t &fieldInfoLines, const time::type TimeType)

@@ -142,7 +142,7 @@ namespace LBM
 
             /**
              * @brief Destructor for fieldBase
-             */
+             **/
             ~fieldBase() {}
 
             /**
@@ -189,7 +189,7 @@ namespace LBM
              * @brief Get a collection of const device pointers (one per component).
              * @param[in] idx Virtual device index.
              * @return ptrCollection with N const scalar_t*.
-             */
+             **/
             __host__ [[nodiscard]] inline constexpr device::ptrCollection<N, const scalar_t> constPtr(const host::label_t idx) const noexcept
             {
                 return makeConstPtrCollection(idx, std::make_index_sequence<N>{});
@@ -199,7 +199,7 @@ namespace LBM
              * @brief Get a collection of non-const device pointers (one per component).
              * @param[in] idx Virtual device index.
              * @return ptrCollection with N scalar_t*.
-             */
+             **/
             __host__ [[nodiscard]] inline constexpr device::ptrCollection<N, scalar_t> ptr(const host::label_t idx) noexcept
             {
                 return makePtrCollection(idx, std::make_index_sequence<N>{});
@@ -211,7 +211,7 @@ namespace LBM
              * @tparam ReturnType The type of the returned collection (e.g., std::array<std::string, N> or std::vector<std::string>).
              * @param[in] baseName The base name for the field, used to generate component names.
              * @return A collection of component names corresponding to the field components, following a consistent naming convention based on N.
-             */
+             **/
             template <class ReturnType>
             __host__ [[nodiscard]] static const ReturnType makeComponentNames(const name_t &baseName)
             {
@@ -244,7 +244,7 @@ namespace LBM
              * @param[in] programCtrl Reference to the program control object.
              * @param[in] allocate Whether to allocate memory and initialize values.
              * @return std::array of ComponentType with N initialized components.
-             */
+             **/
             template <const host::label_t... Is>
             __host__ [[nodiscard]] static const std::array<ComponentType, N> makeComponents(
                 const std::index_sequence<Is...>,
@@ -267,7 +267,7 @@ namespace LBM
              * @param[in] programCtrl Reference to the program control object.
              * @param[in] allocate Whether to allocate memory and initialize values.
              * @return std::array of ComponentType with N initialized components.
-             */
+             **/
             template <const host::label_t... Is>
             __host__ [[nodiscard]] static const std::array<ComponentType, N> makeComponents(
                 const std::index_sequence<Is...>,
@@ -284,7 +284,7 @@ namespace LBM
              * @brief Get a collection of const device pointers (one per component).
              * @param[in] idx Virtual device index.
              * @return ptrCollection with N const scalar_t*.
-             */
+             **/
             template <const host::label_t... Is>
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<N, const scalar_t> makeConstPtrCollection(const host::label_t idx, std::index_sequence<Is...>) const noexcept
             {
@@ -295,7 +295,7 @@ namespace LBM
              * @brief Get a collection of non-const device pointers (one per component).
              * @param[in] idx Virtual device index.
              * @return ptrCollection with N scalar_t*.
-             */
+             **/
             template <const host::label_t... Is>
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<N, scalar_t> makePtrCollection(const host::label_t idx, std::index_sequence<Is...>) noexcept
             {
@@ -313,12 +313,12 @@ namespace LBM
 
             /**
              * @brief Get a mutable reference to the scalar field.
-             */
+             **/
             __host__ [[nodiscard]] inline constexpr Base::ComponentType &self() noexcept { return Base::components_[0]; }
 
             /**
              * @brief Get a const reference to the scalar field.
-             */
+             **/
             __host__ [[nodiscard]] inline constexpr const Base::ComponentType &self() const noexcept { return Base::components_[0]; }
         };
 
@@ -332,14 +332,14 @@ namespace LBM
 
             /**
              * @brief Get a mutable reference to the components of the vector field.
-             */
+             **/
             __host__ [[nodiscard]] inline constexpr Base::ComponentType &x() noexcept { return Base::components_[0]; }
             __host__ [[nodiscard]] inline constexpr Base::ComponentType &y() noexcept { return Base::components_[1]; }
             __host__ [[nodiscard]] inline constexpr Base::ComponentType &z() noexcept { return Base::components_[2]; }
 
             /**
              * @brief Get a const reference to the components of the vector field.
-             */
+             **/
             __host__ [[nodiscard]] inline constexpr const Base::ComponentType &x() const noexcept { return Base::components_[0]; }
             __host__ [[nodiscard]] inline constexpr const Base::ComponentType &y() const noexcept { return Base::components_[1]; }
             __host__ [[nodiscard]] inline constexpr const Base::ComponentType &z() const noexcept { return Base::components_[2]; }
@@ -355,7 +355,7 @@ namespace LBM
 
             /**
              * @brief Get a mutable reference to the components of the tensor field.
-             */
+             **/
             __host__ [[nodiscard]] inline constexpr Base::ComponentType &xx() noexcept { return Base::components_[0]; }
             __host__ [[nodiscard]] inline constexpr Base::ComponentType &xy() noexcept { return Base::components_[1]; }
             __host__ [[nodiscard]] inline constexpr Base::ComponentType &xz() noexcept { return Base::components_[2]; }
@@ -365,7 +365,7 @@ namespace LBM
 
             /**
              * @brief Get a const reference to the components of the tensor field.
-             */
+             **/
             __host__ [[nodiscard]] inline constexpr const Base::ComponentType &xx() const noexcept { return Base::components_[0]; }
             __host__ [[nodiscard]] inline constexpr const Base::ComponentType &xy() const noexcept { return Base::components_[1]; }
             __host__ [[nodiscard]] inline constexpr const Base::ComponentType &xz() const noexcept { return Base::components_[2]; }
