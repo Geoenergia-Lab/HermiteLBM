@@ -76,7 +76,7 @@ namespace LBM
              * @tparam Format File format (ASCII or BINARY)
              * @param[in] nx, ny, nz Number of mesh points
              * @param[in] nVars Number of variables
-             */
+             **/
             template <typename T, const T Present, const format Format>
             __host__ [[nodiscard]] inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz, const host::label_t nVars) noexcept
             {
@@ -115,7 +115,7 @@ namespace LBM
              * @brief Disk space for element connectivity
              * @tparam Elements Whether elements are included
              * @tparam N Number of labels per element
-             */
+             **/
             template <typename T, const T Present, const host::label_t N>
             __host__ [[nodiscard]] inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz) noexcept
             {
@@ -144,7 +144,7 @@ namespace LBM
              * @tparam Format File format (ASCII or BINARY)
              * @param[in] nx, ny, nz Mesh dimensions
              * @param[in] nVars Number of variables
-             */
+             **/
             template <const contained Fields, const format Format>
             __host__ [[nodiscard]] inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz, const host::label_t nVars) noexcept
             {
@@ -165,7 +165,7 @@ namespace LBM
              * @tparam Points Whether points are included
              * @tparam Format File format
              * @param[in] nx, ny, nz Mesh dimensions
-             */
+             **/
             template <const contained Points, const format Format>
             __host__ [[nodiscard]] inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz) noexcept
             {
@@ -185,7 +185,7 @@ namespace LBM
              * @brief Disk space for element connectivity (8 labels per element)
              * @tparam Elements Whether elements are included
              * @param[in] nx, ny, nz Mesh dimensions
-             */
+             **/
             template <const contained Elements>
             __host__ [[nodiscard]] inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz) noexcept
             {
@@ -205,7 +205,7 @@ namespace LBM
              * @brief Disk space for offset data (1 label per element)
              * @tparam Offsets Whether offsets are included
              * @param[in] nx, ny, nz Mesh dimensions
-             */
+             **/
             template <const contained Offsets>
             __host__ [[nodiscard]] inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz) noexcept
             {
@@ -223,7 +223,7 @@ namespace LBM
          * @param[in] nx, ny, nz Mesh dimensions
          * @param[in] nVars Number of field variables (ignored if fields == No)
          * @return Total bytes required
-         */
+         **/
         template <const format Format, const fields::contained Fields, const points::contained Points, const elements::contained Elements, const offsets::contained Offsets>
         __host__ [[nodiscard]] inline constexpr host::label_t expectedDiskUsage(const host::label_t nx, const host::label_t ny, const host::label_t nz, const host::label_t nVars) noexcept
         {
@@ -237,7 +237,7 @@ namespace LBM
          * @param[in] mesh The lattice mesh.
          * @param[in] nVars Number of field variables.
          * @return Total bytes required.
-         */
+         **/
         template <const format Format, const fields::contained Fields, const points::contained Points, const elements::contained Elements, const offsets::contained Offsets, class LatticeMesh>
         __host__ [[nodiscard]] inline constexpr host::label_t expectedDiskUsage(const LatticeMesh &mesh, const host::label_t nVars) noexcept
         {
@@ -248,7 +248,7 @@ namespace LBM
          * @brief Gets the available storage space on the disk containing dir.
          * @param[in] dir The directory to query
          * @return Available bytes.
-         */
+         **/
         __host__ [[nodiscard]] inline host::label_t availableDiskSpace(const std::filesystem::path &dir = std::filesystem::current_path()) noexcept
         {
             std::error_code ec;
@@ -258,7 +258,7 @@ namespace LBM
 
         /**
          * @brief Checks if at least `required` bytes are available on the disk of `dir`.
-         */
+         **/
         __host__ [[nodiscard]] inline bool hasEnoughSpace(const host::label_t required, const std::filesystem::path &dir = std::filesystem::current_path()) noexcept
         {
             return required < availableDiskSpace(dir);
@@ -266,7 +266,7 @@ namespace LBM
 
         /**
          * @brief Throws a runtime_error due to insufficient disk space
-         */
+         **/
         __host__ void insufficientDiskSpace(const name_t &fileName, const host::label_t expected, const host::label_t available = availableDiskSpace())
         {
             throw std::runtime_error("Insufficient disk space to write " + fileName + "\nRequired: " + std::to_string(expected) + "\nAvailable: " + std::to_string(available));
@@ -274,7 +274,7 @@ namespace LBM
 
         /**
          * @brief Throws if insufficient disk space.
-         */
+         **/
         __host__ void ensureDiskSpace(const name_t &fileName, const host::label_t required, const host::label_t available = availableDiskSpace())
         {
             if (required > available)
@@ -285,7 +285,7 @@ namespace LBM
 
         /**
          * @brief Check whether sufficient disk space exists for a given output config.
-         */
+         **/
         template <const format Format, const fields::contained Fields, const points::contained Points, const elements::contained Elements, const offsets::contained Offsets, class LatticeMesh>
         __host__ [[nodiscard]] bool diskSpaceCheck(const LatticeMesh &mesh, const host::label_t nVars, const std::filesystem::path &dir = std::filesystem::current_path()) noexcept
         {
@@ -295,7 +295,7 @@ namespace LBM
 
         /**
          * @brief Assert (throw) that sufficient disk space exists.
-         */
+         **/
         template <const format Format, const fields::contained Fields, const points::contained Points, const elements::contained Elements, const offsets::contained Offsets, class LatticeMesh>
         __host__ void diskSpaceAssertion(const LatticeMesh &mesh, const host::label_t nVars, const name_t &fileName, const std::filesystem::path &dir = std::filesystem::current_path())
         {
@@ -308,7 +308,7 @@ namespace LBM
          * @brief Convert bytes to mebibytes
          * @tparam T Return type
          * @param[in] bytes Number of bytes
-         */
+         **/
         template <typename T>
         __host__ [[nodiscard]] inline constexpr T to_MiB(const host::label_t bytes) noexcept
         {

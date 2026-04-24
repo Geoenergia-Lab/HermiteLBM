@@ -90,20 +90,15 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const words_t &varNames)
             {
-                {
-                    std::stringstream xml;
-                    host::label_t currentOffset = 0;
+                outFile << "<?xml " << xmlVersionString << "?>\n";
+                outFile << "<VTKFile type=\"" << gridName() << "\" " << xmlVersionString << " byte_order=\"" << ((std::endian::native == std::endian::little) ? "LittleEndian" : "BigEndian") << "\" header_type=\"" << typeName<host::label_t>() << "\">\n";
 
-                    xml << "<?xml " << xmlVersionString << "?>\n";
-                    xml << "<VTKFile type=\"" << gridName() << "\" " << xmlVersionString << " byte_order=\"" << ((std::endian::native == std::endian::little) ? "LittleEndian" : "BigEndian") << "\" header_type=\"" << typeName<host::label_t>() << "\">\n";
-
-                    writeGridSection(xml, solutionVars, varNames, mesh, currentOffset);
-
-                    outFile << xml.str();
-                }
+                // Write the field information
+                writeGridSection(outFile, solutionVars, varNames, mesh);
 
                 // Append the data
                 append(solutionVars, outFile, mesh);
+
                 outFile << "</VTKFile>\n";
 
                 outFile.close();
@@ -120,7 +115,7 @@ namespace LBM
             /**
              * @brief Append the binary data blocks for the fields, points, and cells to the VTK file
              * @param[in] solutionVars A vector of vectors containing the field data to be written
-             * @param[out] outFile An open output file stream to which the binary data will be written
+             * @param[out] outFile An open output file stream to which the VTK data will be written
              * @param[in] mesh The lattice mesh containing the grid dimensions and coordinates (used for writing the points and cell connectivity data)
              **/
             __host__ static void append(
@@ -158,51 +153,52 @@ namespace LBM
 
             /**
              * @brief Write the XML structure for a single Piece section of the VTK file, including the PointData, Points, and Cells sections as specified by the template parameters
-             * @param[out] xml A stringstream to which the XML structure will be written
+             * @param[out] outFile An open output file stream to which the VTK data will be written
              * @param[in] solutionVars A vector of vectors containing the field data to be written (used for determining the variable names and offsets in the PointData section)
              * @param[in] varNames A vector of variable names corresponding to the field data (used for the "Name" attribute in the PointData section)
              * @param[in] mesh The lattice mesh containing the grid dimensions and coordinates (used for determining the extents in the StructuredGrid section and for writing the Points and Cells sections)
              * @param[in,out] currentOffset A reference to a variable tracking the current byte offset in the appended data section, which is updated as each data block is accounted for in the XML structure
              **/
             __host__ static void writePiece(
-                std::stringstream &xml,
+                std::ofstream &outFile,
                 const std::vector<std::vector<scalar_t>> &solutionVars,
                 const words_t &varNames,
-                const host::latticeMesh &mesh,
-                size_t &currentOffset)
+                const host::latticeMesh &mesh)
             {
+                host::label_t currentOffset = 0;
+
                 if constexpr (Structured)
                 {
                     const host::label_t dimX = mesh.dimension<axis::X>() - 1;
                     const host::label_t dimY = mesh.dimension<axis::Y>() - 1;
                     const host::label_t dimZ = mesh.dimension<axis::Z>() - 1;
-                    xml << "    <Piece Extent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">\n";
+                    outFile << "    <Piece Extent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">\n";
                 }
                 else
                 {
                     const host::label_t numNodes = mesh.dimension<axis::X>() * mesh.dimension<axis::Y>() * mesh.dimension<axis::Z>();
                     const host::label_t numElements = (mesh.dimension<axis::X>() - 1) * (mesh.dimension<axis::Y>() - 1) * (mesh.dimension<axis::Z>() - 1);
-                    xml << "    <Piece NumberOfPoints=\"" << numNodes << "\" NumberOfCells=\"" << numElements << "\">\n";
+                    outFile << "    <Piece NumberOfPoints=\"" << numNodes << "\" NumberOfCells=\"" << numElements << "\">\n";
                 }
 
                 // Point data
-                writePointData(xml, solutionVars, varNames, currentOffset);
+                writePointData(outFile, solutionVars, varNames, currentOffset);
 
                 // Points section
-                writePoints(xml, mesh, currentOffset);
+                writePoints(outFile, mesh, currentOffset);
 
                 // Cells section
-                writeCells(xml, mesh, currentOffset);
+                writeCells(outFile, mesh, currentOffset);
 
-                xml << "    </Piece>\n";
+                outFile << "    </Piece>\n";
             }
 
             /**
              * @brief Write the opening tag for the grid section of the VTK file, which is either <StructuredGrid>, <ImageData>, or <UnstructuredGrid> depending on the template parameters
-             * @param[out] xml A stringstream to which the XML structure will be written
+             * @param[out] outFile An open output file stream to which the VTK data will be written
              * @param[in] mesh The lattice mesh containing the grid dimensions and coordinates (used for determining the extents in the StructuredGrid section)
              **/
-            __host__ static inline void openGridSection(std::stringstream &xml, const host::latticeMesh &mesh)
+            __host__ static inline void openGridSection(std::ofstream &outFile, const host::latticeMesh &mesh)
             {
                 if constexpr (Structured)
                 {
@@ -213,7 +209,7 @@ namespace LBM
 
                     if (Points == fileSystem::points::Yes)
                     {
-                        xml << "  <StructuredGrid WholeExtent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">\n";
+                        outFile << "  <StructuredGrid WholeExtent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">\n";
                     }
                     else
                     {
@@ -224,63 +220,62 @@ namespace LBM
                         constexpr host::label_t sx = static_cast<host::label_t>(1);
                         constexpr host::label_t sy = static_cast<host::label_t>(1);
                         constexpr host::label_t sz = static_cast<host::label_t>(1);
-                        xml << "  <ImageData WholeExtent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\" Origin=\"" << ox << " " << oy << " " << oz << "\" Spacing=\"" << sx << " " << sy << " " << sz << "\">\n";
+                        outFile << "  <ImageData WholeExtent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\" Origin=\"" << ox << " " << oy << " " << oz << "\" Spacing=\"" << sx << " " << sy << " " << sz << "\">\n";
                     }
                 }
                 else
                 {
-                    xml << "  <UnstructuredGrid>\n";
+                    outFile << "  <UnstructuredGrid>\n";
                 }
             }
 
             /**
              * @brief Write the XML structure for the grid section of the VTK file, including the PointData, Points, and Cells sections as specified by the template parameters
-             * @param[out] xml A stringstream to which the XML structure will be written
+             * @param[out] outFile An open output file stream to which the VTK data will be written
              * @param[in] solutionVars A vector of vectors containing the field data to be written (used for determining the variable names and offsets in the PointData section)
              * @param[in] varNames A vector of variable names corresponding to the field data (used for the "Name" attribute in the PointData section)
              * @param[in] mesh The lattice mesh containing the grid dimensions and coordinates (used for determining the extents in the StructuredGrid section and for writing the Points and Cells sections)
              * @param[in,out] currentOffset A reference to a variable tracking the current byte offset in the appended data section, which is updated as each data block is accounted for in the XML structure
              **/
             __host__ static void writeGridSection(
-                std::stringstream &xml,
+                std::ofstream &outFile,
                 const std::vector<std::vector<scalar_t>> &solutionVars,
                 const words_t &varNames,
-                const host::latticeMesh &mesh,
-                size_t &currentOffset)
+                const host::latticeMesh &mesh)
             {
-                openGridSection(xml, mesh);
-                writePiece(xml, solutionVars, varNames, mesh, currentOffset);
-                xml << "  </" << gridName() << ">\n";
+                openGridSection(outFile, mesh);
+                writePiece(outFile, solutionVars, varNames, mesh);
+                outFile << "  </" << gridName() << ">\n";
             }
 
             /**
              * @brief Write the XML structure for the PointData section of the VTK file, including the DataArray entries for each variable in the solutionVars vector
-             * @param[out] xml A stringstream to which the XML structure will be written
+             * @param[out] outFile An open output file stream to which the VTK data will be written
              * @param[in] solutionVars A vector of vectors containing the field data to be written (used for determining the variable names and offsets in the PointData section)
              * @param[in] varNames A vector of variable names corresponding to the field data (used for the "Name" attribute in the PointData section)
              * @param[in,out] currentOffset A reference to a variable tracking the current byte offset in the appended data section, which is updated as each data block is accounted for in the XML structure
              **/
-            __host__ static void writePointData(std::stringstream &xml, const std::vector<std::vector<scalar_t>> &solutionVars, const std::vector<std::string> &varNames, size_t &currentOffset)
+            __host__ static void writePointData(std::ofstream &outFile, const std::vector<std::vector<scalar_t>> &solutionVars, const std::vector<std::string> &varNames, host::label_t &currentOffset)
             {
                 if constexpr (Fields == fileSystem::fields::Yes)
                 {
-                    xml << "      <PointData Scalars=\"" << (varNames.empty() ? "" : varNames[0]) << "\">\n";
+                    outFile << "      <PointData Scalars=\"" << (varNames.empty() ? "" : varNames[0]) << "\">\n";
                     for (host::label_t i = 0; i < solutionVars.size(); ++i)
                     {
-                        xml << "        <DataArray type=\"" << typeName<scalar_t>() << "\" Name=\"" << varNames[i] << "\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+                        outFile << "        <DataArray type=\"" << typeName<scalar_t>() << "\" Name=\"" << varNames[i] << "\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
                         currentOffset += sizeof(host::label_t) + solutionVars[i].size() * sizeof(scalar_t);
                     }
-                    xml << "      </PointData>\n";
+                    outFile << "      </PointData>\n";
                 }
             }
 
             /**
              * @brief Write the XML structure for the Points section of the VTK file, which contains the coordinates of the points in the grid, if the Points template parameter is set to Yes
-             * @param[out] xml A stringstream to which the XML structure will be written
+             * @param[out] outFile An open output file stream to which the VTK data will be written
              * @param[in] mesh The lattice mesh containing the grid dimensions and coordinates (used for determining the number of points and their coordinates)
              * @param[in,out] currentOffset A reference to a variable tracking the current byte offset in the appended data section, which is updated as the points data block is accounted for in the XML structure
              **/
-            __host__ static void writePoints(std::stringstream &xml, const host::latticeMesh &mesh, size_t &currentOffset)
+            __host__ static void writePoints(std::ofstream &outFile, const host::latticeMesh &mesh, host::label_t &currentOffset)
             {
                 if constexpr (Points == fileSystem::points::Yes)
                 {
@@ -289,20 +284,20 @@ namespace LBM
                     const host::label_t nz = mesh.dimension<axis::Z>();
                     const host::label_t nPoints = nx * ny * nz * 3;
 
-                    xml << "      <Points>\n";
-                    xml << "        <DataArray type=\"" << typeName<scalar_t>() << "\" Name=\"Coordinates\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-                    xml << "      </Points>\n";
+                    outFile << "      <Points>\n";
+                    outFile << "        <DataArray type=\"" << typeName<scalar_t>() << "\" Name=\"Coordinates\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+                    outFile << "      </Points>\n";
                     currentOffset += sizeof(host::label_t) + nPoints * sizeof(scalar_t);
                 }
             }
 
             /**
              * @brief Write the XML structure for the Cells section of the VTK file, which contains the connectivity and types of the cells in the grid, if the Elements and Offsets template parameters are set to Yes
-             * @param[out] xml A stringstream to which the XML structure will be written
+             * @param[out] outFile An open output file stream to which the VTK data will be written
              * @param[in] mesh The lattice mesh containing the grid dimensions and coordinates (used for determining the number of cells and their connectivity)
              * @param[in,out] currentOffset A reference to a variable tracking the current byte offset in the appended data section, which is updated as the connectivity, offsets, and types data blocks are accounted for in the XML structure
              **/
-            __host__ static void writeCells(std::stringstream &xml, const host::latticeMesh &mesh, size_t &currentOffset)
+            __host__ static void writeCells(std::ofstream &outFile, const host::latticeMesh &mesh, host::label_t &currentOffset)
             {
                 if constexpr ((Elements == fileSystem::elements::Yes) && (Offsets == fileSystem::offsets::Yes))
                 {
@@ -312,13 +307,13 @@ namespace LBM
                     const host::label_t nElements = (nx - 1) * (ny - 1) * (nz - 1);
                     const host::label_t nConnectivity = nElements * 8;
 
-                    xml << "      <Cells>\n";
-                    xml << "        <DataArray type=\"" << typeName<host::label_t>() << "\" Name=\"connectivity\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+                    outFile << "      <Cells>\n";
+                    outFile << "        <DataArray type=\"" << typeName<host::label_t>() << "\" Name=\"connectivity\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
                     currentOffset += sizeof(host::label_t) + nConnectivity * sizeof(host::label_t);
-                    xml << "        <DataArray type=\"" << typeName<host::label_t>() << "\" Name=\"offsets\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+                    outFile << "        <DataArray type=\"" << typeName<host::label_t>() << "\" Name=\"offsets\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
                     currentOffset += sizeof(host::label_t) + nElements * sizeof(host::label_t);
-                    xml << "        <DataArray type=\"" << typeName<nodeType_t>() << "\" Name=\"types\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-                    xml << "      </Cells>\n";
+                    outFile << "        <DataArray type=\"" << typeName<nodeType_t>() << "\" Name=\"types\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+                    outFile << "      </Cells>\n";
                 }
             }
 

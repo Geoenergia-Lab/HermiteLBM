@@ -136,7 +136,7 @@ namespace LBM
          *
          * Stores the three thread indices (x, y, z) and provides access per axis
          * as well as a method to compute neighbour coordinates with periodic wrap‑around.
-         */
+         **/
         struct coordinate : public var3<device::label_t>
         {
         public:
