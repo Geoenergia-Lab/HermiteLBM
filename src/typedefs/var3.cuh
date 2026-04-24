@@ -55,7 +55,7 @@ namespace LBM
     /**
      * @brief Three‑component vector template
      * @tparam T Numeric type of the components
-     */
+     **/
     template <typename T>
     struct var3
     {
@@ -64,7 +64,7 @@ namespace LBM
 
         /**
          * @brief Public members
-         */
+         **/
         const T x;
         const T y;
         const T z;
@@ -72,7 +72,7 @@ namespace LBM
         /**
          * @brief Constructor
          * @param[in] X, Y, Z Initialiser values
-         */
+         **/
         __host__ __device__ [[nodiscard]] inline constexpr var3(const T X, const T Y, const T Z) noexcept
             : x(X),
               y(Y),
@@ -81,7 +81,7 @@ namespace LBM
         /**
          * @brief Access the data by axis
          * @tparam alpha The axis direction (X, Y or Z)
-         */
+         **/
         template <axis::type alpha, typename ValueType = value_type>
         __host__ __device__ [[nodiscard]] constexpr ValueType value() const noexcept
         {
@@ -107,7 +107,7 @@ namespace LBM
          * @brief Print the structure to an output stream
          * @param[in] name Name to identify the structure in the output
          * @param[in] os Output stream to write to
-         */
+         **/
         template <const bool LineBreak = false>
         void print(const name_t &name, std::ostream &os) const noexcept
         {
@@ -137,18 +137,18 @@ namespace LBM
     {
         /**
          * @brief Block dimensions descriptor (specialisation for device::label_t)
-         */
+         **/
         struct blockLabel : var3<device::label_t>
         {
         public:
             /**
              * @brief Inherit constructors
-             */
+             **/
             using var3<value_type>::var3;
 
             /**
              * @brief Total size
-             */
+             **/
             template <typename ValueType = value_type>
             __host__ __device__ [[nodiscard]] inline constexpr ValueType size() const noexcept
             {
@@ -164,18 +164,18 @@ namespace LBM
     {
         /**
          * @brief Block dimensions descriptor (specialisation for host::label_t)
-         */
+         **/
         struct blockLabel : var3<host::label_t>
         {
         public:
             /**
              * @brief Inherit constructors
-             */
+             **/
             using var3<value_type>::var3;
 
             /**
              * @brief Total size
-             */
+             **/
             __host__ __device__ [[nodiscard]] inline constexpr host::label_t size() const noexcept
             {
                 return value<axis::X>() * value<axis::Y>() * value<axis::Z>();
@@ -188,7 +188,7 @@ namespace LBM
 
     /**
      * @brief Generic vector of scalar_t
-     */
+     **/
     struct pointVector : var3<scalar_t>
     {
     public:

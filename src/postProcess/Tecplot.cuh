@@ -78,20 +78,7 @@ namespace LBM
              * @note Uses 1-based indexing for element connectivity (Tecplot convention)
              * @note Output format: BLOCK data packing with FEBRICK (hexahedral) elements
              * @note Uses high precision (50 digits) for numerical output
-             *
-             * This function writes simulation results to a Tecplot-compatible ASCII file
-             * with the following structure:
-             * 1. File header with title and variable declarations
-             * 2. Coordinate data in separate blocks (X, Y, Z)
-             * 3. Solution variables in separate blocks
-             * 4. Element connectivity with 1-based indexing
-             *
-             * The function performs comprehensive validation of input data including:
-             * - Variable count matching name count
-             * - Node count consistency across all arrays
-             * - File accessibility checks
              **/
-
             __host__ [[nodiscard]] static bool write(
                 const std::vector<std::vector<scalar_t>> &solutionVars,
                 std::ofstream &outFile,
@@ -105,7 +92,6 @@ namespace LBM
                 outFile << std::setprecision(std::numeric_limits<scalar_t>::max_digits10);
 
                 // Write Tecplot header
-                // outFile << "TITLE = \"" << title << "\"\n";
                 outFile << "VARIABLES = \"X\" \"Y\" \"Z\" ";
                 for (const name_t &name : varNames)
                 {

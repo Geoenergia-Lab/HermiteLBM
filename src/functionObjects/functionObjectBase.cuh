@@ -43,7 +43,7 @@ namespace LBM
          * @brief Base class for LBM function objects, providing common data members.
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam N The number of spatial components of the function object
-         */
+         **/
         template <class VelocitySet, const host::label_t N>
         class FunctionObjectBase
         {
@@ -204,7 +204,7 @@ namespace LBM
              * @param[in] U Device vector field containing the velocity values on the GPU
              * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
              * @param[in] streamsLBM Stream handler for LBM operations
-             */
+             **/
             __host__ [[nodiscard]] FunctionObjectBase(
                 const name_t &name,
                 host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
