@@ -202,7 +202,6 @@ namespace LBM
             {
                 if constexpr (Structured)
                 {
-                    // Calculate extents - note the -1 for the maximum indices
                     const host::label_t dimX = mesh.dimension<axis::X>() - 1;
                     const host::label_t dimY = mesh.dimension<axis::Y>() - 1;
                     const host::label_t dimZ = mesh.dimension<axis::Z>() - 1;
@@ -217,9 +216,11 @@ namespace LBM
                         constexpr host::label_t ox = static_cast<host::label_t>(0);
                         constexpr host::label_t oy = static_cast<host::label_t>(0);
                         constexpr host::label_t oz = static_cast<host::label_t>(0);
-                        constexpr host::label_t sx = static_cast<host::label_t>(1);
-                        constexpr host::label_t sy = static_cast<host::label_t>(1);
-                        constexpr host::label_t sz = static_cast<host::label_t>(1);
+
+                        const scalar_t sx = mesh.L().value<axis::X>() / static_cast<scalar_t>(mesh.dimension<axis::X>() - 1);
+                        const scalar_t sy = mesh.L().value<axis::Y>() / static_cast<scalar_t>(mesh.dimension<axis::Y>() - 1);
+                        const scalar_t sz = mesh.L().value<axis::Z>() / static_cast<scalar_t>(mesh.dimension<axis::Z>() - 1);
+
                         outFile << "  <ImageData WholeExtent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\" Origin=\"" << ox << " " << oy << " " << oz << "\" Spacing=\"" << sx << " " << sy << " " << sz << "\">\n";
                     }
                 }
