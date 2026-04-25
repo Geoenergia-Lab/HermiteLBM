@@ -174,7 +174,7 @@ namespace LBM
                     {
                         std::cout << "Did not find directory timeStep/" << std::to_string(programCtrl.latestTime()) << std::endl;
                     }
-                    return initialConditions(mesh, componentName);
+                    return initialConditions(mesh, componentName, programCtrl);
                 }
                 else
                 {
@@ -197,7 +197,8 @@ namespace LBM
              **/
             __host__ [[nodiscard]] static const std::vector<T> initialConditions(
                 const host::latticeMesh &mesh,
-                const name_t &fieldName)
+                const name_t &fieldName,
+                const programControl &programCtrl)
             {
                 const boundaryFields<VelocitySet, true> bField(fieldName);
 
@@ -257,7 +258,15 @@ namespace LBM
 
                                 // Global index in host vector (per‑GPU segmented)
                                 const host::label_t globalIdx = virtualDeviceIndex * nPointsPerDevice + localIdx;
-                                field[globalIdx] = value;
+                                if ((fieldName == "U_x") || (fieldName == "U_y") || (fieldName == "U_z"))
+                                {
+                                    // std::cout << "Doing velocity value" << std::endl;
+                                    field[globalIdx] = value * programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3));
+                                }
+                                else
+                                {
+                                    field[globalIdx] = value;
+                                }
                             });
                     });
 
