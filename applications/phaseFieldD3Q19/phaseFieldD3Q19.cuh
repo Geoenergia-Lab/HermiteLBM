@@ -155,6 +155,45 @@ namespace LBM
     }
 
     /**
+     * @brief Prime D3Q7 phase-population halos in the runtime population layout
+     **/
+    launchBoundsD3Q19 __global__ void phaseFieldPrimePhaseHalo(
+        const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
+        const device::ptrCollection<6, scalar_t> ghostPhaseWrite)
+    {
+        const thread::coordinate Tx;
+        const block::coordinate Bx;
+        const device::pointCoordinate point(Tx, Bx);
+
+        if constexpr (out_of_bounds_check())
+        {
+            if (device::out_of_bounds(point))
+            {
+                return;
+            }
+        }
+
+        const device::label_t idx = device::idx(Tx, Bx);
+
+        thread::array<scalar_t, NUMBER_MOMENTS<true>()> moments;
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                if constexpr (moment == index::rho)
+                {
+                    moments[moment] = devPtrs.ptr<moment>()[idx] + rho0();
+                }
+                else
+                {
+                    moments[moment] = devPtrs.ptr<moment>()[idx];
+                }
+            });
+
+        thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct(moments);
+        PhaseHalo::save(pop_g, moments, ghostPhaseWrite, Tx, Bx, point);
+    }
+
+    /**
      * @brief Prime packed scalar phi halos from the current phi field (bootstrap step)
      **/
     launchBoundsD3Q19 __global__ void phaseFieldPrimePhiHalo(
