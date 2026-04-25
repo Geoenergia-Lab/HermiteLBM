@@ -53,7 +53,7 @@ assertions::velocitySet::validate<VelocitySet>();
 if (!(boundaryNormal.isBack() || boundaryNormal.isFront()))
 {
     // moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
-    moments[m_i<0>()] = rho0();
+    // moments[m_i<0>()] = rho0();
     return;
 }
 
