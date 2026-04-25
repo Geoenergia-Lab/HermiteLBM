@@ -49,10 +49,10 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-// case normalVector::WEST_SOUTH():
-// case normalVector::EAST_SOUTH():
-// case normalVector::WEST_NORTH():
-// case normalVector::EAST_NORTH():
+// case normalVector::SOUTH_WEST():
+// case normalVector::SOUTH_EAST():
+// case normalVector::NORTH_WEST():
+// case normalVector::NORTH_EAST():
 // case normalVector::WEST():
 // case normalVector::EAST():
 // case normalVector::SOUTH():

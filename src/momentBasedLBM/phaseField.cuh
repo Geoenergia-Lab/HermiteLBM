@@ -1142,13 +1142,24 @@ namespace LBM
             block::sync();
         }
 
-        const bool isInterior =
-            (point.value<axis::X>() > static_cast<device::label_t>(0)) &&
-            (point.value<axis::X>() < (device::n<axis::X>() - static_cast<device::label_t>(1))) &&
-            (point.value<axis::Y>() > static_cast<device::label_t>(0)) &&
-            (point.value<axis::Y>() < (device::n<axis::Y>() - static_cast<device::label_t>(1))) &&
-            (point.value<axis::Z>() > static_cast<device::label_t>(0)) &&
-            (point.value<axis::Z>() < (device::n<axis::Z>() - static_cast<device::label_t>(1)));
+        constexpr bool periodicX = BoundaryConditions::periodicX();
+        constexpr bool periodicY = BoundaryConditions::periodicY();
+        constexpr bool periodicZ = BoundaryConditions::periodicZ();
+
+        const bool xStencilValid =
+            periodicX ||
+            ((point.value<axis::X>() > static_cast<device::label_t>(0)) &&
+             (point.value<axis::X>() < (device::n<axis::X>() - static_cast<device::label_t>(1))));
+        const bool yStencilValid =
+            periodicY ||
+            ((point.value<axis::Y>() > static_cast<device::label_t>(0)) &&
+             (point.value<axis::Y>() < (device::n<axis::Y>() - static_cast<device::label_t>(1))));
+        const bool zStencilValid =
+            periodicZ ||
+            ((point.value<axis::Z>() > static_cast<device::label_t>(0)) &&
+             (point.value<axis::Z>() < (device::n<axis::Z>() - static_cast<device::label_t>(1))));
+
+        const bool isInterior = xStencilValid && yStencilValid && zStencilValid;
 
         if (isInterior)
         {
@@ -1938,13 +1949,24 @@ namespace LBM
         centerNormz = normSharedZ[centerSid];
         centerInd = indShared[centerSid];
 
-        const bool isInterior =
-            (point.value<axis::X>() > static_cast<device::label_t>(0)) &&
-            (point.value<axis::X>() < (device::n<axis::X>() - static_cast<device::label_t>(1))) &&
-            (point.value<axis::Y>() > static_cast<device::label_t>(0)) &&
-            (point.value<axis::Y>() < (device::n<axis::Y>() - static_cast<device::label_t>(1))) &&
-            (point.value<axis::Z>() > static_cast<device::label_t>(0)) &&
-            (point.value<axis::Z>() < (device::n<axis::Z>() - static_cast<device::label_t>(1)));
+        constexpr bool periodicX = BoundaryConditions::periodicX();
+        constexpr bool periodicY = BoundaryConditions::periodicY();
+        constexpr bool periodicZ = BoundaryConditions::periodicZ();
+
+        const bool xStencilValid =
+            periodicX ||
+            ((point.value<axis::X>() > static_cast<device::label_t>(0)) &&
+             (point.value<axis::X>() < (device::n<axis::X>() - static_cast<device::label_t>(1))));
+        const bool yStencilValid =
+            periodicY ||
+            ((point.value<axis::Y>() > static_cast<device::label_t>(0)) &&
+             (point.value<axis::Y>() < (device::n<axis::Y>() - static_cast<device::label_t>(1))));
+        const bool zStencilValid =
+            periodicZ ||
+            ((point.value<axis::Z>() > static_cast<device::label_t>(0)) &&
+             (point.value<axis::Z>() < (device::n<axis::Z>() - static_cast<device::label_t>(1))));
+
+        const bool isInterior = xStencilValid && yStencilValid && zStencilValid;
 
         if (isInterior)
         {

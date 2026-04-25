@@ -51,10 +51,8 @@ Notes
 assertions::velocitySet::validate<VelocitySet>();
 assertions::velocitySet::validate<PhaseVelocitySet>();
 
-if (!(boundaryNormal.isBack() || boundaryNormal.isFront() || boundaryNormal.isSouth() || boundaryNormal.isNorth()))
+if (boundaryNormal.nodeType() == normalVector::WEST() || boundaryNormal.nodeType() == normalVector::EAST())
 {
-    // moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()];
-    moments[m_i<0>()] = rho0();
     return;
 }
 
