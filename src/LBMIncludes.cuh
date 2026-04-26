@@ -92,13 +92,13 @@ SourceFiles
 
 #define MULTI_GPU_HALO
 
-// #define DEBUG_PHI_EXCHANGE
-
-// Testing switch: force phase scalar-halo runtime path even when deviceDecomposition is 1x1x1
 // #define FORCE_MULTI_GPU_SCALAR_HALO_TEST
 
-// Deprecated testing switch (single-GPU loopback phi exchange)
-// #define FORCE_SINGLE_GPU_PHI_LOOPBACK_EXCHANGE
+#define OPTIMIZE_SCALAR_PHI_HALO_WRITES
+
+// #define VALIDATE_SCALAR_PHI_HALO_WRITES
+
+#define PHASE_COLLIDE_SPLIT_KERNELS
 
 #define MULTI_GPU_MSG_NOTE(func, note) #func " not implemented for multi GPU yet: " note
 

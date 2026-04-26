@@ -55,6 +55,16 @@ namespace LBM
 {
     namespace device
     {
+#if defined(VALIDATE_SCALAR_PHI_HALO_WRITES)
+        // Counters: entries, -Z writes, +Z writes, X/Y writes, skipped writes, fallback calls.
+        __device__ unsigned long long scalarPhiHaloWriteCounters[6];
+
+        __device__ inline void count_scalar_phi_halo_write(const int counter) noexcept
+        {
+            atomicAdd(&(scalarPhiHaloWriteCounters[counter]), 1ULL);
+        }
+#endif
+
         /**
          * @class halo
          * @brief Manages halo regions for inter-block communication in CUDA LBM simulations
@@ -638,6 +648,94 @@ namespace LBM
                         writeBuffer.ptr<static_cast<host::label_t>(pointerIndex<axis::Z, +1>())>()[idxPop<axis::Z, 1, scalarHaloDepth>(Tx.value<axis::X>(), Tx.value<axis::Y>(), Bx)] = value;
                     }
                 }
+            }
+
+            /**
+             * @brief Saves scalar phi only for inter-device Z slabs needed by local-subdomain halo reads
+             **/
+            __device__ static inline void save_scalar_interdevice_z_only(
+                const scalar_t value,
+                const device::ptrCollection<6, scalar_t> &writeBuffer,
+                const thread::coordinate &Tx,
+                const block::coordinate &Bx,
+                const device::pointCoordinate &point) noexcept
+            {
+#if defined(VALIDATE_SCALAR_PHI_HALO_WRITES)
+                count_scalar_phi_halo_write(0);
+#endif
+
+#if defined(FORCE_MULTI_GPU_SCALAR_HALO_TEST)
+#if defined(VALIDATE_SCALAR_PHI_HALO_WRITES)
+                count_scalar_phi_halo_write(5);
+#endif
+                save_scalar(value, writeBuffer, Tx, Bx, point);
+#else
+                constexpr device::label_t scalarHaloDepth = static_cast<device::label_t>(2);
+
+                const device::label_t localSizeX = block::n<axis::X>() * device::NUM_BLOCK<axis::X>();
+                const device::label_t localSizeY = block::n<axis::Y>() * device::NUM_BLOCK<axis::Y>();
+                const device::label_t localSizeZ = block::n<axis::Z>() * device::NUM_BLOCK<axis::Z>();
+
+                const bool zOnly =
+                    (localSizeX == device::n<axis::X>()) &&
+                    (localSizeY == device::n<axis::Y>()) &&
+                    (localSizeZ < device::n<axis::Z>());
+
+                if (!zOnly)
+                {
+#if defined(VALIDATE_SCALAR_PHI_HALO_WRITES)
+                    count_scalar_phi_halo_write(5);
+#endif
+                    save_scalar(value, writeBuffer, Tx, Bx, point);
+                    return;
+                }
+
+                const device::label_t localStartZ = block::n<axis::Z>() * device::BLOCK_OFFSET_Z;
+                const device::label_t localEndZ = localStartZ + localSizeZ;
+                const device::label_t globalEndZ = device::n<axis::Z>();
+                const device::label_t pointZ = point.value<axis::Z>();
+
+                bool wrote = false;
+
+                if ((z_periodic || (localStartZ > static_cast<device::label_t>(0))) &&
+                    (pointZ < (localStartZ + scalarHaloDepth)))
+                {
+                    const device::label_t layer = pointZ - localStartZ;
+                    const device::label_t faceIdx =
+                        (layer == static_cast<device::label_t>(0))
+                            ? idxPop<axis::Z, 0, scalarHaloDepth>(Tx.value<axis::X>(), Tx.value<axis::Y>(), Bx)
+                            : idxPop<axis::Z, 1, scalarHaloDepth>(Tx.value<axis::X>(), Tx.value<axis::Y>(), Bx);
+
+                    writeBuffer.ptr<static_cast<host::label_t>(pointerIndex<axis::Z, -1>())>()[faceIdx] = value;
+                    wrote = true;
+#if defined(VALIDATE_SCALAR_PHI_HALO_WRITES)
+                    count_scalar_phi_halo_write(1);
+#endif
+                }
+
+                if ((z_periodic || (localEndZ < globalEndZ)) &&
+                    (pointZ >= (localEndZ - scalarHaloDepth)))
+                {
+                    const device::label_t layer = localEndZ - pointZ - static_cast<device::label_t>(1);
+                    const device::label_t faceIdx =
+                        (layer == static_cast<device::label_t>(0))
+                            ? idxPop<axis::Z, 0, scalarHaloDepth>(Tx.value<axis::X>(), Tx.value<axis::Y>(), Bx)
+                            : idxPop<axis::Z, 1, scalarHaloDepth>(Tx.value<axis::X>(), Tx.value<axis::Y>(), Bx);
+
+                    writeBuffer.ptr<static_cast<host::label_t>(pointerIndex<axis::Z, +1>())>()[faceIdx] = value;
+                    wrote = true;
+#if defined(VALIDATE_SCALAR_PHI_HALO_WRITES)
+                    count_scalar_phi_halo_write(2);
+#endif
+                }
+
+#if defined(VALIDATE_SCALAR_PHI_HALO_WRITES)
+                if (!wrote)
+                {
+                    count_scalar_phi_halo_write(4);
+                }
+#endif
+#endif
             }
 
             /**

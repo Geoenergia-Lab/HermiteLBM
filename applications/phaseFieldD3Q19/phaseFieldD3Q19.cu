@@ -268,7 +268,6 @@ int main(const int argc, const char *const argv[])
                     programCtrl.deviceList()[westDevice],
                     Size));
             }
-
         }
 
         for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
@@ -426,7 +425,6 @@ int main(const int argc, const char *const argv[])
                         programCtrl.deviceList()[westDevice],
                         Size));
                 }
-
             }
         }
 
@@ -451,11 +449,41 @@ int main(const int argc, const char *const argv[])
 
             if (enableScalarHalo)
             {
+#if defined(PHASE_COLLIDE_SPLIT_KERNELS)
+                const bool splitPhaseCollide =
+                    (mesh.nDevices<axis::X>() == static_cast<host::label_t>(1)) &&
+                    (mesh.nDevices<axis::Y>() == static_cast<host::label_t>(1));
+
+                if (splitPhaseCollide)
+                {
+                    phaseFieldCollideInteriorScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[VirtualDeviceIndex]>>>(
+                        devPtrs,
+                        fBlockHalo.writeBuffer(VirtualDeviceIndex),
+                        gBlockHalo.writeBuffer(VirtualDeviceIndex),
+                        phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
+                    errorHandler::checkLast();
+
+                    phaseFieldCollideBoundaryScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[VirtualDeviceIndex]>>>(
+                        devPtrs,
+                        fBlockHalo.writeBuffer(VirtualDeviceIndex),
+                        gBlockHalo.writeBuffer(VirtualDeviceIndex),
+                        phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
+                }
+                else
+                {
+                    phaseFieldCollideScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[VirtualDeviceIndex]>>>(
+                        devPtrs,
+                        fBlockHalo.writeBuffer(VirtualDeviceIndex),
+                        gBlockHalo.writeBuffer(VirtualDeviceIndex),
+                        phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
+                }
+#else
                 phaseFieldCollideScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[VirtualDeviceIndex]>>>(
                     devPtrs,
                     fBlockHalo.writeBuffer(VirtualDeviceIndex),
                     gBlockHalo.writeBuffer(VirtualDeviceIndex),
                     phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
+#endif
             }
             else
             {

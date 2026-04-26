@@ -138,6 +138,34 @@ namespace LBM
             ghostPhi);
     }
 
+#if defined(PHASE_COLLIDE_SPLIT_KERNELS)
+    launchBoundsD3Q27 __global__ void phaseFieldCollideInteriorScalarHalo(
+        const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
+        const device::ptrCollection<6, scalar_t> ghostHydro,
+        const device::ptrCollection<6, scalar_t> ghostPhase,
+        const device::ptrCollection<6, const scalar_t> ghostPhi)
+    {
+        phaseCollide<BoundaryConditions, VelocitySet, PhaseVelocitySet, Collision, HydroHalo, PhaseHalo, true, phaseCollideRegion::Interior>(
+            devPtrs,
+            ghostHydro,
+            ghostPhase,
+            ghostPhi);
+    }
+
+    launchBoundsD3Q27 __global__ void phaseFieldCollideBoundaryScalarHalo(
+        const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
+        const device::ptrCollection<6, scalar_t> ghostHydro,
+        const device::ptrCollection<6, scalar_t> ghostPhase,
+        const device::ptrCollection<6, const scalar_t> ghostPhi)
+    {
+        phaseCollide<BoundaryConditions, VelocitySet, PhaseVelocitySet, Collision, HydroHalo, PhaseHalo, true, phaseCollideRegion::Boundary>(
+            devPtrs,
+            ghostHydro,
+            ghostPhase,
+            ghostPhi);
+    }
+#endif
+
     /**
      * @brief Collision step wrapper for multiphase D3Q27 + D3Q7 (local scalar-neighbor path)
      **/

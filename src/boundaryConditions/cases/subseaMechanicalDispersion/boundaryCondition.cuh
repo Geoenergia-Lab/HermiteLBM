@@ -72,7 +72,7 @@ const scalar_t is_jet = static_cast<scalar_t>(
          point.value<axis::X, scalar_t>() - center_x(),
          point.value<axis::Z, scalar_t>() - water_pos()) <= r2_water()));
 
-const scalar_t is_outlet = static_cast<scalar_t>(boundaryNormal.isFront() || boundaryNormal.isNorth());
+const scalar_t is_outlet = static_cast<scalar_t>(boundaryNormal.isNorth());
 
 moments[m_i<0>()] = (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()]);
 
