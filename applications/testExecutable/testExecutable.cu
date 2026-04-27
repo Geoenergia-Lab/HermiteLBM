@@ -162,7 +162,11 @@ int main(const int argc, const char *const argv[])
             const device::ptrCollection<6, scalar_t> writeBuffer = blockHalo.writeBuffer(VirtualDeviceIndex);
 
             // Configure the kernel to run per GPU
-            momentBasedD3Q27<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[VirtualDeviceIndex]>>>(devPtrs, readBuffer, writeBuffer);
+            momentBasedD3Q27<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[VirtualDeviceIndex]>>>(
+                devPtrs,
+                readBuffer,
+                writeBuffer,
+                static_cast<device::label_t>(timeStep));
 
             errorHandler::checkLast();
         }

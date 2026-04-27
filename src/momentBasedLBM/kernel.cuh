@@ -89,7 +89,8 @@ namespace LBM
         const device::ptrCollection<10, scalar_t> &devPtrs,
         const device::ptrCollection<6, const scalar_t> &readBuffer,
         const device::ptrCollection<6, scalar_t> &writeBuffer,
-        SharedBuffer &sharedBuffer)
+        SharedBuffer &sharedBuffer,
+        [[maybe_unused]] const device::label_t timeStep)
     {
         static_assert(std::is_same_v<BlockHalo, device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>>);
 
@@ -198,7 +199,7 @@ namespace LBM
 
                 if (boundaryNormal.isBoundary())
                 {
-                    BoundaryConditions::template calculate_moments<VelocitySet>(pop, moments, boundaryNormal, sharedBuffer, Tx, point);
+                    BoundaryConditions::template calculate_moments<VelocitySet>(pop, moments, boundaryNormal, sharedBuffer, Tx, point, timeStep);
                 }
             }
         }

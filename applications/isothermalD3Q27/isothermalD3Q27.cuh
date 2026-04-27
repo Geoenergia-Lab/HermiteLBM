@@ -83,11 +83,12 @@ namespace LBM
     launchBoundsD3Q27 __global__ void momentBasedD3Q27(
         const device::ptrCollection<10, scalar_t> devPtrs,
         const device::ptrCollection<6, const scalar_t> readBuffer,
-        const device::ptrCollection<6, scalar_t> writeBuffer)
+        const device::ptrCollection<6, scalar_t> writeBuffer,
+        const device::label_t timeStep)
     {
         extern __shared__ scalar_t shared_buffer[];
 
-        momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer);
+        momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer, timeStep);
     }
 }
 

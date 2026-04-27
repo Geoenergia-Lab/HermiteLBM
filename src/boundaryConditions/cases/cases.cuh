@@ -51,6 +51,7 @@ SourceFiles
 #define __MBLBM_CASES_CUH
 
 #include "invalidBoundaryCondition.cuh"
+#include "jetWhiteNoise.cuh"
 #include "jetFlow/jetFlow.cuh"
 #include "lidDrivenCavity/lidDrivenCavity.cuh"
 #include "twoPhaseJet/twoPhaseJet.cuh"

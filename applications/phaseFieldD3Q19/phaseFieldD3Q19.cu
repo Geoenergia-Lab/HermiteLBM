@@ -354,7 +354,8 @@ int main(const int argc, const char *const argv[])
                     fBlockHalo.readBuffer(VirtualDeviceIndex),
                     gBlockHalo.readBuffer(VirtualDeviceIndex),
                     phiBlockHalo.readBuffer(VirtualDeviceIndex),
-                    phiBlockHalo.writeBuffer(VirtualDeviceIndex));
+                    phiBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    static_cast<device::label_t>(timeStep));
             }
             else
             {
@@ -363,7 +364,8 @@ int main(const int argc, const char *const argv[])
                     fBlockHalo.readBuffer(VirtualDeviceIndex),
                     gBlockHalo.readBuffer(VirtualDeviceIndex),
                     phiBlockHalo.readBuffer(VirtualDeviceIndex),
-                    phiBlockHalo.writeBuffer(VirtualDeviceIndex));
+                    phiBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    static_cast<device::label_t>(timeStep));
             }
 
             errorHandler::checkLast();

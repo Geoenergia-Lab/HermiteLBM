@@ -62,41 +62,42 @@ const device::label_t tid = boundaryNormal.isFront()
                                 ? block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), block::nz() - 2)
                                 : block::idx(Tx.value<axis::X>(), block::ny() - 2, Tx.value<axis::Z>());
 
-const scalar_t is_jet = static_cast<scalar_t>(
-    (boundaryNormal.isBack() &&
-     rms_sq(
-         point.value<axis::X, scalar_t>() - center_x(),
-         point.value<axis::Y, scalar_t>() - oil_pos()) <= r2_oil()) ||
-    (boundaryNormal.isSouth() &&
-     rms_sq(
-         point.value<axis::X, scalar_t>() - center_x(),
-         point.value<axis::Z, scalar_t>() - water_pos()) <= r2_water()));
+const scalar_t is_oil_inlet = static_cast<scalar_t>(
+    boundaryNormal.isBack() &&
+    rms_sq(
+        point.value<axis::X, scalar_t>() - center_x(),
+        point.value<axis::Y, scalar_t>() - oil_pos()) <= r2_oil());
 
-const scalar_t is_outlet = static_cast<scalar_t>(boundaryNormal.isNorth());
+const scalar_t is_water_inlet = static_cast<scalar_t>(
+    boundaryNormal.isSouth() &&
+    rms_sq(
+        point.value<axis::X, scalar_t>() - center_x(),
+        point.value<axis::Z, scalar_t>() - water_pos()) <= r2_water());
+
+const scalar_t is_outlet = static_cast<scalar_t>(
+    boundaryNormal.nodeType() == normalVector::NORTH() ||
+    boundaryNormal.nodeType() == normalVector::NORTH_WEST() ||
+    boundaryNormal.nodeType() == normalVector::NORTH_EAST());
 
 moments[m_i<0>()] = (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<0>()]);
 
 moments[m_i<1>()] =
     (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<1>()]) +
-    static_cast<scalar_t>(boundaryNormal.isBack()) * is_jet * device::U_Back[0] +
-    static_cast<scalar_t>(boundaryNormal.isSouth()) * is_jet * device::U_South[0];
+    is_oil_inlet * device::U_Back[0] +
+    is_water_inlet * device::U_South[0];
 
 moments[m_i<2>()] =
     (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<2>()]) +
-    static_cast<scalar_t>(boundaryNormal.isBack()) * is_jet * device::U_Back[1] +
-    static_cast<scalar_t>(boundaryNormal.isSouth()) * is_jet * device::U_South[1];
+    is_oil_inlet * device::U_Back[1] +
+    is_water_inlet * device::U_South[1];
 
 moments[m_i<3>()] =
     (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<3>()]) +
-    static_cast<scalar_t>(boundaryNormal.isBack()) * is_jet * device::U_Back[2] +
-    static_cast<scalar_t>(boundaryNormal.isSouth()) * is_jet * device::U_South[2];
+    is_oil_inlet * device::U_Back[2] +
+    is_water_inlet * device::U_South[2];
 
 // Set equilibrium phase field
-moments[m_i<10>()] = static_cast<scalar_t>(0);
-if (is_outlet)
-{
-    moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()];
-}
+moments[m_i<10>()] = is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()];
 
 // Set equilibrium velocities
 moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];
@@ -139,7 +140,7 @@ case normalVector::BACK():
         moments[m_i<8>()] = static_cast<scalar_t>(2) * myz_I * rho_I / moments[m_i<0>()];
         // moments[m_i<9>()] = is_jet * (moments[m_i<0>()] * device::U_Back[2] * device::U_Back[2]);
 
-        moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1);
+        moments[m_i<10>()] = is_oil_inlet * static_cast<scalar_t>(1);
     }
     else
     {
@@ -162,7 +163,7 @@ case normalVector::BACK():
         moments[m_i<8>()] = myz; // myz
         // moments[m_i<9>()] = is_jet * (rho * device::U_Back[2] * device::U_Back[2]); // mzz
 
-        moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1);
+        moments[m_i<10>()] = is_oil_inlet * static_cast<scalar_t>(1);
     }
 
     return;

@@ -98,7 +98,8 @@ namespace LBM
             const normalVector &boundaryNormal,
             const SharedBuffer shared_buffer,
             const thread::coordinate &Tx,
-            const device::pointCoordinate &point) noexcept
+            const device::pointCoordinate &point,
+            const device::label_t timeStep) noexcept
         {
 #include "boundaryCondition.cuh"
         }

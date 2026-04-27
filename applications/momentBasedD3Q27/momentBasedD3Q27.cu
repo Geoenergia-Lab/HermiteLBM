@@ -153,7 +153,8 @@ int main(const int argc, const char *const argv[])
                 momentBasedD3Q27<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[stream]>>>(
                     devPtrs,
                     blockHalo.readBuffer(VirtualDeviceIndex),
-                    blockHalo.writeBuffer(VirtualDeviceIndex));
+                    blockHalo.writeBuffer(VirtualDeviceIndex),
+                    static_cast<device::label_t>(timeStep));
             });
 
         // Calculate S kernel

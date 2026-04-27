@@ -150,7 +150,11 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.readBuffer(VirtualDeviceIndex), blockHalo.writeBuffer(VirtualDeviceIndex));
+                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), streamsLBM.streams()[stream]>>>(
+                    devPtrs,
+                    blockHalo.readBuffer(VirtualDeviceIndex),
+                    blockHalo.writeBuffer(VirtualDeviceIndex),
+                    static_cast<device::label_t>(timeStep));
             });
 
         // Calculate S kernel

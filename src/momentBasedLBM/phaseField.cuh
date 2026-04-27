@@ -1561,7 +1561,8 @@ namespace LBM
         const device::ptrCollection<6, const scalar_t> &phiBuffer,
         const device::ptrCollection<6, scalar_t> &phiWriteBuffer,
         HydroShared &hydroShared,
-        PhaseShared &phaseShared)
+        PhaseShared &phaseShared,
+        [[maybe_unused]] const device::label_t timeStep)
     {
         static_assert(std::is_same_v<HydroHalo, device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>>);
         static_assert(std::is_same_v<PhaseHalo, device::halo<PhaseVelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>>);
@@ -2035,7 +2036,14 @@ namespace LBM
 
             if (boundaryNormal.isBoundary())
             {
-                BoundaryConditions::template calculate_moments<VelocitySet, PhaseVelocitySet, const scalar_t *>(pop, moments, boundaryNormal, hydroShared, Tx, point);
+                if constexpr (std::is_same<BoundaryConditions, twoPhaseJet>::value)
+                {
+                    BoundaryConditions::template calculate_moments<VelocitySet, PhaseVelocitySet, const scalar_t *>(pop, moments, boundaryNormal, hydroShared, Tx, point, timeStep);
+                }
+                else
+                {
+                    BoundaryConditions::template calculate_moments<VelocitySet, PhaseVelocitySet, const scalar_t *>(pop, moments, boundaryNormal, hydroShared, Tx, point);
+                }
             }
         }
 
