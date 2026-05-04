@@ -80,6 +80,7 @@ namespace LBM
         Boundary
     };
 
+#if defined(PHASE_COLLIDE_TIMING)
     class phaseCollideTiming
     {
     public:
@@ -276,6 +277,7 @@ namespace LBM
         host::label_t collideSamples_ = static_cast<host::label_t>(0);
         host::label_t timeStepSamples_ = static_cast<host::label_t>(0);
     };
+#endif
 
     /**
      * @brief Load a neighboring phase value using shared-memory fast path and scalar halo fallback

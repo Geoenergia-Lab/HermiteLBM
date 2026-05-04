@@ -38,16 +38,22 @@ export CUDALBM_INCLUDE_DIR="$CUDALBM_BUILD_DIR/include"
 
 # Determine the active CUDA installation path
 if command -v nvcc > /dev/null 2>&1; then
-    # Resolve the path to nvcc and extract the CUDA directory
     NVCC_PATH=$(command -v nvcc)
-    # Resolve symlinks to get the actual path
-    RESOLVED_NVCC_PATH=$(readlink -f "$NVCC_PATH" 2>/dev/null || echo "$NVCC_PATH")
-    # Extract the base directory (remove trailing '/bin/nvcc')
-    export CUDALBM_CUDA_DIR=$(dirname "$(dirname "$RESOLVED_NVCC_PATH")")
+elif [[ -x /usr/local/cuda/bin/nvcc ]]; then
+    NVCC_PATH="/usr/local/cuda/bin/nvcc"
 else
-    echo "Error: nvcc not found. Ensure CUDA is installed and in your PATH." >&2
-    return 1
+    CUDA_NVCC_CANDIDATE=$(find /usr/local -maxdepth 2 -path "/usr/local/cuda*/bin/nvcc" -type f -executable 2>/dev/null | sort -V | tail -n 1)
+
+    if [[ -n "$CUDA_NVCC_CANDIDATE" ]]; then
+        NVCC_PATH="$CUDA_NVCC_CANDIDATE"
+    else
+        echo "Error: nvcc not found. Ensure CUDA Toolkit is installed under /usr/local/cuda* or available in PATH." >&2
+        return 1
+    fi
 fi
+
+RESOLVED_NVCC_PATH=$(readlink -f "$NVCC_PATH" 2>/dev/null || echo "$NVCC_PATH")
+export CUDALBM_CUDA_DIR=$(dirname "$(dirname "$RESOLVED_NVCC_PATH")")
 
 export PATH=$CUDALBM_CUDA_DIR/bin:$PATH
 export LIBRARY_PATH=$CUDALBM_CUDA_DIR/lib64:$LIBRARY_PATH
