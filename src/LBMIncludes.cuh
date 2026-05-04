@@ -98,7 +98,8 @@ SourceFiles
 
 // #define VALIDATE_SCALAR_PHI_HALO_WRITES
 
-#define PHASE_COLLIDE_SPLIT_KERNELS
+// Scalar-halo phase collision uses split interior/boundary kernels by default.
+// #define PHASE_COLLIDE_COMBINED_FALLBACK
 
 #define MULTI_GPU_MSG_NOTE(func, note) #func " not implemented for multi GPU yet: " note
 

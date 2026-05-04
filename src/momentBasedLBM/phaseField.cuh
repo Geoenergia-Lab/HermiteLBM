@@ -80,15 +80,202 @@ namespace LBM
         Boundary
     };
 
-#if defined(MBLBM_VALIDATE_PHASE_COLLIDE_SPLIT)
-    // Counters: interior cells, boundary cells, interior blocks, boundary blocks, interior skips, boundary skips.
-    __device__ unsigned long long phaseCollideSplitCounters[6];
-
-    __device__ inline void count_phase_collide_split(const int counter, const unsigned long long value = 1ULL) noexcept
+    class phaseCollideTiming
     {
-        atomicAdd(&(phaseCollideSplitCounters[counter]), value);
-    }
-#endif
+    public:
+        __host__ explicit phaseCollideTiming(const programControl &programCtrl)
+            : deviceList_(programCtrl.deviceList()),
+              interiorStart_(deviceList_.size(), nullptr),
+              interiorStop_(deviceList_.size(), nullptr),
+              boundaryStart_(deviceList_.size(), nullptr),
+              boundaryStop_(deviceList_.size(), nullptr),
+              collideStart_(deviceList_.size(), nullptr),
+              collideStop_(deviceList_.size(), nullptr),
+              timeStepStart_(clock_type::now())
+        {
+            for (std::size_t device = 0; device < deviceList_.size(); device++)
+            {
+                errorHandler::check(cudaSetDevice(deviceList_[device]));
+                createEvent(interiorStart_[device]);
+                createEvent(interiorStop_[device]);
+                createEvent(boundaryStart_[device]);
+                createEvent(boundaryStop_[device]);
+                createEvent(collideStart_[device]);
+                createEvent(collideStop_[device]);
+            }
+        }
+
+        __host__ ~phaseCollideTiming() noexcept
+        {
+            for (std::size_t device = 0; device < deviceList_.size(); device++)
+            {
+                errorHandler::checkInline(cudaSetDevice(deviceList_[device]));
+                destroyEvent(interiorStart_[device]);
+                destroyEvent(interiorStop_[device]);
+                destroyEvent(boundaryStart_[device]);
+                destroyEvent(boundaryStop_[device]);
+                destroyEvent(collideStart_[device]);
+                destroyEvent(collideStop_[device]);
+            }
+        }
+
+        __host__ phaseCollideTiming(const phaseCollideTiming &) = delete;
+        __host__ phaseCollideTiming &operator=(const phaseCollideTiming &) = delete;
+
+        __host__ inline void beginTimeStep() noexcept
+        {
+            timeStepStart_ = clock_type::now();
+        }
+
+        __host__ inline void endTimeStep() noexcept
+        {
+            const clock_type::time_point timeStepStop = clock_type::now();
+            totalTimeStepMs_ += std::chrono::duration<double, std::milli>(timeStepStop - timeStepStart_).count();
+            timeStepSamples_++;
+        }
+
+        __host__ inline void recordInteriorStart(const device::label_t virtualDeviceIndex, const cudaStream_t stream) const noexcept
+        {
+            recordEvent(interiorStart_, virtualDeviceIndex, stream);
+        }
+
+        __host__ inline void recordInteriorStop(const device::label_t virtualDeviceIndex, const cudaStream_t stream) const noexcept
+        {
+            recordEvent(interiorStop_, virtualDeviceIndex, stream);
+        }
+
+        __host__ inline void recordBoundaryStart(const device::label_t virtualDeviceIndex, const cudaStream_t stream) const noexcept
+        {
+            recordEvent(boundaryStart_, virtualDeviceIndex, stream);
+        }
+
+        __host__ inline void recordBoundaryStop(const device::label_t virtualDeviceIndex, const cudaStream_t stream) const noexcept
+        {
+            recordEvent(boundaryStop_, virtualDeviceIndex, stream);
+        }
+
+        __host__ inline void recordCollideStart(const device::label_t virtualDeviceIndex, const cudaStream_t stream) const noexcept
+        {
+            recordEvent(collideStart_, virtualDeviceIndex, stream);
+        }
+
+        __host__ inline void recordCollideStop(const device::label_t virtualDeviceIndex, const cudaStream_t stream) const noexcept
+        {
+            recordEvent(collideStop_, virtualDeviceIndex, stream);
+        }
+
+        __host__ inline void accumulateCollide(const bool splitScalarHalo) noexcept
+        {
+            double interiorMs = 0.0;
+            double boundaryMs = 0.0;
+            double collideMs = 0.0;
+
+            for (std::size_t device = 0; device < deviceList_.size(); device++)
+            {
+                errorHandler::checkInline(cudaSetDevice(deviceList_[device]));
+
+                if (splitScalarHalo)
+                {
+                    interiorMs = std::max(interiorMs, elapsedMs(interiorStart_[device], interiorStop_[device]));
+                    boundaryMs = std::max(boundaryMs, elapsedMs(boundaryStart_[device], boundaryStop_[device]));
+                }
+
+                collideMs = std::max(collideMs, elapsedMs(collideStart_[device], collideStop_[device]));
+            }
+
+            if (splitScalarHalo)
+            {
+                totalInteriorMs_ += interiorMs;
+                totalBoundaryMs_ += boundaryMs;
+                splitSamples_++;
+            }
+
+            totalCollideMs_ += collideMs;
+            collideSamples_++;
+        }
+
+        __host__ inline void print(const host::latticeMesh &mesh) const noexcept
+        {
+            if (timeStepSamples_ == static_cast<host::label_t>(0))
+            {
+                return;
+            }
+
+            const double timeStepSamples = static_cast<double>(timeStepSamples_);
+            const double collideSamples = static_cast<double>(collideSamples_);
+            const double splitSamples = static_cast<double>(splitSamples_);
+            const double latticeUpdates = static_cast<double>(mesh.size()) * timeStepSamples;
+            const double timeStepMLUPS = (totalTimeStepMs_ > 0.0) ? (latticeUpdates / (totalTimeStepMs_ * 1000.0)) : 0.0;
+            const double collideMLUPS = (totalCollideMs_ > 0.0) ? (latticeUpdates / (totalCollideMs_ * 1000.0)) : 0.0;
+
+            const std::ios::fmtflags flags = std::cout.flags();
+            const std::streamsize precision = std::cout.precision();
+
+            std::cout << std::fixed << std::setprecision(3);
+            std::cout << std::endl;
+            std::cout << "phaseCollideTiming:" << std::endl;
+            std::cout << "{" << std::endl;
+            std::cout << "    samples: " << timeStepSamples_ << ";" << std::endl;
+            std::cout << "    phaseCollideInteriorKernelAvgMs: " << ((splitSamples_ > static_cast<host::label_t>(0)) ? (totalInteriorMs_ / splitSamples) : 0.0) << ";" << std::endl;
+            std::cout << "    phaseCollideBoundaryKernelAvgMs: " << ((splitSamples_ > static_cast<host::label_t>(0)) ? (totalBoundaryMs_ / splitSamples) : 0.0) << ";" << std::endl;
+            std::cout << "    phaseCollideTotalAvgMs: " << ((collideSamples_ > static_cast<host::label_t>(0)) ? (totalCollideMs_ / collideSamples) : 0.0) << ";" << std::endl;
+            std::cout << "    timeStepAvgMs: " << (totalTimeStepMs_ / timeStepSamples) << ";" << std::endl;
+            std::cout << "    phaseCollideMLUPS: " << collideMLUPS << ";" << std::endl;
+            std::cout << "    timeStepMLUPS: " << timeStepMLUPS << ";" << std::endl;
+            std::cout << "};" << std::endl;
+
+            std::cout.flags(flags);
+            std::cout.precision(precision);
+        }
+
+    private:
+        using clock_type = std::chrono::high_resolution_clock;
+
+        __host__ static inline void createEvent(cudaEvent_t &event) noexcept
+        {
+            errorHandler::check(cudaEventCreate(&event));
+        }
+
+        __host__ static inline void destroyEvent(cudaEvent_t &event) noexcept
+        {
+            if (event != nullptr)
+            {
+                errorHandler::checkInline(cudaEventDestroy(event));
+                event = nullptr;
+            }
+        }
+
+        __host__ static inline double elapsedMs(const cudaEvent_t start, const cudaEvent_t stop) noexcept
+        {
+            float elapsed = 0.0F;
+            errorHandler::checkInline(cudaEventElapsedTime(&elapsed, start, stop));
+            return static_cast<double>(elapsed);
+        }
+
+        __host__ inline void recordEvent(
+            const std::vector<cudaEvent_t> &events,
+            const device::label_t virtualDeviceIndex,
+            const cudaStream_t stream) const noexcept
+        {
+            errorHandler::checkInline(cudaEventRecord(events[static_cast<std::size_t>(virtualDeviceIndex)], stream));
+        }
+
+        const std::vector<deviceIndex_t> deviceList_;
+        std::vector<cudaEvent_t> interiorStart_;
+        std::vector<cudaEvent_t> interiorStop_;
+        std::vector<cudaEvent_t> boundaryStart_;
+        std::vector<cudaEvent_t> boundaryStop_;
+        std::vector<cudaEvent_t> collideStart_;
+        std::vector<cudaEvent_t> collideStop_;
+        clock_type::time_point timeStepStart_;
+        double totalInteriorMs_ = 0.0;
+        double totalBoundaryMs_ = 0.0;
+        double totalCollideMs_ = 0.0;
+        double totalTimeStepMs_ = 0.0;
+        host::label_t splitSamples_ = static_cast<host::label_t>(0);
+        host::label_t collideSamples_ = static_cast<host::label_t>(0);
+        host::label_t timeStepSamples_ = static_cast<host::label_t>(0);
+    };
 
     /**
      * @brief Load a neighboring phase value using shared-memory fast path and scalar halo fallback
@@ -2124,32 +2311,17 @@ namespace LBM
             if constexpr (useScalarHalo)
             {
                 const bool interiorBlock = block_phi_tile_inside_local_subdomain<PhaseHalo, 2>(Bx);
-#if defined(MBLBM_VALIDATE_PHASE_COLLIDE_SPLIT)
-                if (tid == static_cast<device::label_t>(0))
-                {
-                    count_phase_collide_split(interiorBlock ? 2 : 4);
-                }
-#endif
                 if (!interiorBlock)
                 {
                     return;
                 }
             }
-#if defined(MBLBM_VALIDATE_PHASE_COLLIDE_SPLIT)
-            count_phase_collide_split(0);
-#endif
         }
         else if constexpr (region == phaseCollideRegion::Boundary)
         {
             if constexpr (useScalarHalo)
             {
                 const bool interiorBlock = block_phi_tile_inside_local_subdomain<PhaseHalo, 2>(Bx);
-#if defined(MBLBM_VALIDATE_PHASE_COLLIDE_SPLIT)
-                if (tid == static_cast<device::label_t>(0))
-                {
-                    count_phase_collide_split(interiorBlock ? 5 : 3);
-                }
-#endif
                 if (interiorBlock)
                 {
                     return;
@@ -2157,17 +2329,8 @@ namespace LBM
             }
             else
             {
-#if defined(MBLBM_VALIDATE_PHASE_COLLIDE_SPLIT)
-                if (tid == static_cast<device::label_t>(0))
-                {
-                    count_phase_collide_split(5);
-                }
-#endif
                 return;
             }
-#if defined(MBLBM_VALIDATE_PHASE_COLLIDE_SPLIT)
-            count_phase_collide_split(1);
-#endif
         }
 
         // Prefetch devPtrs into L2

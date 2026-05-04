@@ -99,6 +99,12 @@ int main(const int argc, const char *const argv[])
     const bool enableScalarHalo = (mesh.nDevices<axis::X>() * mesh.nDevices<axis::Y>() * mesh.nDevices<axis::Z>()) > static_cast<host::label_t>(1);
 #endif
 
+#if defined(PHASE_COLLIDE_COMBINED_FALLBACK)
+    constexpr bool useSplitPhaseCollide = false;
+#else
+    constexpr bool useSplitPhaseCollide = true;
+#endif
+
     if (enableScalarHalo)
     {
         programCtrl.configure<smem_alloc_size<VelocitySet>()>(phaseFieldStreamScalarHalo);
@@ -109,6 +115,7 @@ int main(const int argc, const char *const argv[])
     }
 
     const runTimeIO IO(mesh, programCtrl);
+    phaseCollideTiming phaseTiming(programCtrl);
 
     for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
     {
@@ -321,6 +328,8 @@ int main(const int argc, const char *const argv[])
             runTimeObjects.save(timeStep);
         }
 
+        phaseTiming.beginTimeStep();
+
         for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
         {
             errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
@@ -449,51 +458,48 @@ int main(const int argc, const char *const argv[])
                 mzz.ptr(VirtualDeviceIndex),
                 phi.ptr(VirtualDeviceIndex)};
 
+            const cudaStream_t collideStream = streamsLBM.streams()[VirtualDeviceIndex];
+
             if (enableScalarHalo)
             {
-#if defined(PHASE_COLLIDE_SPLIT_KERNELS)
-                const bool splitPhaseCollide =
-                    (mesh.nDevices<axis::X>() == static_cast<host::label_t>(1)) &&
-                    (mesh.nDevices<axis::Y>() == static_cast<host::label_t>(1));
-
-                if (splitPhaseCollide)
-                {
-                    phaseFieldCollideInteriorScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[VirtualDeviceIndex]>>>(
-                        devPtrs,
-                        fBlockHalo.writeBuffer(VirtualDeviceIndex),
-                        gBlockHalo.writeBuffer(VirtualDeviceIndex),
-                        phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
-                    errorHandler::checkLast();
-
-                    phaseFieldCollideBoundaryScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[VirtualDeviceIndex]>>>(
-                        devPtrs,
-                        fBlockHalo.writeBuffer(VirtualDeviceIndex),
-                        gBlockHalo.writeBuffer(VirtualDeviceIndex),
-                        phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
-                }
-                else
-                {
-                    phaseFieldCollideScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[VirtualDeviceIndex]>>>(
-                        devPtrs,
-                        fBlockHalo.writeBuffer(VirtualDeviceIndex),
-                        gBlockHalo.writeBuffer(VirtualDeviceIndex),
-                        phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
-                }
-#else
-                phaseFieldCollideScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[VirtualDeviceIndex]>>>(
+#if defined(PHASE_COLLIDE_COMBINED_FALLBACK)
+                phaseTiming.recordCollideStart(VirtualDeviceIndex, collideStream);
+                phaseFieldCollideScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, collideStream>>>(
                     devPtrs,
                     fBlockHalo.writeBuffer(VirtualDeviceIndex),
                     gBlockHalo.writeBuffer(VirtualDeviceIndex),
                     phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
+                phaseTiming.recordCollideStop(VirtualDeviceIndex, collideStream);
+#else
+                phaseTiming.recordCollideStart(VirtualDeviceIndex, collideStream);
+                phaseTiming.recordInteriorStart(VirtualDeviceIndex, collideStream);
+                phaseFieldCollideInteriorScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, collideStream>>>(
+                    devPtrs,
+                    fBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    gBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
+                phaseTiming.recordInteriorStop(VirtualDeviceIndex, collideStream);
+                errorHandler::checkLast();
+
+                phaseTiming.recordBoundaryStart(VirtualDeviceIndex, collideStream);
+                phaseFieldCollideBoundaryScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, collideStream>>>(
+                    devPtrs,
+                    fBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    gBlockHalo.writeBuffer(VirtualDeviceIndex),
+                    phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
+                phaseTiming.recordBoundaryStop(VirtualDeviceIndex, collideStream);
+                phaseTiming.recordCollideStop(VirtualDeviceIndex, collideStream);
 #endif
             }
             else
             {
-                phaseFieldCollideLocal<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[VirtualDeviceIndex]>>>(
+                phaseTiming.recordCollideStart(VirtualDeviceIndex, collideStream);
+                phaseFieldCollideLocal<<<mesh.gridBlock(), mesh.threadBlock(), 0, collideStream>>>(
                     devPtrs,
                     fBlockHalo.writeBuffer(VirtualDeviceIndex),
                     gBlockHalo.writeBuffer(VirtualDeviceIndex),
                     phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
+                phaseTiming.recordCollideStop(VirtualDeviceIndex, collideStream);
             }
 
             errorHandler::checkLast();
@@ -506,6 +512,8 @@ int main(const int argc, const char *const argv[])
             errorHandler::checkInline(cudaDeviceSynchronize());
             streamsLBM.synchronize(VirtualDeviceIndex);
         }
+
+        phaseTiming.accumulateCollide(enableScalarHalo && useSplitPhaseCollide);
 
         if (enableScalarHalo)
         {
@@ -618,12 +626,16 @@ int main(const int argc, const char *const argv[])
             }
         }
 
+        phaseTiming.endTimeStep();
+
         // Do the run-time IO
         if (programCtrl.print(timeStep))
         {
             std::cout << "Time: " << timeStep << std::endl;
         }
     }
+
+    phaseTiming.print(mesh);
 
     return 0;
 }
