@@ -29,22 +29,22 @@ namespace LBM
 
         __device__ [[nodiscard]] inline scalar_t sponge_width() noexcept
         {
-            return static_cast<scalar_t>(static_cast<double>(sponge_cells()) / static_cast<double>(device::ny - static_cast<device::label_t>(1)));
+            return static_cast<scalar_t>(static_cast<scalar_t>(sponge_cells()) / static_cast<scalar_t>(device::ny - static_cast<device::label_t>(1)));
         }
 
         __device__ [[nodiscard]] inline scalar_t y_start() noexcept
         {
-            return static_cast<scalar_t>(static_cast<double>(device::ny - static_cast<device::label_t>(1) - sponge_cells()) / static_cast<double>(device::ny - static_cast<device::label_t>(1)));
+            return static_cast<scalar_t>(static_cast<scalar_t>(device::ny - static_cast<device::label_t>(1) - sponge_cells()) / static_cast<scalar_t>(device::ny - static_cast<device::label_t>(1)));
         }
 
         __device__ [[nodiscard]] inline scalar_t inv_ny_m1() noexcept
         {
-            return static_cast<scalar_t>(static_cast<double>(1) / static_cast<double>(device::ny - static_cast<device::label_t>(1)));
+            return static_cast<scalar_t>(static_cast<scalar_t>(1) / static_cast<scalar_t>(device::ny - static_cast<device::label_t>(1)));
         }
 
         __device__ [[nodiscard]] inline scalar_t inv_sponge() noexcept
         {
-            return static_cast<scalar_t>(static_cast<double>(1) / static_cast<double>(sponge_width()));
+            return static_cast<scalar_t>(static_cast<scalar_t>(1) / static_cast<scalar_t>(sponge_width()));
         }
 
         __device__ [[nodiscard]] inline scalar_t ramp_ymax(const device::label_t yGlobal) noexcept
