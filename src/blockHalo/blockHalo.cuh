@@ -122,6 +122,55 @@ namespace LBM
         {
             return idxPop<alpha, pop, QF>(ij.i(), ij.j(), Bx.value<axis::X>(), Bx.value<axis::Y>(), Bx.value<axis::Z>());
         }
+
+        /**
+         * @brief Returns the pointer index corresponding to the axis direction alpha and coefficient coeff (must be -1 or 1)
+         * @tparam alpha The axis direction (X, Y or Z)
+         * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
+         * @returns The pointer index corresponding to the axis direction alpha and coefficient coeff
+         **/
+        template <const axis::type alpha, const int coeff>
+        __device__ __host__ [[nodiscard]] static inline consteval axis::pointerIndex_t pointerIndex() noexcept
+        {
+            axis::assertions::validate<alpha, axis::null::NOT_NULL>();
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
+
+            if constexpr (alpha == axis::X)
+            {
+                if constexpr (coeff == -1)
+                {
+                    return axis::pointerIndex_t::West;
+                }
+                if constexpr (coeff == 1)
+                {
+                    return axis::pointerIndex_t::East;
+                }
+            }
+
+            if constexpr (alpha == axis::Y)
+            {
+                if constexpr (coeff == -1)
+                {
+                    return axis::pointerIndex_t::South;
+                }
+                if constexpr (coeff == 1)
+                {
+                    return axis::pointerIndex_t::North;
+                }
+            }
+
+            if constexpr (alpha == axis::Z)
+            {
+                if constexpr (coeff == -1)
+                {
+                    return axis::pointerIndex_t::Back;
+                }
+                if constexpr (coeff == 1)
+                {
+                    return axis::pointerIndex_t::Front;
+                }
+            }
+        }
     }
 }
 
