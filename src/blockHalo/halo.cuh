@@ -160,7 +160,7 @@ namespace LBM
             /**
              * @brief Checks if the current thread is at a block boundary in a given direction, accounting for periodicity
              * @tparam alpha The axis direction (X, Y or Z)
-             * @tparam coeff The normal direction; -1 for negative face, +1 for positive face
+             * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
              * @tparam isPeriodic Whether the domain is periodic in this direction
              * @param[in] alpha_v The global coordinate in the alpha direction
              * @param[in] Tx Three-dimensional thread coordinates
@@ -196,7 +196,7 @@ namespace LBM
 
             /**
              * @brief Selects between shifted or central thread coordinates based upon a coefficient
-             * @tparam coeff The velocity set coefficient (-1, 0, +1)
+             * @tparam coeff The coefficient indicating the direction along the axis (must be -1, 0 or 1)
              * @param[in] dt The left and right hand side shifted thread coordinates
              * @param[in] t The thread coordinate
              **/
@@ -224,7 +224,7 @@ namespace LBM
             /**
              * @brief Selects between shifted or central block coordinates based upon a coefficient
              * @tparam alpha The axis direction (X, Y, Z or NULL)
-             * @tparam coeff The velocity set coefficient (-1, 0, +1)
+             * @tparam coeff The coefficient indicating the direction along the axis (must be -1, 0 or 1)
              * @param[in] t The thread coordinate
              * @param[in] b_shifted The shifted block
              * @param[in] b The current block
@@ -256,7 +256,7 @@ namespace LBM
              * @brief Loads the populations from the halo into the pop array for a particular face
              * @tparam alpha The axis direction (X, Y or Z)
              * @tparam PtrIndex The index of the pointer corresponding to the halo face
-             * @tparam coeff The normal direction; -1 or +1
+             * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
              * @param[out] pop Array to store loaded population values
              * @param[in] readBuffer Collection of pointers to the halo faces
              * @param[in] Tx Three-dimensional thread coordinates
@@ -394,7 +394,7 @@ namespace LBM
              * @brief Saves population data to halo regions for neighboring blocks
              * @tparam alpha The axis direction (X, Y or Z)
              * @tparam PtrIndex The index of the pointer corresponding to the halo face
-             * @tparam coeff The normal direction; -1 or +1
+             * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
              * @param[out] pop Array to store loaded population values
              * @param[in] readBuffer Collection of pointers to the halo faces
              * @param[in] Tx Three-dimensional thread coordinates
