@@ -126,22 +126,6 @@ namespace LBM
             timeStep);
     }
 
-    /**
-     * @brief Collision step wrapper for multiphase D3Q19 + D3Q7
-     **/
-    launchBoundsD3Q19 __global__ void phaseFieldCollideScalarHalo(
-        const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
-        const device::ptrCollection<6, scalar_t> ghostHydro,
-        const device::ptrCollection<6, scalar_t> ghostPhase,
-        const device::ptrCollection<6, const scalar_t> ghostPhi)
-    {
-        phaseCollide<BoundaryConditions, VelocitySet, PhaseVelocitySet, Collision, HydroHalo, PhaseHalo, true>(
-            devPtrs,
-            ghostHydro,
-            ghostPhase,
-            ghostPhi);
-    }
-
     launchBoundsD3Q19 __global__ void phaseFieldCollideInteriorScalarHalo(
         const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
         const device::ptrCollection<6, scalar_t> ghostHydro,
@@ -177,7 +161,7 @@ namespace LBM
         const device::ptrCollection<6, scalar_t> ghostPhase,
         const device::ptrCollection<6, const scalar_t> ghostPhi)
     {
-        phaseCollide<BoundaryConditions, VelocitySet, PhaseVelocitySet, Collision, HydroHalo, PhaseHalo, false>(
+        phaseCollide<BoundaryConditions, VelocitySet, PhaseVelocitySet, Collision, HydroHalo, PhaseHalo, false, phaseCollideRegion::Interior>(
             devPtrs,
             ghostHydro,
             ghostPhase,
