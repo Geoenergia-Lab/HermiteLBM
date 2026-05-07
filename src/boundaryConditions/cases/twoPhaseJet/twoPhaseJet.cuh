@@ -50,6 +50,8 @@ SourceFiles
 #ifndef __MBLBM_twoPhaseJet_CUH
 #define __MBLBM_twoPhaseJet_CUH
 
+#include "../../../momentBasedLBM/phaseFieldViscositySponge.cuh"
+
 namespace LBM
 {
     /**

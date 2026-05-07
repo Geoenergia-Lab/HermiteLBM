@@ -50,6 +50,8 @@ SourceFiles
 #ifndef __MBLBM_subseaMechanicalDispersion_CUH
 #define __MBLBM_subseaMechanicalDispersion_CUH
 
+#include "../../../momentBasedLBM/phaseFieldViscositySponge.cuh"
+
 namespace LBM
 {
     /**

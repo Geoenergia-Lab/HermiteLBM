@@ -51,6 +51,7 @@ SourceFiles
 #define __MBLBM_COLLISION_SECOND_ORDER_CUH
 
 #include "../array/array.cuh"
+#include "../momentBasedLBM/phaseFieldViscositySponge.cuh"
 
 namespace LBM
 {
@@ -117,12 +118,18 @@ namespace LBM
          * @note This implementation is based on the Guo forcing scheme
          * @note Uses device-level relaxation parameters (device::t_omegaVar, device::omegaVar_d2, device::omega, device::tt_omegaVar_t3)
          **/
-        __device__ static inline void collide(thread::array<scalar_t, 11> &moments, const scalar_t forceX, const scalar_t forceY, const scalar_t forceZ) noexcept
+        template <const bool ApplyViscositySponge>
+        __device__ static inline void collide(
+            thread::array<scalar_t, 11> &moments,
+            const scalar_t forceX,
+            const scalar_t forceY,
+            const scalar_t forceZ,
+            const device::label_t yGlobal) noexcept
         {
             const scalar_t invRho = static_cast<scalar_t>(1) / moments[m_i<0>()];
 
             // Mixture viscosity local relaxation parameters
-            const scalar_t tau_loc = (static_cast<scalar_t>(1) - moments[m_i<10>()]) * device::tau_A + moments[m_i<10>()] * device::tau_B;
+            const scalar_t tau_loc = phaseFieldSponge::tau<ApplyViscositySponge>(moments[m_i<10>()], yGlobal);
             const scalar_t omega_loc = static_cast<scalar_t>(1.0) / tau_loc;
             const scalar_t t_omegaVar_loc = static_cast<scalar_t>(1) - omega_loc;
             const scalar_t omegaVar_d2_loc = static_cast<scalar_t>(0.5) * omega_loc;
@@ -150,47 +157,11 @@ namespace LBM
             moments[m_i<8>()] = t_omegaVar_loc * moments[m_i<8>()] + omega_loc * uyEq * uzEq + tt_omegaVar_t3_loc * invRho * (forceY * uzEq + forceZ * uyEq); // myz
         }
 
-    private:
-        // __device__ [[nodiscard]] static inline scalar_t sponge_ramp(const label_t z) noexcept
-        // {
-        //     const scalar_t zn = static_cast<scalar_t>(z) * sponge::inv_nz_m1();
-        //     scalar_t s = (zn - sponge::z_start()) * sponge::inv_sponge();
-        //     s = fminf(fmaxf(s, static_cast<scalar_t>(0)), static_cast<scalar_t>(1));
-        //     return s * s * (static_cast<scalar_t>(3) - static_cast<scalar_t>(2) * s); // cubic smoothstep
-        // }
+        __device__ static inline void collide(thread::array<scalar_t, 11> &moments, const scalar_t forceX, const scalar_t forceY, const scalar_t forceZ) noexcept
+        {
+            collide<false>(moments, forceX, forceY, forceZ, static_cast<device::label_t>(0));
+        }
 
-        // namespace sponge
-        // {
-        //     __device__ __host__ [[nodiscard]] static inline consteval scalar_t K_gain() noexcept
-        //     {
-        //         return static_cast<scalar_t>(100);
-        //     }
-
-        //     __device__ __host__ [[nodiscard]] static inline constexpr int sponge_cells() noexcept
-        //     {
-        //         return static_cast<int>(device::nz / 12);
-        //     }
-
-        //     __device__ __host__ [[nodiscard]] static inline constexpr scalar_t sponge() noexcept
-        //     {
-        //         return static_cast<scalar_t>(sponge_cells()) / static_cast<scalar_t>(device::nz - 1);
-        //     }
-
-        //     __device__ __host__ [[nodiscard]] static inline constexpr scalar_t z_start() noexcept
-        //     {
-        //         return static_cast<scalar_t>(device::nz - 1 - sponge_cells()) / static_cast<scalar_t>(device::nz - 1);
-        //     }
-
-        //     __device__ __host__ [[nodiscard]] static inline constexpr scalar_t inv_nz_m1() noexcept
-        //     {
-        //         return static_cast<scalar_t>(1) / static_cast<scalar_t>(device::nz - 1);
-        //     }
-
-        //     __device__ __host__ [[nodiscard]] static inline constexpr scalar_t inv_sponge() noexcept
-        //     {
-        //         return static_cast<scalar_t>(static_cast<double>(1) / static_cast<double>(sponge()));
-        //     }
-        // }
     };
 }
 

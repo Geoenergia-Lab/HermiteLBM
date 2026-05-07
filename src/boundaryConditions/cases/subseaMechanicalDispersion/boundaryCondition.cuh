@@ -99,6 +99,8 @@ moments[m_i<3>()] =
 // Set equilibrium phase field
 moments[m_i<10>()] = is_outlet * shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()];
 
+const scalar_t omega = phaseFieldSponge::omega<!subseaMechanicalDispersion::periodicY()>(moments[m_i<10>()], point.value<axis::Y>());
+
 // Set equilibrium velocities
 moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];
 moments[m_i<5>()] = moments[m_i<1>()] * moments[m_i<2>()];

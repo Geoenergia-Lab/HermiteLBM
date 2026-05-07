@@ -97,6 +97,8 @@ if (is_outlet)
     moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()];
 }
 
+const scalar_t omega = phaseFieldSponge::omega<!twoPhaseJet::periodicY()>(moments[m_i<10>()], point.value<axis::Y>());
+
 switch (boundaryNormal.nodeType())
 {
 // Round inflow + no-slip
