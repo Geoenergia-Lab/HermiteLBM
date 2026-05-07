@@ -52,16 +52,6 @@ SourceFiles
 
 using namespace LBM;
 
-__host__ inline void allsync(const programControl &programCtrl)
-{
-    for (host::label_t stream = 0; stream < programCtrl.deviceList().size(); stream++)
-    {
-        errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[stream]));
-        errorHandler::checkInline(cudaDeviceSynchronize());
-        programCtrl.streams().synchronize(stream);
-    }
-}
-
 __host__ inline void launch(
     const host::latticeMesh &mesh,
     const programControl &programCtrl,
@@ -95,18 +85,12 @@ __host__ inline void launch(
             haloPtrs.writeBuffer(stream, timeStep));
     }
 
-    allsync(programCtrl);
+    programCtrl.allsync();
 }
 
 int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
-
-    if (programCtrl.deviceList().size() > 1)
-    {
-        errorHandler::check<throws::NO_THROW>(-1, "Multi GPU not yet implemented in all solvers - please use multiGPUD3Q27");
-        return 0;
-    }
 
     const host::latticeMesh mesh(programCtrl);
 
@@ -139,7 +123,8 @@ int main(const int argc, const char *const argv[])
 
     const runTimeIO IO(mesh, programCtrl);
 
-    // Begin the main time loop
+    const deviceCommunicator devComm(mesh, programCtrl, haloPtrs);
+
     for (host::label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
         // Do the run-time IO
@@ -165,7 +150,11 @@ int main(const int argc, const char *const argv[])
 
         runTimeObjects.calculate();
 
-        errorHandler::check(cudaDeviceSynchronize());
+        // Sync all devices and streams
+        programCtrl.allsync();
+
+        // Exchange memory between devices
+        devComm.exchange(timeStep);
     }
 
     return 0;

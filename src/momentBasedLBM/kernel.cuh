@@ -50,6 +50,7 @@ SourceFiles
 #ifndef __MBLBM_MOMENTBASEDLBM_KERNEL_CUH
 #define __MBLBM_MOMENTBASEDLBM_KERNEL_CUH
 
+#include "deviceCommunicator.cuh"
 #include "launchConfig.cuh"
 
 namespace LBM

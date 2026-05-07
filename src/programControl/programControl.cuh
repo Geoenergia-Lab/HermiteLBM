@@ -363,6 +363,16 @@ namespace LBM
             return streams_;
         }
 
+        __host__ inline void allsync() const noexcept
+        {
+            for (host::label_t stream = 0; stream < deviceList().size(); stream++)
+            {
+                errorHandler::checkInline(cudaSetDevice(deviceList()[stream]));
+                errorHandler::checkInline(cudaDeviceSynchronize());
+                streams_.synchronize(stream);
+            }
+        }
+
     private:
         /**
          * @brief A reference to the input control object
