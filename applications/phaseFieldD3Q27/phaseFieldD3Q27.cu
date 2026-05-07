@@ -49,7 +49,6 @@ SourceFiles
 \*---------------------------------------------------------------------------*/
 
 #include "phaseFieldD3Q27.cuh"
-#include "../phaseFieldViscositySpongeDiagnostics.cuh"
 
 using namespace LBM;
 
@@ -99,9 +98,6 @@ int main(const int argc, const char *const argv[])
 #else
     const bool enableScalarHalo = (mesh.nDevices<axis::X>() * mesh.nDevices<axis::Y>() * mesh.nDevices<axis::Z>()) > static_cast<host::label_t>(1);
 #endif
-
-    // phaseFieldApplication::validateViscositySpongeSetup<!BoundaryConditions::periodicY()>(mesh);
-    // phaseFieldApplication::printViscositySpongeDiagnostics<!BoundaryConditions::periodicY()>(mesh, programCtrl);
 
 #if defined(PHASE_COLLIDE_TIMING)
 #if defined(PHASE_COLLIDE_COMBINED_FALLBACK)

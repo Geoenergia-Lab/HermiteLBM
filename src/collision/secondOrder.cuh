@@ -124,12 +124,12 @@ namespace LBM
             const scalar_t forceX,
             const scalar_t forceY,
             const scalar_t forceZ,
-            const device::label_t yGlobal) noexcept
+            const device::label_t zGlobal) noexcept
         {
             const scalar_t invRho = static_cast<scalar_t>(1) / moments[m_i<0>()];
 
             // Mixture viscosity local relaxation parameters
-            const scalar_t tau_loc = phaseFieldSponge::tau<ApplyViscositySponge>(moments[m_i<10>()], yGlobal);
+            const scalar_t tau_loc = phaseFieldSponge::tau<ApplyViscositySponge>(moments[m_i<10>()], zGlobal);
             const scalar_t omega_loc = static_cast<scalar_t>(1.0) / tau_loc;
             const scalar_t t_omegaVar_loc = static_cast<scalar_t>(1) - omega_loc;
             const scalar_t omegaVar_d2_loc = static_cast<scalar_t>(0.5) * omega_loc;
