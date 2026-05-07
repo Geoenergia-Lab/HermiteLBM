@@ -100,8 +100,8 @@ int main(const int argc, const char *const argv[])
     const bool enableScalarHalo = (mesh.nDevices<axis::X>() * mesh.nDevices<axis::Y>() * mesh.nDevices<axis::Z>()) > static_cast<host::label_t>(1);
 #endif
 
-    phaseFieldApplication::validateViscositySpongeSetup<!BoundaryConditions::periodicY()>(mesh);
-    phaseFieldApplication::printViscositySpongeDiagnostics<!BoundaryConditions::periodicY()>(mesh, programCtrl);
+    // phaseFieldApplication::validateViscositySpongeSetup<!BoundaryConditions::periodicY()>(mesh);
+    // phaseFieldApplication::printViscositySpongeDiagnostics<!BoundaryConditions::periodicY()>(mesh, programCtrl);
 
 #if defined(PHASE_COLLIDE_TIMING)
 #if defined(PHASE_COLLIDE_COMBINED_FALLBACK)
