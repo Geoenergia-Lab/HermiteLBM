@@ -18,7 +18,7 @@ $(error HERMITELBM_CUDA_DIR is not set. Please run "source bashrc" in the projec
 endif
 
 TOOL_SUBDIRS = applications/computeVersion applications/postProcessing/fieldConvert applications/postProcessing/fieldCalculate
-GPU_SUBDIRS = applications/solvers/momentBasedD3Q19 applications/solvers/momentBasedD3Q27 applications/solvers/isothermalD3Q19 applications/solvers/isothermalD3Q27 applications/solvers/multiGPUD3Q27
+GPU_SUBDIRS = applications/solvers/momentBasedD3Q19 applications/solvers/momentBasedD3Q27 applications/solvers/isothermalD3Q19 applications/solvers/isothermalD3Q27
 SUBDIRS = $(TOOL_SUBDIRS) $(GPU_SUBDIRS)
 
 .PHONY: all clean install uninstall $(SUBDIRS) directories
