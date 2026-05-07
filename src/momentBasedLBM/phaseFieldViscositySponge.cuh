@@ -49,11 +49,6 @@ namespace LBM
 
         __device__ [[nodiscard]] inline scalar_t ramp_ymax(const device::label_t yGlobal) noexcept
         {
-            if (device::ny < static_cast<device::label_t>(8))
-            {
-                return static_cast<scalar_t>(0);
-            }
-
             const scalar_t yn = static_cast<scalar_t>(yGlobal) * inv_ny_m1();
             scalar_t s = (yn - y_start()) * inv_sponge();
             s = (s < static_cast<scalar_t>(0)) ? static_cast<scalar_t>(0) : s;
