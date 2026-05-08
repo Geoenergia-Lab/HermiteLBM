@@ -161,8 +161,11 @@ namespace LBM
                     hostWriteBuffer.copyFromDevice(
                         constPtr(virtualDeviceIndex),
                         components_[0].mesh(),
+                        components_[0].programCtrl(),
                         virtualDeviceIndex);
                 }
+
+                components_[0].programCtrl().allsync();
 
                 if constexpr (TimeType == time::instantaneous)
                 {

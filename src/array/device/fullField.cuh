@@ -232,24 +232,6 @@ namespace LBM
                 return TimeType;
             }
 
-            /**
-             * @brief Copy the device array to a user‑supplied host pointer.
-             * @param[in] hostPtr Destination pointer (host memory).
-             * @note Assumes hostPtr has enough space (size() elements).
-             **/
-            __host__ void copy_to_host(T *const ptrRestrict hostPtr)
-            {
-                const host::label_t nPointsPerDevice = mesh_.template sizePerDevice<host::label_t>();
-
-                const host::label_t nDevices = mesh_.template nDevices<host::label_t>();
-
-                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < nDevices; ++virtualDeviceIndex)
-                {
-                    const host::label_t startIndex = virtualDeviceIndex * nPointsPerDevice;
-                    errorHandler::check(cudaMemcpy(&(hostPtr[startIndex]), ptr_[virtualDeviceIndex], nPointsPerDevice * sizeof(T), cudaMemcpyDeviceToHost));
-                }
-            }
-
         private:
             /**
              * @brief Name of the field
