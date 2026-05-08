@@ -64,6 +64,16 @@ namespace LBM
             using ComponentType = device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>;
 
             /**
+             * @brief Reference to the lattice mesh
+             **/
+            const host::latticeMesh &mesh_;
+
+            /**
+             * @brief Reference to program control
+             **/
+            const programControl &programCtrl_;
+
+            /**
              * @brief Name of the field
              **/
             const name_t name_;
@@ -93,7 +103,9 @@ namespace LBM
                 const std::array<scalar_t, N> values,
                 const programControl &programCtrl,
                 const bool allocate = true)
-                : name_(name),
+                : mesh_(mesh),
+                  programCtrl_(programCtrl),
+                  name_(name),
                   meanCount_(initialiseMeanCount(name, programCtrl)),
                   components_(makeComponents(std::make_index_sequence<N>{}, name, mesh, values, programCtrl, allocate)) {}
 
@@ -109,7 +121,9 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl,
                 const bool allocate = true)
-                : name_(name),
+                : mesh_(mesh),
+                  programCtrl_(programCtrl),
+                  name_(name),
                   meanCount_(initialiseMeanCount(name, programCtrl)),
                   components_(makeComponents(std::make_index_sequence<N>{}, name, mesh, programCtrl, allocate)) {}
 
@@ -156,22 +170,22 @@ namespace LBM
                 host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
                 const host::label_t timeStep) const
             {
-                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < components_[0].programCtrl().deviceList().size(); virtualDeviceIndex++)
+                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < programCtrl_.deviceList().size(); virtualDeviceIndex++)
                 {
                     hostWriteBuffer.copyFromDevice(
                         constPtr(virtualDeviceIndex),
-                        components_[0].mesh(),
-                        components_[0].programCtrl(),
+                        mesh_,
+                        programCtrl_,
                         virtualDeviceIndex);
                 }
 
-                components_[0].programCtrl().allsync();
+                programCtrl_.allsync();
 
                 if constexpr (TimeType == time::instantaneous)
                 {
                     Writer::write(
                         name_,
-                        components_[0].mesh(),
+                        mesh_,
                         makeComponentNames<std::vector<std::string>>(name_),
                         hostWriteBuffer.data(),
                         timeStep);
@@ -180,7 +194,7 @@ namespace LBM
                 {
                     Writer::write(
                         name_,
-                        components_[0].mesh(),
+                        mesh_,
                         makeComponentNames<std::vector<std::string>>(name_),
                         hostWriteBuffer.data(),
                         timeStep,

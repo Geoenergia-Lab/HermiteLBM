@@ -80,8 +80,6 @@ namespace LBM
              * @brief Bring base members into scope
              **/
             using arrayBase<T>::ptr_;
-            using arrayBase<T>::mesh_;
-            using arrayBase<T>::programCtrl_;
             using arrayBase<T>::allocate_device_segment;
 
             /**
@@ -111,7 +109,7 @@ namespace LBM
                       programCtrl),
                   name_(name)
             {
-                initialise_boundary_condition(name_, programCtrl.deviceList(), programCtrl_.Ma() / std::sqrt(static_cast<scalar_t>(3)));
+                initialise_boundary_condition(name_, programCtrl.deviceList(), programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3)));
             }
 
             /**
@@ -134,7 +132,7 @@ namespace LBM
                       programCtrl),
                   name_(name)
             {
-                initialise_boundary_condition(name_, programCtrl.deviceList(), programCtrl_.Ma() / std::sqrt(static_cast<scalar_t>(3)));
+                initialise_boundary_condition(name_, programCtrl.deviceList(), programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3)));
             }
 
             __host__ [[nodiscard]] array(
@@ -151,7 +149,7 @@ namespace LBM
                       programCtrl),
                   name_(componentName)
             {
-                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl_.Ma() / std::sqrt(static_cast<scalar_t>(3)));
+                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3)));
             }
 
             __host__ [[nodiscard]] array(
@@ -168,7 +166,7 @@ namespace LBM
                       programCtrl),
                   name_(componentName)
             {
-                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl_.Ma() / std::sqrt(static_cast<scalar_t>(3)));
+                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3)));
             }
 
             /**
@@ -200,28 +198,6 @@ namespace LBM
              * @return Const reference to the name string.
              **/
             __host__ [[nodiscard]] inline const name_t &name() const noexcept { return name_; }
-
-            /**
-             * @brief Get the associated lattice mesh.
-             * @return Const reference to the mesh.
-             **/
-            __host__ [[nodiscard]] inline const host::latticeMesh &mesh() const noexcept { return mesh_; }
-
-            /**
-             * @brief Get the program control object.
-             * @return Const reference to program control.
-             **/
-            __host__ [[nodiscard]] inline const programControl &programCtrl() const noexcept { return programCtrl_; }
-
-            /**
-             * @brief Get total number of elements (mesh points).
-             * @tparam SizeType Desired return type (default device::label_t).
-             * @return Number of elements.
-             **/
-            __host__ [[nodiscard]] inline constexpr host::label_t size() const noexcept
-            {
-                return mesh_.nPoints();
-            }
 
             /**
              * @brief Returns the time type of the array.
