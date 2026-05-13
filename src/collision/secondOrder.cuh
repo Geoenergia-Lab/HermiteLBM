@@ -118,18 +118,19 @@ namespace LBM
          * @note This implementation is based on the Guo forcing scheme
          * @note Uses device-level relaxation parameters (device::t_omegaVar, device::omegaVar_d2, device::omega, device::tt_omegaVar_t3)
          **/
-        template <const bool ApplyViscositySponge>
+        template <const bool ApplyYViscositySponge, const bool ApplyZViscositySponge>
         __device__ static inline void collide(
             thread::array<scalar_t, 11> &moments,
             const scalar_t forceX,
             const scalar_t forceY,
             const scalar_t forceZ,
+            const device::label_t yGlobal,
             const device::label_t zGlobal) noexcept
         {
             const scalar_t invRho = static_cast<scalar_t>(1) / moments[m_i<0>()];
 
             // Mixture viscosity local relaxation parameters
-            const scalar_t tau_loc = phaseFieldSponge::tau<ApplyViscositySponge>(moments[m_i<10>()], zGlobal);
+            const scalar_t tau_loc = phaseFieldSponge::tau<ApplyYViscositySponge, ApplyZViscositySponge>(moments[m_i<10>()], yGlobal, zGlobal);
             const scalar_t omega_loc = static_cast<scalar_t>(1.0) / tau_loc;
             const scalar_t t_omegaVar_loc = static_cast<scalar_t>(1) - omega_loc;
             const scalar_t omegaVar_d2_loc = static_cast<scalar_t>(0.5) * omega_loc;
@@ -159,7 +160,7 @@ namespace LBM
 
         __device__ static inline void collide(thread::array<scalar_t, 11> &moments, const scalar_t forceX, const scalar_t forceY, const scalar_t forceZ) noexcept
         {
-            collide<false>(moments, forceX, forceY, forceZ, static_cast<device::label_t>(0));
+            collide<false, false>(moments, forceX, forceY, forceZ, static_cast<device::label_t>(0), static_cast<device::label_t>(0));
         }
 
     };

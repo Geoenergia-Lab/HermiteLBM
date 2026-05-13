@@ -21,7 +21,7 @@ interfaceWidth  4;
 
 u_inf_A         0.05;
 
-u_inf_B         0.05;
+u_inf_B         0.0021;
 
 L_char_A        8;
 

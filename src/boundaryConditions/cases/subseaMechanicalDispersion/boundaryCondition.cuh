@@ -61,8 +61,11 @@ const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 const bool is_west_front_outlet = boundaryNormal.nodeType() == normalVector::WEST_FRONT();
 const bool is_east_front_outlet = boundaryNormal.nodeType() == normalVector::EAST_FRONT();
 const bool is_front_outlet = boundaryNormal.nodeType() == normalVector::FRONT();
-const bool is_outlet = is_west_front_outlet || is_east_front_outlet || is_front_outlet;
-const device::label_t tid = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), block::nz() - 2);
+const bool is_north_outlet = boundaryNormal.nodeType() == normalVector::NORTH();
+const bool is_outlet = is_west_front_outlet || is_east_front_outlet || is_front_outlet || is_north_outlet;
+const device::label_t tid = is_north_outlet
+                                ? block::idx(Tx.value<axis::X>(), block::ny() - 2, Tx.value<axis::Z>())
+                                : block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), block::nz() - 2);
 
 const scalar_t is_oil_inlet = static_cast<scalar_t>(
     boundaryNormal.isSouth() &&
@@ -100,7 +103,10 @@ moments[m_i<10>()] = is_outlet
                          ? shared_buffer[tid * (NUMBER_MOMENTS<true>() + 1) + m_i<10>()]
                          : is_oil_inlet * static_cast<scalar_t>(1);
 
-const scalar_t omega = phaseFieldSponge::omega<!subseaMechanicalDispersion::periodicZ()>(moments[m_i<10>()], point.value<axis::Z>());
+const scalar_t omega = phaseFieldSponge::omega<!subseaMechanicalDispersion::periodicY(), !subseaMechanicalDispersion::periodicZ()>(
+    moments[m_i<10>()],
+    point.value<axis::Y>(),
+    point.value<axis::Z>());
 
 // Set equilibrium velocities
 moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];

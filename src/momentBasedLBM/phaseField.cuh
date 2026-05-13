@@ -2341,7 +2341,7 @@ namespace LBM
         velocitySet::scale(moments);
 
         // Collide
-        Collision::template collide<!BoundaryConditions::periodicZ()>(moments, Fsx, Fsy, Fsz, point.value<axis::Z>());
+        Collision::template collide<!BoundaryConditions::periodicY(), !BoundaryConditions::periodicZ()>(moments, Fsx, Fsy, Fsz, point.value<axis::Y>(), point.value<axis::Z>());
 
         // Calculate post collision populations
         thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);

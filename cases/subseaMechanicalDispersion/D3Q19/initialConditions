@@ -99,7 +99,7 @@ field v
 
     South
     {
-        value   0.05;
+        value   0.0021;
     };
 
     East

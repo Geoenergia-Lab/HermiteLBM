@@ -527,11 +527,7 @@ int main(const int argc, const char *const argv[])
                 const host::label_t nxb = mesh.nBlocks<axis::X>();
                 const host::label_t nyb = mesh.nBlocks<axis::Y>();
 
-                constexpr const host::threadLabel threadStart(
-                    static_cast<host::label_t>(0),
-                    static_cast<host::label_t>(0),
-                    static_cast<host::label_t>(0));
-
+                constexpr const host::threadLabel threadStart(static_cast<host::label_t>(0), static_cast<host::label_t>(0), static_cast<host::label_t>(0));
                 {
                     const host::label_t Size = static_cast<host::label_t>(sizeof(scalar_t)) * VelocitySet::QF<host::label_t>() * block::nx<host::label_t>() * block::ny<host::label_t>() * mesh.blocksPerDevice<axis::X>() * mesh.blocksPerDevice<axis::Y>();
 
@@ -645,10 +641,7 @@ int main(const int argc, const char *const argv[])
             const mlupsClock::time_point infoTime = mlupsClock::now();
             const host::label_t infoSteps = timeStep - lastInfoStep;
             const double infoSeconds = std::chrono::duration<double>(infoTime - lastInfoTime).count();
-            const double mlups =
-                ((infoSteps > static_cast<host::label_t>(0)) && (infoSeconds > 0.0))
-                    ? (static_cast<double>(mesh.size()) * static_cast<double>(infoSteps) / (infoSeconds * 1000000.0))
-                    : 0.0;
+            const double mlups = ((infoSteps > static_cast<host::label_t>(0)) && (infoSeconds > 0.0)) ? (static_cast<double>(mesh.size()) * static_cast<double>(infoSteps) / (infoSeconds * 1000000.0)) : 0.0;
 
             const std::ios::fmtflags flags = std::cout.flags();
             const std::streamsize precision = std::cout.precision();
