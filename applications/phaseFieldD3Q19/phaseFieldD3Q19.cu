@@ -84,16 +84,6 @@ int main(const int argc, const char *const argv[])
 
     // Setup Streams
     const streamHandler streamsLBM(programCtrl);
-    std::vector<cudaStream_t> zHaloCopyStreams(mesh.nDevices().size(), nullptr);
-    std::vector<cudaEvent_t> zHaloProducerReadyEvents(mesh.nDevices().size(), nullptr);
-    std::vector<cudaEvent_t> zHaloCopyReadyEvents(mesh.nDevices().size(), nullptr);
-    for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
-    {
-        errorHandler::check(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
-        errorHandler::check(cudaStreamCreateWithFlags(&zHaloCopyStreams[VirtualDeviceIndex], cudaStreamNonBlocking));
-        errorHandler::check(cudaEventCreateWithFlags(&zHaloProducerReadyEvents[VirtualDeviceIndex], cudaEventDisableTiming));
-        errorHandler::check(cudaEventCreateWithFlags(&zHaloCopyReadyEvents[VirtualDeviceIndex], cudaEventDisableTiming));
-    }
 
     // Allocate a buffer of pinned memory on the host for writing
     host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.size() * NUMBER_MOMENTS<true>(), mesh);
@@ -384,6 +374,13 @@ int main(const int argc, const char *const argv[])
             errorHandler::checkLast();
         }
 
+        for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
+        {
+            errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
+            errorHandler::checkInline(cudaDeviceSynchronize());
+            streamsLBM.synchronize(VirtualDeviceIndex);
+        }
+
         // Extra phase-specific exchange required between stream and collide.
         if (enableScalarHalo)
         {
@@ -392,13 +389,6 @@ int main(const int argc, const char *const argv[])
                  (mesh.nDevices<axis::Y>() != static_cast<host::label_t>(1))))
             {
                 throw std::runtime_error("phaseField exchange currently mirrors testExecutable and supports Z-only device decomposition.");
-            }
-
-            for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
-            {
-                errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
-                errorHandler::checkInline(cudaEventRecord(zHaloProducerReadyEvents[VirtualDeviceIndex], streamsLBM.streams()[VirtualDeviceIndex]));
-                errorHandler::checkInline(cudaStreamWaitEvent(zHaloCopyStreams[VirtualDeviceIndex], zHaloProducerReadyEvents[VirtualDeviceIndex], 0));
             }
 
             if (mesh.nDevices<axis::Z>() > static_cast<host::label_t>(1))
@@ -427,32 +417,20 @@ int main(const int argc, const char *const argv[])
                 {
                     const host::label_t eastDevice = westDevice + 1;
 
-                    errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[westDevice]));
-                    errorHandler::checkInline(cudaStreamWaitEvent(zHaloCopyStreams[westDevice], zHaloProducerReadyEvents[eastDevice], 0));
-                    errorHandler::checkInline(cudaMemcpyPeerAsync(
+                    errorHandler::check(cudaMemcpyPeer(
                         &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(4)>()[destinationBackID]),
                         programCtrl.deviceList()[westDevice],
                         &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(4)>()[sourceBackID]),
                         programCtrl.deviceList()[eastDevice],
-                        Size,
-                        zHaloCopyStreams[westDevice]));
+                        Size));
 
-                    errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[eastDevice]));
-                    errorHandler::checkInline(cudaStreamWaitEvent(zHaloCopyStreams[eastDevice], zHaloProducerReadyEvents[westDevice], 0));
-                    errorHandler::checkInline(cudaMemcpyPeerAsync(
+                    errorHandler::check(cudaMemcpyPeer(
                         &(phiBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(5)>()[destinationFrontID]),
                         programCtrl.deviceList()[eastDevice],
                         &(phiBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(5)>()[sourceFrontID]),
                         programCtrl.deviceList()[westDevice],
-                        Size,
-                        zHaloCopyStreams[eastDevice]));
+                        Size));
                 }
-            }
-
-            for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
-            {
-                errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
-                errorHandler::checkInline(cudaEventRecord(zHaloCopyReadyEvents[VirtualDeviceIndex], zHaloCopyStreams[VirtualDeviceIndex]));
             }
         }
 
@@ -485,7 +463,6 @@ int main(const int argc, const char *const argv[])
                     phiBlockHalo.writeBufferConst(VirtualDeviceIndex));
                 errorHandler::checkLast();
 
-                errorHandler::checkInline(cudaStreamWaitEvent(collideStream, zHaloCopyReadyEvents[VirtualDeviceIndex], 0));
                 phaseFieldCollideBoundaryScalarHalo<<<mesh.gridBlock(), mesh.threadBlock(), 0, collideStream>>>(
                     devPtrs,
                     fBlockHalo.writeBuffer(VirtualDeviceIndex),
@@ -545,23 +522,19 @@ int main(const int argc, const char *const argv[])
                     {
                         const host::label_t eastDevice = westDevice + 1;
 
-                        errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[westDevice]));
-                        errorHandler::checkInline(cudaMemcpyPeerAsync(
+                        errorHandler::check(cudaMemcpyPeer(
                             &(fBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(4)>()[destinationBackID]),
                             programCtrl.deviceList()[westDevice],
                             &(fBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(4)>()[sourceBackID]),
                             programCtrl.deviceList()[eastDevice],
-                            Size,
-                            zHaloCopyStreams[westDevice]));
+                            Size));
 
-                        errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[eastDevice]));
-                        errorHandler::checkInline(cudaMemcpyPeerAsync(
+                        errorHandler::check(cudaMemcpyPeer(
                             &(fBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(5)>()[destinationFrontID]),
                             programCtrl.deviceList()[eastDevice],
                             &(fBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(5)>()[sourceFrontID]),
                             programCtrl.deviceList()[westDevice],
-                            Size,
-                            zHaloCopyStreams[eastDevice]));
+                            Size));
                     }
                 }
 
@@ -582,23 +555,19 @@ int main(const int argc, const char *const argv[])
                     {
                         const host::label_t eastDevice = westDevice + 1;
 
-                        errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[westDevice]));
-                        errorHandler::checkInline(cudaMemcpyPeerAsync(
+                        errorHandler::check(cudaMemcpyPeer(
                             &(gBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(4)>()[destinationBackID]),
                             programCtrl.deviceList()[westDevice],
                             &(gBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(4)>()[sourceBackID]),
                             programCtrl.deviceList()[eastDevice],
-                            Size,
-                            zHaloCopyStreams[westDevice]));
+                            Size));
 
-                        errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[eastDevice]));
-                        errorHandler::checkInline(cudaMemcpyPeerAsync(
+                        errorHandler::check(cudaMemcpyPeer(
                             &(gBlockHalo.writeBuffer(eastDevice).template ptr<static_cast<host::label_t>(5)>()[destinationFrontID]),
                             programCtrl.deviceList()[eastDevice],
                             &(gBlockHalo.writeBuffer(westDevice).template ptr<static_cast<host::label_t>(5)>()[sourceFrontID]),
                             programCtrl.deviceList()[westDevice],
-                            Size,
-                            zHaloCopyStreams[eastDevice]));
+                            Size));
                     }
                 }
             }
@@ -635,7 +604,6 @@ int main(const int argc, const char *const argv[])
             {
                 errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
                 streamsLBM.synchronize(VirtualDeviceIndex);
-                errorHandler::checkInline(cudaStreamSynchronize(zHaloCopyStreams[VirtualDeviceIndex]));
             }
 
             const mlupsClock::time_point infoTime = mlupsClock::now();
@@ -656,15 +624,6 @@ int main(const int argc, const char *const argv[])
             lastInfoTime = infoTime;
             lastInfoStep = timeStep;
         }
-    }
-
-    for (device::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < mesh.nDevices().size(); VirtualDeviceIndex++)
-    {
-        errorHandler::check(cudaSetDevice(programCtrl.deviceList()[VirtualDeviceIndex]));
-        errorHandler::check(cudaStreamSynchronize(zHaloCopyStreams[VirtualDeviceIndex]));
-        errorHandler::check(cudaEventDestroy(zHaloCopyReadyEvents[VirtualDeviceIndex]));
-        errorHandler::check(cudaEventDestroy(zHaloProducerReadyEvents[VirtualDeviceIndex]));
-        errorHandler::check(cudaStreamDestroy(zHaloCopyStreams[VirtualDeviceIndex]));
     }
 
     return 0;
