@@ -103,6 +103,7 @@ namespace LBM
         __device__ __constant__ scalar_t gamma;
         __device__ __constant__ scalar_t nozzleScale_A;
         __device__ __constant__ scalar_t nozzleScale_B;
+        __device__ __constant__ device::label_t waterJetReleaseStep;
 
         /**
          * @brief Mesh constant variables

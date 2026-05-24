@@ -2025,7 +2025,8 @@ namespace LBM
 
             if (boundaryNormal.isBoundary())
             {
-                if constexpr (std::is_same<BoundaryConditions, twoPhaseJet>::value)
+                if constexpr (std::is_same<BoundaryConditions, twoPhaseJet>::value ||
+                              std::is_same<BoundaryConditions, subseaMechanicalDispersion>::value)
                 {
                     BoundaryConditions::template calculate_moments<VelocitySet, PhaseVelocitySet, const scalar_t *>(pop, moments, boundaryNormal, hydroShared, Tx, point, timeStep);
                 }

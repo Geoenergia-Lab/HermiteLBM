@@ -125,10 +125,16 @@ namespace LBM
             // Nozzle scaling parameters for SSMD case (default unused)
             const bool hasNozzleScaleA = string::hasParameter(file, "nozzleScale_A");
             const bool hasNozzleScaleB = string::hasParameter(file, "nozzleScale_B");
+            const bool hasWaterJetReleaseStep = string::hasParameter(file, "waterJetReleaseStep");
 
             if ((hasNozzleScaleA || hasNozzleScaleB) && (!multiphase_ || !dualCharacteristic_))
             {
                 [[maybe_unused]] const errorHandler err(-1, "nozzleScale_* only allowed for multiphase dual-characteristic cases (SSMD).");
+            }
+
+            if (hasWaterJetReleaseStep && (!multiphase_ || !dualCharacteristic_))
+            {
+                [[maybe_unused]] const errorHandler err(-1, "waterJetReleaseStep only allowed for multiphase dual-characteristic cases (SSMD).");
             }
 
             if (hasNozzleScaleA != hasNozzleScaleB)
@@ -146,6 +152,10 @@ namespace LBM
                 nozzleScale_A_ = static_cast<scalar_t>(0);
                 nozzleScale_B_ = static_cast<scalar_t>(0);
             }
+
+            waterJetReleaseStep_ = hasWaterJetReleaseStep
+                                       ? string::extractParameter<device::label_t>(file, "waterJetReleaseStep")
+                                       : static_cast<device::label_t>(0);
 
             // Reynolds selection
             const bool hasRe = string::hasParameter(file, "Re");
@@ -255,6 +265,10 @@ namespace LBM
                 std::cout << "    nozzleScale_A = " << nozzleScale_A_ << ";" << std::endl;
                 std::cout << "    nozzleScale_B = " << nozzleScale_B_ << ";" << std::endl;
             }
+            if (hasWaterJetReleaseStep)
+            {
+                std::cout << "    waterJetReleaseStep = " << waterJetReleaseStep_ << ";" << std::endl;
+            }
             std::cout << "    nTimeSteps = " << nTimeSteps_ << ";" << std::endl;
             std::cout << "    saveInterval = " << saveInterval_ << ";" << std::endl;
             std::cout << "    infoInterval = " << infoInterval_ << ";" << std::endl;
@@ -290,6 +304,7 @@ namespace LBM
                     {
                         device::copyToSymbol(device::nozzleScale_A, nozzleScale_A());
                         device::copyToSymbol(device::nozzleScale_B, nozzleScale_B());
+                        device::copyToSymbol(device::waterJetReleaseStep, waterJetReleaseStep());
 
                         scalar_t tauTempA;
                         scalar_t tauTempB;
@@ -489,6 +504,15 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline constexpr scalar_t nozzleScale_B() const noexcept
         {
             return nozzleScale_B_;
+        }
+
+        /**
+         * @brief Returns the first timestep where the SSMD water jet is active
+         * @return The water jet release timestep
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr device::label_t waterJetReleaseStep() const noexcept
+        {
+            return waterJetReleaseStep_;
         }
 
         /**
@@ -697,6 +721,11 @@ namespace LBM
          * @brief The nozzle scaling factor of fluid B
          **/
         scalar_t nozzleScale_B_;
+
+        /**
+         * @brief First timestep where the SSMD water jet is active
+         **/
+        device::label_t waterJetReleaseStep_;
 
         /**
          * @brief Total number of simulation time steps, the save interval, info output interval and the latest time step at program start

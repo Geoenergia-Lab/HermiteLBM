@@ -63,6 +63,7 @@ const bool is_east_front_outlet = boundaryNormal.nodeType() == normalVector::EAS
 const bool is_front_outlet = boundaryNormal.nodeType() == normalVector::FRONT();
 const bool is_north_outlet = boundaryNormal.nodeType() == normalVector::NORTH();
 const bool is_outlet = is_west_front_outlet || is_east_front_outlet || is_front_outlet || is_north_outlet;
+const bool water_jet_released = timeStep >= device::waterJetReleaseStep;
 const device::label_t tid = is_north_outlet
                                 ? block::idx(Tx.value<axis::X>(), block::ny() - 2, Tx.value<axis::Z>())
                                 : block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), block::nz() - 2);
@@ -74,6 +75,7 @@ const scalar_t is_oil_inlet = static_cast<scalar_t>(
         point.value<axis::Z, scalar_t>() - oil_pos()) <= r2_oil());
 
 const scalar_t is_water_inlet = static_cast<scalar_t>(
+    water_jet_released &&
     boundaryNormal.isBack() &&
     rms_sq(
         point.value<axis::X, scalar_t>() - center_x(),

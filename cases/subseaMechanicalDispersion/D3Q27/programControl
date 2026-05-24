@@ -31,6 +31,8 @@ nozzleScale_A   6;
 
 nozzleScale_B   3;
 
+waterJetReleaseStep  0;
+
 startFrom       latestTime;
 
 startTime       0;
