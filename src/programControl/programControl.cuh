@@ -367,8 +367,8 @@ namespace LBM
         {
             for (host::label_t stream = 0; stream < deviceList().size(); stream++)
             {
-                errorHandler::checkInline(cudaSetDevice(deviceList()[stream]));
-                errorHandler::checkInline(cudaDeviceSynchronize());
+                // errorHandler::checkInline(cudaSetDevice(deviceList()[stream]));
+                // errorHandler::checkInline(cudaDeviceSynchronize());
                 streams_.synchronize(stream);
             }
         }

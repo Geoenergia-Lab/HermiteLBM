@@ -207,10 +207,10 @@ namespace LBM
             This::exchange<alpha, +1>(idxDevL, idxDevR, idxSrcL, idxDestR, haloPtrs_, programCtrl_, Size, timeStep);
 
             // Sync devices and streams - the cudaDeviceSynchronize() may not be 100% necessary, not sure yet
-            errorHandler::checkInline(cudaSetDevice(programCtrl_.deviceList()[idxDevL]));
-            errorHandler::checkInline(cudaDeviceSynchronize());
-            errorHandler::checkInline(cudaSetDevice(programCtrl_.deviceList()[idxDevR]));
-            errorHandler::checkInline(cudaDeviceSynchronize());
+            // errorHandler::checkInline(cudaSetDevice(programCtrl_.deviceList()[idxDevL]));
+            // errorHandler::checkInline(cudaDeviceSynchronize());
+            // errorHandler::checkInline(cudaSetDevice(programCtrl_.deviceList()[idxDevR]));
+            // errorHandler::checkInline(cudaDeviceSynchronize());
             programCtrl_.streams().synchronize(idxDevL);
             programCtrl_.streams().synchronize(idxDevR);
         }
