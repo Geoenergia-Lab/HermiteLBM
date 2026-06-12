@@ -1,2 +1,1 @@
-rm -rf *.LBMBin
-rm -rf postProcess
+rm -rf timeStep
