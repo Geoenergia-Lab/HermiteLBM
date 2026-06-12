@@ -164,6 +164,7 @@ namespace LBM
             __host__ void copyFromDevice(
                 const device::ptrCollection<N, const T> &devPtrs,
                 const host::latticeMesh &mesh,
+                const programControl &programCtrl,
                 const host::label_t virtualDeviceIndex)
             {
                 const host::label_t nxGPUs = mesh.nDevices<axis::X>();
@@ -182,7 +183,12 @@ namespace LBM
 
                 for (host::label_t field = 0; field < N; field++)
                 {
-                    errorHandler::check(cudaMemcpy(&(ptr_[(field * mesh.size()) + (virtualDeviceIndex * nPointsPerDevice)]), devPtrs[field], nPointsPerDevice * sizeof(T), cudaMemcpyDeviceToHost));
+                    errorHandler::check(
+                        cudaMemcpyAsync(&(ptr_[(field * mesh.size()) + (virtualDeviceIndex * nPointsPerDevice)]),
+                                        devPtrs[field],
+                                        nPointsPerDevice * sizeof(T),
+                                        cudaMemcpyDeviceToHost,
+                                        programCtrl.streams()[virtualDeviceIndex]));
                 }
             }
 

@@ -105,44 +105,6 @@ namespace LBM
 
             return ptr;
         }
-
-        /**
-         * @brief Copies from a pointer on the device to a pointer on the GPU
-         * @tparam T The type of memory to be copied
-         * @param[in] devPtr The pointer on the device to be copied from
-         * @param[in] hostPtr The pointer on the host to be copied to
-         * @param[in] fieldIndex The index of the field in the host buffer to copy to
-         * @param[in] nPoints The number of points to be copied to the host
-         * @throws std::runtime_error if CUDA memory copy fails or if the pointer is null
-         **/
-        template <typename T>
-        __host__ void to_host(const T *const ptrRestrict devPtr, T *const ptrRestrict hostPtr, const device::label_t fieldIndex, const host::label_t nPoints) noexcept
-        {
-            errorHandler::check(cudaMemcpy(hostPtr + (fieldIndex * nPoints), devPtr, nPoints * sizeof(T), cudaMemcpyDeviceToHost));
-
-            if constexpr (verbose())
-            {
-                copyMessage("host::to_host", nPoints, devPtr, hostPtr);
-            }
-        }
-
-        /**
-         * @brief Copies data from device memory to host memory
-         * @tparam T Data type of the elements
-         * @param[in] devPtr Pointer to device memory to copy from
-         * @param[in] nPoints Number of elements to copy
-         * @return std::vector<T> containing the copied data
-         * @throws std::runtime_error if CUDA memory copy fails
-         **/
-        template <typename T>
-        __host__ [[nodiscard]] const std::vector<T> to_host(const T *const ptrRestrict devPtr, const host::label_t nPoints) noexcept
-        {
-            std::vector<T> hostFields(nPoints, 0);
-
-            to_host(devPtr, hostFields, 0, nPoints);
-
-            return hostFields;
-        }
     }
 
     namespace device
