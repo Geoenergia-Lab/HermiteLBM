@@ -67,7 +67,7 @@ namespace LBM
         {
             /**
              * @brief Asserts that coeff is a valid velocity set coefficient
-             * @tparam coeff The velocity set coefficient
+             * @tparam coeff The coefficient indicating the direction along the axis
              **/
             template <const int coeff, const null Null>
             __device__ __host__ inline consteval void validate() noexcept

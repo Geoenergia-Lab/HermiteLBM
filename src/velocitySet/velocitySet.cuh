@@ -290,7 +290,7 @@ namespace LBM
          * @brief Returns the indices of the distribution functions on a specific face
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam alpha The axis direction (X, Y or Z)
-         * @tparam coeff The value of the coordinate along the axis (-1 or 1)
+         * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
          * @return Indices of the distribution on a specific face
          **/
         template <class VelocitySet, const axis::type alpha, const int coeff>
@@ -372,7 +372,7 @@ namespace LBM
 
         /**
          * @brief Adds or subtracts a particular population based on the sign of the coefficient
-         * @tparam coeff The velocity set coefficient (-1 or 1)
+         * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
          * @param[in] pop_value A particular population
          * @return Plus or minus pop_value depending on the value of coeff
          **/
@@ -398,7 +398,7 @@ namespace LBM
          **/
         /**
          * @brief Adds or subtracts a particular population based on the sign of the coefficient
-         * @tparam coeff The velocity set coefficient (-1 or 1)
+         * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam BoundaryNormal The boundary normal vector type
          * @param[in] pop_value A particular population
@@ -458,7 +458,7 @@ namespace LBM
     protected:
         /**
          * @brief Returns the string corresponding to a lattice velocity coefficient
-         * @tparam coeff The velocity coefficient
+         * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
          **/
         template <const int coeff>
         __host__ [[nodiscard]] static inline consteval const char *c()

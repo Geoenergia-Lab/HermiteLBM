@@ -55,6 +55,7 @@ namespace LBM
     template <class VelocitySet>
     class deviceCommunicator
     {
+        using This = deviceCommunicator<VelocitySet>;
         using exchangeFunction = std::function<void(const host::label_t)>;
 
     public:
@@ -138,6 +139,11 @@ namespace LBM
             return commList;
         }
 
+        /**
+         * @brief Get the relevant starting block index for a particular axis
+         * @tparam alpha The axis direction (X, Y or Z)
+         * @param[in] mesh The lattice mesh
+         **/
         template <const axis::type alpha>
         __host__ [[nodiscard]] static inline constexpr host::blockLabel commBlockID(const host::latticeMesh &mesh) noexcept
         {
@@ -159,6 +165,7 @@ namespace LBM
 
         /**
          * @brief Implementation of the exchange function
+         * @tparam alpha The axis direction (X, Y or Z)
          * @param[in] timeStep The current time step
          **/
         template <const axis::type alpha>
@@ -180,8 +187,8 @@ namespace LBM
                 mesh_.blocksPerDevice<axis::orthogonal<alpha, 1>()>();
 
             // Hard-coded for now
-            constexpr const host::label_t LDevice = 0;
-            constexpr const host::label_t RDevice = 1;
+            constexpr const host::label_t idxDevL = 0;
+            constexpr const host::label_t idxDevR = 1;
 
             // Right to Left exchange
             constexpr const host::blockLabel blockIdxDestL(0, 0, 0);
@@ -190,34 +197,48 @@ namespace LBM
             const host::label_t idxSrcR = host::idxPop<alpha, VelocitySet::QF()>(0, threadStart, RDeviceSourceBlock, nab, nbb);
 
             // Left to Right exchange
-            const host::blockLabel blockIdxDestR = commBlockID<alpha>(mesh_);
+            const host::blockLabel blockIdxDestR = This::commBlockID<alpha>(mesh_);
             const host::label_t idxDestR = host::idxPop<alpha, VelocitySet::QF()>(0, threadStart, blockIdxDestR, nab, nbb);
-            const host::blockLabel LDeviceSourceBlock = commBlockID<alpha>(mesh_);
+            const host::blockLabel LDeviceSourceBlock = This::commBlockID<alpha>(mesh_);
             const host::label_t idxSrcL = host::idxPop<alpha, VelocitySet::QF()>(0, threadStart, LDeviceSourceBlock, nab, nbb);
 
-            errorHandler::check(cudaMemcpyPeerAsync(
-                &(haloPtrs_.writeBuffer(LDevice, timeStep).template ptr<device::pointerIndex<alpha, -1>()>()[idxDestL]),
-                programCtrl_.deviceList()[LDevice],
-                &(haloPtrs_.writeBuffer(RDevice, timeStep).template ptr<device::pointerIndex<alpha, -1>()>()[idxSrcR]),
-                programCtrl_.deviceList()[RDevice],
-                Size,
-                programCtrl_.streams()[LDevice]));
-
-            errorHandler::check(cudaMemcpyPeerAsync(
-                &(haloPtrs_.writeBuffer(RDevice, timeStep).template ptr<device::pointerIndex<alpha, +1>()>()[idxDestR]),
-                programCtrl_.deviceList()[RDevice],
-                &(haloPtrs_.writeBuffer(LDevice, timeStep).template ptr<device::pointerIndex<alpha, +1>()>()[idxSrcL]),
-                programCtrl_.deviceList()[LDevice],
-                Size,
-                programCtrl_.streams()[RDevice]));
+            // Call the exchange functions
+            This::exchange<alpha, -1>(idxDevR, idxDevL, idxSrcR, idxDestL, haloPtrs_, programCtrl_, Size, timeStep);
+            This::exchange<alpha, +1>(idxDevL, idxDevR, idxSrcL, idxDestR, haloPtrs_, programCtrl_, Size, timeStep);
 
             // Sync devices and streams - the cudaDeviceSynchronize() may not be 100% necessary, not sure yet
-            errorHandler::checkInline(cudaSetDevice(programCtrl_.deviceList()[LDevice]));
-            errorHandler::checkInline(cudaDeviceSynchronize());
-            errorHandler::checkInline(cudaSetDevice(programCtrl_.deviceList()[RDevice]));
-            errorHandler::checkInline(cudaDeviceSynchronize());
-            programCtrl_.streams().synchronize(LDevice);
-            programCtrl_.streams().synchronize(RDevice);
+            // errorHandler::checkInline(cudaSetDevice(programCtrl_.deviceList()[idxDevL]));
+            // errorHandler::checkInline(cudaDeviceSynchronize());
+            // errorHandler::checkInline(cudaSetDevice(programCtrl_.deviceList()[idxDevR]));
+            // errorHandler::checkInline(cudaDeviceSynchronize());
+            programCtrl_.streams().synchronize(idxDevL);
+            programCtrl_.streams().synchronize(idxDevR);
+        }
+
+        /**
+         * @brief Helper function for peer-to-peer memory exchange
+         * @tparam alpha The axis direction (X, Y or Z)
+         * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
+         * @param[in] timeStep The current time step
+         **/
+        template <const axis::type alpha, const int coeff>
+        __host__ static inline void exchange(
+            const host::label_t idxDevSrc,
+            const host::label_t idxDevDst,
+            const host::label_t idxSrc,
+            const host::label_t idxDst,
+            const haloBuffer<VelocitySet> &haloPtrs,
+            const programControl &programCtrl,
+            const host::label_t size,
+            const host::label_t timeStep)
+        {
+            errorHandler::check(cudaMemcpyPeerAsync(
+                &(haloPtrs.writeBuffer(idxDevDst, timeStep).template ptr<device::pointerIndex<alpha, coeff>()>()[idxDst]),
+                programCtrl.deviceList()[idxDevDst],
+                &(haloPtrs.writeBuffer(idxDevSrc, timeStep).template ptr<device::pointerIndex<alpha, coeff>()>()[idxSrc]),
+                programCtrl.deviceList()[idxDevSrc],
+                size,
+                programCtrl.streams()[idxDevDst]));
         }
     };
 }

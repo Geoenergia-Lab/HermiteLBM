@@ -64,7 +64,7 @@ __host__ inline void launch(
     for (host::label_t stream = 0; stream < programCtrl.deviceList().size(); stream++)
     {
         errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[stream]));
-        errorHandler::checkInline(cudaDeviceSynchronize());
+        // errorHandler::checkInline(cudaDeviceSynchronize());
         programCtrl.streams().synchronize(stream);
 
         const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs(
@@ -87,6 +87,23 @@ __host__ inline void launch(
 
     programCtrl.allsync();
 }
+
+// [[nodiscard]] constexpr bool is_bit_equal(const scalar_t a, const scalar_t b) noexcept
+// {
+//     const uint32_t ia = std::bit_cast<uint32_t>(a);
+//     const uint32_t ib = std::bit_cast<uint32_t>(b);
+
+//     constexpr uint32_t p_zero = 0x00000000u;
+//     constexpr uint32_t n_zero = 0x80000000u;
+
+//     if (
+//         (ia == p_zero || ia == n_zero) &&
+//         (ib == p_zero || ib == n_zero))
+//     {
+//         return true;
+//     }
+//     return (ia == ib);
+// }
 
 int main(const int argc, const char *const argv[])
 {

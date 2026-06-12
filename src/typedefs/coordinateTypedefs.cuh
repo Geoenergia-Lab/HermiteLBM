@@ -113,7 +113,7 @@ namespace LBM
         /**
          * @brief Returns the thread that lies on a particular boundary
          * @tparam alpha The axis direction (X, Y or Z)
-         * @tparam coeff The axis normal coefficient
+         * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
          * @tparam ValueType The return type (defualt device::label_t)
          * @returns One of two thread coordinates that lie on the extremities of alpha within the block
          **/
@@ -152,7 +152,7 @@ namespace LBM
             /**
              * @brief Shifts the coordinate along a particular axis by a coefficient
              * @tparam alpha The axis direction (X, Y or Z)
-             * @tparam coeff The coefficient to shift by (-1, 0 or +1)
+             * @tparam coeff The coefficient indicating the direction along the axis (must be -1, 0 or 1)
              **/
             template <axis::type alpha, const int coeff>
             __device__ [[nodiscard]] inline constexpr device::label_t shifted_coordinate() const noexcept
@@ -201,7 +201,7 @@ namespace LBM
             /**
              * @brief Shifts the coordinate along a particular axis by a coefficient
              * @tparam alpha The axis direction (X, Y or Z)
-             * @tparam coeff The coefficient to shift by (-1, 0 or +1)
+             * @tparam coeff The coefficient indicating the direction along the axis (must be -1, 0 or 1)
              **/
             template <axis::type alpha, const int coeff>
             __device__ [[nodiscard]] inline constexpr device::label_t shifted_block() const noexcept

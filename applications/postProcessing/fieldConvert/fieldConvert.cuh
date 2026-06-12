@@ -160,7 +160,7 @@ namespace LBM
 
                         const host::label_t idx = global::idx(Tx.x, Tx.y, Tx.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
 
-                        const host::label_t id = i + (j * mesh.dimension<axis ::orthogonal<alpha, 0>()>());
+                        const host::label_t id = i + (j * mesh.dimension<axis::orthogonal<alpha, 0>()>());
 
                         cutPlane[field][id] = fields[field][idx];
                     });
@@ -184,7 +184,7 @@ namespace LBM
                         const scalar_t f0 = fields[field][idx_0];
                         const scalar_t f1 = fields[field][idx_1];
 
-                        const host::label_t id = i + (j * mesh.dimension<axis ::orthogonal<alpha, 0>()>());
+                        const host::label_t id = i + (j * mesh.dimension<axis::orthogonal<alpha, 0>()>());
 
                         cutPlane[field][id] = numericalSchemes::interpolate<scalar_t>::linear(f0, f1, weight);
                     });
