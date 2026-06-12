@@ -194,6 +194,18 @@ namespace LBM
             }
 
             /**
+             * @brief Get mutable pointer to device memory for a given GPU.
+             * @tparam Idx Type that can be converted to device::label_t.
+             * @param[in] idx Virtual device index.
+             * @return Pointer to device memory.
+             **/
+            template <typename Idx>
+            __device__ __host__ [[nodiscard]] inline T *mutPtr(const Idx idx) const noexcept
+            {
+                return ptr_[idx];
+            }
+
+            /**
              * @brief Get the field name.
              * @return Const reference to the name string.
              **/

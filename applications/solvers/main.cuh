@@ -52,59 +52,6 @@ SourceFiles
 
 using namespace LBM;
 
-__host__ inline void launch(
-    const host::latticeMesh &mesh,
-    const programControl &programCtrl,
-    device::scalarField<VelocitySet, time::instantaneous> &rho,
-    device::vectorField<VelocitySet, time::instantaneous> &U,
-    device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
-    const haloBuffer<VelocitySet> &haloPtrs,
-    const host::label_t timeStep) noexcept
-{
-    for (host::label_t stream = 0; stream < programCtrl.deviceList().size(); stream++)
-    {
-        errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[stream]));
-        // errorHandler::checkInline(cudaDeviceSynchronize());
-        programCtrl.streams().synchronize(stream);
-
-        const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs(
-            rho.self().ptr(stream),
-            U.x().ptr(stream),
-            U.y().ptr(stream),
-            U.z().ptr(stream),
-            Pi.xx().ptr(stream),
-            Pi.xy().ptr(stream),
-            Pi.xz().ptr(stream),
-            Pi.yy().ptr(stream),
-            Pi.yz().ptr(stream),
-            Pi.zz().ptr(stream));
-
-        kernel::momentBasedLBM<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[stream]>>>(
-            devPtrs,
-            haloPtrs.readBuffer(stream, timeStep),
-            haloPtrs.writeBuffer(stream, timeStep));
-    }
-
-    programCtrl.allsync();
-}
-
-// [[nodiscard]] constexpr bool is_bit_equal(const scalar_t a, const scalar_t b) noexcept
-// {
-//     const uint32_t ia = std::bit_cast<uint32_t>(a);
-//     const uint32_t ib = std::bit_cast<uint32_t>(b);
-
-//     constexpr uint32_t p_zero = 0x00000000u;
-//     constexpr uint32_t n_zero = 0x80000000u;
-
-//     if (
-//         (ia == p_zero || ia == n_zero) &&
-//         (ib == p_zero || ib == n_zero))
-//     {
-//         return true;
-//     }
-//     return (ia == ib);
-// }
-
 int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
@@ -140,6 +87,8 @@ int main(const int argc, const char *const argv[])
 
     const runTimeIO IO(mesh, programCtrl);
 
+    const kernel::ptrCollection devPtrs(rho, U, Pi, programCtrl);
+
     const deviceCommunicator devComm(mesh, programCtrl, haloPtrs);
 
     for (host::label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
@@ -163,7 +112,7 @@ int main(const int argc, const char *const argv[])
         }
 
         // Main kernel
-        launch(mesh, programCtrl, rho, U, Pi, haloPtrs, timeStep);
+        kernel::launch(mesh, programCtrl, devPtrs, haloPtrs, timeStep);
 
         runTimeObjects.calculate();
 

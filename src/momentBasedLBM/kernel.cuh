@@ -220,6 +220,85 @@ namespace LBM
 
     namespace kernel
     {
+        class ptrCollection
+        {
+        public:
+            /**
+             * @brief Alias for the collection of pointers to device arrays on the GPU, used to pass the data to the kernel
+             **/
+            using CollectionType = device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t>;
+            using Type = std::vector<CollectionType>;
+
+            /**
+             * @brief Constructor for the collection of pointers to device arrays on the GPU, used to pass the data to the kernel
+             * @param[in] rho Device scalar field for density
+             * @param[in] U Device vector field for velocity
+             * @param[in] Pi Device symmetric tensor field for the second-order moments
+             * @param[in] programCtrl Program control object containing information about the devices and streams
+             **/
+            __host__ [[nodiscard]] ptrCollection(
+                const device::scalarField<VelocitySet, time::instantaneous> &rho,
+                const device::vectorField<VelocitySet, time::instantaneous> &U,
+                const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
+                const programControl &programCtrl) noexcept
+                : devPtrs_(initialisePtrs(rho, U, Pi, programCtrl)) {}
+
+            /**
+             * @brief Access operator for the collection of pointers to device arrays on the GPU, used to pass the data to the kernel
+             * @param[in] index Index of the device/stream to access
+             * @return Collection of pointers to device arrays for the specified device/stream
+             **/
+            __host__ [[nodiscard]] inline constexpr const CollectionType &operator[](const host::label_t index) const noexcept
+            {
+                return devPtrs_[index];
+            }
+
+        private:
+            /**
+             * @brief Collection of pointers to device arrays on the GPU, used to pass the data to the kernel
+             **/
+            const Type devPtrs_;
+
+            /**
+             * @brief Initializes the collection of pointers to device arrays on the GPU, used to pass the data to the kernel
+             * @param[in] rho Device scalar field for density
+             * @param[in] U Device vector field for velocity
+             * @param[in] Pi Device symmetric tensor field for the second-order moments
+             * @param[in] programCtrl Program control object containing information about the devices and streams
+             * @return Collection of pointers to device arrays for all devices/streams
+             **/
+            __host__ [[nodiscard]] static const Type initialisePtrs(
+                const device::scalarField<VelocitySet, time::instantaneous> &rho,
+                const device::vectorField<VelocitySet, time::instantaneous> &U,
+                const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
+                const programControl &programCtrl)
+            {
+                Type ptrs;
+
+                for (host::label_t stream = 0; stream < programCtrl.deviceList().size(); stream++)
+                {
+                    errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[stream]));
+                    errorHandler::checkInline(cudaDeviceSynchronize());
+                    programCtrl.streams().synchronize(stream);
+
+                    ptrs.emplace_back(
+                        device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t>(
+                            rho.self().mutPtr(stream),
+                            U.x().mutPtr(stream),
+                            U.y().mutPtr(stream),
+                            U.z().mutPtr(stream),
+                            Pi.xx().mutPtr(stream),
+                            Pi.xy().mutPtr(stream),
+                            Pi.xz().mutPtr(stream),
+                            Pi.yy().mutPtr(stream),
+                            Pi.yz().mutPtr(stream),
+                            Pi.zz().mutPtr(stream)));
+                }
+
+                return ptrs;
+            }
+        };
+
         /**
          * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
          * @param[in] devPtrs Collection of 10 pointers to device arrays on the GPU
@@ -244,6 +323,35 @@ namespace LBM
 
                 detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer);
             }
+        }
+
+        /**
+         * @brief Launches the lattice Boltzmann kernel for all devices and streams, ensuring proper synchronization and device selection
+         * @param[in] mesh Lattice mesh object containing information about the grid and block dimensions
+         * @param[in] programCtrl Program control object containing information about the devices and streams
+         * @param[in] devPtrs Collection of pointers to device arrays on the GPU, used to pass the data to the kernel
+         * @param[in] haloPtrs Collection of pointers to the block halo faces used during streaming
+         * @param[in] timeStep Current time step of the simulation, used to determine which halo buffers to use for reading and writing
+         **/
+        __host__ inline void launch(
+            const host::latticeMesh &mesh,
+            const programControl &programCtrl,
+            const ptrCollection &devPtrs,
+            const haloBuffer<VelocitySet> &haloPtrs,
+            const host::label_t timeStep) noexcept
+        {
+            for (host::label_t stream = 0; stream < programCtrl.deviceList().size(); stream++)
+            {
+                errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[stream]));
+                programCtrl.streams().synchronize(stream);
+
+                kernel::momentBasedLBM<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[stream]>>>(
+                    devPtrs[stream],
+                    haloPtrs.readBuffer(stream, timeStep),
+                    haloPtrs.writeBuffer(stream, timeStep));
+            }
+
+            programCtrl.allsync();
         }
     }
 }
