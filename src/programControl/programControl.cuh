@@ -110,6 +110,7 @@ namespace LBM
                 {
                     std::cout << deviceList()[0];
                 }
+                else
                 {
                     for (host::label_t i = 0; i < deviceList().size() - 1; i++)
                     {
