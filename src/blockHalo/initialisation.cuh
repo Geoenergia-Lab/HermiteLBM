@@ -163,12 +163,11 @@ namespace LBM
          * @param[in] Q The number of discrete velocities in the velocity set
          * @param[in] thermalModel The thermal model used in the simulation (thermal or isothermal)
          **/
-        __launch_bounds__(block::maxThreads(), 1)
-            __global__ void momentBasedLBMInitialisation(
-                const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
-                const device::ptrCollection<12, scalar_t> haloBuffer,
-                const host::label_t Q,
-                const thermalModel_t thermalModel)
+        __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisation(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
+            const device::ptrCollection<12, scalar_t> haloBuffer,
+            const host::label_t Q,
+            const thermalModel_t thermalModel)
         {
             const device::ptrCollection<6, scalar_t> readBuffer(
                 haloBuffer.ptr<0>(), haloBuffer.ptr<1>(), haloBuffer.ptr<2>(),

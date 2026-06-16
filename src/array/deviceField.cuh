@@ -170,6 +170,8 @@ namespace LBM
                 host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
                 const host::label_t timeStep) const
             {
+                programCtrl_.allsync();
+
                 for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < programCtrl_.deviceList().size(); virtualDeviceIndex++)
                 {
                     hostWriteBuffer.copyFromDevice(

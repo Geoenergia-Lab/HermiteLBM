@@ -68,9 +68,7 @@ namespace LBM
          * @brief Default constructor
          **/
         __host__ [[nodiscard]] streamHandler(const std::vector<deviceIndex_t> &deviceIndices) noexcept
-            : streams_(createCudaStreams(deviceIndices))
-        {
-        }
+            : streams_(createCudaStreams(deviceIndices)) {}
 
         /**
          * @brief Destructor
@@ -138,16 +136,10 @@ namespace LBM
 
         /**
          * @brief Stream access operator
-         * @tparam stream_ Index of the stream to access (must be < N)
-         * @param[in] stream Integral constant representing the stream index
+         * @param[in] i Integral constant representing the stream index
          * @return Reference to the requested CUDA stream
          * @warning No bounds checking performed at runtime
          **/
-        template <const device::label_t stream_>
-        __host__ const cudaStream_t &operator[](const std::integral_constant<device::label_t, stream_> stream) const noexcept
-        {
-            return streams_[stream()];
-        }
         __host__ const cudaStream_t &operator[](const host::label_t i) const noexcept
         {
             return streams_[i];
@@ -170,20 +162,29 @@ namespace LBM
          * Private helper function that handles actual stream creation
          * with proper error checking and device synchronization.
          **/
-        __host__ [[nodiscard]] static const std::vector<cudaStream_t> createCudaStreams(const std::vector<deviceIndex_t> &deviceIndices) noexcept
+        __host__ [[nodiscard]] static const std::vector<cudaStream_t> createCudaStreams(const std::vector<deviceIndex_t> &deviceIndices)
         {
-            std::vector<cudaStream_t> streams(deviceIndices.size());
+            std::vector<cudaStream_t> streams(deviceIndices.size() * 3);
 
-            if (streams.size() > 0)
+            for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
             {
-                for (device::label_t stream = 0; stream < streams.size(); stream++)
+                errorHandler::check(cudaSetDevice(deviceIndices[deviceIdx]));
+                errorHandler::check(cudaDeviceSynchronize());
+            }
+
+            for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
+            {
+                errorHandler::check(cudaSetDevice(deviceIndices[deviceIdx]));
+                for (device::label_t stream = 0; stream < 3; stream++)
                 {
-                    errorHandler::check(cudaDeviceSynchronize());
-                    errorHandler::check(cudaSetDevice(deviceIndices[stream]));
-                    errorHandler::check(cudaDeviceSynchronize());
-                    errorHandler::check(cudaStreamCreate(&streams[stream]));
-                    errorHandler::check(cudaDeviceSynchronize());
+                    errorHandler::check(cudaStreamCreate(&streams[(deviceIdx * 3) + stream]));
                 }
+            }
+
+            for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
+            {
+                errorHandler::check(cudaSetDevice(deviceIndices[deviceIdx]));
+                errorHandler::check(cudaDeviceSynchronize());
             }
 
             return streams;

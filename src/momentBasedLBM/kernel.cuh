@@ -305,11 +305,10 @@ namespace LBM
          * @param[in] readBuffer Collection of read-only pointers to the block halo faces used during streaming
          * @param[in] writeBuffer Collection of mutable pointers to the block halo faces used after streaming
          **/
-        __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP<VelocitySet>())
-            __global__ void momentBasedLBM(
-                const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
-                const device::ptrCollection<6, const scalar_t> readBuffer,
-                const device::ptrCollection<6, scalar_t> writeBuffer)
+        __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP<VelocitySet>()) __global__ void momentBasedLBM(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
+            const device::ptrCollection<6, const scalar_t> readBuffer,
+            const device::ptrCollection<6, scalar_t> writeBuffer)
         {
             if constexpr ((std::is_same_v<VelocitySet, D3Q19<Thermal>>) || (std::is_same_v<VelocitySet, D3Q19<Isothermal>>))
             {
@@ -340,15 +339,15 @@ namespace LBM
             const haloBuffer<VelocitySet> &haloPtrs,
             const host::label_t timeStep) noexcept
         {
-            for (host::label_t stream = 0; stream < programCtrl.deviceList().size(); stream++)
+            for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
             {
-                errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[stream]));
-                programCtrl.streams().synchronize(stream);
+                errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
+                programCtrl.streams().synchronize(GPU::internalStreamID(deviceIdx));
 
-                kernel::momentBasedLBM<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[stream]>>>(
-                    devPtrs[stream],
-                    haloPtrs.readBuffer(stream, timeStep),
-                    haloPtrs.writeBuffer(stream, timeStep));
+                kernel::momentBasedLBM<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[GPU::internalStreamID(deviceIdx)]>>>(
+                    devPtrs[deviceIdx],
+                    haloPtrs.readBuffer(deviceIdx, timeStep),
+                    haloPtrs.writeBuffer(deviceIdx, timeStep));
             }
 
             programCtrl.allsync();

@@ -231,7 +231,7 @@ namespace LBM
                 Pi.yz().constPtr(deviceIdx),
                 Pi.zz().constPtr(deviceIdx));
 
-            kernel::momentBasedLBMInitialisation<<<mesh.gridBlock(), host::latticeMesh::threadBlock(), 0, programCtrl.streams()[deviceIdx]>>>(
+            kernel::momentBasedLBMInitialisation<<<mesh.gridBlock(), host::latticeMesh::threadBlock(), 0, programCtrl.streams()[GPU::internalStreamID(deviceIdx)]>>>(
                 devPtrs,
                 haloBuffers,
                 VelocitySet::Q(),

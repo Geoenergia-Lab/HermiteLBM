@@ -228,7 +228,6 @@ namespace LBM
     }
 }
 
-#include "skeleton.cuh"
 #include "fullField.cuh"
 
 #endif
