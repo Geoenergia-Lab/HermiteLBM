@@ -83,11 +83,13 @@ int main(const int argc, const char *const argv[])
 
     programCtrl.configure<smem_alloc_size<VelocitySet>()>(kernel::momentBasedLBM);
 
-    // objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, U, Pi, programCtrl.streams(), programCtrl);
+    objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, U, Pi, programCtrl);
 
     const runTimeIO IO(mesh, programCtrl);
 
     const kernel::ptrCollection devPtrs(rho, U, Pi, programCtrl);
+
+    programCtrl.allsync();
 
     const deviceCommunicator devComm(mesh, programCtrl, haloPtrs);
 
@@ -108,13 +110,13 @@ int main(const int argc, const char *const argv[])
 
             Pi.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
 
-            // runTimeObjects.save(timeStep);
+            runTimeObjects.save(timeStep);
         }
 
         // Main kernel
         kernel::launch(mesh, programCtrl, devPtrs, haloPtrs, timeStep);
 
-        // runTimeObjects.calculate();
+        runTimeObjects.calculate();
 
         // Sync all devices and streams
         programCtrl.allsync();

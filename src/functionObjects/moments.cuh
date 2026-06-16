@@ -144,9 +144,8 @@ namespace LBM
                 const device::scalarField<VelocitySet, time::instantaneous> &rho,
                 const device::vectorField<VelocitySet, time::instantaneous> &U,
                 const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
-                const streamHandler &streamsLBM,
                 const programControl &programCtrl) noexcept
-                : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, streamsLBM),
+                : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
                   rhoMean_("rhoMean", mesh, 0, programCtrl, calculateMean_),
                   UMean_("UMean", mesh, 0, programCtrl, calculateMean_),
                   PiMean_("PiMean", mesh, 0, programCtrl, calculateMean_)

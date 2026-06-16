@@ -51,6 +51,7 @@ unitTests/ComputeSanitizerTest/*/*.dat
 unitTests/ComputeSanitizerTest/*/*.vts
 unitTests/ComputeSanitizerTest/*/*.vtu
 unitTests/ComputeSanitizerTest/logs
+unitTests/ComputeSanitizerTest/timeStep
 
 # Test executable directory ignores
 applications/testExecutable/*/*.LBMBin

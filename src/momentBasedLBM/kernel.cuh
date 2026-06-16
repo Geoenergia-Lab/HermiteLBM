@@ -73,13 +73,14 @@ namespace LBM
             const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> &devPtrs,
             const device::ptrCollection<6, const scalar_t> &readBuffer,
             const device::ptrCollection<6, scalar_t> &writeBuffer,
-            SharedBuffer &sharedBuffer)
+            SharedBuffer &sharedBuffer,
+            const device::label_t bzOffset)
         {
             static_assert(std::is_same_v<BlockHalo, device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>>);
 
             const thread::coordinate Tx;
 
-            const block::coordinate Bx;
+            const block::coordinate Bx(blockIdx.x, blockIdx.y, blockIdx.z + bzOffset);
 
             const device::pointCoordinate point(Tx, Bx);
 
@@ -308,19 +309,20 @@ namespace LBM
         __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP<VelocitySet>()) __global__ void momentBasedLBM(
             const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
             const device::ptrCollection<6, const scalar_t> readBuffer,
-            const device::ptrCollection<6, scalar_t> writeBuffer)
+            const device::ptrCollection<6, scalar_t> writeBuffer,
+            const device::label_t bzOffset)
         {
             if constexpr ((std::is_same_v<VelocitySet, D3Q19<Thermal>>) || (std::is_same_v<VelocitySet, D3Q19<Isothermal>>))
             {
                 __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<host::label_t>()>()> shared_buffer;
 
-                detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer);
+                detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer, bzOffset);
             }
             else
             {
                 extern __shared__ scalar_t shared_buffer[];
 
-                detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer);
+                detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer, bzOffset);
             }
         }
 
@@ -332,7 +334,7 @@ namespace LBM
          * @param[in] haloPtrs Collection of pointers to the block halo faces used during streaming
          * @param[in] timeStep Current time step of the simulation, used to determine which halo buffers to use for reading and writing
          **/
-        __host__ inline void launch(
+        __host__ void launch(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const ptrCollection &devPtrs,
@@ -342,15 +344,32 @@ namespace LBM
             for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
             {
                 errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
-                programCtrl.streams().synchronize(GPU::internalStreamID(deviceIdx));
+                // programCtrl.streams().synchronize(GPU::internalStreamID(deviceIdx));
 
-                kernel::momentBasedLBM<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[GPU::internalStreamID(deviceIdx)]>>>(
+                programCtrl.streams().synchronize((3 * deviceIdx) + 0);
+                programCtrl.streams().synchronize((3 * deviceIdx) + 1);
+                programCtrl.streams().synchronize((3 * deviceIdx) + 2);
+
+                kernel::momentBasedLBM<<<mesh.gridBlock()[0], mesh.threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[(3 * deviceIdx) + 0]>>>(
                     devPtrs[deviceIdx],
                     haloPtrs.readBuffer(deviceIdx, timeStep),
-                    haloPtrs.writeBuffer(deviceIdx, timeStep));
+                    haloPtrs.writeBuffer(deviceIdx, timeStep),
+                    static_cast<device::label_t>(0));
+
+                kernel::momentBasedLBM<<<mesh.gridBlock()[1], mesh.threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[(3 * deviceIdx) + 1]>>>(
+                    devPtrs[deviceIdx],
+                    haloPtrs.readBuffer(deviceIdx, timeStep),
+                    haloPtrs.writeBuffer(deviceIdx, timeStep),
+                    static_cast<device::label_t>(1));
+
+                kernel::momentBasedLBM<<<mesh.gridBlock()[2], mesh.threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[(3 * deviceIdx) + 2]>>>(
+                    devPtrs[deviceIdx],
+                    haloPtrs.readBuffer(deviceIdx, timeStep),
+                    haloPtrs.writeBuffer(deviceIdx, timeStep),
+                    static_cast<device::label_t>(mesh.blocksPerDevice<axis::Z>() - 1));
             }
 
-            programCtrl.allsync();
+            // programCtrl.allsync();
         }
     }
 }

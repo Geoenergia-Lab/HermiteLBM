@@ -366,7 +366,7 @@ namespace LBM
 
         __host__ inline void allsync() const noexcept
         {
-            for (host::label_t stream = 0; stream < deviceList().size(); stream++)
+            for (host::label_t stream = 0; stream < streams_.streams().size(); stream++)
             {
                 streams_.synchronize(stream);
             }

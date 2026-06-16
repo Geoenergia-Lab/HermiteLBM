@@ -81,7 +81,7 @@ namespace LBM
                 : dimensions_(string::extractParameter<host::blockLabel>("latticeMesh", "n")),
                   L_(string::extractParameter<pointVector>("latticeMesh", "L")),
                   nDevices_(string::extractParameter<host::blockLabel>("deviceDecomposition", "n")),
-                  gridBlock_(static_cast<uint32_t>(blocksPerDevice<axis::X>()), static_cast<uint32_t>(blocksPerDevice<axis::Y>()), static_cast<uint32_t>(blocksPerDevice<axis::Z>()))
+                  gridBlock_(initialiseGridBlock())
             {
                 print();
 
@@ -107,7 +107,8 @@ namespace LBM
             __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const host::blockLabel &meshDimensions) noexcept
                 : dimensions_({meshDimensions.x, meshDimensions.y, meshDimensions.z}),
                   L_(mesh.L()),
-                  nDevices_(string::extractParameter<host::blockLabel>("deviceDecomposition", "n"))
+                  nDevices_(string::extractParameter<host::blockLabel>("deviceDecomposition", "n")),
+                  gridBlock_(initialiseGridBlock())
             {
                 print();
             }
@@ -176,7 +177,7 @@ namespace LBM
              * @brief Get grid dimensions for CUDA kernel launches
              * @return dim3 structure with grid dimensions
              **/
-            __host__ [[nodiscard]] inline constexpr const dim3 &gridBlock() const noexcept
+            __host__ [[nodiscard]] inline constexpr const std::array<dim3, 3> &gridBlock() const noexcept
             {
                 return gridBlock_;
             }
@@ -314,7 +315,15 @@ namespace LBM
             /**
              * @brief Grid dimensions for CUDA kernel launches, calculated based on block decomposition and device count
              **/
-            const dim3 gridBlock_;
+            const std::array<dim3, 3> gridBlock_;
+
+            __host__ [[nodiscard]] inline constexpr const std::array<dim3, 3> initialiseGridBlock() const noexcept
+            {
+                return {
+                    dim3(static_cast<uint32_t>(blocksPerDevice<axis::X>()), static_cast<uint32_t>(blocksPerDevice<axis::Y>()), static_cast<uint32_t>(1)),
+                    dim3(static_cast<uint32_t>(blocksPerDevice<axis::X>()), static_cast<uint32_t>(blocksPerDevice<axis::Y>()), static_cast<uint32_t>(blocksPerDevice<axis::Z>() - 2)),
+                    dim3(static_cast<uint32_t>(blocksPerDevice<axis::X>()), static_cast<uint32_t>(blocksPerDevice<axis::Y>()), static_cast<uint32_t>(1))};
+            }
 
             /**
              * @brief Validates that the block decomposition is compatible with the mesh dimensions

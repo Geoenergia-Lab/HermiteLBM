@@ -39,6 +39,8 @@ namespace LBM
 {
     namespace functionObjects
     {
+        __host__ [[nodiscard]] inline consteval bool functionObjectReady() noexcept { return false; }
+
         /**
          * @brief Base class for LBM function objects, providing common data members.
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
@@ -86,7 +88,7 @@ namespace LBM
             /**
              * @brief Stream handler for CUDA operations
              **/
-            const streamHandler &streamsLBM_;
+            const programControl &programCtrl_;
 
             /**
              * @brief Configures the kernels to allocate no dynamic shared memory and prefer L1 cache
@@ -147,11 +149,16 @@ namespace LBM
                 FunctionObject &object,
                 host::label_t &meanCount)
             {
+                static_assert(functionObjectReady(), "Need to fix the launch configuration and stream handling in functionObjectBase");
+
                 const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
 
-                for (host::label_t stream = 0; stream < streamsLBM_.streams().size(); stream++)
+                for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
                 {
-                    func<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(devPtrs(stream), object.meanPtrs(stream), invNewCount);
+                    func<<<mesh_.gridBlock()[1], host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[deviceIdx]>>>(
+                        devPtrs(deviceIdx),
+                        object.meanPtrs(deviceIdx),
+                        invNewCount);
                 }
 
                 meanCount++;
@@ -167,9 +174,13 @@ namespace LBM
                 F *func,
                 FunctionObject &object)
             {
-                for (host::label_t stream = 0; stream < streamsLBM_.streams().size(); stream++)
+                static_assert(functionObjectReady(), "Need to fix the launch configuration and stream handling in functionObjectBase");
+
+                for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
                 {
-                    func<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(devPtrs(stream), object.meanPtrs(stream));
+                    func<<<mesh_.gridBlock()[1], host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[deviceIdx]>>>(
+                        devPtrs(deviceIdx),
+                        object.meanPtrs(deviceIdx));
                 }
             }
 
@@ -185,11 +196,17 @@ namespace LBM
                 FunctionObject &object,
                 host::label_t &meanCount)
             {
+                static_assert(functionObjectReady(), "Need to fix the launch configuration and stream handling in functionObjectBase");
+
                 const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
 
-                for (host::label_t stream = 0; stream < streamsLBM_.streams().size(); stream++)
+                for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
                 {
-                    func<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(devPtrs(stream), object.instantaneousPtrs(stream), object.meanPtrs(stream), invNewCount);
+                    func<<<mesh_.gridBlock()[1], host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[deviceIdx]>>>(
+                        devPtrs(deviceIdx),
+                        object.instantaneousPtrs(deviceIdx),
+                        object.meanPtrs(deviceIdx),
+                        invNewCount);
                 }
 
                 meanCount++;
@@ -212,7 +229,7 @@ namespace LBM
                 const device::scalarField<VelocitySet, time::instantaneous> &rho,
                 const device::vectorField<VelocitySet, time::instantaneous> &U,
                 const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
-                const streamHandler &streamsLBM) noexcept
+                const programControl &programCtrl) noexcept
                 : name_(name),
                   nameMean_(name + "Mean"),
                   componentNames_(componentNames(name_)),
@@ -224,7 +241,7 @@ namespace LBM
                   rho_(rho),
                   U_(U),
                   Pi_(Pi),
-                  streamsLBM_(streamsLBM) {}
+                  programCtrl_(programCtrl) {}
 
             /**
              * @brief Check if instantaneous calculation is enabled
