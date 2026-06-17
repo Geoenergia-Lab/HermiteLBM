@@ -334,7 +334,7 @@ namespace LBM
          * @param[in] haloPtrs Collection of pointers to the block halo faces used during streaming
          * @param[in] timeStep Current time step of the simulation, used to determine which halo buffers to use for reading and writing
          **/
-        __host__ void launch(
+        __host__ void launchInternal(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const ptrCollection &devPtrs,
@@ -344,32 +344,59 @@ namespace LBM
             for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
             {
                 errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
-                // programCtrl.streams().synchronize(GPU::internalStreamID(deviceIdx));
+
+                programCtrl.streams().synchronize((3 * deviceIdx) + 1);
+
+                kernel::momentBasedLBM<<<mesh.gridBlock()[1], host::latticeMesh::threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[(3 * deviceIdx) + 1]>>>(
+                    devPtrs[deviceIdx],
+                    haloPtrs.readBuffer(deviceIdx, timeStep),
+                    haloPtrs.writeBuffer(deviceIdx, timeStep),
+                    static_cast<device::label_t>(1));
+            }
+
+            for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
+            {
+                programCtrl.streams().synchronize((3 * deviceIdx) + 1);
+            }
+        }
+
+        template <const bool ExplicitSync>
+        __host__ void launchBoundary(
+            const host::latticeMesh &mesh,
+            const programControl &programCtrl,
+            const ptrCollection &devPtrs,
+            const haloBuffer<VelocitySet> &haloPtrs,
+            const deviceCommunicator<ExplicitSync, VelocitySet> &devComm,
+            const host::label_t timeStep) noexcept
+        {
+            for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
+            {
+                errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
 
                 programCtrl.streams().synchronize((3 * deviceIdx) + 0);
-                programCtrl.streams().synchronize((3 * deviceIdx) + 1);
                 programCtrl.streams().synchronize((3 * deviceIdx) + 2);
 
-                kernel::momentBasedLBM<<<mesh.gridBlock()[0], mesh.threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[(3 * deviceIdx) + 0]>>>(
+                kernel::momentBasedLBM<<<mesh.gridBlock()[0], host::latticeMesh::threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[(3 * deviceIdx) + 0]>>>(
                     devPtrs[deviceIdx],
                     haloPtrs.readBuffer(deviceIdx, timeStep),
                     haloPtrs.writeBuffer(deviceIdx, timeStep),
                     static_cast<device::label_t>(0));
 
-                kernel::momentBasedLBM<<<mesh.gridBlock()[1], mesh.threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[(3 * deviceIdx) + 1]>>>(
-                    devPtrs[deviceIdx],
-                    haloPtrs.readBuffer(deviceIdx, timeStep),
-                    haloPtrs.writeBuffer(deviceIdx, timeStep),
-                    static_cast<device::label_t>(1));
-
-                kernel::momentBasedLBM<<<mesh.gridBlock()[2], mesh.threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[(3 * deviceIdx) + 2]>>>(
+                kernel::momentBasedLBM<<<mesh.gridBlock()[2], host::latticeMesh::threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[(3 * deviceIdx) + 2]>>>(
                     devPtrs[deviceIdx],
                     haloPtrs.readBuffer(deviceIdx, timeStep),
                     haloPtrs.writeBuffer(deviceIdx, timeStep),
                     static_cast<device::label_t>(mesh.blocksPerDevice<axis::Z>() - 1));
             }
 
-            // programCtrl.allsync();
+            // Sync the boundary streams
+            for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
+            {
+                programCtrl.streams().synchronize((3 * deviceIdx) + 0);
+                programCtrl.streams().synchronize((3 * deviceIdx) + 2);
+            }
+
+            devComm.exchange(timeStep);
         }
     }
 }

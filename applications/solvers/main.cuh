@@ -50,6 +50,10 @@ SourceFiles
 #ifndef __MBLBM_MAIN_CUH
 #define __MBLBM_MAIN_CUH
 
+#include <thread>
+
+__host__ [[nodiscard]] inline consteval bool ExplicitSync() { return true; }
+
 using namespace LBM;
 
 int main(const int argc, const char *const argv[])
@@ -83,7 +87,7 @@ int main(const int argc, const char *const argv[])
 
     programCtrl.configure<smem_alloc_size<VelocitySet>()>(kernel::momentBasedLBM);
 
-    objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, U, Pi, programCtrl);
+    // objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, U, Pi, programCtrl);
 
     const runTimeIO IO(mesh, programCtrl);
 
@@ -91,7 +95,7 @@ int main(const int argc, const char *const argv[])
 
     programCtrl.allsync();
 
-    const deviceCommunicator devComm(mesh, programCtrl, haloPtrs);
+    const deviceCommunicator<ExplicitSync(), VelocitySet> devComm(mesh, programCtrl, haloPtrs);
 
     for (host::label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
@@ -110,19 +114,37 @@ int main(const int argc, const char *const argv[])
 
             Pi.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
 
-            runTimeObjects.save(timeStep);
+            // runTimeObjects.save(timeStep);
         }
 
-        // Main kernel
-        kernel::launch(mesh, programCtrl, devPtrs, haloPtrs, timeStep);
+        // Main kernel launches
+        std::thread boundaryThread(
+            &kernel::launchBoundary<ExplicitSync()>,
+            std::ref(mesh),
+            std::ref(programCtrl),
+            std::ref(devPtrs),
+            std::ref(haloPtrs),
+            std::ref(devComm),
+            timeStep);
+        std::thread internalThread(
+            &kernel::launchInternal,
+            std::ref(mesh),
+            std::ref(programCtrl),
+            std::ref(devPtrs),
+            std::ref(haloPtrs),
+            timeStep);
 
-        runTimeObjects.calculate();
+        // runTimeObjects.calculate();
 
         // Sync all devices and streams
-        programCtrl.allsync();
+        // programCtrl.allsync();
 
         // Exchange memory between devices
-        devComm.exchange(timeStep);
+        boundaryThread.join();
+        internalThread.join();
+
+        // kernel::launchInternal(mesh, programCtrl, devPtrs, haloPtrs, timeStep);
+        // devComm.exchange(timeStep);
     }
 
     return 0;

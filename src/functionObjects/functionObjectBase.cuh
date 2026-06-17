@@ -39,7 +39,7 @@ namespace LBM
 {
     namespace functionObjects
     {
-        __host__ [[nodiscard]] inline consteval bool functionObjectReady() noexcept { return false; }
+        __host__ [[nodiscard]] inline consteval bool functionObjectReady() noexcept { return true; }
 
         /**
          * @brief Base class for LBM function objects, providing common data members.

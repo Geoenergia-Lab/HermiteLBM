@@ -52,10 +52,10 @@ SourceFiles
 
 namespace LBM
 {
-    template <class VelocitySet>
+    template <const bool ExplicitSync, class VelocitySet>
     class deviceCommunicator
     {
-        using This = deviceCommunicator<VelocitySet>;
+        using This = deviceCommunicator<ExplicitSync, VelocitySet>;
         using exchangeFunction = std::function<void(const host::label_t)>;
 
     public:
@@ -207,8 +207,11 @@ namespace LBM
             This::exchange<alpha, +1>(idxDevL, idxDevR, idxSrcL, idxDestR, haloPtrs_, programCtrl_, Size, timeStep);
 
             // Sync devices and streams - the cudaDeviceSynchronize() may not be 100% necessary, not sure yet
-            programCtrl_.streams().synchronize(GPU::internalStreamID(idxDevL));
-            programCtrl_.streams().synchronize(GPU::internalStreamID(idxDevR));
+            if constexpr (ExplicitSync)
+            {
+                programCtrl_.streams().synchronize(GPU::internalStreamID(idxDevL));
+                programCtrl_.streams().synchronize(GPU::internalStreamID(idxDevR));
+            }
         }
 
         /**
