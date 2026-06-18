@@ -163,6 +163,9 @@ namespace LBM
             }
         }
 
+        __host__ [[nodiscard]] static inline consteval bool exchangeHardcodeDevFix() noexcept { return true; }
+        __host__ [[nodiscard]] static inline consteval bool blockDecompImplemented() noexcept { return true; }
+
         /**
          * @brief Implementation of the exchange function
          * @tparam alpha The axis direction (X, Y or Z)
@@ -172,6 +175,10 @@ namespace LBM
         __host__ inline void exchangeImpl(const host::label_t timeStep) const
         {
             static_assert(alpha == axis::Z, "HermiteLBM currently only supports decomposition in the z axis");
+
+            static_assert(exchangeHardcodeDevFix(), "The current implementation of exchangeImpl is hard-coded for a specific device configuration. This function should be refactored to be more flexible and support arbitrary device topologies. The definition of idxDevL and idxDevR need to be fixed.");
+
+            static_assert(blockDecompImplemented(), "The current implementation of exchangeImpl assumes a specific block decomposition. This function should be refactored to support arbitrary block decompositions. The definitions of nab and nbb may not be correct for brick decomposition.");
 
             const host::label_t nab = mesh_.nBlocks<axis::orthogonal<alpha, 0>()>();
             const host::label_t nbb = mesh_.nBlocks<axis::orthogonal<alpha, 1>()>();
@@ -203,14 +210,37 @@ namespace LBM
             const host::label_t idxSrcL = host::idxPop<alpha, VelocitySet::QF()>(0, threadStart, LDeviceSourceBlock, nab, nbb);
 
             // Call the exchange functions
-            This::exchange<alpha, -1>(idxDevR, idxDevL, idxSrcR, idxDestL, haloPtrs_, programCtrl_, Size, timeStep);
-            This::exchange<alpha, +1>(idxDevL, idxDevR, idxSrcL, idxDestR, haloPtrs_, programCtrl_, Size, timeStep);
+            This::exchange<alpha, -1>(idxDevR, idxDevL, idxSrcR, idxDestL, haloPtrs_, programCtrl_, Size, timeStep); // Copy to the Left GPU
+            This::exchange<alpha, +1>(idxDevL, idxDevR, idxSrcL, idxDestR, haloPtrs_, programCtrl_, Size, timeStep); // Copy to the Right GPU
 
             // Sync devices and streams - the cudaDeviceSynchronize() may not be 100% necessary, not sure yet
             if constexpr (ExplicitSync)
             {
-                programCtrl_.streams().synchronize(GPU::internalStreamID(idxDevL));
-                programCtrl_.streams().synchronize(GPU::internalStreamID(idxDevR));
+                constexpr const host::label_t idxStreamL = (3 * idxDevL) + 2; // Stream 2 is the East stream of GPU 0
+                constexpr const host::label_t idxStreamR = (3 * idxDevR) + 0; // Stream 3 is the West stream of GPU 1
+                programCtrl_.streams().synchronize(idxStreamL);
+                programCtrl_.streams().synchronize(idxStreamR);
+            }
+        }
+
+        /**
+         * @brief Helper function to get the correct stream index for a given device and direction
+         * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
+         * @param[in] idxDev The device index
+         **/
+        template <const int coeff>
+        __host__ [[nodiscard]] static inline constexpr host::label_t idxStream(const host::label_t idxDev) noexcept
+        {
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
+
+            if constexpr (coeff == -1)
+            {
+                return (3 * idxDev); // East stream
+            }
+
+            if constexpr (coeff == +1)
+            {
+                return (3 * idxDev) + 2; // West stream
             }
         }
 
@@ -231,13 +261,16 @@ namespace LBM
             const host::label_t size,
             const host::label_t timeStep)
         {
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
+
             errorHandler::check(cudaMemcpyPeerAsync(
                 &(haloPtrs.writeBuffer(idxDevDst, timeStep).template ptr<device::pointerIndex<alpha, coeff>()>()[idxDst]),
                 programCtrl.deviceList()[idxDevDst],
                 &(haloPtrs.writeBuffer(idxDevSrc, timeStep).template ptr<device::pointerIndex<alpha, coeff>()>()[idxSrc]),
                 programCtrl.deviceList()[idxDevSrc],
                 size,
-                programCtrl.streams()[GPU::internalStreamID(idxDevDst)]));
+                programCtrl.streams()[This::idxStream<coeff>(idxDevDst)]));
         }
     };
 }

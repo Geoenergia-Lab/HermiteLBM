@@ -52,7 +52,7 @@ SourceFiles
 
 #include <thread>
 
-__host__ [[nodiscard]] inline consteval bool ExplicitSync() { return true; }
+__host__ [[nodiscard]] inline consteval bool ExplicitSync() { return false; }
 
 using namespace LBM;
 
@@ -77,11 +77,11 @@ int main(const int argc, const char *const argv[])
     VelocitySet::print();
 
     // Allocate the arrays on the device
-    device::scalarField<VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
-    device::vectorField<VelocitySet, time::instantaneous> U("U", mesh, programCtrl);
-    device::symmetricTensorField<VelocitySet, time::instantaneous> Pi("Pi", mesh, programCtrl);
+    const device::scalarField<VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
+    const device::vectorField<VelocitySet, time::instantaneous> U("U", mesh, programCtrl);
+    const device::symmetricTensorField<VelocitySet, time::instantaneous> Pi("Pi", mesh, programCtrl);
 
-    haloBuffer<VelocitySet> haloPtrs(rho, U, Pi, mesh, programCtrl);
+    const haloBuffer<VelocitySet> haloPtrs(rho, U, Pi, mesh, programCtrl);
 
     host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.size() * 6, mesh);
 
@@ -119,19 +119,19 @@ int main(const int argc, const char *const argv[])
 
         // Main kernel launches
         std::thread boundaryThread(
-            &kernel::launchBoundary<ExplicitSync()>,
-            std::ref(mesh),
-            std::ref(programCtrl),
-            std::ref(devPtrs),
-            std::ref(haloPtrs),
-            std::ref(devComm),
+            std::addressof(kernel::launchBoundary<ExplicitSync()>),
+            std::cref(mesh),
+            std::cref(programCtrl),
+            std::cref(devPtrs),
+            std::cref(haloPtrs),
+            std::cref(devComm),
             timeStep);
         std::thread internalThread(
-            &kernel::launchInternal,
-            std::ref(mesh),
-            std::ref(programCtrl),
-            std::ref(devPtrs),
-            std::ref(haloPtrs),
+            std::addressof(kernel::launchInternal),
+            std::cref(mesh),
+            std::cref(programCtrl),
+            std::cref(devPtrs),
+            std::cref(haloPtrs),
             timeStep);
 
         // runTimeObjects.calculate();
