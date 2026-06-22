@@ -195,15 +195,10 @@ namespace LBM
         template <class VelocitySet, const axis::type alpha, const axis::type beta>
         __device__ __host__ [[nodiscard]] static inline constexpr scalar_t calculate_moment(const thread::array<scalar_t, VelocitySet::Q()> &pop) noexcept
         {
-            constexpr const thread::array<int, VelocitySet::Q()> c_AB = c_AlphaBeta<VelocitySet, alpha, beta>();
-            constexpr const host::label_t N = number_non_zero(c_AB);
-            constexpr const thread::array<int, N> C = non_zero_values<N>(c_AB);
-            constexpr const thread::array<host::label_t, N> indices = non_zero_indices<N>(c_AB);
-
-            return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
-            {
-                return (process_momentum_element<C[Is]>(pop[indices[Is]]) + ...);
-            }(std::make_index_sequence<N>{});
+            return calculate_moment_impl<VelocitySet, alpha, beta>(
+                pop,
+                [](const auto, const auto c_constant, const scalar_t val)
+                { return process_momentum_element<c_constant.value>(val); });
         }
 
         /**
@@ -219,15 +214,10 @@ namespace LBM
         template <class VelocitySet, const axis::type alpha, const axis::type beta, class BoundaryNormal>
         __device__ __host__ [[nodiscard]] static inline constexpr scalar_t calculate_moment(const thread::array<scalar_t, VelocitySet::Q()> &pop, const BoundaryNormal &boundaryNormal) noexcept
         {
-            constexpr const thread::array<int, VelocitySet::Q()> c_AB = c_AlphaBeta<VelocitySet, alpha, beta>();
-            constexpr const host::label_t N = number_non_zero(c_AB);
-            constexpr const thread::array<int, N> C = non_zero_values<N>(c_AB);
-            constexpr const thread::array<host::label_t, N> indices = non_zero_indices<N>(c_AB);
-
-            return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
-            {
-                return (process_momentum_element<C[Is], VelocitySet, indices[Is]>(pop[indices[Is]], boundaryNormal) + ...);
-            }(std::make_index_sequence<N>{});
+            return calculate_moment_impl<VelocitySet, alpha, beta>(
+                pop,
+                [&boundaryNormal](const auto index_constant, const auto c_constant, const scalar_t val)
+                { return process_momentum_element<c_constant.value, VelocitySet, index_constant.value>(val, boundaryNormal); });
         }
 
         /**
@@ -391,6 +381,31 @@ namespace LBM
             {
                 return -pop_value;
             }
+        }
+
+        /**
+         * @brief Internal implementation of moment calculation that processes each population based on its contribution to the moment
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
+         * @tparam alpha The first axis direction (X, Y, or Z)
+         * @tparam beta The second axis direction (X, Y, or Z)
+         * @tparam ProcessElement A callable type that processes each population element based on its coefficient
+         * @param[in] pop The distribution function array
+         * @param[in] process A callable that takes the index constant, coefficient constant, and population value, and returns the contribution to the moment
+         * @return The calculated moment value
+         **/
+        template <class VelocitySet, const axis::type alpha, const axis::type beta, typename ProcessElement>
+        __device__ __host__ [[nodiscard]] static inline constexpr scalar_t calculate_moment_impl(const thread::array<scalar_t, VelocitySet::Q()> &pop, const ProcessElement &&process) noexcept
+        {
+            constexpr const thread::array<int, VelocitySet::Q()> c_AB = c_AlphaBeta<VelocitySet, alpha, beta>();
+            constexpr host::label_t N = c_AB.number_non_zero();
+            constexpr thread::array<int, N> C = c_AB.template non_zero_values<N>();
+            constexpr thread::array<host::label_t, N> indices = c_AB.template non_zero_indices<N>();
+
+            return [&]<host::label_t... Is>(std::index_sequence<Is...>)
+            {
+                // Pass the index constant and the value constant to the callable
+                return (process(std::integral_constant<host::label_t, Is>{}, std::integral_constant<int, C[Is]>{}, pop[indices[Is]]) + ...);
+            }(std::make_index_sequence<N>{});
         }
 
         /**
