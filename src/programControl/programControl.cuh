@@ -338,6 +338,10 @@ namespace LBM
             }
         }
 
+        /**
+         * @brief Returns a vector of time step indices corresponding to the saved time steps in the "timeStep" directory
+         * @return A vector of host::label_t representing the saved time step indices
+         **/
         __host__ [[nodiscard]] const std::vector<host::label_t> timeStepIndices() const
         {
             const std::vector<host::label_t> fileNameIndices = savedTimeSteps("timeStep");
@@ -359,11 +363,18 @@ namespace LBM
             }
         }
 
+        /**
+         * @brief Return a reference to the streamHandler object
+         * @return A const reference to the streamHandler object
+         **/
         __host__ [[nodiscard]] inline constexpr const streamHandler &streams() const noexcept
         {
             return streams_;
         }
 
+        /**
+         * @brief Synchronizes all CUDA streams managed by the streamHandler object
+         **/
         __host__ inline void allsync() const noexcept
         {
             for (host::label_t stream = 0; stream < streams_.streams().size(); stream++)
@@ -419,6 +430,11 @@ namespace LBM
             return string::extractParameter<T>(string::readFile("programControl"), varName);
         }
 
+        /**
+         * @brief Reads the "timeStep" directory and returns a vector of host::label_t corresponding to the time step indices of the saved time steps
+         * @return A vector of host::label_t representing the saved time step indices
+         * @param[in] dir_path The path to the directory to read (e.g., "timeStep")
+         **/
         __host__ [[nodiscard]] static const std::vector<host::label_t> savedTimeSteps(const std::string &dir_path)
         {
             std::vector<host::label_t> numbers;
@@ -459,6 +475,10 @@ namespace LBM
             return numbers;
         }
 
+        /**
+         * @brief Returns the latest time step of the solution files contained within the current directory
+         * @return The latest time step as a host::label_t
+         **/
         __host__ [[nodiscard]] static inline host::label_t latestSaved()
         {
             return savedTimeSteps("timeStep").empty() ? 0 : savedTimeSteps("timeStep").back();

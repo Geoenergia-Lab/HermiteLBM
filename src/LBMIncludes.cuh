@@ -82,6 +82,7 @@ SourceFiles
 #include <stdint.h>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <typeinfo>
 #include <type_traits>
 #include <unordered_map>

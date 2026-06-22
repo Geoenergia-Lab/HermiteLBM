@@ -83,7 +83,7 @@ namespace LBM
             /**
              * @brief Array of device pointers (one per GPU)
              **/
-            T **ptr_;
+            T **const ptrRestrict ptr_;
 
             /**
              * @brief Reference to the lattice mesh

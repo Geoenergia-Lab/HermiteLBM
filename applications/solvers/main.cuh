@@ -50,8 +50,6 @@ SourceFiles
 #ifndef __MBLBM_MAIN_CUH
 #define __MBLBM_MAIN_CUH
 
-#include <thread>
-
 __host__ [[nodiscard]] inline consteval bool ExplicitSync() { return false; }
 
 using namespace LBM;

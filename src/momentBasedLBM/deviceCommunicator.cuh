@@ -216,31 +216,10 @@ namespace LBM
             // Sync devices and streams - the cudaDeviceSynchronize() may not be 100% necessary, not sure yet
             if constexpr (ExplicitSync)
             {
-                constexpr const host::label_t idxStreamL = (3 * idxDevL) + 2; // Stream 2 is the East stream of GPU 0
-                constexpr const host::label_t idxStreamR = (3 * idxDevR) + 0; // Stream 3 is the West stream of GPU 1
+                constexpr const host::label_t idxStreamL = device::idxStream(idxDevL, 2); // Stream 2 is the East stream of GPU 0
+                constexpr const host::label_t idxStreamR = device::idxStream(idxDevR, 0); // Stream 3 is the West stream of GPU 1
                 programCtrl_.streams().synchronize(idxStreamL);
                 programCtrl_.streams().synchronize(idxStreamR);
-            }
-        }
-
-        /**
-         * @brief Helper function to get the correct stream index for a given device and direction
-         * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
-         * @param[in] idxDev The device index
-         **/
-        template <const int coeff>
-        __host__ [[nodiscard]] static inline constexpr host::label_t idxStream(const host::label_t idxDev) noexcept
-        {
-            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
-
-            if constexpr (coeff == -1)
-            {
-                return (3 * idxDev); // East stream
-            }
-
-            if constexpr (coeff == +1)
-            {
-                return (3 * idxDev) + 2; // West stream
             }
         }
 
@@ -270,7 +249,7 @@ namespace LBM
                 &(haloPtrs.writeBuffer(idxDevSrc, timeStep).template ptr<device::pointerIndex<alpha, coeff>()>()[idxSrc]),
                 programCtrl.deviceList()[idxDevSrc],
                 size,
-                programCtrl.streams()[This::idxStream<coeff>(idxDevDst)]));
+                programCtrl.streams()[device::idxStream<coeff>(idxDevDst)]));
         }
     };
 }
