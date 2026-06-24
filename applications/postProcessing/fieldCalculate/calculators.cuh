@@ -63,7 +63,8 @@ namespace LBM
         using functionType = void (*)(
             const host::arrayCollection<scalar_t> &,
             const host::latticeMesh &,
-            const host::label_t);
+            const host::label_t,
+            int &status);
 
         /**
          * @brief Checks if a field contains any NaN values
@@ -87,11 +88,13 @@ namespace LBM
          * @param[in] variables The arrayCollection containing the fields to check
          * @param[in] mesh The lattice mesh
          * @param[in] timeStep The current time step for logging purposes
+         * @param[in,out] status The status flag for error handling
          **/
         __host__ void containsNaN(
             const host::arrayCollection<scalar_t> &variables,
             const host::latticeMesh &mesh,
-            const host::label_t timeStep) noexcept
+            const host::label_t timeStep,
+            int &status) noexcept
         {
             // De-interleave the fields
             const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);
@@ -117,12 +120,11 @@ namespace LBM
             }
             else
             {
+                status = 1; // Set status to indicate that NaN values were found
                 std::cout << "    Total number of fields with NaN values: " << numberNaNs << std::endl;
             }
 
             std::cout << "};" << std::endl;
-
-            return;
         }
 
         /**
@@ -145,11 +147,13 @@ namespace LBM
          * @param[in] variables The arrayCollection containing the fields to calculate the mean of
          * @param[in] mesh The lattice mesh
          * @param[in] timeStep The current time step for logging purposes
+         * @param[in,out] status The status flag for error handling
          **/
         __host__ void spatialMean(
             const host::arrayCollection<scalar_t> &variables,
             const host::latticeMesh &mesh,
-            const host::label_t timeStep) noexcept
+            const host::label_t timeStep,
+            [[maybe_unused]] int &status) noexcept
         {
             // De-interleave the fields
             const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);
@@ -184,11 +188,13 @@ namespace LBM
          * @param[in] variables The arrayCollection containing the fields to check
          * @param[in] mesh The lattice mesh
          * @param[in] timeStep The current time step for logging purposes
+         * @param[in,out] status The status flag for error handling
          **/
         __host__ void fieldMax(
             const host::arrayCollection<scalar_t> &variables,
             const host::latticeMesh &mesh,
-            const host::label_t timeStep) noexcept
+            const host::label_t timeStep,
+            [[maybe_unused]] int &status) noexcept
         {
             // De-interleave the fields
             const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);
@@ -225,11 +231,13 @@ namespace LBM
          * @param[in] variables The arrayCollection containing the fields to check
          * @param[in] mesh The lattice mesh
          * @param[in] timeStep The current time step for logging purposes
+         * @param[in,out] status The status flag for error handling
          **/
         __host__ void fieldMin(
             const host::arrayCollection<scalar_t> &variables,
             const host::latticeMesh &mesh,
-            const host::label_t timeStep) noexcept
+            const host::label_t timeStep,
+            [[maybe_unused]] int &status) noexcept
         {
             // De-interleave the fields
             const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);
@@ -266,11 +274,13 @@ namespace LBM
          * @param[in] variables The arrayCollection containing the fields to check
          * @param[in] mesh The lattice mesh
          * @param[in] timeStep The current time step for logging purposes
+         * @param[in,out] status The status flag for error handling
          **/
         __host__ void fieldAbsMax(
             const host::arrayCollection<scalar_t> &variables,
             const host::latticeMesh &mesh,
-            const host::label_t timeStep) noexcept
+            const host::label_t timeStep,
+            [[maybe_unused]] int &status) noexcept
         {
             // De-interleave the fields
             const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);
@@ -307,11 +317,13 @@ namespace LBM
          * @param[in] variables The arrayCollection containing the fields to check
          * @param[in] mesh The lattice mesh
          * @param[in] timeStep The current time step for logging purposes
+         * @param[in,out] status The status flag for error handling
          **/
         __host__ void fieldAbsMin(
             const host::arrayCollection<scalar_t> &variables,
             const host::latticeMesh &mesh,
-            const host::label_t timeStep) noexcept
+            const host::label_t timeStep,
+            [[maybe_unused]] int &status) noexcept
         {
             // De-interleave the fields
             const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);

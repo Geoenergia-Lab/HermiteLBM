@@ -1,0 +1,74 @@
+# --------------------------------------------------------------------------- #
+#                                                                             #
+# HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       #
+# Developed at UDESC - State University of Santa Catarina                     #
+# Website: https://www.udesc.br                                               #
+# Github: https://github.com/Geoenergia-Lab/HermiteLBM                        #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+
+#!/bin/bash
+
+# Unset all variables at the beginning
+unset TIMESTAMP LOG_DIR LOG_FILE EXIT_CODE EXIT_STATUS
+
+# Source the environment
+source ../bashrc
+
+# Check that required executables exist
+if ! command -v momentBasedD3Q27 >/dev/null 2>&1; then
+    printf "Error: 'momentBasedD3Q27' not found. Ensure environment is set up.\n" >&2
+    return 1 2>/dev/null || exit 1
+fi
+if ! command -v fieldCalculate >/dev/null 2>&1; then
+    printf "Error: 'fieldCalculate' not found. Ensure environment is set up.\n" >&2
+    return 1 2>/dev/null || exit 1
+fi
+
+# Print header
+printHeader
+printf "\n"
+printf "containsNaN:\n"
+printf "{\n"
+
+# Enter the test directory – everything from here uses relative paths inside it
+cd containsNaNTest || { printf "    Error: cannot enter containsNaNTest/\n"; exit 1; }
+
+# Create timestamped log directory and file
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+LOG_DIR="logs/log_$TIMESTAMP"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/containsNaN.log"
+
+printf "    Log file: %s\n" "$LOG_FILE"
+
+# Clean, execute simulation, then check for NaN
+cleanCase
+momentBasedD3Q27 -GPU 0 >> "$LOG_FILE" 2>&1
+fieldCalculate -calculationType containsNaN -fieldName U >> "$LOG_FILE" 2>&1
+EXIT_CODE=$?
+
+# Interpret the exit code (0 = no NaN, non‑zero = NaN found or error)
+case $EXIT_CODE in
+    0)
+        printf "    Result: PASS (field U has no NaN)\n"
+        EXIT_STATUS=0
+        ;;
+    *)
+        printf "    Result: FAIL (field U contains NaN or error, exit code %d)\n" "$EXIT_CODE"
+        EXIT_STATUS=1
+        ;;
+esac
+
+# Clean up and leave the test directory
+cleanCase
+cd ..
+
+printf "    Full output saved to: containsNaNTest/%s\n" "$LOG_FILE"
+printf "};\n"
+
+# Clean up variables
+unset TIMESTAMP LOG_DIR LOG_FILE EXIT_CODE EXIT_STATUS
+
+# Return the exit status so the script can be sourced or executed
+return $EXIT_STATUS 2>/dev/null || exit $EXIT_STATUS

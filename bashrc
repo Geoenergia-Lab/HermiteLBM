@@ -134,6 +134,19 @@ cleanCase()
     fi
 }
 
+printHeader()
+{
+    printf "/*---------------------------------------------------------------------------*\\ \n"
+    printf "|                                                                             |\n"
+    printf "| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |\n"
+    printf "| Developed at UDESC - State University of Santa Catarina                     |\n"
+    printf "| Website: https://www.udesc.br                                               |\n"
+    printf "| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |\n"
+    printf "|                                                                             |\n"
+    printf "\\*---------------------------------------------------------------------------*/\n"
+    printf "\n"
+}
+
 # profileRoofline: Wrapper for the roofline profiling script
 profileRoofline()
 {

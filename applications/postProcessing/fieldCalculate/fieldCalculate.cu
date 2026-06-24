@@ -91,6 +91,7 @@ int main(const int argc, const char *const argv[])
 
         if (!fileNameIndices.empty())
         {
+            int status = 0;
             bool foundField = false;
 
             for (const host::label_t timeStep : fileNameIndices)
@@ -105,7 +106,7 @@ int main(const int argc, const char *const argv[])
                 {
                     foundField = true;
 
-                    calculation(hostMoments, mesh, timeStep);
+                    calculation(hostMoments, mesh, timeStep, status);
 
                     if (!(timeStep == fileNameIndices.back()))
                     {
@@ -118,6 +119,10 @@ int main(const int argc, const char *const argv[])
             {
                 errorHandler::check<throws::NO_THROW>(-1, "Specified field name not found in any time step directory.");
             }
+            else
+            {
+                return status;
+            }
         }
         else
         {
@@ -129,87 +134,6 @@ int main(const int argc, const char *const argv[])
     {
         errorHandler::check<throws::NO_THROW>(-1, "Invalid calculation function for calculation type: " + calculationTypeString);
     }
-
-    return 0;
-
-    // if (calculationTypeString == "vorticity")
-    // {
-    //     // Get the conversion type
-    //     const name_t conversion = programCtrl.getArgument("-fileType");
-
-    //     // Get the writer function
-    //     const std::unordered_map<name_t, postProcess::writerFunction>::const_iterator it = postProcess::writers.find(conversion);
-
-    //     // Get the time indices
-    //     const std::vector<host::label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
-
-    //     if (it != postProcess::writers.end())
-    //     {
-    //         for (host::label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
-    //         {
-    //             // Get the file name at the present time step
-    //             const name_t fileName = "vorticity_" + std::to_string(fileNameIndices[timeStep]);
-
-    //             const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
-    //                 programCtrl,
-    //                 {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
-    //                 timeStep);
-
-    //             const std::vector<std::vector<scalar_t>> fields = fileIO::deinterleaveAoS(hostMoments.arr(), mesh);
-
-    //             const std::vector<std::vector<scalar_t>> omega = numericalSchemes::derivative::curl<SchemeOrder()>(fields[index::u], fields[index::v], fields[index::w], mesh);
-    //             const std::vector<scalar_t> magomega = numericalSchemes::mag(omega[0], omega[1], omega[2]);
-
-    //             const postProcess::writerFunction writer = it->second;
-
-    //             writer({omega[0], omega[1], omega[2], magomega}, fileName, mesh, {"omega_x", "omega_y", "omega_z", "mag[omega]"});
-
-    //             if (timeStep < fileNameIndices.size() - 1)
-    //             {
-    //                 std::cout << std::endl;
-    //             }
-    //         }
-    //     }
-    // }
-
-    // if (calculationTypeString == "div[U]")
-    // {
-    //     // Get the conversion type
-    //     const name_t conversion = programCtrl.getArgument("-fileType");
-
-    //     // Get the writer function
-    //     const std::unordered_map<name_t, postProcess::writerFunction>::const_iterator it = postProcess::writers.find(conversion);
-
-    //     // Get the time indices
-    //     const std::vector<host::label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
-
-    //     if (it != postProcess::writers.end())
-    //     {
-    //         for (host::label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
-    //         {
-    //             // Get the file name at the present time step
-    //             const name_t fileName = "div[U]_" + std::to_string(fileNameIndices[timeStep]);
-
-    //             const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
-    //                 programCtrl,
-    //                 {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
-    //                 timeStep);
-
-    //             const std::vector<std::vector<scalar_t>> fields = fileIO::deinterleaveAoS(hostMoments.arr(), mesh);
-
-    //             const std::vector<scalar_t> divu = numericalSchemes::derivative::div<SchemeOrder()>(fields[index::u], fields[index::v], fields[index::w], mesh);
-
-    //             const postProcess::writerFunction writer = it->second;
-
-    //             writer({divu}, fileName, mesh, {"div[U]"});
-
-    //             if (timeStep < fileNameIndices.size() - 1)
-    //             {
-    //                 std::cout << std::endl;
-    //             }
-    //         }
-    //     }
-    // }
 
     return 0;
 }

@@ -14,6 +14,9 @@ unset DEVICES_OUTPUT CLEAN_DEVICES GPUS COMMON_FLAGS TOOLS TIMESTAMP LOG_DIR
 unset RESULTS FAILED_TESTS SKIPPED_TESTS GPU TOOL TEST_NAME LOG_FILE EXIT_CODE
 unset TOTAL_TESTS FAILED_COUNT SKIPPED_COUNT PASSED_COUNT EXIT_STATUS
 
+# Source the environment
+source ../bashrc
+
 # Check if computeVersion exists - exit if not found
 if ! command -v computeVersion >/dev/null 2>&1; then
     printf "HERMITELBM_CUDA_DIR is not set. Please run \"source bashrc\" in the project directory first\n" >&2
@@ -43,7 +46,7 @@ else
 fi
 
 # Safe to go into directory now
-cd ComputeSanitizerTest
+cd computeSanitizerTest
 
 # Define common flags
 COMMON_FLAGS="--print-limit 1000 --check-bulk-copy=yes --check-device-heap=yes --check-exit-code=yes --racecheck-detect-level=error --racecheck-memcpy-async=yes --racecheck-num-workers=0 --racecheck-report=analysis --check-optix-leaks --check-warpgroup-mma=yes --check-api-memory-access=yes --check-optix --track-unused-memory"
@@ -62,16 +65,8 @@ FAILED_TESTS=()
 SKIPPED_TESTS=()
 
 # Print header using printf
-printf "/*---------------------------------------------------------------------------*\\ \n"
-printf "|                                                                             |\n"
-printf "| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |\n"
-printf "| Developed at UDESC - State University of Santa Catarina                     |\n"
-printf "| Website: https://www.udesc.br                                               |\n"
-printf "| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |\n"
-printf "|                                                                             |\n"
-printf "\\*---------------------------------------------------------------------------*/\n"
-printf "\n"
-printf "ComputeSanitizer:\n"
+printHeader
+printf "computeSanitizer:\n"
 printf "{\n"
 printf "    deviceList: [%s];\n" "${GPUS[*]}"
 printf "    Log directory: %s\n" "$LOG_DIR"
@@ -88,7 +83,7 @@ for GPU in "${GPUS[@]}"; do
         printf "        %s:" "$TEST_NAME"
         
         # Clean case and run test, capturing output and exit code
-        source cleanCase.sh
+        cleanCase
         compute-sanitizer --tool="$TOOL" $COMMON_FLAGS momentBasedD3Q19 -GPU "$GPU" > "$LOG_FILE" 2>&1
         EXIT_CODE=$?
         
@@ -115,7 +110,7 @@ for GPU in "${GPUS[@]}"; do
 done
 
 # Clean up and exit directory
-source cleanCase.sh
+cleanCase
 cd ../
 
 # Print summary
@@ -157,7 +152,7 @@ else
         done
     fi
     printf "\n"
-    printf "    Check individual log files in: ComputeSanitizerTest/%s\n" "$LOG_DIR"
+    printf "    Check individual log files in: computeSanitizerTest/%s\n" "$LOG_DIR"
     EXIT_STATUS=1
 fi
 printf "};\n"

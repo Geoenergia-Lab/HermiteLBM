@@ -46,12 +46,12 @@ cases/*/*/postProcess
 cases/*/*/profiling_results
 
 # Unit test directory ignores
-unitTests/ComputeSanitizerTest/*.LBMBin
-unitTests/ComputeSanitizerTest/*/*.dat
-unitTests/ComputeSanitizerTest/*/*.vts
-unitTests/ComputeSanitizerTest/*/*.vtu
-unitTests/ComputeSanitizerTest/logs
-unitTests/ComputeSanitizerTest/timeStep
+unitTests/*/*.LBMBin
+unitTests/*/*/*.dat
+unitTests/*/*/*.vts
+unitTests/*/*/*.vtu
+unitTests/*/logs
+unitTests/*/timeStep
 
 # Test executable directory ignores
 applications/testExecutable/*/*.LBMBin
