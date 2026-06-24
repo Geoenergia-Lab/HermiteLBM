@@ -6,6 +6,8 @@
 # Github: https://github.com/Geoenergia-Lab/HermiteLBM                        #
 #                                                                             #
 # --------------------------------------------------------------------------- #
+# Tests whether the simulation produces NaN from a known good solution setup  #
+# --------------------------------------------------------------------------- #
 
 #!/bin/bash
 
@@ -13,26 +15,20 @@
 unset TIMESTAMP LOG_DIR LOG_FILE EXIT_CODE EXIT_STATUS
 
 # Source the environment
-source ../bashrc
+source ../../bashrc
 
 # Check that required executables exist
-if ! command -v momentBasedD3Q27 >/dev/null 2>&1; then
-    printf "Error: 'momentBasedD3Q27' not found. Ensure environment is set up.\n" >&2
-    return 1 2>/dev/null || exit 1
-fi
-if ! command -v fieldCalculate >/dev/null 2>&1; then
-    printf "Error: 'fieldCalculate' not found. Ensure environment is set up.\n" >&2
+if notFound momentBasedD3Q27 fieldCalculate; then
+    printf "HERMITELBM_CUDA_DIR is not set or has not been built. Please run \"source bashrc\" in the project directory first\n" >&2
     return 1 2>/dev/null || exit 1
 fi
 
 # Print header
-printHeader
-printf "\n"
+if ! skip_header_footer; then
+    printHeader
+fi
 printf "containsNaN:\n"
 printf "{\n"
-
-# Enter the test directory – everything from here uses relative paths inside it
-cd containsNaNTest || { printf "    Error: cannot enter containsNaNTest/\n"; exit 1; }
 
 # Create timestamped log directory and file
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -40,7 +36,7 @@ LOG_DIR="logs/log_$TIMESTAMP"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/containsNaN.log"
 
-printf "    Log file: %s\n" "$LOG_FILE"
+printf "    Log directory: %s\n" "$LOG_DIR"
 
 # Clean, execute simulation, then check for NaN
 cleanCase
@@ -64,11 +60,14 @@ esac
 cleanCase
 cd ..
 
-printf "    Full output saved to: containsNaNTest/%s\n" "$LOG_FILE"
+printf "    Full output saved to: containsNaN/%s\n" "$LOG_FILE"
 printf "};\n"
+if ! skip_header_footer; then
+    printEnd
+fi
 
 # Clean up variables
-unset TIMESTAMP LOG_DIR LOG_FILE EXIT_CODE EXIT_STATUS
+unset TIMESTAMP LOG_DIR LOG_FILE EXIT_CODE
 
 # Return the exit status so the script can be sourced or executed
-return $EXIT_STATUS 2>/dev/null || exit $EXIT_STATUS
+[[ "${BASH_SOURCE[0]}" != "${0}" ]] && return $EXIT_STATUS || exit $EXIT_STATUS

@@ -134,6 +134,7 @@ cleanCase()
     fi
 }
 
+# printHeader: Prints the file header on start
 printHeader()
 {
     printf "/*---------------------------------------------------------------------------*\\ \n"
@@ -145,6 +146,40 @@ printHeader()
     printf "|                                                                             |\n"
     printf "\\*---------------------------------------------------------------------------*/\n"
     printf "\n"
+}
+
+# printEnd: Prints the file footer on exit
+printEnd()
+{
+    printf "\n"
+    printf "End\n"
+    printf "\n"
+}
+
+# notFound: Check if any listed commands are missing from PATH.
+# Arguments: list of executable names
+# Returns 0 (true) if at least one executable is NOT found, 1 (false) if all are found.
+# Prints a generic error message to stderr for each missing command.
+notFound()
+{
+    local ret=1                # assume all found, return failure (1)
+    local cmd
+    for cmd in "$@"; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            printf "Error: '%s' not found. Ensure environment is set up.\n" "$cmd" >&2
+            ret=0              # at least one missing → success (0)
+        fi
+    done
+    return $ret
+}
+
+# Check whether to skip header/footer (default: print them)
+skip_header_footer()
+{
+    case "${SKIP_HEADER_AND_FOOTER:-}" in
+        true|1|yes|on) return 0 ;;  # truthy → skip
+        *)             return 1 ;;  # unset/false/anything else → print
+    esac
 }
 
 # profileRoofline: Wrapper for the roofline profiling script
