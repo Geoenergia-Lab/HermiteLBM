@@ -199,6 +199,12 @@ namespace LBM
                       static_cast<device::label_t>(blockIdx.z)) {}
 
             /**
+             * @brief Constructs from an arbitrary input
+             **/
+            __device__ [[nodiscard]] inline explicit coordinate(const device::label_t bx, const device::label_t by, const device::label_t bz) noexcept
+                : var3<device::label_t>(bx, by, bz) {}
+
+            /**
              * @brief Shifts the coordinate along a particular axis by a coefficient
              * @tparam alpha The axis direction (X, Y or Z)
              * @tparam coeff The coefficient indicating the direction along the axis (must be -1, 0 or 1)

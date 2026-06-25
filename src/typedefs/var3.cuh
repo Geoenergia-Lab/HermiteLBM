@@ -73,7 +73,7 @@ namespace LBM
          * @brief Constructor
          * @param[in] X, Y, Z Initialiser values
          **/
-        __host__ __device__ [[nodiscard]] inline constexpr var3(const T X, const T Y, const T Z) noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr var3(const T X, const T Y, const T Z) noexcept
             : x(X),
               y(Y),
               z(Z) {}
@@ -83,7 +83,7 @@ namespace LBM
          * @tparam alpha The axis direction (X, Y or Z)
          **/
         template <axis::type alpha, typename ValueType = value_type>
-        __host__ __device__ [[nodiscard]] constexpr ValueType value() const noexcept
+        __device__ __host__ [[nodiscard]] constexpr ValueType value() const noexcept
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -150,7 +150,7 @@ namespace LBM
              * @brief Total size
              **/
             template <typename ValueType = value_type>
-            __host__ __device__ [[nodiscard]] inline constexpr ValueType size() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr ValueType size() const noexcept
             {
                 return value<axis::X, ValueType>() * value<axis::Y, ValueType>() * value<axis::Z, ValueType>();
             }
@@ -176,7 +176,7 @@ namespace LBM
             /**
              * @brief Total size
              **/
-            __host__ __device__ [[nodiscard]] inline constexpr host::label_t size() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr host::label_t size() const noexcept
             {
                 return value<axis::X>() * value<axis::Y>() * value<axis::Z>();
             }

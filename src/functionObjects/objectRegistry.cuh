@@ -85,15 +85,14 @@ namespace LBM
             const device::scalarField<VelocitySet, time::instantaneous> &rho,
             const device::vectorField<VelocitySet, time::instantaneous> &U,
             const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
-            const streamHandler &streamsLBM,
             const programControl &programCtrl)
             : hostWriteBuffer_(hostWriteBuffer),
               mesh_(mesh),
-              rho_(hostWriteBuffer, mesh, rho, U, Pi, streamsLBM, programCtrl),
-              U_(hostWriteBuffer, mesh, rho, U, Pi, streamsLBM, programCtrl),
-              Pi_(hostWriteBuffer, mesh, rho, U, Pi, streamsLBM, programCtrl),
-              S_(hostWriteBuffer, mesh, rho, U, Pi, streamsLBM, programCtrl),
-              k_(hostWriteBuffer, mesh, rho, U, Pi, streamsLBM, programCtrl),
+              rho_(hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
+              U_(hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
+              Pi_(hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
+              S_(hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
+              k_(hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
               functionVector_(functionObjectCallInitialiser(rho_, U_, Pi_, S_, k_)),
               saveVector_(functionObjectSaveInitialiser(rho_, U_, Pi_, S_, k_)) {}
 

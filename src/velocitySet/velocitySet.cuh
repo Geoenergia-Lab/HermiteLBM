@@ -196,9 +196,9 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline constexpr scalar_t calculate_moment(const thread::array<scalar_t, VelocitySet::Q()> &pop) noexcept
         {
             constexpr const thread::array<int, VelocitySet::Q()> c_AB = c_AlphaBeta<VelocitySet, alpha, beta>();
-            constexpr const host::label_t N = number_non_zero(c_AB);
-            constexpr const thread::array<int, N> C = non_zero_values<N>(c_AB);
-            constexpr const thread::array<host::label_t, N> indices = non_zero_indices<N>(c_AB);
+            constexpr const host::label_t N = c_AB.number_non_zero();
+            constexpr const thread::array<int, N> C = c_AB.template non_zero_values<N>();
+            constexpr const thread::array<host::label_t, N> indices = c_AB.template non_zero_indices<N>();
 
             return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
             {
@@ -220,9 +220,9 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline constexpr scalar_t calculate_moment(const thread::array<scalar_t, VelocitySet::Q()> &pop, const BoundaryNormal &boundaryNormal) noexcept
         {
             constexpr const thread::array<int, VelocitySet::Q()> c_AB = c_AlphaBeta<VelocitySet, alpha, beta>();
-            constexpr const host::label_t N = number_non_zero(c_AB);
-            constexpr const thread::array<int, N> C = non_zero_values<N>(c_AB);
-            constexpr const thread::array<host::label_t, N> indices = non_zero_indices<N>(c_AB);
+            constexpr const host::label_t N = c_AB.number_non_zero();
+            constexpr const thread::array<int, N> C = c_AB.template non_zero_values<N>();
+            constexpr const thread::array<host::label_t, N> indices = c_AB.template non_zero_indices<N>();
 
             return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
             {

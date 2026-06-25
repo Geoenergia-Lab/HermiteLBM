@@ -98,6 +98,13 @@ namespace LBM
                   arr_(initialise_array(mesh, name, name, programCtrl)),
                   meanCount_(initialiseMeanCount(name, programCtrl)) {}
 
+            /**
+             * @brief Construct a pageable array by reading from file or applying initial conditions.
+             * @param[in] name Field name.
+             * @param[in] componentName Name of the component (e.g., "U_x" for x‑velocity).
+             * @param[in] mesh The lattice mesh
+             * @param[in] programCtrl The program control object
+             **/
             __host__ [[nodiscard]] array(
                 const name_t &name,
                 const name_t &componentName,
@@ -162,6 +169,14 @@ namespace LBM
              **/
             host::label_t meanCount_;
 
+            /**
+             * @brief Initialise the array by reading from file or applying initial conditions, with a specified component name.
+             * @param[in] mesh The lattice mesh
+             * @param[in] fieldName Field name (for boundary look‑up).
+             * @param[in] componentName Name of the component (e.g., "U_x" for x‑velocity).
+             * @param[in] programCtrl The program control object
+             * @return Vector containing the initial field.
+             **/
             __host__ [[nodiscard]] static const std::vector<T> initialise_array(
                 const host::latticeMesh &mesh,
                 const name_t &fieldName,
@@ -193,6 +208,7 @@ namespace LBM
              * @brief Generate initial conditions with boundary handling.
              * @param[in] mesh The lattice mesh
              * @param[in] fieldName Field name (for boundary look‑up).
+             * @param[in] programCtrl The program control object
              * @return Vector containing the initial field.
              **/
             __host__ [[nodiscard]] static const std::vector<T> initialConditions(

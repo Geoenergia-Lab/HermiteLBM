@@ -174,6 +174,10 @@ namespace LBM
             }
         }
 
+        /**
+         * @brief Get the current GPU device index
+         * @return The index of the currently active GPU device
+         **/
         __host__ [[nodiscard]] int current_ordinal() noexcept
         {
             int result = 0;
@@ -181,6 +185,16 @@ namespace LBM
             errorHandler::check(cudaGetDevice(&result));
 
             return result;
+        }
+
+        /**
+         * @brief Compute a unique stream ID for a given device index
+         * @param[in] deviceIdx The index of the device (GPU)
+         * @return A unique stream ID for the device
+         **/
+        __host__ [[nodiscard]] inline constexpr host::label_t internalStreamID(const host::label_t deviceIdx) noexcept
+        {
+            return (deviceIdx * 3) + 1;
         }
     }
 

@@ -80,7 +80,8 @@ namespace LBM
             __host__ [[nodiscard]] latticeMesh([[maybe_unused]] const programControl &programCtrl)
                 : dimensions_(string::extractParameter<host::blockLabel>("latticeMesh", "n")),
                   L_(string::extractParameter<pointVector>("latticeMesh", "L")),
-                  nDevices_(string::extractParameter<host::blockLabel>("deviceDecomposition", "n"))
+                  nDevices_(string::extractParameter<host::blockLabel>("deviceDecomposition", "n")),
+                  gridBlock_(initialiseGridBlock())
             {
                 print();
 
@@ -106,7 +107,8 @@ namespace LBM
             __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const host::blockLabel &meshDimensions) noexcept
                 : dimensions_({meshDimensions.x, meshDimensions.y, meshDimensions.z}),
                   L_(mesh.L()),
-                  nDevices_(string::extractParameter<host::blockLabel>("deviceDecomposition", "n"))
+                  nDevices_(string::extractParameter<host::blockLabel>("deviceDecomposition", "n")),
+                  gridBlock_(initialiseGridBlock())
             {
                 print();
             }
@@ -175,9 +177,9 @@ namespace LBM
              * @brief Get grid dimensions for CUDA kernel launches
              * @return dim3 structure with grid dimensions
              **/
-            __host__ [[nodiscard]] inline constexpr dim3 gridBlock() const noexcept
+            __host__ [[nodiscard]] inline constexpr const std::array<dim3, 3> &gridBlock() const noexcept
             {
-                return {static_cast<uint32_t>(blocksPerDevice<axis::X>()), static_cast<uint32_t>(blocksPerDevice<axis::Y>()), static_cast<uint32_t>(blocksPerDevice<axis::Z>())};
+                return gridBlock_;
             }
 
             /**
@@ -243,6 +245,11 @@ namespace LBM
                 return nDevices_.value<alpha>();
             }
 
+            /**
+             * @brief Computes the allocation size along a block face for a given QF
+             * @tparam alpha The axis direction (X, Y or Z)
+             * @tparam T The return type
+             **/
             template <const axis::type alpha, const host::label_t QF>
             __host__ [[nodiscard]] inline constexpr host::label_t nFaces() const noexcept
             {
@@ -304,6 +311,19 @@ namespace LBM
              * @brief Number of devices in the x, y and z directions
              **/
             const host::blockLabel nDevices_;
+
+            /**
+             * @brief Grid dimensions for CUDA kernel launches, calculated based on block decomposition and device count
+             **/
+            const std::array<dim3, 3> gridBlock_;
+
+            __host__ [[nodiscard]] inline constexpr const std::array<dim3, 3> initialiseGridBlock() const noexcept
+            {
+                return {
+                    dim3(static_cast<uint32_t>(blocksPerDevice<axis::X>()), static_cast<uint32_t>(blocksPerDevice<axis::Y>()), static_cast<uint32_t>(1)),
+                    dim3(static_cast<uint32_t>(blocksPerDevice<axis::X>()), static_cast<uint32_t>(blocksPerDevice<axis::Y>()), static_cast<uint32_t>(blocksPerDevice<axis::Z>() - 2)),
+                    dim3(static_cast<uint32_t>(blocksPerDevice<axis::X>()), static_cast<uint32_t>(blocksPerDevice<axis::Y>()), static_cast<uint32_t>(1))};
+            }
 
             /**
              * @brief Validates that the block decomposition is compatible with the mesh dimensions

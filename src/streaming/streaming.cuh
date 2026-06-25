@@ -99,6 +99,9 @@ namespace LBM
                 });
         }
 
+        /**
+         * @overload Accepts a thread::array for shared memory storage
+         */
         template <class VelocitySet, const host::label_t N>
         __device__ static inline void save(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
@@ -135,6 +138,9 @@ namespace LBM
                 });
         }
 
+        /**
+         * @overload Accepts a thread::array for shared memory storage
+         */
         template <class VelocitySet, const host::label_t N>
         __device__ static inline void pull(
             thread::array<scalar_t, VelocitySet::Q()> &pop,

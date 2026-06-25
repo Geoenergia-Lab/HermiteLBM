@@ -124,8 +124,8 @@ namespace LBM
             using BaseType::name_;
             using BaseType::nameMean_;
             using BaseType::Pi_;
+            using BaseType::programCtrl_;
             using BaseType::rho_;
-            using BaseType::streamsLBM_;
             using BaseType::U_;
 
             /**
@@ -144,9 +144,8 @@ namespace LBM
                 const device::scalarField<VelocitySet, time::instantaneous> &rho,
                 const device::vectorField<VelocitySet, time::instantaneous> &U,
                 const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
-                const streamHandler &streamsLBM,
                 const programControl &programCtrl) noexcept
-                : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, streamsLBM),
+                : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
                   PiMean_(nameMean_, mesh, {0, 0, 0, 0, 0, 0}, programCtrl, calculateMean_)
             {
                 BaseType::template configure<Kernel>(programCtrl);

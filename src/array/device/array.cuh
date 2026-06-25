@@ -83,7 +83,7 @@ namespace LBM
             /**
              * @brief Array of device pointers (one per GPU)
              **/
-            T **ptr_;
+            T **const ptrRestrict ptr_;
 
             /**
              * @brief Reference to the lattice mesh
@@ -228,7 +228,6 @@ namespace LBM
     }
 }
 
-#include "skeleton.cuh"
 #include "fullField.cuh"
 
 #endif
