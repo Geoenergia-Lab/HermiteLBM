@@ -184,11 +184,12 @@ namespace LBM
                 for (host::label_t field = 0; field < N; field++)
                 {
                     errorHandler::check(
-                        cudaMemcpyAsync(&(ptr_[(field * mesh.size()) + (virtualDeviceIndex * nPointsPerDevice)]),
-                                        devPtrs[field],
-                                        nPointsPerDevice * sizeof(T),
-                                        cudaMemcpyDeviceToHost,
-                                        programCtrl.streams()[virtualDeviceIndex]));
+                        cudaMemcpyAsync(
+                            &(ptr_[(field * mesh.size()) + (virtualDeviceIndex * nPointsPerDevice)]),
+                            devPtrs[field],
+                            nPointsPerDevice * sizeof(T),
+                            cudaMemcpyDeviceToHost,
+                            programCtrl.streams()[virtualDeviceIndex]));
                 }
             }
 

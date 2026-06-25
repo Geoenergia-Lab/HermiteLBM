@@ -1,0 +1,100 @@
+# --------------------------------------------------------------------------- #
+#                                                                             #
+# HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       #
+# Developed at UDESC - State University of Santa Catarina                     #
+# Website: https://www.udesc.br                                               #
+# Github: https://github.com/Geoenergia-Lab/HermiteLBM                        #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+# Top-level unit testing script: runs all unit tests                          #
+# --------------------------------------------------------------------------- #
+
+#!/bin/bash
+
+# Save the original working directory
+ORIG_DIR="$(pwd)"
+
+# Get the directory where *this script* is located (unitTest/)
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Don't print individual headers and footers
+export SKIP_HEADER_AND_FOOTER=true
+
+# Source the project environment (bashrc is one level up)
+if [ -f "$SCRIPT_DIR/../bashrc" ]; then
+    source "$SCRIPT_DIR/../bashrc"
+else
+    echo "Error: bashrc not found at $SCRIPT_DIR/../bashrc" >&2
+    exit 1
+fi
+
+printHeader
+printf "Running all unit tests:\n"
+printf "{\n"
+
+# List of test scripts (directory relative to SCRIPT_DIR, script name inside)
+# Each test is defined as "directory/scriptname"
+TESTS=(
+    "computeSanitizer/computeSanitizer"
+    "containsNaN/containsNaN")
+
+TOTAL_TESTS=${#TESTS[@]}
+PASSED=0
+FAILED=0
+declare -a FAILED_NAMES
+
+for test in "${TESTS[@]}"; do
+    # Split into directory and script name
+    test_dir="${test%/*}"
+    test_script="${test##*/}"
+    test_path="$SCRIPT_DIR/$test"
+    
+    # printf "    %s ... " "$test_script"
+    printf "\n"
+    
+    if [ ! -f "$test_path" ]; then
+        printf "MISSING (script not found)\n"
+        FAILED=$((FAILED + 1))
+        FAILED_NAMES+=("$test_script (missing)")
+        continue
+    fi
+
+    # Enter the test’s directory so its relative paths work
+    cd "$SCRIPT_DIR/$test_dir" || {
+        printf "ERROR (cannot enter directory)\n"
+        FAILED=$((FAILED + 1))
+        FAILED_NAMES+=("$test_script (dir access)")
+        continue
+    }
+
+    # Execute the test script from its own folder
+    if bash "./$test_script"; then
+        # printf "PASS\n"
+        PASSED=$((PASSED + 1))
+    else
+        exit_code=$?
+        # printf "FAIL (exit code %d)\n" "$exit_code"
+        FAILED=$((FAILED + 1))
+        FAILED_NAMES+=("$test_script (exit $exit_code)")
+    fi
+
+    # Return to the master script’s directory
+    cd "$ORIG_DIR" || exit 1
+done
+
+printf "\n    Summary: %d/%d passed" "$PASSED" "$TOTAL_TESTS"
+if [ $FAILED -gt 0 ]; then
+    printf ", %d failed\n    Failed tests:\n"
+    for name in "${FAILED_NAMES[@]}"; do
+        printf "      - %s\n" "$name"
+    done
+else
+    printf "\n"
+fi
+printf "}\n"
+printEnd
+
+unset SKIP_HEADER_AND_FOOTER
+
+# Exit correctly whether sourced or executed
+[[ "${BASH_SOURCE[0]}" != "${0}" ]] && return $FAILED || exit $FAILED

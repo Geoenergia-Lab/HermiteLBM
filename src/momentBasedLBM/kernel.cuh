@@ -73,13 +73,14 @@ namespace LBM
             const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> &devPtrs,
             const device::ptrCollection<6, const scalar_t> &readBuffer,
             const device::ptrCollection<6, scalar_t> &writeBuffer,
-            SharedBuffer &sharedBuffer)
+            SharedBuffer &sharedBuffer,
+            const device::label_t bzOffset)
         {
             static_assert(std::is_same_v<BlockHalo, device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>>);
 
             const thread::coordinate Tx;
 
-            const block::coordinate Bx;
+            const block::coordinate Bx(blockIdx.x, blockIdx.y, blockIdx.z + bzOffset);
 
             const device::pointCoordinate point(Tx, Bx);
 
@@ -206,10 +207,11 @@ namespace LBM
                 });
 
             // Save the populations to the block halo
-            if constexpr (use_cooperative_halo() && ((std::is_same_v<VelocitySet, D3Q19<Thermal>>) || (std::is_same_v<VelocitySet, D3Q19<Isothermal>>)))
+            if constexpr (use_cooperative_halo())
             {
-                BlockHalo::transpose_to_shared(pop, sharedBuffer, Tx, point);
-                BlockHalo::save_from_shared(sharedBuffer, writeBuffer);
+                VelocitySet::reconstruct<false>(pop, moments);
+                BlockHalo::transpose_to_shared(pop, writeBuffer, sharedBuffer, Tx, Bx, point);
+                BlockHalo::save_from_shared(sharedBuffer, writeBuffer, Tx, Bx);
             }
             else
             {
@@ -305,23 +307,66 @@ namespace LBM
          * @param[in] readBuffer Collection of read-only pointers to the block halo faces used during streaming
          * @param[in] writeBuffer Collection of mutable pointers to the block halo faces used after streaming
          **/
-        __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP<VelocitySet>())
-            __global__ void momentBasedLBM(
-                const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
-                const device::ptrCollection<6, const scalar_t> readBuffer,
-                const device::ptrCollection<6, scalar_t> writeBuffer)
+        __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP<VelocitySet>()) __global__ void momentBasedLBM(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
+            const device::ptrCollection<6, const scalar_t> readBuffer,
+            const device::ptrCollection<6, scalar_t> writeBuffer,
+            const device::label_t bzOffset)
         {
             if constexpr ((std::is_same_v<VelocitySet, D3Q19<Thermal>>) || (std::is_same_v<VelocitySet, D3Q19<Isothermal>>))
             {
                 __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<host::label_t>()>()> shared_buffer;
 
-                detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer);
+                detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer, bzOffset);
             }
             else
             {
                 extern __shared__ scalar_t shared_buffer[];
 
-                detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer);
+                detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer, bzOffset);
+            }
+        }
+
+        template <const host::label_t N>
+        __host__ void launchHelper(
+            const host::latticeMesh &mesh,
+            const programControl &programCtrl,
+            const ptrCollection &devPtrs,
+            const haloBuffer<VelocitySet> &haloPtrs,
+            const host::label_t timeStep,
+            const std::array<host::label_t, N> &idxStreams,
+            const std::array<device::label_t, N> &bzOffsets) noexcept
+        {
+            // Pre-sync and launch the kernels
+            for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
+            {
+                // Set the active device
+                errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
+
+                // Sync the streams to ensure previous operations are complete before launching new kernels
+                for (host::label_t idxStream : idxStreams)
+                {
+                    programCtrl.streams().synchronize(device::idxStream(deviceIdx, idxStream));
+                }
+
+                // Launch the kernels for the specified streams and block offsets
+                for (host::label_t idxStream : idxStreams)
+                {
+                    kernel::momentBasedLBM<<<mesh.gridBlock()[idxStream], host::latticeMesh::threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[device::idxStream(deviceIdx, idxStream)]>>>(
+                        devPtrs[deviceIdx],
+                        haloPtrs.readBuffer(deviceIdx, timeStep),
+                        haloPtrs.writeBuffer(deviceIdx, timeStep),
+                        bzOffsets[idxStream]);
+                }
+            }
+
+            // Sync the streams
+            for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
+            {
+                for (host::label_t idxStream : idxStreams)
+                {
+                    programCtrl.streams().synchronize(device::idxStream(deviceIdx, idxStream));
+                }
             }
         }
 
@@ -333,25 +378,41 @@ namespace LBM
          * @param[in] haloPtrs Collection of pointers to the block halo faces used during streaming
          * @param[in] timeStep Current time step of the simulation, used to determine which halo buffers to use for reading and writing
          **/
-        __host__ inline void launch(
+        __host__ inline void launchInternal(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const ptrCollection &devPtrs,
             const haloBuffer<VelocitySet> &haloPtrs,
             const host::label_t timeStep) noexcept
         {
-            for (host::label_t stream = 0; stream < programCtrl.deviceList().size(); stream++)
-            {
-                errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[stream]));
-                programCtrl.streams().synchronize(stream);
+            constexpr const std::array<host::label_t, 1> idxStreams = {static_cast<device::label_t>(1)};
+            constexpr const std::array<device::label_t, 1> bzOffsets = {static_cast<device::label_t>(1)};
+            launchHelper(mesh, programCtrl, devPtrs, haloPtrs, timeStep, idxStreams, bzOffsets);
+        }
 
-                kernel::momentBasedLBM<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[stream]>>>(
-                    devPtrs[stream],
-                    haloPtrs.readBuffer(stream, timeStep),
-                    haloPtrs.writeBuffer(stream, timeStep));
-            }
-
-            programCtrl.allsync();
+        /**
+         * @brief Launches the lattice Boltzmann kernel for all devices and streams, ensuring proper synchronization and device selection
+         * @tparam ExplicitSync Whether to use explicit synchronization for inter-device communication of halo buffers
+         * @param[in] mesh Lattice mesh object containing information about the grid and block dimensions
+         * @param[in] programCtrl Program control object containing information about the devices and streams
+         * @param[in] devPtrs Collection of pointers to device arrays on the GPU, used to pass the data to the kernel
+         * @param[in] haloPtrs Collection of pointers to the block halo faces used during streaming
+         * @param[in] devComm Device communicator object used to handle inter-device communication of halo buffers
+         * @param[in] timeStep Current time step of the simulation, used to determine which halo buffers to use for reading and writing
+         **/
+        template <const bool ExplicitSync>
+        __host__ inline void launchBoundary(
+            const host::latticeMesh &mesh,
+            const programControl &programCtrl,
+            const ptrCollection &devPtrs,
+            const haloBuffer<VelocitySet> &haloPtrs,
+            const deviceCommunicator<ExplicitSync, VelocitySet> &devComm,
+            const host::label_t timeStep) noexcept
+        {
+            constexpr const std::array<host::label_t, 2> idxStreams = {static_cast<device::label_t>(0), static_cast<device::label_t>(2)};
+            const std::array<device::label_t, 2> bzOffsets = {static_cast<device::label_t>(0), static_cast<device::label_t>(mesh.blocksPerDevice<axis::Z>() - static_cast<host::label_t>(1))};
+            launchHelper(mesh, programCtrl, devPtrs, haloPtrs, timeStep, idxStreams, bzOffsets);
+            devComm.exchange(timeStep);
         }
     }
 }

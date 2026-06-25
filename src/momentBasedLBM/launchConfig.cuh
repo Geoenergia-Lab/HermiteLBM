@@ -61,25 +61,25 @@ namespace LBM
         // D3Q19 thermal model
         if constexpr (std::is_same_v<VelocitySet, D3Q19<Thermal>>)
         {
-            return 2;
+            return 1;
         }
 
         // D3Q19 isothermal model
         if constexpr (std::is_same_v<VelocitySet, D3Q19<Isothermal>>)
         {
-            return 2;
+            return 1;
         }
 
         // D3Q27 thermal model
         if constexpr (std::is_same_v<VelocitySet, D3Q27<Thermal>>)
         {
-            return 2;
+            return 1;
         }
 
         // D3Q27 isothermal model
         if constexpr (std::is_same_v<VelocitySet, D3Q27<Isothermal>>)
         {
-            return 2;
+            return 1;
         }
     }
 

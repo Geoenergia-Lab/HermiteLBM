@@ -244,6 +244,80 @@ namespace LBM
                 return N;
             }
 
+            /**
+             * @brief Computes the number of non-zero elements of an array
+             * @param[in] arr The input array
+             * @return Number of non-zero elements in the array
+             **/
+            __device__ __host__ [[nodiscard]] inline consteval host::label_t number_non_zero() const noexcept
+            {
+                host::label_t n = 0;
+
+                for (host::label_t i = 0; i < N; i++)
+                {
+                    if (!(data_[i] == 0))
+                    {
+                        n++;
+                    }
+                }
+
+                return n;
+            }
+
+            /**
+             * @brief Get the non-zero values in the array
+             * @tparam ReturnSize Size of the returned array
+             * @tparam T Type of elements in the array
+             * @tparam N Size of the input array
+             * @param[in] arr The input array
+             * @return Array containing only non-zero values from the input array
+             **/
+            template <const host::label_t ReturnSize>
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, ReturnSize> non_zero_values() const noexcept
+            {
+                thread::array<T, ReturnSize> coefficients{};
+
+                host::label_t count = 0;
+
+                for (host::label_t i = 0; i < N; i++)
+                {
+                    if (data_[i] != 0)
+                    {
+                        coefficients[count] = data_[i];
+                        count++;
+                    }
+                }
+
+                return coefficients;
+            }
+
+            /**
+             * @brief Get the non-zero indices in the array
+             * @tparam ReturnSize Size of the returned array
+             * @tparam T Type of elements in the array
+             * @tparam N Size of the input array
+             * @param[in] arr The input array
+             * @return Array containing only non-zero indices from the input array
+             **/
+            template <const device::label_t ReturnSize>
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<host::label_t, ReturnSize> non_zero_indices() const noexcept
+            {
+                thread::array<host::label_t, ReturnSize> indices{};
+
+                host::label_t count = 0;
+
+                for (host::label_t i = 0; i < N; i++)
+                {
+                    if (data_[i] != 0)
+                    {
+                        indices[count] = i;
+                        count++;
+                    }
+                }
+
+                return indices;
+            }
+
         private:
             /**
              * @brief The underlying data
@@ -259,83 +333,6 @@ namespace LBM
                 static_assert(in_bounds<i, N>, "index is out of range: Must be < N.");
             }
         };
-    }
-
-    /**
-     * @brief Computes the number of non-zero elements of an array
-     * @tparam T Type of elements in the array
-     * @tparam N Size of the array
-     * @param[in] arr The input array
-     * @return Number of non-zero elements in the array
-     **/
-    template <typename T, const host::label_t N>
-    __device__ __host__ [[nodiscard]] inline consteval host::label_t number_non_zero(const thread::array<T, N> &arr)
-    {
-        host::label_t n = 0;
-
-        for (host::label_t i = 0; i < N; i++)
-        {
-            if (!(arr[i] == 0))
-            {
-                n++;
-            }
-        }
-
-        return n;
-    }
-
-    /**
-     * @brief Get the non-zero values in the array
-     * @tparam ReturnSize Size of the returned array
-     * @tparam T Type of elements in the array
-     * @tparam N Size of the input array
-     * @param[in] arr The input array
-     * @return Array containing only non-zero values from the input array
-     **/
-    template <const host::label_t ReturnSize, typename T, const host::label_t N>
-    __device__ __host__ [[nodiscard]] static inline constexpr thread::array<T, ReturnSize> non_zero_values(const thread::array<T, N> &arr) noexcept
-    {
-        thread::array<T, ReturnSize> coefficients{};
-
-        host::label_t count = 0;
-
-        for (host::label_t i = 0; i < N; i++)
-        {
-            if (arr[i] != 0)
-            {
-                coefficients[count] = arr[i];
-                count++;
-            }
-        }
-
-        return coefficients;
-    }
-
-    /**
-     * @brief Get the non-zero indices in the array
-     * @tparam ReturnSize Size of the returned array
-     * @tparam T Type of elements in the array
-     * @tparam N Size of the input array
-     * @param[in] arr The input array
-     * @return Array containing only non-zero indices from the input array
-     **/
-    template <const device::label_t ReturnSize, typename T, const host::label_t N>
-    __device__ __host__ [[nodiscard]] static inline constexpr thread::array<host::label_t, ReturnSize> non_zero_indices(const thread::array<T, N> &arr) noexcept
-    {
-        thread::array<host::label_t, ReturnSize> indices{};
-
-        host::label_t count = 0;
-
-        for (host::label_t i = 0; i < N; i++)
-        {
-            if (arr[i] != 0)
-            {
-                indices[count] = i;
-                count++;
-            }
-        }
-
-        return indices;
     }
 }
 

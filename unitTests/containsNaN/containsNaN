@@ -1,0 +1,73 @@
+# --------------------------------------------------------------------------- #
+#                                                                             #
+# HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       #
+# Developed at UDESC - State University of Santa Catarina                     #
+# Website: https://www.udesc.br                                               #
+# Github: https://github.com/Geoenergia-Lab/HermiteLBM                        #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+# Tests whether the simulation produces NaN from a known good solution setup  #
+# --------------------------------------------------------------------------- #
+
+#!/bin/bash
+
+# Unset all variables at the beginning
+unset TIMESTAMP LOG_DIR LOG_FILE EXIT_CODE EXIT_STATUS
+
+# Source the environment
+source ../../bashrc
+
+# Check that required executables exist
+if notFound momentBasedD3Q27 fieldCalculate; then
+    printf "HERMITELBM_CUDA_DIR is not set or has not been built. Please run \"source bashrc\" in the project directory first\n" >&2
+    return 1 2>/dev/null || exit 1
+fi
+
+# Print header
+if ! skip_header_footer; then
+    printHeader
+fi
+printf "containsNaN:\n"
+printf "{\n"
+
+# Create timestamped log directory and file
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+LOG_DIR="logs/log_$TIMESTAMP"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/containsNaN.log"
+
+printf "    Log directory: %s\n" "$LOG_DIR"
+
+# Clean, execute simulation, then check for NaN
+cleanCase
+momentBasedD3Q27 -GPU 0 >> "$LOG_FILE" 2>&1
+fieldCalculate -calculationType containsNaN -fieldName U >> "$LOG_FILE" 2>&1
+EXIT_CODE=$?
+
+# Interpret the exit code (0 = no NaN, non‑zero = NaN found or error)
+case $EXIT_CODE in
+    0)
+        printf "    Result: PASS (field U has no NaN)\n"
+        EXIT_STATUS=0
+        ;;
+    *)
+        printf "    Result: FAIL (field U contains NaN or error, exit code %d)\n" "$EXIT_CODE"
+        EXIT_STATUS=1
+        ;;
+esac
+
+# Clean up and leave the test directory
+cleanCase
+cd ..
+
+printf "    Full output saved to: containsNaN/%s\n" "$LOG_FILE"
+printf "};\n"
+if ! skip_header_footer; then
+    printEnd
+fi
+
+# Clean up variables
+unset TIMESTAMP LOG_DIR LOG_FILE EXIT_CODE
+
+# Return the exit status so the script can be sourced or executed
+[[ "${BASH_SOURCE[0]}" != "${0}" ]] && return $EXIT_STATUS || exit $EXIT_STATUS

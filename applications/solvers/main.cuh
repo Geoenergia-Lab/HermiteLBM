@@ -50,6 +50,8 @@ SourceFiles
 #ifndef __MBLBM_MAIN_CUH
 #define __MBLBM_MAIN_CUH
 
+__host__ [[nodiscard]] inline consteval bool ExplicitSync() { return false; }
+
 using namespace LBM;
 
 int main(const int argc, const char *const argv[])
@@ -73,23 +75,25 @@ int main(const int argc, const char *const argv[])
     VelocitySet::print();
 
     // Allocate the arrays on the device
-    device::scalarField<VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
-    device::vectorField<VelocitySet, time::instantaneous> U("U", mesh, programCtrl);
-    device::symmetricTensorField<VelocitySet, time::instantaneous> Pi("Pi", mesh, programCtrl);
+    const device::scalarField<VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
+    const device::vectorField<VelocitySet, time::instantaneous> U("U", mesh, programCtrl);
+    const device::symmetricTensorField<VelocitySet, time::instantaneous> Pi("Pi", mesh, programCtrl);
 
-    haloBuffer<VelocitySet> haloPtrs(rho, U, Pi, mesh, programCtrl);
+    const haloBuffer<VelocitySet> haloPtrs(rho, U, Pi, mesh, programCtrl);
 
     host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.size() * 6, mesh);
 
     programCtrl.configure<smem_alloc_size<VelocitySet>()>(kernel::momentBasedLBM);
 
-    objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, U, Pi, programCtrl.streams(), programCtrl);
+    // objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, U, Pi, programCtrl);
 
     const runTimeIO IO(mesh, programCtrl);
 
     const kernel::ptrCollection devPtrs(rho, U, Pi, programCtrl);
 
-    const deviceCommunicator devComm(mesh, programCtrl, haloPtrs);
+    programCtrl.allsync();
+
+    const deviceCommunicator<ExplicitSync(), VelocitySet> devComm(mesh, programCtrl, haloPtrs);
 
     for (host::label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
@@ -108,19 +112,37 @@ int main(const int argc, const char *const argv[])
 
             Pi.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
 
-            runTimeObjects.save(timeStep);
+            // runTimeObjects.save(timeStep);
         }
 
-        // Main kernel
-        kernel::launch(mesh, programCtrl, devPtrs, haloPtrs, timeStep);
+        // Main kernel launches
+        std::thread boundaryThread(
+            std::addressof(kernel::launchBoundary<ExplicitSync()>),
+            std::cref(mesh),
+            std::cref(programCtrl),
+            std::cref(devPtrs),
+            std::cref(haloPtrs),
+            std::cref(devComm),
+            timeStep);
+        std::thread internalThread(
+            std::addressof(kernel::launchInternal),
+            std::cref(mesh),
+            std::cref(programCtrl),
+            std::cref(devPtrs),
+            std::cref(haloPtrs),
+            timeStep);
 
-        runTimeObjects.calculate();
+        // runTimeObjects.calculate();
 
         // Sync all devices and streams
-        programCtrl.allsync();
+        // programCtrl.allsync();
 
         // Exchange memory between devices
-        devComm.exchange(timeStep);
+        boundaryThread.join();
+        internalThread.join();
+
+        // kernel::launchInternal(mesh, programCtrl, devPtrs, haloPtrs, timeStep);
+        // devComm.exchange(timeStep);
     }
 
     return 0;

@@ -54,6 +54,9 @@ namespace LBM
 {
     namespace host
     {
+        /**
+         * @brief Class representing a scalar field on the host, derived from fieldBase with N=1 component.
+         **/
         template <const host::mallocType AllocationType, class VelocitySet, const time::type TimeType>
         class scalarField
         {
@@ -86,6 +89,9 @@ namespace LBM
             ComponentType self_;
         };
 
+        /**
+         * @brief Class representing a vector field on the host, derived from fieldBase with N=3 components.
+         **/
         template <const host::mallocType AllocationType, class VelocitySet, const time::type TimeType>
         class vectorField
         {
@@ -127,6 +133,9 @@ namespace LBM
             ComponentType z_;
         };
 
+        /**
+         * @brief Class representing a symmetric tensor field on the host, derived from fieldBase with N=6 components.
+         **/
         template <const host::mallocType AllocationType, class VelocitySet, const time::type TimeType>
         class symmetricTensorField
         {
@@ -170,7 +179,7 @@ namespace LBM
             const name_t name_;
 
             /**
-             * @brief Components of the vector field
+             * @brief Components of the symmetric tensor field
              **/
             ComponentType xx_;
             ComponentType xy_;

@@ -170,6 +170,8 @@ namespace LBM
                 host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
                 const host::label_t timeStep) const
             {
+                programCtrl_.allsync();
+
                 for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < programCtrl_.deviceList().size(); virtualDeviceIndex++)
                 {
                     hostWriteBuffer.copyFromDevice(
@@ -320,6 +322,9 @@ namespace LBM
             }
         };
 
+        /**
+         * @brief Class representing a scalar field on the device, derived from fieldBase with N=1 component.
+         **/
         template <class VelocitySet, const time::type TimeType>
         class scalarField : public fieldBase<VelocitySet, TimeType, 1>
         {
@@ -339,6 +344,9 @@ namespace LBM
             __host__ [[nodiscard]] inline constexpr const Base::ComponentType &self() const noexcept { return Base::components_[0]; }
         };
 
+        /**
+         * @brief Class representing a vector field on the device, derived from fieldBase with N=3 components.
+         **/
         template <class VelocitySet, const time::type TimeType>
         class vectorField : public fieldBase<VelocitySet, TimeType, 3>
         {
@@ -362,6 +370,9 @@ namespace LBM
             __host__ [[nodiscard]] inline constexpr const Base::ComponentType &z() const noexcept { return Base::components_[2]; }
         };
 
+        /**
+         * @brief Class representing a symmetric tensor field on the device, derived from fieldBase with N=6 components.
+         **/
         template <class VelocitySet, const time::type TimeType>
         class symmetricTensorField : public fieldBase<VelocitySet, TimeType, 6>
         {

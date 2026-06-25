@@ -52,6 +52,40 @@ SourceFiles
 
 namespace LBM
 {
+    namespace device
+    {
+        /**
+         * @brief Helper function to get the correct stream index for a given device and direction
+         * @param[in] idxDev The device index
+         * @param[in] idxStr The stream index for the direction
+         **/
+        __host__ [[nodiscard]] static inline constexpr host::label_t idxStream(const host::label_t idxDev, const host::label_t idxStr) noexcept
+        {
+            return (3 * idxDev) + idxStr;
+        }
+
+        /**
+         * @brief Helper function to get the correct stream index for a given device and direction
+         * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
+         * @param[in] idxDev The device index
+         **/
+        template <const int coeff>
+        __host__ [[nodiscard]] static inline constexpr host::label_t idxStream(const host::label_t idxDev) noexcept
+        {
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
+
+            if constexpr (coeff == -1)
+            {
+                return (3 * idxDev); // East stream
+            }
+
+            if constexpr (coeff == +1)
+            {
+                return (3 * idxDev) + 2; // West stream
+            }
+        }
+    }
+
     /**
      * @class streamHandler
      * @brief Manages a collection of CUDA streams for asynchronous operations
@@ -68,9 +102,7 @@ namespace LBM
          * @brief Default constructor
          **/
         __host__ [[nodiscard]] streamHandler(const std::vector<deviceIndex_t> &deviceIndices) noexcept
-            : streams_(createCudaStreams(deviceIndices))
-        {
-        }
+            : streams_(createCudaStreams(deviceIndices)) {}
 
         /**
          * @brief Destructor
@@ -80,21 +112,10 @@ namespace LBM
          **/
         ~streamHandler() noexcept
         {
-            if (streams_.size() == 1)
+            for (const cudaStream_t &stream : streams_)
             {
-                errorHandler::check(cudaStreamSynchronize(streams_[0]));
-                errorHandler::check(cudaStreamDestroy(streams_[0]));
-            }
-            else
-            {
-                for (device::label_t stream = 0; stream < streams_.size(); stream++)
-                {
-                    errorHandler::check(cudaStreamSynchronize(streams_[stream]));
-                }
-                for (device::label_t stream = 0; stream < streams_.size(); stream++)
-                {
-                    errorHandler::check(cudaStreamDestroy(streams_[stream]));
-                }
+                errorHandler::check(cudaStreamSynchronize(stream));
+                errorHandler::check(cudaStreamDestroy(stream));
             }
         }
 
@@ -105,32 +126,9 @@ namespace LBM
         __host__ [[nodiscard]] streamHandler &operator=(const streamHandler &) = delete;
 
         /**
-         * @brief Synchronizes all managed CUDA streams
-         *
-         * Blocks the host until all operations in all CUDA streams complete.
-         * This ensures completion of all asynchronous operations before continuing.
-         **/
-        inline void synchronizeAll() const noexcept
-        {
-            for (device::label_t stream = 0; stream < streams_.size(); stream++)
-            {
-                errorHandler::check(cudaStreamSynchronize(streams_[stream]));
-            }
-        }
-
-        /**
          * @brief Synchronizes a specific CUDA stream
-         * @tparam stream_ Index of the stream to synchronize (must be < N)
-         * @param[in] stream Integral constant representing the stream index
-         *
-         * Blocks the host until all operations in the specified stream complete.
+         * @param[in] i Integral constant representing the stream index
          **/
-        template <const device::label_t stream_>
-        inline void synchronize(const std::integral_constant<device::label_t, stream_> stream) const noexcept
-        {
-            errorHandler::checkInline(cudaStreamSynchronize(streams_[stream()]));
-        }
-
         inline void synchronize(const host::label_t i) const noexcept
         {
             errorHandler::checkInline(cudaStreamSynchronize(streams_[i]));
@@ -138,16 +136,10 @@ namespace LBM
 
         /**
          * @brief Stream access operator
-         * @tparam stream_ Index of the stream to access (must be < N)
-         * @param[in] stream Integral constant representing the stream index
+         * @param[in] i Integral constant representing the stream index
          * @return Reference to the requested CUDA stream
          * @warning No bounds checking performed at runtime
          **/
-        template <const device::label_t stream_>
-        __host__ const cudaStream_t &operator[](const std::integral_constant<device::label_t, stream_> stream) const noexcept
-        {
-            return streams_[stream()];
-        }
         __host__ const cudaStream_t &operator[](const host::label_t i) const noexcept
         {
             return streams_[i];
@@ -170,20 +162,29 @@ namespace LBM
          * Private helper function that handles actual stream creation
          * with proper error checking and device synchronization.
          **/
-        __host__ [[nodiscard]] static const std::vector<cudaStream_t> createCudaStreams(const std::vector<deviceIndex_t> &deviceIndices) noexcept
+        __host__ [[nodiscard]] static const std::vector<cudaStream_t> createCudaStreams(const std::vector<deviceIndex_t> &deviceIndices)
         {
-            std::vector<cudaStream_t> streams(deviceIndices.size());
+            std::vector<cudaStream_t> streams(deviceIndices.size() * 3);
 
-            if (streams.size() > 0)
+            for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
             {
-                for (device::label_t stream = 0; stream < streams.size(); stream++)
+                errorHandler::check(cudaSetDevice(deviceIndices[deviceIdx]));
+                errorHandler::check(cudaDeviceSynchronize());
+            }
+
+            for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
+            {
+                errorHandler::check(cudaSetDevice(deviceIndices[deviceIdx]));
+                for (device::label_t stream = 0; stream < 3; stream++)
                 {
-                    errorHandler::check(cudaDeviceSynchronize());
-                    errorHandler::check(cudaSetDevice(deviceIndices[stream]));
-                    errorHandler::check(cudaDeviceSynchronize());
-                    errorHandler::check(cudaStreamCreate(&streams[stream]));
-                    errorHandler::check(cudaDeviceSynchronize());
+                    errorHandler::check(cudaStreamCreate(&streams[(deviceIdx * 3) + stream]));
                 }
+            }
+
+            for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
+            {
+                errorHandler::check(cudaSetDevice(deviceIndices[deviceIdx]));
+                errorHandler::check(cudaDeviceSynchronize());
             }
 
             return streams;

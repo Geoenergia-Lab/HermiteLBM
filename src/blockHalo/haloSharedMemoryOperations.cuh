@@ -51,8 +51,6 @@ SourceFiles
 #ifndef __MBLBM_HALOSHAREDMEMORYOPERATIONS_CUH
 #define __MBLBM_HALOSHAREDMEMORYOPERATIONS_CUH
 
-// #ifdef HALO_SHARED_MEMORY_OPERATIONS_IMPL
-
 /**
  * @brief Computes linear index for a thread within a block
  * @param[in] tx Thread x-coordinate within block
@@ -65,6 +63,15 @@ SourceFiles
 __device__ __host__ [[nodiscard]] static inline constexpr device::label_t idx_block(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
 {
     return tx + block::nx() * (ty + block::ny() * tz);
+}
+
+/**
+ * @overload Passes a pre-constructed thread coordinate
+ * @param[in] Tx Three-dimensional thread coordinates
+ **/
+__device__ __host__ [[nodiscard]] static inline constexpr device::label_t idx_block(const thread::coordinate &Tx) noexcept
+{
+    return idx_block(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
 }
 
 /**
@@ -82,6 +89,15 @@ __device__ __host__ [[nodiscard]] static inline constexpr device::label_t warpID
 }
 
 /**
+ * @overload Passes a pre-constructed thread coordinate
+ * @param[in] Tx Three-dimensional thread coordinates
+ **/
+__device__ __host__ [[nodiscard]] static inline constexpr device::label_t warpID(const thread::coordinate &Tx) noexcept
+{
+    return warpID(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
+}
+
+/**
  * @brief Computes the linear index of a thread within a warp
  * @param[in] tx Thread x-coordinate within block
  * @param[in] ty Thread y-coordinate within block
@@ -96,204 +112,343 @@ __device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxWar
 }
 
 /**
- * @brief Transposes the block halo into the shared memory
+ * @overload Passes a pre-constructed thread coordinate
+ * @param[in] Tx Three-dimensional thread coordinates
+ **/
+__device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxWarp(const thread::coordinate &Tx) noexcept
+{
+    return idxWarp(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
+}
+
+/**
+ * @brief Total area of lattice units on a block face
+ * @tparam alpha The axis direction (X, Y or Z)
+ * @tparam T The return type
+ * @return Linearized face index>
+ **/
+template <const axis::type alpha, typename T = device::label_t>
+__device__ __host__ [[nodiscard]] static inline consteval T faceArea() noexcept
+{
+    return block::n<axis::orthogonal<alpha, 0>(), T>() * block::n<axis::orthogonal<alpha, 1>(), T>();
+}
+
+/**
+ * @brief Index for points located on a block face
+ * @tparam alpha The axis direction (X, Y or Z)
+ * @return Linearized face index>
+ **/
+template <const axis::type alpha>
+__device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxFace(const thread::coordinate &Tx) noexcept
+{
+    return Tx.value<axis::orthogonal<alpha, 0>()>() + (Tx.value<axis::orthogonal<alpha, 1>()>() * block::n<axis::orthogonal<alpha, 0>()>());
+}
+
+/**
+ * @brief Transposes an individual face into the shared memory
+ * @tparam alpha The axis direction (X, Y or Z)
+ * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
+ * @tparam idxoffset The constant offset into the shared memory for the particular block configuration
+ * @param[in] Tx Three-dimensional thread coordinates
+ * @param[in] pop Array to store loaded population values
+ * @param[in] sharedBuffer Inline or externally stored shared memory buffer
+ **/
+template <const axis::type alpha, const int coeff, const device::label_t idxOffset, class SharedBuffer>
+__device__ static inline constexpr void transpose(const thread::coordinate &Tx, const thread::array<scalar_t, VelocitySet::Q()> &pop, SharedBuffer &sharedBuffer) noexcept
+{
+    axis::assertions::validate<alpha, axis::NOT_NULL>();
+
+    velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
+
+    const device::label_t base_idx = idxFace<alpha>(Tx);
+    device::constexpr_for<0, VelocitySet::QF()>(
+        [&](const auto i)
+        {
+            sharedBuffer[idxOffset + base_idx + (static_cast<device::label_t>(i) * faceArea<alpha>())] = pop[q_i<streaming_index<alpha, coeff>(i)>()];
+        });
+}
+
+/**
+ * @brief Helper function for smemOffset
+ **/
+template <const int FaceIdx>
+__device__ __host__ [[nodiscard]] static inline consteval device::label_t sumFaceAreasBefore() noexcept
+{
+    return []<host::label_t... I>(std::index_sequence<I...>)
+    {
+        return (device::label_t{0} + ... + ((I < FaceIdx) ? faceArea<static_cast<axis::type>(I / 2)>() : device::label_t{0}));
+    }(std::make_index_sequence<6>{});
+}
+
+/**
+ * @brief Calculates the offset into shared memory for a particular halo transpose operation
+ * @tparam alpha The axis direction (X, Y or Z)
+ * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
+ **/
+template <const axis::type alpha, const int coeff>
+__device__ __host__ [[nodiscard]] static inline consteval device::label_t smemOffset() noexcept
+{
+    axis::assertions::validate<alpha, axis::NOT_NULL>();
+
+    velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
+
+    return VelocitySet::QF() * sumFaceAreasBefore<static_cast<int>(alpha) * 2 + (coeff == -1 ? 0 : 1)>();
+}
+
+/**
+ * @brief Transposes population data in halo regions via the shared memory
+ * @tparam alpha The axis direction (X, Y or Z)
+ * @param[in] pop Array containing population values to save
+ * @param[out] sharedBuffer Inline or externally stored shared memory buffer
+ * @param[in] point The global point coordinate
+ * @param[in] Tx Three-dimensional thread coordinates
+ **/
+template <const axis::type alpha, class SharedBuffer>
+__device__ static inline constexpr void transpose_direction(
+    const thread::array<scalar_t, VelocitySet::Q()> &pop,
+    SharedBuffer &sharedBuffer,
+    const device::pointCoordinate &point,
+    const thread::coordinate &Tx) noexcept
+{
+    axis::assertions::validate<alpha, axis::NOT_NULL>();
+
+    if (boundaryCheck<alpha, -1, is_periodic<alpha>()>(point.value<alpha>(), Tx))
+    {
+        transpose<alpha, -1, smemOffset<alpha, -1>()>(Tx, pop, sharedBuffer);
+    }
+    else if (boundaryCheck<alpha, +1, is_periodic<alpha>()>(point.value<alpha>(), Tx))
+    {
+        transpose<alpha, +1, smemOffset<alpha, +1>()>(Tx, pop, sharedBuffer);
+    }
+}
+
+/**
+ * @brief Transposes the block halo into the shared memory for X and Y axes, saves the Z halo
  * @param[in] pop Array containing the populations for the particular thread
- * @param[out] s_buffer Shared array containing the packed population halos
- *
- * This device function saves population values to halo regions for
- * neighboring blocks to read.
+ * @param[out] writeBuffer Collection of pointers to the halo faces
+ * @param[out] sharedBuffer Inline or externally stored shared memory buffer
+ * @param[in] Tx Three-dimensional thread coordinates
+ * @param[in] Bx Three-dimensional block coordinates
+ * @param[in] point The global point coordinate
  **/
 template <class SharedBuffer>
-__device__ static inline void transpose_to_shared(
+__device__ static inline constexpr void transpose_to_shared(
     const thread::array<scalar_t, VelocitySet::Q()> &pop,
-    SharedBuffer &s_buffer,
+    const device::ptrCollection<6, scalar_t> &writeBuffer,
+    SharedBuffer &sharedBuffer,
     const thread::coordinate &Tx,
+    const block::coordinate &Bx,
     const device::pointCoordinate &point) noexcept
 {
-    // Currently only works for D3Q19
-    static_assert(((std::is_same_v<VelocitySet, D3Q19<Thermal>>) || (std::is_same_v<VelocitySet, D3Q19<Isothermal>>)), "transpose_to_shared only implemented for D3Q19.");
+    // X axis halo transposition
+    transpose_direction<axis::X>(pop, sharedBuffer, point, Tx);
 
-    // Calculate base indices for each boundary type
-    constexpr device::label_t x_size = block::ny() * block::nz();
-    constexpr device::label_t y_size = block::nx() * block::nz();
-    constexpr device::label_t z_size = block::nx() * block::ny();
-
-    // West boundary (5 populations)
-    if (boundaryCheck<axis::X, -1, x_periodic>(point.value<axis::X>(), Tx))
-    {
-        const device::label_t base_idx = threadIdx.y + threadIdx.z * block::ny();
-        s_buffer[base_idx + (0 * x_size) + 0] = pop[q_i<2>()];
-        s_buffer[base_idx + (1 * x_size) + 0] = pop[q_i<8>()];
-        s_buffer[base_idx + (2 * x_size) + 0] = pop[q_i<10>()];
-        s_buffer[base_idx + (3 * x_size) + 0] = pop[q_i<14>()];
-        s_buffer[base_idx + (4 * x_size) + 0] = pop[q_i<16>()];
-    }
-    else if (boundaryCheck<axis::X, +1, x_periodic>(point.value<axis::X>(), Tx))
-    {
-        const device::label_t base_idx = threadIdx.y + threadIdx.z * block::ny();
-        constexpr device::label_t east_offset = 5 * x_size;
-        s_buffer[east_offset + base_idx + (0 * x_size) + 0] = pop[q_i<1>()];
-        s_buffer[east_offset + base_idx + (1 * x_size) + 0] = pop[q_i<7>()];
-        s_buffer[east_offset + base_idx + (2 * x_size) + 0] = pop[q_i<9>()];
-        s_buffer[east_offset + base_idx + (3 * x_size) + 1] = pop[q_i<13>()];
-        s_buffer[east_offset + base_idx + (4 * x_size) + 1] = pop[q_i<15>()];
-    }
-
-    // South boundary (5 populations)
-    if (boundaryCheck<axis::Y, -1, y_periodic>(point.value<axis::Y>(), Tx))
-    {
-        const device::label_t base_idx = threadIdx.x + threadIdx.z * block::nx();
-        constexpr device::label_t south_offset = 10 * x_size;
-        s_buffer[south_offset + base_idx + (0 * y_size) + 1] = pop[q_i<4>()];
-        s_buffer[south_offset + base_idx + (1 * y_size) + 1] = pop[q_i<8>()];
-        s_buffer[south_offset + base_idx + (2 * y_size) + 1] = pop[q_i<12>()];
-        s_buffer[south_offset + base_idx + (3 * y_size) + 1] = pop[q_i<13>()];
-        s_buffer[south_offset + base_idx + (4 * y_size) + 1] = pop[q_i<18>()];
-    }
-    else if (boundaryCheck<axis::Y, +1, y_periodic>(point.value<axis::Y>(), Tx))
-    {
-        const device::label_t base_idx = threadIdx.x + threadIdx.z * block::nx();
-        constexpr device::label_t north_offset = 10 * x_size + 5 * y_size;
-        s_buffer[north_offset + base_idx + (0 * y_size) + 1] = pop[q_i<3>()];
-        s_buffer[north_offset + base_idx + (1 * y_size) + 2] = pop[q_i<7>()];
-        s_buffer[north_offset + base_idx + (2 * y_size) + 2] = pop[q_i<11>()];
-        s_buffer[north_offset + base_idx + (3 * y_size) + 2] = pop[q_i<14>()];
-        s_buffer[north_offset + base_idx + (4 * y_size) + 2] = pop[q_i<17>()];
-    }
-
-    // Back boundary (5 populations)
-    if (boundaryCheck<axis::Z, -1, z_periodic>(point.value<axis::Z>(), Tx))
-    {
-        const device::label_t base_idx = threadIdx.x + threadIdx.y * block::nx();
-        constexpr device::label_t back_offset = 10 * x_size + 10 * y_size;
-        s_buffer[back_offset + base_idx + (0 * z_size) + 2] = pop[q_i<6>()];
-        s_buffer[back_offset + base_idx + (1 * z_size) + 2] = pop[q_i<10>()];
-        s_buffer[back_offset + base_idx + (2 * z_size) + 2] = pop[q_i<12>()];
-        s_buffer[back_offset + base_idx + (3 * z_size) + 2] = pop[q_i<15>()];
-        s_buffer[back_offset + base_idx + (4 * z_size) + 3] = pop[q_i<17>()];
-    }
-    else if (boundaryCheck<axis::Z, +1, z_periodic>(point.value<axis::Z>(), Tx))
-    {
-        const device::label_t base_idx = threadIdx.x + threadIdx.y * block::nx();
-        constexpr device::label_t front_offset = 10 * x_size + 10 * y_size + 5 * z_size;
-        s_buffer[front_offset + base_idx + (0 * z_size) + 3] = pop[q_i<5>()];
-        s_buffer[front_offset + base_idx + (1 * z_size) + 3] = pop[q_i<9>()];
-        s_buffer[front_offset + base_idx + (2 * z_size) + 3] = pop[q_i<11>()];
-        s_buffer[front_offset + base_idx + (3 * z_size) + 3] = pop[q_i<16>()];
-        s_buffer[front_offset + base_idx + (4 * z_size) + 3] = pop[q_i<18>()];
-    }
+    // Y axis halo transposition
+    transpose_direction<axis::Y>(pop, sharedBuffer, point, Tx);
 
     block::sync();
+
+    // Z halos: these halos coalesce naturally, so no transposition is needed
+    save_direction<axis::Z>(pop, writeBuffer, Tx, Bx, point);
 }
 
 /**
  * @brief Saves population data to halo regions for neighboring blocks
- * @param[in] s_buffer Shared array containing the packed population halos
+ * @param[in] sharedBuffer Shared array containing the packed population halos
  * @param[out] writeBuffer Collection of pointers to the halo faces
- *
- * This device function saves population values to halo regions for
- * neighboring blocks to read.
+ * @param[in] Tx Three-dimensional thread coordinates
+ * @param[in] Bx Three-dimensional block coordinates
+ * @note This device function saves population values to halo regions for neighboring blocks to read.
  **/
 template <class SharedBuffer>
-__device__ static inline void save_from_shared(
-    const SharedBuffer &s_buffer,
-    const device::ptrCollection<6, scalar_t> &writeBuffer) noexcept
+__device__ static inline constexpr void save_from_shared(
+    const SharedBuffer &sharedBuffer,
+    const device::ptrCollection<6, scalar_t> &writeBuffer,
+    const thread::coordinate &Tx,
+    const block::coordinate &Bx) noexcept
 {
-    // Currently only works for D3Q19
-    static_assert(((std::is_same_v<VelocitySet, D3Q19<Thermal>>) || (std::is_same_v<VelocitySet, D3Q19<Isothermal>>)), "save_from_shared only implemented for D3Q19.");
-
-    const device::label_t warpId = warpID(threadIdx.x, threadIdx.y, threadIdx.z);
+    const device::label_t warpId = warpID(Tx);
     const device::label_t offset = block::warp_size() * (warpId % static_cast<device::label_t>(2));
-    const device::label_t idx_in_warp = idxWarp(threadIdx.x, threadIdx.y, threadIdx.z);
+    const device::label_t idx_in_warp = idxWarp(Tx);
 
     // Equivalent of threadIdx.alpha, threadIdx.beta
-    const dim2<axis::Z> xy(idx_in_warp + offset);
-    const dim2<axis::Y> xz(idx_in_warp + offset);
     const dim2<axis::X> yz(idx_in_warp + offset);
+    const dim2<axis::Y> xz(idx_in_warp + offset);
 
-    const device::label_t ID = idx_block(threadIdx.x, threadIdx.y, threadIdx.z);
+    const device::label_t ID = idx_block(Tx);
 
-    constexpr device::label_t padded_stride = block::size() + static_cast<device::label_t>(1); // 513 instead of 512
-    const scalar_t val0 = s_buffer[ID + (0 * padded_stride)];
-    const scalar_t val1 = s_buffer[ID + (1 * padded_stride)];
-    const scalar_t val2 = s_buffer[ID + (2 * padded_stride)];
-    const scalar_t val3 = s_buffer[ID + (3 * padded_stride)];
+    constexpr device::label_t padded_stride = block::size() + static_cast<device::label_t>(0);
 
-    switch (warpId / 2)
+    if constexpr ((std::is_same_v<VelocitySet, D3Q19<Thermal>>) || (std::is_same_v<VelocitySet, D3Q19<Isothermal>>))
     {
-    case 0:
-    {
-        writeBuffer.ptr<0>()[idxPop<axis::X, 0, VelocitySet::QF()>(yz.i(), yz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val0;
-        writeBuffer.ptr<1>()[idxPop<axis::X, 3, VelocitySet::QF()>(yz.i(), yz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val1;
-        writeBuffer.ptr<3>()[idxPop<axis::Y, 1, VelocitySet::QF()>(xz.i(), xz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val2;
-        writeBuffer.ptr<4>()[idxPop<axis::Z, 4, VelocitySet::QF()>(xy.i(), xy.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val3;
+        const thread::array<scalar_t, 3> val(
+            sharedBuffer[ID + (0 * padded_stride)],
+            sharedBuffer[ID + (1 * padded_stride)],
+            sharedBuffer[ID + (2 * padded_stride)]);
 
-        return;
+        block::sync();
+
+        switch (warpId / 2)
+        {
+        case 0:
+        {
+            writeBuffer.ptr<0>()[idxPop<axis::X, 0, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<1>()[idxPop<axis::X, 3, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[1];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 1, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[2];
+
+            return;
+        }
+        case 1:
+        {
+            writeBuffer.ptr<0>()[idxPop<axis::X, 1, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<1>()[idxPop<axis::X, 4, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[1];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 2, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[2];
+
+            return;
+        }
+        case 2:
+        {
+            writeBuffer.ptr<0>()[idxPop<axis::X, 2, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 0, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[1];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 3, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[2];
+
+            return;
+        }
+        case 3:
+        {
+            writeBuffer.ptr<0>()[idxPop<axis::X, 3, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 1, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[1];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 4, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[2];
+
+            return;
+        }
+        case 4:
+        {
+            writeBuffer.ptr<0>()[idxPop<axis::X, 4, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 2, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[1];
+
+            return;
+        }
+        case 5:
+        {
+            writeBuffer.ptr<1>()[idxPop<axis::X, 0, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 3, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[1];
+
+            return;
+        }
+        case 6:
+        {
+            writeBuffer.ptr<1>()[idxPop<axis::X, 1, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 4, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[1];
+
+            return;
+        }
+        case 7:
+        {
+            writeBuffer.ptr<1>()[idxPop<axis::X, 2, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 0, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[1];
+
+            return;
+        }
+        }
     }
-    case 1:
-    {
-        writeBuffer.ptr<0>()[idxPop<axis::X, 1, VelocitySet::QF()>(yz.i(), yz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val0;
-        writeBuffer.ptr<1>()[idxPop<axis::X, 4, VelocitySet::QF()>(yz.i(), yz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val1;
-        writeBuffer.ptr<3>()[idxPop<axis::Y, 2, VelocitySet::QF()>(xz.i(), xz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val2;
-        writeBuffer.ptr<5>()[idxPop<axis::Z, 0, VelocitySet::QF()>(xy.i(), xy.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val3;
 
-        return;
-    }
-    case 2:
+    if constexpr ((std::is_same_v<VelocitySet, D3Q27<Thermal>>) || (std::is_same_v<VelocitySet, D3Q27<Isothermal>>))
     {
-        writeBuffer.ptr<0>()[idxPop<axis::X, 2, VelocitySet::QF()>(yz.i(), yz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val0;
-        writeBuffer.ptr<2>()[idxPop<axis::Y, 0, VelocitySet::QF()>(xz.i(), xz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val1;
-        writeBuffer.ptr<3>()[idxPop<axis::Y, 3, VelocitySet::QF()>(xz.i(), xz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val2;
-        writeBuffer.ptr<5>()[idxPop<axis::Z, 1, VelocitySet::QF()>(xy.i(), xy.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val3;
+        const thread::array<scalar_t, 5> val(
+            sharedBuffer[ID + (0 * padded_stride)],
+            sharedBuffer[ID + (1 * padded_stride)],
+            sharedBuffer[ID + (2 * padded_stride)],
+            sharedBuffer[ID + (3 * padded_stride)],
+            sharedBuffer[ID + (4 * padded_stride)]);
 
-        return;
-    }
-    case 3:
-    {
-        writeBuffer.ptr<0>()[idxPop<axis::X, 3, VelocitySet::QF()>(yz.i(), yz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val0;
-        writeBuffer.ptr<2>()[idxPop<axis::Y, 1, VelocitySet::QF()>(xz.i(), xz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val1;
-        writeBuffer.ptr<3>()[idxPop<axis::Y, 4, VelocitySet::QF()>(xz.i(), xz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val2;
-        writeBuffer.ptr<5>()[idxPop<axis::Z, 2, VelocitySet::QF()>(xy.i(), xy.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val3;
+        switch (warpId / 2)
+        {
+        case 0:
+        {
+            writeBuffer.ptr<0>()[idxPop<axis::X, 0, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<0>()[idxPop<axis::X, 8, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[1];
+            writeBuffer.ptr<1>()[idxPop<axis::X, 7, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[2];
 
-        return;
-    }
-    case 4:
-    {
-        writeBuffer.ptr<0>()[idxPop<axis::X, 4, VelocitySet::QF()>(yz.i(), yz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val0;
-        writeBuffer.ptr<2>()[idxPop<axis::Y, 2, VelocitySet::QF()>(xz.i(), xz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val1;
-        writeBuffer.ptr<4>()[idxPop<axis::Z, 0, VelocitySet::QF()>(xy.i(), xy.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val2;
-        writeBuffer.ptr<5>()[idxPop<axis::Z, 3, VelocitySet::QF()>(xy.i(), xy.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val3;
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 6, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[3];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 5, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[4];
 
-        return;
-    }
-    case 5:
-    {
-        writeBuffer.ptr<1>()[idxPop<axis::X, 0, VelocitySet::QF()>(yz.i(), yz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val0;
-        writeBuffer.ptr<2>()[idxPop<axis::Y, 3, VelocitySet::QF()>(xz.i(), xz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val1;
-        writeBuffer.ptr<4>()[idxPop<axis::Z, 1, VelocitySet::QF()>(xy.i(), xy.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val2;
-        writeBuffer.ptr<5>()[idxPop<axis::Z, 4, VelocitySet::QF()>(xy.i(), xy.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val3;
+            return;
+        }
+        case 1:
+        {
+            writeBuffer.ptr<0>()[idxPop<axis::X, 1, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<1>()[idxPop<axis::X, 0, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[1];
+            writeBuffer.ptr<1>()[idxPop<axis::X, 8, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[2];
 
-        return;
-    }
-    case 6:
-    {
-        writeBuffer.ptr<1>()[idxPop<axis::X, 1, VelocitySet::QF()>(yz.i(), yz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val0;
-        writeBuffer.ptr<2>()[idxPop<axis::Y, 4, VelocitySet::QF()>(xz.i(), xz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val1;
-        writeBuffer.ptr<4>()[idxPop<axis::Z, 2, VelocitySet::QF()>(xy.i(), xy.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val2;
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 7, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[3];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 6, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[4];
 
-        return;
-    }
-    case 7:
-    {
-        writeBuffer.ptr<1>()[idxPop<axis::X, 2, VelocitySet::QF()>(yz.i(), yz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val0;
-        writeBuffer.ptr<3>()[idxPop<axis::Y, 0, VelocitySet::QF()>(xz.i(), xz.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val1;
-        writeBuffer.ptr<4>()[idxPop<axis::Z, 3, VelocitySet::QF()>(xy.i(), xy.j(), blockIdx.x, blockIdx.y, blockIdx.z)] = val2;
+            return;
+        }
+        case 2:
+        {
+            writeBuffer.ptr<0>()[idxPop<axis::X, 2, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<1>()[idxPop<axis::X, 1, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[1];
 
-        return;
-    }
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 0, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[2];
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 8, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[3];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 7, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[4];
+
+            return;
+        }
+        case 3:
+        {
+            writeBuffer.ptr<0>()[idxPop<axis::X, 3, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<1>()[idxPop<axis::X, 2, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[1];
+
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 1, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[2];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 0, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[3];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 8, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[4];
+
+            return;
+        }
+        case 4:
+        {
+            writeBuffer.ptr<0>()[idxPop<axis::X, 4, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<1>()[idxPop<axis::X, 3, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[1];
+
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 2, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[2];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 1, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[3];
+
+            return;
+        }
+        case 5:
+        {
+            writeBuffer.ptr<0>()[idxPop<axis::X, 5, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<1>()[idxPop<axis::X, 4, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[1];
+
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 3, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[2];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 2, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[3];
+
+            return;
+        }
+        case 6:
+        {
+            writeBuffer.ptr<0>()[idxPop<axis::X, 6, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<1>()[idxPop<axis::X, 5, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[1];
+
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 4, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[2];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 3, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[3];
+
+            return;
+        }
+        case 7:
+        {
+            writeBuffer.ptr<0>()[idxPop<axis::X, 7, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[0];
+            writeBuffer.ptr<1>()[idxPop<axis::X, 6, VelocitySet::QF()>(yz.i(), yz.j(), Bx)] = val[1];
+
+            writeBuffer.ptr<2>()[idxPop<axis::Y, 5, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[2];
+            writeBuffer.ptr<3>()[idxPop<axis::Y, 4, VelocitySet::QF()>(xz.i(), xz.j(), Bx)] = val[3];
+
+            return;
+        }
+        }
     }
 }
 
 #endif
-
-// #endif
