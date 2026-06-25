@@ -207,10 +207,11 @@ namespace LBM
                 });
 
             // Save the populations to the block halo
-            if constexpr (use_cooperative_halo() && ((std::is_same_v<VelocitySet, D3Q19<Thermal>>) || (std::is_same_v<VelocitySet, D3Q19<Isothermal>>)))
+            if constexpr (use_cooperative_halo())
             {
-                BlockHalo::transpose_to_shared(pop, sharedBuffer, Tx, point);
-                BlockHalo::save_from_shared(sharedBuffer, writeBuffer);
+                VelocitySet::reconstruct<false>(pop, moments);
+                BlockHalo::transpose_to_shared(pop, writeBuffer, sharedBuffer, Tx, Bx, point);
+                BlockHalo::save_from_shared(sharedBuffer, writeBuffer, Tx, Bx);
             }
             else
             {
