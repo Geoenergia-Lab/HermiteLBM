@@ -86,7 +86,7 @@ namespace LBM
             /**
              * @brief Array of field components
              **/
-            std::array<ComponentType, N> components_;
+            const std::array<ComponentType, N> components_;
 
         public:
             /**
@@ -219,7 +219,7 @@ namespace LBM
              * @param[in] idx Virtual device index.
              * @return ptrCollection with N scalar_t*.
              **/
-            __host__ [[nodiscard]] inline constexpr device::ptrCollection<N, scalar_t> ptr(const host::label_t idx) noexcept
+            __host__ [[nodiscard]] inline constexpr device::ptrCollection<N, scalar_t> ptr(const host::label_t idx) const noexcept
             {
                 return makePtrCollection(idx, std::make_index_sequence<N>{});
             }
@@ -305,7 +305,7 @@ namespace LBM
              * @return ptrCollection with N const scalar_t*.
              **/
             template <const host::label_t... Is>
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<N, const scalar_t> makeConstPtrCollection(const host::label_t idx, std::index_sequence<Is...>) const noexcept
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<N, const scalar_t> makeConstPtrCollection(const host::label_t idx, const std::index_sequence<Is...>) const noexcept
             {
                 return {components_[Is].constPtr(idx)...};
             }
@@ -316,9 +316,9 @@ namespace LBM
              * @return ptrCollection with N scalar_t*.
              **/
             template <const host::label_t... Is>
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<N, scalar_t> makePtrCollection(const host::label_t idx, std::index_sequence<Is...>) noexcept
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<N, scalar_t> makePtrCollection(const host::label_t idx, const std::index_sequence<Is...>) const noexcept
             {
-                return {components_[Is].ptr(idx)...};
+                return {components_[Is].mutPtr(idx)...};
             }
         };
 

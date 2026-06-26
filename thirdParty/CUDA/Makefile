@@ -8,17 +8,17 @@
 # --------------------------------------------------------------------------- #
 
 # --------------------------------------------------------------------------- #
-#  CUDA Toolkit Installer for Debian‑based distributions
+#  CUDA Toolkit Installer for Debian‑based distributions                      #
 # --------------------------------------------------------------------------- #
-#  Usage:
-#    (1) Edit bashrc and set HERMITELBM_DISTRO, HERMITELBM_CUDA_VERSION_MAJOR,
-#        and HERMITELBM_CUDA_VERSION_MINOR.
-#    (2) source bashrc
-#    (3) make install
-#
-#  Or override on command line:
-#    make install DISTRO=ubuntu2404 CUDA_VERSION=13-0
-# ============================================================
+#  Usage:                                                                     #
+#    (1) Edit bashrc and set HERMITELBM_DISTRO,                               #
+#        HERMITELBM_CUDA_VERSION_MAJOR, and HERMITELBM_CUDA_VERSION_MINOR.    #
+#    (2) source bashrc                                                        #
+#    (3) make install                                                         #
+#                                                                             #
+#  Or override on command line:                                               #
+#    make install DISTRO=ubuntu2404 CUDA_VERSION=13-0                         #
+# --------------------------------------------------------------------------- #
 
 # Read from environment (set by bashrc)
 DISTRO ?= $(HERMITELBM_DISTRO)
@@ -123,3 +123,5 @@ check-apt:
 
 clean:
 	rm -f $(KEYRING_DEB)
+
+# --------------------------------------------------------------------------- #

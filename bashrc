@@ -8,7 +8,7 @@
 # --------------------------------------------------------------------------- #
 
 # --------------------------------------------------------------------------- #
-#  USER-DEFINED ENVIRONMENT VARIABLES
+#  USER-DEFINED ENVIRONMENT VARIABLES                                         #
 # --------------------------------------------------------------------------- #
 
 # CUDA version (major and minor)
@@ -22,7 +22,7 @@ export HERMITELBM_ARCHITECTURE_DETECTION="Automatic"
 export HERMITELBM_ARCHITECTURE_VERSION="89"
 
 # --------------------------------------------------------------------------- #
-#  AUTOMATIC SETUP – DO NOT MODIFY BELOW UNLESS YOU KNOW WHAT YOU ARE DOING
+#  AUTOMATIC SETUP – DO NOT MODIFY BELOW UNLESS YOU KNOW WHAT YOU ARE DOING   #
 # --------------------------------------------------------------------------- #
 
 # Project root directory (where this bashrc file lives)
@@ -34,7 +34,7 @@ export HERMITELBM_BIN_DIR="$HERMITELBM_BUILD_DIR/bin"
 export HERMITELBM_INCLUDE_DIR="$HERMITELBM_BUILD_DIR/include"
 
 # --------------------------------------------------------------------------- #
-#  Automatic distro detection (now supports Fedora, RHEL, CentOS)
+#  Automatic distro detection (now supports Fedora, RHEL, CentOS)             #
 # --------------------------------------------------------------------------- #
 
 if [[ -z "$HERMITELBM_DISTRO" ]]; then
@@ -71,7 +71,7 @@ fi
 export HERMITELBM_DISTRO
 
 # --------------------------------------------------------------------------- #
-#  CUDA Toolkit
+#  CUDA Toolkit                                                               #
 # --------------------------------------------------------------------------- #
 
 # Determine the correct CUDA directory suffix based on distro and minor version
@@ -96,16 +96,18 @@ else
 fi
 
 # --------------------------------------------------------------------------- #
-#  UCX (Unified Communication X)
+#  UCX (Unified Communication X)                                              #
 # --------------------------------------------------------------------------- #
+
 export HERMITELBM_UCX_DIR="$HERMITELBM_BUILD_DIR/ucx"
 export PATH="$HERMITELBM_UCX_DIR/bin:$PATH"
 export LIBRARY_PATH="$HERMITELBM_UCX_DIR/lib:$LIBRARY_PATH"
 export LD_LIBRARY_PATH="$HERMITELBM_UCX_DIR/lib:$LD_LIBRARY_PATH"
 
 # --------------------------------------------------------------------------- #
-#  OpenMPI
+#  OpenMPI                                                                    #
 # --------------------------------------------------------------------------- #
+
 export HERMITELBM_MPI_DIR="$HERMITELBM_BUILD_DIR/OpenMPI"
 export PATH="$HERMITELBM_MPI_DIR/bin:$PATH"
 export LIBRARY_PATH="$HERMITELBM_MPI_DIR/lib:$LIBRARY_PATH"
@@ -114,12 +116,13 @@ export C_INCLUDE_PATH="$HERMITELBM_MPI_DIR/include:$C_INCLUDE_PATH"
 export CPLUS_INCLUDE_PATH="$HERMITELBM_MPI_DIR/include:$CPLUS_INCLUDE_PATH"
 
 # --------------------------------------------------------------------------- #
-#  Add project executables to PATH
+#  Add project executables to PATH                                            #
 # --------------------------------------------------------------------------- #
+
 export PATH="$HERMITELBM_BIN_DIR:$PATH"
 
 # --------------------------------------------------------------------------- #
-#  Utility Functions
+#  Utility Functions                                                          #
 # --------------------------------------------------------------------------- #
 
 # cleanCase: Remove timeStep and postProcess directories if inside a case folder

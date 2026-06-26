@@ -135,6 +135,23 @@ namespace LBM
                 initialise_boundary_condition(name_, programCtrl.deviceList(), programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3)));
             }
 
+            __host__ [[nodiscard]] array(
+                [[maybe_unused]] const name_t &name,
+                const name_t &componentName,
+                const host::latticeMesh &mesh,
+                const T value,
+                const programControl &programCtrl,
+                const bool allocate = true)
+                : arrayBase<T>(
+                      This::allocate_on_devices(
+                          mesh, value, allocate, programCtrl),
+                      mesh,
+                      programCtrl),
+                  name_(componentName)
+            {
+                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3)));
+            }
+
             /**
              * @brief Construct a device array from checkpoint or initial condition files, with a specified component name.
              * @param[in] name Name of the field (e.g., "U" for velocity).
