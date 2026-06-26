@@ -56,7 +56,7 @@ namespace LBM
      * @brief Minimum number of blocks per streaming microprocessor
      **/
     template <class VelocitySet>
-    __host__ [[nodiscard]] inline consteval device::label_t MIN_BLOCKS_PER_MP() noexcept
+    __device__ __host__ [[nodiscard]] inline consteval device::label_t MIN_BLOCKS_PER_MP() noexcept
     {
         // D3Q19 thermal model
         if constexpr (std::is_same_v<VelocitySet, D3Q19<Thermal>>)
@@ -86,7 +86,7 @@ namespace LBM
     /**
      * @brief Use experimental block co-operative halo saving
      **/
-    __host__ [[nodiscard]] inline consteval bool use_cooperative_halo() noexcept
+    __device__ __host__ [[nodiscard]] inline consteval bool use_cooperative_halo() noexcept
     {
 #ifdef USE_SMEM_HALO
 #if USE_SMEM_HALO == true
