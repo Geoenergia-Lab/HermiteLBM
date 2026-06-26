@@ -1,24 +1,25 @@
 #!/bin/bash
 # --------------------------------------------------------------------------- #
-#  Roofline Profiling Wrapper for CUDA LBM Executables
-#
-#  Usage: ./roofline.sh <executable> [executable_args...]
-#  Example: ./roofline.sh momentBasedD3Q27 -GPU 0,1 -size 256
-#
-#  Note: If you encounter ERR_NVGPUCTRPERM, enable performance counters via:
-#    - Windows: NVIDIA Control Panel → Developer → Allow access to all users
-#    - Linux:   echo 'options nvidia NVreg_RestrictProfilingToAdminUsers=0' | 
-#               sudo tee /etc/modprobe.d/nvidia.conf
+#  Roofline Profiling Wrapper for CUDA LBM Executables                        #
+#                                                                             #
+#  Usage: ./roofline.sh <executable> [executable_args...]                     #
+#  Example: ./roofline.sh momentBasedD3Q27 -GPU 0,1 -size 256                 #
+#                                                                             #
+#  Note: If you encounter ERR_NVGPUCTRPERM, enable performance counters via:  #
+#    - Windows: NVIDIA Control Panel → Developer → Allow access to all users  #
+#    - Linux:   echo 'options nvidia NVreg_RestrictProfilingToAdminUsers=0'   #
+#               | sudo tee /etc/modprobe.d/nvidia.conf                        #
+# --------------------------------------------------------------------------- #
+
+# --------------------------------------------------------------------------- #
+#  Detect if script is sourced (to avoid closing the terminal)                #
 # --------------------------------------------------------------------------- #
 
 set -e  # Exit on any error (but we handle graceful exit manually)
-
-# --------------------------------------------------------------------------- #
-#  Detect if script is sourced (to avoid closing the terminal)
-# --------------------------------------------------------------------------- #
 (return 0 2>/dev/null) && SOURCED=1 || SOURCED=0
 
-graceful_exit() {
+graceful_exit()
+{
     local code=${1:-1}
     if [[ $SOURCED -eq 1 ]]; then
         return "$code" 2>/dev/null || exit "$code"
@@ -28,8 +29,9 @@ graceful_exit() {
 }
 
 # --------------------------------------------------------------------------- #
-#  Check required environment variables
+#  Check required environment variables                                       #
 # --------------------------------------------------------------------------- #
+
 missing_vars=()
 for var in HERMITELBM_PROJECT_DIR HERMITELBM_BUILD_DIR HERMITELBM_BIN_DIR HERMITELBM_INCLUDE_DIR; do
     if [ -z "${!var}" ]; then
@@ -47,8 +49,9 @@ if [ ${#missing_vars[@]} -gt 0 ]; then
 fi
 
 # --------------------------------------------------------------------------- #
-#  Parse command line arguments
+#  Parse command line arguments                                               #
 # --------------------------------------------------------------------------- #
+
 if [ $# -lt 1 ]; then
     echo "ERROR: Please provide the executable name."
     echo "Usage: $0 <executable> [executable_args...]"
@@ -72,8 +75,9 @@ if [ ! -f "$HARDWARE_INFO" ]; then
 fi
 
 # --------------------------------------------------------------------------- #
-#  Extract mandatory -GPU <list> from executable arguments
+#  Extract mandatory -GPU <list> from executable arguments                    #
 # --------------------------------------------------------------------------- #
+
 GPU_LIST=""
 for ((i=0; i<${#EXE_ARGS[@]}; i++)); do
     if [[ "${EXE_ARGS[i]}" == "-GPU" ]]; then
@@ -94,8 +98,9 @@ if [ -z "$GPU_LIST" ]; then
 fi
 
 # --------------------------------------------------------------------------- #
-#  Parse GPU IDs and fetch names from hardware.info
+#  Parse GPU IDs and fetch names from hardware.info                           #
 # --------------------------------------------------------------------------- #
+
 IFS=',' read -ra GPU_IDS <<< "$GPU_LIST"
 
 # Number of GPUs used
@@ -116,8 +121,9 @@ done
 GPU_NAMES_STR=$(IFS=_; echo "${GPU_NAMES[*]}")
 
 # --------------------------------------------------------------------------- #
-#  Create timestamped output directory
+#  Create timestamped output directory                                        #
 # --------------------------------------------------------------------------- #
+
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 RESULT_DIR="./profiling_results/${EXE_NAME}_${TIMESTAMP}_${NUM_GPUS}GPU_${GPU_NAMES_STR}"
 mkdir -p "$RESULT_DIR"
@@ -127,8 +133,9 @@ echo "Results will be saved to: $(realpath "$RESULT_DIR")"
 cp "$HARDWARE_INFO" "$RESULT_DIR/hardware.info"
 
 # --------------------------------------------------------------------------- #
-#  Run Nsight Compute with roofline metrics
+#  Run Nsight Compute with roofline metrics                                   #
 # --------------------------------------------------------------------------- #
+
 REPORT_BASE="$RESULT_DIR/${EXE_NAME}_profile"
 
 echo "Profiling $EXE_NAME on GPU(s) $GPU_LIST with arguments: ${EXE_ARGS[*]}"
@@ -141,8 +148,9 @@ ncu \
     "$EXE_PATH" "${EXE_ARGS[@]}"
 
 # --------------------------------------------------------------------------- #
-#  Extract summary metrics into a human-readable file
+#  Extract summary metrics into a human-readable file                         #
 # --------------------------------------------------------------------------- #
+
 echo "Extracting summary metrics..."
 ncu -i "$REPORT_BASE.ncu-rep" --csv --page raw > "$RESULT_DIR/metrics_raw.csv" 2>/dev/null || true
 
@@ -161,3 +169,5 @@ ncu -i "$REPORT_BASE.ncu-rep" --csv --page raw > "$RESULT_DIR/metrics_raw.csv" 2
 } > "$RESULT_DIR/summary.txt"
 
 echo "Profiling complete. Results in: $RESULT_DIR"
+
+# --------------------------------------------------------------------------- #

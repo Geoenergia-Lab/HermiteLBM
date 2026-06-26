@@ -1,4 +1,16 @@
-# Makefile for building UCX and OpenMPI dependencies
+# --------------------------------------------------------------------------- #
+#                                                                             #
+#  HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method      #
+#  Developed at UDESC - State University of Santa Catarina                    #
+#  Website: https://www.udesc.br                                              #
+#  Github: https://github.com/Geoenergia-Lab/HermiteLBM                       #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+#  Makefile for building UCX and OpenMPI dependencies                         #
+# --------------------------------------------------------------------------- #
+
 OPENMPI_VERSION = 5.0.7
 
 # Check if required environment variables are set
@@ -102,3 +114,5 @@ help:
 	@echo "  clean         - Remove source directories"
 	@echo "  uninstall     - Remove installed files"
 	@echo "  help          - Show this help message"
+
+# --------------------------------------------------------------------------- #

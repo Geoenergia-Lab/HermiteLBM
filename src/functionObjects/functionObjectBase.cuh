@@ -153,9 +153,15 @@ namespace LBM
 
                 const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
 
+                // func<<<mesh_.blocksPerDevice(), host::latticeMesh::threadBlock(), 0, programCtrl.streams()[(idxDevice * 3) + 1]>>>(
+                //     devPtrs(deviceIdx),
+                //     object.meanPtrs(deviceIdx),
+                //     invNewCount);
+
+                const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
                 for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
                 {
-                    func<<<mesh_.gridBlock()[1], host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[deviceIdx]>>>(
+                    func<<<nBlocks, host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[(deviceIdx * 3) + 1]>>>(
                         devPtrs(deviceIdx),
                         object.meanPtrs(deviceIdx),
                         invNewCount);
@@ -176,9 +182,10 @@ namespace LBM
             {
                 static_assert(functionObjectReady(), "Need to fix the launch configuration and stream handling in functionObjectBase");
 
+                const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
                 for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
                 {
-                    func<<<mesh_.gridBlock()[1], host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[deviceIdx]>>>(
+                    func<<<nBlocks, host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[(deviceIdx * 3) + 1]>>>(
                         devPtrs(deviceIdx),
                         object.meanPtrs(deviceIdx));
                 }
@@ -200,9 +207,10 @@ namespace LBM
 
                 const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
 
+                const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
                 for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
                 {
-                    func<<<mesh_.gridBlock()[1], host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[deviceIdx]>>>(
+                    func<<<nBlocks, host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[(deviceIdx * 3) + 1]>>>(
                         devPtrs(deviceIdx),
                         object.instantaneousPtrs(deviceIdx),
                         object.meanPtrs(deviceIdx),

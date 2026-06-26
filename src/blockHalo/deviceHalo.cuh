@@ -84,9 +84,7 @@ namespace LBM
             const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
             const host::latticeMesh &mesh,
             const programControl &programCtrl)
-            : ptrs_(initialise(rho, U, Pi, mesh, programCtrl))
-        {
-        }
+            : ptrs_(initialise(rho, U, Pi, mesh, programCtrl)) {}
 
         /**
          * @brief Destructor - Frees the device memory allocated for the block halo buffers

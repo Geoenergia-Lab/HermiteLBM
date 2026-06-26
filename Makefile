@@ -1,4 +1,15 @@
-# Top-level Makefile
+# --------------------------------------------------------------------------- #
+#                                                                             #
+#  HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method      #
+#  Developed at UDESC - State University of Santa Catarina                    #
+#  Website: https://www.udesc.br                                              #
+#  Github: https://github.com/Geoenergia-Lab/HermiteLBM                       #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+
+# --------------------------------------------------------------------------- #
+#  Top-level Makefile                                                         #
+# --------------------------------------------------------------------------- #
 
 # Check if required environment variables are set
 ifeq ($(HERMITELBM_BUILD_DIR),)
@@ -57,3 +68,5 @@ install: directories $(HERMITELBM_INCLUDE_DIR)/hardware.info
 uninstall:
 	@ for dir in $(SUBDIRS); do $(MAKE) -C $$dir uninstall; done
 	@ rm -rf $(HERMITELBM_BIN_DIR) $(HERMITELBM_INCLUDE_DIR)
+
+# --------------------------------------------------------------------------- #
