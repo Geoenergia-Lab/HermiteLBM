@@ -150,7 +150,7 @@ namespace LBM
                 {
                     const normalVector boundaryNormal(point);
 
-                    velocitySet::calculate_moments<VelocitySet>(pop, moments, boundaryNormal);
+                    velocitySet<VelocitySet::Q()>::template calculate_moments(pop, moments, boundaryNormal);
 
                     if (boundaryNormal.isBoundary())
                     {
@@ -162,7 +162,7 @@ namespace LBM
             if constexpr (std::is_same_v<BoundaryConditions, jetFlow>)
             {
                 // Compute post-stream moments
-                velocitySet::calculate_moments<VelocitySet>(pop, moments);
+                velocitySet<VelocitySet::Q()>::template calculate_moments<VelocitySet>(pop, moments);
                 {
                     // Update the shared buffer with the refreshed moments
                     device::constexpr_for<0, NUMBER_MOMENTS()>(
@@ -187,7 +187,7 @@ namespace LBM
             }
 
             // Scale the moments correctly
-            velocitySet::scale(moments);
+            velocitySetBase::scale(moments);
 
             // Collide
             Collision::collide(moments);

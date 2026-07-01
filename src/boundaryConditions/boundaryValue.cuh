@@ -174,7 +174,7 @@ namespace LBM
                     {
                         if constexpr (Scaled)
                         {
-                            return string::extractParameter<scalar_t>(regionFieldBlock, "value") * velocitySet::scale_i<scalar_t>();
+                            return string::extractParameter<scalar_t>(regionFieldBlock, "value") * velocitySetBase::scale_i<scalar_t>();
                         }
                         else
                         {
@@ -185,7 +185,7 @@ namespace LBM
                     {
                         if constexpr (Scaled)
                         {
-                            return string::extractParameter<scalar_t>(regionFieldBlock, "value") * velocitySet::scale_ii<scalar_t>();
+                            return string::extractParameter<scalar_t>(regionFieldBlock, "value") * velocitySetBase::scale_ii<scalar_t>();
                         }
                         else
                         {
@@ -196,7 +196,7 @@ namespace LBM
                     {
                         if constexpr (Scaled)
                         {
-                            return string::extractParameter<scalar_t>(regionFieldBlock, "value") * velocitySet::scale_ij<scalar_t>();
+                            return string::extractParameter<scalar_t>(regionFieldBlock, "value") * velocitySetBase::scale_ij<scalar_t>();
                         }
                         else
                         {
@@ -221,35 +221,35 @@ namespace LBM
                     if (fieldName == "Pi_xx")
                     {
                         const scalar_t u = extractParameter<true>("U_x", regionName, initialConditionsName);
-                        return velocitySet::scale_ii<scalar_t>() * ((u * u)) / rho0();
+                        return velocitySetBase::scale_ii<scalar_t>() * ((u * u)) / rho0();
                     }
                     else if (fieldName == "Pi_xy")
                     {
                         const scalar_t u = extractParameter<true>("U_x", regionName, initialConditionsName);
                         const scalar_t v = extractParameter<true>("U_y", regionName, initialConditionsName);
-                        return velocitySet::scale_ii<scalar_t>() * ((u * v)) / rho0();
+                        return velocitySetBase::scale_ii<scalar_t>() * ((u * v)) / rho0();
                     }
                     else if (fieldName == "Pi_xz")
                     {
                         const scalar_t u = extractParameter<true>("U_x", regionName, initialConditionsName);
                         const scalar_t w = extractParameter<true>("U_z", regionName, initialConditionsName);
-                        return velocitySet::scale_ii<scalar_t>() * ((u * w)) / rho0();
+                        return velocitySetBase::scale_ii<scalar_t>() * ((u * w)) / rho0();
                     }
                     else if (fieldName == "Pi_yy")
                     {
                         const scalar_t v = extractParameter<true>("U_y", regionName, initialConditionsName);
-                        return velocitySet::scale_ii<scalar_t>() * ((v * v)) / rho0();
+                        return velocitySetBase::scale_ii<scalar_t>() * ((v * v)) / rho0();
                     }
                     else if (fieldName == "Pi_yz")
                     {
                         const scalar_t v = extractParameter<true>("U_y", regionName, initialConditionsName);
                         const scalar_t w = extractParameter<true>("U_z", regionName, initialConditionsName);
-                        return velocitySet::scale_ii<scalar_t>() * ((v * w)) / rho0();
+                        return velocitySetBase::scale_ii<scalar_t>() * ((v * w)) / rho0();
                     }
                     else if (fieldName == "Pi_zz")
                     {
                         const scalar_t w = extractParameter<true>("U_z", regionName, initialConditionsName);
-                        return velocitySet::scale_ii<scalar_t>() * ((w * w)) / rho0();
+                        return velocitySetBase::scale_ii<scalar_t>() * ((w * w)) / rho0();
                     }
                     return 0; // Should never get here
                 }

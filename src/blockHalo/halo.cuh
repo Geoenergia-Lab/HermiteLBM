@@ -157,7 +157,7 @@ namespace LBM
 
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
-                return static_cast<device::label_t>(velocitySet::template indices_on_face<VelocitySet, alpha, coeff>()[i]);
+                return static_cast<device::label_t>(velocitySet<VelocitySet::Q()>::template indices_on_face<alpha, coeff>()[i]);
             }
 
             /**

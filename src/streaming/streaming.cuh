@@ -101,7 +101,7 @@ namespace LBM
 
         /**
          * @overload Accepts a thread::array for shared memory storage
-         */
+         **/
         template <class VelocitySet, const host::label_t N>
         __device__ static inline void save(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
@@ -131,16 +131,16 @@ namespace LBM
             device::constexpr_for<0, (VelocitySet::Q() - 1)>(
                 [&](const auto i)
                 {
-                    const device::label_t x = periodic_index<-VelocitySet::template cx<int>(q_i<i + 1>()), block::nx()>(Tx.value<axis::X>());
-                    const device::label_t y = periodic_index<-VelocitySet::template cy<int>(q_i<i + 1>()), block::ny()>(Tx.value<axis::Y>());
-                    const device::label_t z = periodic_index<-VelocitySet::template cz<int>(q_i<i + 1>()), block::nz()>(Tx.value<axis::Z>());
+                    const device::label_t x = periodic_index<-VelocitySet::template c<int, axis::X>(q_i<i + 1>()), block::nx()>(Tx.value<axis::X>());
+                    const device::label_t y = periodic_index<-VelocitySet::template c<int, axis::Y>(q_i<i + 1>()), block::ny()>(Tx.value<axis::Y>());
+                    const device::label_t z = periodic_index<-VelocitySet::template c<int, axis::Z>(q_i<i + 1>()), block::nz()>(Tx.value<axis::Z>());
                     pop[q_i<i + 1>()] = s_pop[q_i<i * block::stride()>() + block::idx(x, y, z)];
                 });
         }
 
         /**
          * @overload Accepts a thread::array for shared memory storage
-         */
+         **/
         template <class VelocitySet, const host::label_t N>
         __device__ static inline void pull(
             thread::array<scalar_t, VelocitySet::Q()> &pop,
