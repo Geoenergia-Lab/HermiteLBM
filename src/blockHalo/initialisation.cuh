@@ -139,7 +139,7 @@ namespace LBM
                 }
             }
 
-            if (Q == lattice<19>::Q())
+            if (Q == lattice<27>::Q())
             {
                 if (thermalModel == thermalModel_t::Thermal)
                 {
