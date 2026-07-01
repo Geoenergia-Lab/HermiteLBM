@@ -54,32 +54,6 @@ SourceFiles
 
 namespace LBM
 {
-    namespace constants
-    {
-        struct D3Q19
-        {
-            /**
-             * @brief Get number of discrete velocity directions
-             * @return 19 (number of directions in D3Q19 lattice)
-             **/
-            template <typename T = host::label_t>
-            __device__ __host__ [[nodiscard]] static inline consteval T Q() noexcept
-            {
-                return 19;
-            }
-
-            /**
-             * @brief Get number of velocity components on a lattice face
-             * @return 5 (number of directions crossing each face in D3Q19)
-             **/
-            template <typename T = host::label_t>
-            __device__ __host__ [[nodiscard]] static inline consteval T QF() noexcept
-            {
-                return 5;
-            }
-        };
-    }
-
     /**
      * @class D3Q19
      * @brief Implements the D3Q19 velocity set for 3D Lattice Boltzmann simulations
@@ -93,195 +67,10 @@ namespace LBM
      * - Equilibrium distribution functions
      **/
     template <const thermalModel_t ThermalModel>
-    class D3Q19 : private velocitySet
+    class D3Q19 : public velocitySet<19>, public thermalModelBase<ThermalModel>
     {
     public:
-        using vs = constants::D3Q19;
-
-        /**
-         * @brief Default constructor (consteval)
-         **/
-        __device__ __host__ [[nodiscard]] inline consteval D3Q19() {}
-
-        /**
-         * @brief Get the thermal model of the velocity set
-         **/
-        __device__ __host__ [[nodiscard]] static inline consteval thermalModel_t thermalModel() noexcept
-        {
-            return ThermalModel;
-        }
-
-        /**
-         * @brief Get number of discrete velocity directions
-         * @return 19 (number of directions in D3Q19 lattice)
-         **/
-        template <typename T = host::label_t>
-        __device__ __host__ [[nodiscard]] static inline consteval T Q() noexcept
-        {
-            return vs::Q<T>();
-        }
-
-        /**
-         * @brief Get number of velocity components on a lattice face
-         * @return 5 (number of directions crossing each face in D3Q19)
-         **/
-        template <typename T = host::label_t>
-        __device__ __host__ [[nodiscard]] static inline consteval T QF() noexcept
-        {
-            return vs::QF<T>();
-        }
-
-        /**
-         * @brief Get weight for stationary component (q=0)
-         **/
-        template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval T w_0() noexcept
-        {
-            return static_cast<T>(static_cast<double>(1) / static_cast<double>(3));
-        }
-
-        /**
-         * @brief Get weight for orthogonal directions (q=1-6)
-         **/
-        template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval T w_1() noexcept
-        {
-            return static_cast<T>(static_cast<double>(1) / static_cast<double>(18));
-        }
-
-        /**
-         * @brief Get weight for diagonal directions (q=7-18)
-         **/
-        template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval T w_2() noexcept
-        {
-            return static_cast<T>(static_cast<double>(1) / static_cast<double>(36));
-        }
-
-        /**
-         * @brief Get all weights for device computation
-         * @return Thread array of 19 weights in D3Q19 order
-         **/
-        template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, vs::Q()> w_q() noexcept
-        {
-            return {w_0<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>()};
-        }
-
-        /**
-         * @brief Get weight for specific direction
-         * @tparam q_ Direction index (0-18)
-         * @param[in] q Direction index as compile-time constant
-         * @return Weight for specified direction
-         **/
-        template <typename T, const device::label_t q_>
-        __device__ __host__ [[nodiscard]] static inline consteval T w_q(const q_i<q_> q) noexcept
-        {
-            // Return the component
-            return w_q<T>()[q];
-        }
-
-        /**
-         * @brief Get x-components for all directions (device version)
-         * @return Thread array of 19 x-velocity components
-         **/
-        template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, vs::Q()> cx() noexcept
-        {
-            return {static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0)};
-        }
-
-        /**
-         * @brief Get x-component for specific direction
-         * @tparam q_ Direction index (0-18)
-         * @param[in] q Direction index as compile-time constant
-         * @return x-component for specified direction
-         **/
-        template <typename T, const device::label_t q_>
-        __device__ __host__ [[nodiscard]] static inline consteval T cx(const q_i<q_> q) noexcept
-        {
-            // Return the component
-            return cx<T>()[q];
-        }
-
-        /**
-         * @brief Get y-components for all directions (device version)
-         * @return Thread array of 19 y-velocity components
-         **/
-        template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, vs::Q()> cy() noexcept
-        {
-            return {static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1)};
-        }
-
-        /**
-         * @brief Get y-component for specific direction
-         * @tparam q_ Direction index (0-18)
-         * @param[in] q Direction index as compile-time constant
-         * @return y-component for specified direction
-         **/
-        template <typename T, const device::label_t q_>
-        __device__ __host__ [[nodiscard]] static inline consteval T cy(const q_i<q_> q) noexcept
-        {
-            // Return the component
-            return cy<T>()[q];
-        }
-
-        /**
-         * @brief Get z-components for all directions (device version)
-         * @return Thread array of 19 z-velocity components
-         **/
-        template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, vs::Q()> cz() noexcept
-        {
-            return {static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1)};
-        }
-
-        /**
-         * @brief Get z-component for specific direction
-         * @tparam q_ Direction index (0-18)
-         * @param[in] q Direction index as compile-time constant
-         * @return z-component for specified direction
-         **/
-        template <typename T, const device::label_t q_>
-        __device__ __host__ [[nodiscard]] static inline consteval T cz(const q_i<q_> q) noexcept
-        {
-            // Return the component
-            return cz<T>()[q];
-        }
-
-        /**
-         * @brief Get alpha-components for all directions
-         * @tparam alpha The axis direction (X, Y, Z or NULL)
-         * @return Thread array of 19 alpha-velocity components
-         **/
-        template <typename T, const axis::type alpha>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, vs::Q()> c() noexcept
-        {
-            axis::assertions::validate<alpha, axis::CAN_BE_NULL>();
-
-            if constexpr (alpha == axis::NO_DIRECTION)
-            {
-                thread::array<T, vs::Q()> result;
-                for (host::label_t i = 0; i < vs::Q(); i++)
-                {
-                    result[i] = 1;
-                }
-                return result;
-            }
-            if constexpr (alpha == axis::X)
-            {
-                return cx<T>();
-            }
-            if constexpr (alpha == axis::Y)
-            {
-                return cy<T>();
-            }
-            if constexpr (alpha == axis::Z)
-            {
-                return cz<T>();
-            }
-        }
+        using Base = velocitySet<19>;
 
         /**
          * @brief Reconstruct population distribution from moments (in-place)
@@ -289,9 +78,7 @@ namespace LBM
          * @param[in] moments Moment array (rho, U, Pi)
          **/
         template <const bool CalculateRest = true>
-        __device__ __host__ static inline void reconstruct(
-            thread::array<scalar_t, vs::Q()> &pop,
-            const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ __host__ static inline void reconstruct(thread::array<scalar_t, Base::Q()> &pop, const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
             if constexpr (ThermalModel)
             {
@@ -367,47 +154,16 @@ namespace LBM
          * @param[in] moments Moment array (rho, U, Pi)
          * @return Population array with 19 components
          **/
-        __device__ __host__ [[nodiscard]] static inline thread::array<scalar_t, vs::Q()> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ __host__ [[nodiscard]] static inline thread::array<scalar_t, Base::Q()> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
-            thread::array<scalar_t, vs::Q()> pop;
+            thread::array<scalar_t, Base::Q()> pop;
 
             reconstruct(pop, moments);
 
             return pop;
         }
 
-        /**
-         * @brief Print velocity set information to terminal
-         **/
-        __host__ static void print() noexcept
-        {
-            std::cout << "D3Q19 {w, cx, cy, cz}:" << std::endl;
-            std::cout << "{" << std::endl;
-            printAll();
-            std::cout << "};" << std::endl;
-            std::cout << std::endl;
-        }
-
     private:
-        /**
-         * @brief Implementation of the print loop
-         * @note This function effectively unrolls the loop at compile-time and checks for its bounds
-         **/
-        template <const device::label_t q_ = 0>
-        __host__ static inline void printAll(const q_i<q_> q = q_i<0>()) noexcept
-        {
-            // Loop over the velocity set, print to terminal
-            host::constexpr_for<q(), vs::Q()>(
-                [&](const auto i)
-                {
-                    std::cout
-                        << "    {w, cx, cy, cz}[" << q_i<i>() << "] = {"
-                        << w_q<double>()[q_i<i>()] << ", "
-                        << velocitySet::c<cx<int>()[q_i<i>()]>() << ", "
-                        << velocitySet::c<cy<int>()[q_i<i>()]>() << ", "
-                        << velocitySet::c<cz<int>()[q_i<i>()]>() << "};" << std::endl;
-                });
-        }
     };
 }
 

@@ -126,7 +126,7 @@ namespace LBM
             block::sync();
 
             // Save the halo
-            if (Q == constants::D3Q19::Q())
+            if (Q == lattice<19>::Q())
             {
                 if (thermalModel == thermalModel_t::Thermal)
                 {
@@ -139,7 +139,7 @@ namespace LBM
                 }
             }
 
-            if (Q == constants::D3Q27::Q())
+            if (Q == lattice<19>::Q())
             {
                 if (thermalModel == thermalModel_t::Thermal)
                 {
