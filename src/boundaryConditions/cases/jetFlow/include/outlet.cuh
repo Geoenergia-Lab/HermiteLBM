@@ -60,10 +60,10 @@ case normalVector::FRONT():
 
     if constexpr (VelocitySet::Q() == 19)
     {
-        const scalar_t mxx_I = (pop[q_i<1>()] + pop[q_i<2>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<9>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<16>()]) * inv_rho_I - velocitySet::cs2<scalar_t>();
+        const scalar_t mxx_I = (pop[q_i<1>()] + pop[q_i<2>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<9>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<16>()]) * inv_rho_I - velocitySetBase::cs2<scalar_t>();
         const scalar_t mxy_I = (pop[q_i<7>()] + pop[q_i<8>()] - pop[q_i<13>()] - pop[q_i<14>()]) * inv_rho_I;
         const scalar_t mxz_I = (pop[q_i<9>()] - pop[q_i<16>()]) * inv_rho_I;
-        const scalar_t myy_I = (pop[q_i<3>()] + pop[q_i<4>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<11>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<18>()]) * inv_rho_I - velocitySet::cs2<scalar_t>();
+        const scalar_t myy_I = (pop[q_i<3>()] + pop[q_i<4>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<11>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<18>()]) * inv_rho_I - velocitySetBase::cs2<scalar_t>();
         const scalar_t myz_I = (pop[q_i<11>()] - pop[q_i<18>()]) * inv_rho_I;
 
         // IRBC-Neumann
@@ -76,10 +76,10 @@ case normalVector::FRONT():
     }
     else
     {
-        const scalar_t mxx_I = (pop[q_i<1>()] + pop[q_i<2>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<9>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<16>()] + pop[q_i<19>()] + pop[q_i<22>()] + pop[q_i<23>()] + pop[q_i<25>()]) * inv_rho_I - velocitySet::cs2<scalar_t>();
+        const scalar_t mxx_I = (pop[q_i<1>()] + pop[q_i<2>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<9>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<16>()] + pop[q_i<19>()] + pop[q_i<22>()] + pop[q_i<23>()] + pop[q_i<25>()]) * inv_rho_I - velocitySetBase::cs2<scalar_t>();
         const scalar_t mxy_I = (pop[q_i<7>()] + pop[q_i<8>()] - pop[q_i<13>()] - pop[q_i<14>()] + pop[q_i<19>()] + pop[q_i<22>()] - pop[q_i<23>()] - pop[q_i<25>()]) * inv_rho_I;
         const scalar_t mxz_I = (pop[q_i<9>()] - pop[q_i<16>()] + pop[q_i<19>()] - pop[q_i<22>()] + pop[q_i<23>()] - pop[q_i<25>()]) * inv_rho_I;
-        const scalar_t myy_I = (pop[q_i<3>()] + pop[q_i<4>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<11>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<18>()] + pop[q_i<19>()] + pop[q_i<22>()] + pop[q_i<23>()] + pop[q_i<25>()]) * inv_rho_I - velocitySet::cs2<scalar_t>();
+        const scalar_t myy_I = (pop[q_i<3>()] + pop[q_i<4>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<11>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<18>()] + pop[q_i<19>()] + pop[q_i<22>()] + pop[q_i<23>()] + pop[q_i<25>()]) * inv_rho_I - velocitySetBase::cs2<scalar_t>();
         const scalar_t myz_I = (pop[q_i<11>()] - pop[q_i<18>()] + pop[q_i<19>()] - pop[q_i<22>()] - pop[q_i<23>()] + pop[q_i<25>()]) * inv_rho_I;
 
         // IRBC-Neumann

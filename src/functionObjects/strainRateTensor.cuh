@@ -80,11 +80,11 @@ namespace LBM
 
                 if constexpr (Index == index::xx || Index == index::yy || Index == index::zz)
                 {
-                    return velocitySet::as2<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / (static_cast<scalar_t>(2) * velocitySet::scale_ii<scalar_t>() * device::tau);
+                    return velocitySetBase::as2<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / (static_cast<scalar_t>(2) * velocitySetBase::scale_ii<scalar_t>() * device::tau);
                 }
                 else
                 {
-                    return velocitySet::as2<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / (static_cast<scalar_t>(2) * velocitySet::scale_ij<scalar_t>() * device::tau);
+                    return velocitySetBase::as2<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / (static_cast<scalar_t>(2) * velocitySetBase::scale_ij<scalar_t>() * device::tau);
                 }
             }
 
