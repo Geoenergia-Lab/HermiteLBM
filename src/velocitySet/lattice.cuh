@@ -100,12 +100,12 @@ namespace LBM
         {
             if constexpr (Q_ == 27)
             {
-                return static_cast<T>(static_cast<double>(1) / static_cast<double>(36));
+                return static_cast<T>(static_cast<double>(1) / static_cast<double>(54));
             }
 
             if constexpr (Q_ == 19)
             {
-                return static_cast<T>(static_cast<double>(1) / static_cast<double>(3));
+                return static_cast<T>(static_cast<double>(1) / static_cast<double>(36));
             }
         }
 
