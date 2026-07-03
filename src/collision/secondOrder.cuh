@@ -92,19 +92,40 @@ namespace LBM
          **/
         __device__ static inline void collide(thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
-            // Velocity updates are removed since force terms are zero
             // Diagonal moment updates (remove force terms)
-            moments[m_i<4>()] = device::t_omegaVar * moments[m_i<4>()] + device::omegaVar_d2 * (moments[m_i<1>()]) * (moments[m_i<1>()]);
-            moments[m_i<7>()] = device::t_omegaVar * moments[m_i<7>()] + device::omegaVar_d2 * (moments[m_i<2>()]) * (moments[m_i<2>()]);
-            moments[m_i<9>()] = device::t_omegaVar * moments[m_i<9>()] + device::omegaVar_d2 * (moments[m_i<3>()]) * (moments[m_i<3>()]);
+            moments[m_i<4>()] = collide(moments[m_i<1>()], moments[m_i<4>()]);
+            moments[m_i<7>()] = collide(moments[m_i<2>()], moments[m_i<7>()]);
+            moments[m_i<9>()] = collide(moments[m_i<3>()], moments[m_i<9>()]);
 
             // Off-diagonal moment updates (remove force terms)
-            moments[m_i<5>()] = device::t_omegaVar * moments[m_i<5>()] + device::omega * (moments[m_i<1>()]) * (moments[m_i<2>()]);
-            moments[m_i<6>()] = device::t_omegaVar * moments[m_i<6>()] + device::omega * (moments[m_i<1>()]) * (moments[m_i<3>()]);
-            moments[m_i<8>()] = device::t_omegaVar * moments[m_i<8>()] + device::omega * (moments[m_i<2>()]) * (moments[m_i<3>()]);
+            moments[m_i<5>()] = collide(moments[m_i<1>()], moments[m_i<2>()], moments[m_i<5>()]);
+            moments[m_i<6>()] = collide(moments[m_i<1>()], moments[m_i<3>()], moments[m_i<6>()]);
+            moments[m_i<8>()] = collide(moments[m_i<2>()], moments[m_i<3>()], moments[m_i<8>()]);
         }
 
     private:
+        /**
+         * @brief Collision helper for diagonal moments
+         * @param u_AlphaBeta Velocity component in the alpha-beta direction
+         * @param m_AlphaBeta Moment component in the alpha-beta direction
+         * @return Updated moment after collision
+         **/
+        __device__ static inline scalar_t collide(const scalar_t u_AlphaBeta, const scalar_t m_AlphaBeta) noexcept
+        {
+            return (device::t_omegaVar * m_AlphaBeta) + (device::omegaVar_d2 * (u_AlphaBeta * u_AlphaBeta));
+        }
+
+        /**
+         * @brief Collision helper for off-diagonal moments
+         * @param u_Alpha Velocity component in the alpha direction
+         * @param u_Beta Velocity component in the beta direction
+         * @param m_AlphaBeta Moment component in the alpha-beta direction
+         * @return Updated moment after collision
+         **/
+        __device__ static inline scalar_t collide(const scalar_t u_Alpha, const scalar_t u_Beta, const scalar_t m_AlphaBeta) noexcept
+        {
+            return (device::t_omegaVar * m_AlphaBeta) + (device::omega * (u_Alpha * u_Beta));
+        }
     };
 }
 
