@@ -57,7 +57,7 @@ if (!(boundaryNormal.isBack() || boundaryNormal.isFront()))
     return;
 }
 
-const scalar_t rho_I = velocitySet<VelocitySet::Q()>::template calculate_moment<VelocitySet, axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
+const scalar_t rho_I = VelocitySet::template calculate_moment<axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
 const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 const device::label_t tid = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), block::nz() - 2);
 
@@ -87,8 +87,8 @@ case normalVector::BACK():
     {
         // const scalar_t is_jet = static_cast<scalar_t>(rms_sq(point.value<axis::X, scalar_t>() - center_x(), point.value<axis::Y, scalar_t>() - center_y()) <= r2());
 
-        const scalar_t mxz_I = velocitySet<VelocitySet::Q()>::template calculate_moment<VelocitySet, axis::X, axis::Z>(pop, boundaryNormal) * inv_rho_I;
-        const scalar_t myz_I = velocitySet<VelocitySet::Q()>::template calculate_moment<VelocitySet, axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
+        const scalar_t mxz_I = VelocitySet::template calculate_moment<axis::X, axis::Z>(pop, boundaryNormal) * inv_rho_I;
+        const scalar_t myz_I = VelocitySet::template calculate_moment<axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
 
         // const scalar_t A = static_cast<scalar_t>(3) * (device::U_Back[2] * (device::U_Back[2] * device::U_Back[2]));
 
@@ -118,8 +118,8 @@ case normalVector::BACK():
     else
     {
         // const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(point.value<axis::X>()) - center_x()) * (static_cast<scalar_t>(point.value<axis::X>()) - center_x()) + (static_cast<scalar_t>(point.value<axis::Y>()) - center_y()) * (static_cast<scalar_t>(point.value<axis::Y>()) - center_y()) < r2());
-        const scalar_t mxz_I = velocitySet<VelocitySet::Q()>::template calculate_moment<VelocitySet, axis::X, axis::Z>(pop, boundaryNormal) * inv_rho_I;
-        const scalar_t myz_I = velocitySet<VelocitySet::Q()>::template calculate_moment<VelocitySet, axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
+        const scalar_t mxz_I = VelocitySet::template calculate_moment<axis::X, axis::Z>(pop, boundaryNormal) * inv_rho_I;
+        const scalar_t myz_I = VelocitySet::template calculate_moment<axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
 
         const scalar_t rho = rho0();
         const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;

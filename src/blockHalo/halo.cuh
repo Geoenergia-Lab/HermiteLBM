@@ -103,7 +103,7 @@ namespace LBM
              **/
             __device__ static inline constexpr void save(
                 thread::array<scalar_t, VelocitySet::Q()> &pop,
-                const thread::array<scalar_t, 10> &moments,
+                const thread::array<scalar_t, NUMBER_MOMENTS<host::label_t>()> &moments,
                 const device::ptrCollection<6, scalar_t> &writeBuffer,
                 const thread::coordinate &Tx,
                 const block::coordinate &Bx,
@@ -157,7 +157,7 @@ namespace LBM
 
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
-                return static_cast<device::label_t>(velocitySet<VelocitySet::Q()>::template indices_on_face<alpha, coeff>()[i]);
+                return static_cast<device::label_t>(VelocitySet::template indices_on_face<alpha, coeff>()[i]);
             }
 
             /**
