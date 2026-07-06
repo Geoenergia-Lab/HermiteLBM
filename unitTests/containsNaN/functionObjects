@@ -11,11 +11,13 @@
 
 functionObjectList
 {
+    // rhoMean;
+    // UMean;
+    // PiMean;
     // S;
     // SMean;
     // k;
     // kMean;
-    // momentsMean;
 };
 
 \*---------------------------------------------------------------------------*/

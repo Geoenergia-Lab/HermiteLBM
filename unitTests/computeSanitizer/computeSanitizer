@@ -6,7 +6,7 @@
 # Github: https://github.com/Geoenergia-Lab/HermiteLBM                        #
 #                                                                             #
 # --------------------------------------------------------------------------- #
-# Full compute-sanitizer unit test                                            #
+# Full compute-sanitizer unit test (all solver executables)                   #
 # --------------------------------------------------------------------------- #
 
 #!/bin/bash
@@ -15,12 +15,16 @@
 unset DEVICES_OUTPUT CLEAN_DEVICES GPUS COMMON_FLAGS TOOLS TIMESTAMP LOG_DIR
 unset RESULTS FAILED_TESTS SKIPPED_TESTS GPU TOOL TEST_NAME LOG_FILE EXIT_CODE
 unset TOTAL_TESTS FAILED_COUNT SKIPPED_COUNT PASSED_COUNT EXIT_STATUS
+unset EXEC EXECS
 
 # Source the environment
 source ../../bashrc
 
+# All solver executables to test
+EXECS=("momentBasedD3Q19" "momentBasedD3Q27" "isothermalD3Q19" "isothermalD3Q27")
+
 # Check that required executables exist
-if notFound momentBasedD3Q27 computeVersion; then
+if notFound "${EXECS[@]}" computeVersion; then
     printf "HERMITELBM_CUDA_DIR is not set or has not been built. Please run \"source bashrc\" in the project directory first\n" >&2
     return 1 2>/dev/null || exit 1
 fi
@@ -41,6 +45,7 @@ if [ "$DEVICES_OUTPUT" = "()" ]; then
     unset DEVICES_OUTPUT CLEAN_DEVICES GPUS COMMON_FLAGS TOOLS TIMESTAMP LOG_DIR
     unset RESULTS FAILED_TESTS SKIPPED_TESTS GPU TOOL TEST_NAME LOG_FILE EXIT_CODE
     unset TOTAL_TESTS FAILED_COUNT SKIPPED_COUNT PASSED_COUNT EXIT_STATUS
+    unset EXEC EXECS
     return 1 2>/dev/null || exit 1
 else
     # Remove parentheses and convert to array
@@ -78,34 +83,40 @@ printf "\n"
 for GPU in "${GPUS[@]}"; do
     printf "    GPU %d:\n" "$GPU"
     printf "    {\n"
-    for TOOL in "${TOOLS[@]}"; do
-        TEST_NAME="${TOOL}"
-        LOG_FILE="$LOG_DIR/${TEST_NAME}_GPU${GPU}.log"
-        
-        printf "        %s:" "$TEST_NAME"
-        
-        # Clean case and run test, capturing output and exit code
-        cleanCase
-        compute-sanitizer --tool="$TOOL" $COMMON_FLAGS momentBasedD3Q27 -GPU "$GPU" > "$LOG_FILE" 2>&1
-        EXIT_CODE=$?
-        
-        # Store result based on exit code
-        case $EXIT_CODE in
-            0)
-                RESULTS+=("$TEST_NAME on GPU $GPU: PASS")
-                printf " PASS\n"
-                ;;
-            101)
-                RESULTS+=("$TEST_NAME on GPU $GPU: SKIPPED (NO GPU)")
-                SKIPPED_TESTS+=("$TEST_NAME on GPU $GPU")
-                printf " SKIPPED (NO GPU)\n"
-                ;;
-            *)
-                RESULTS+=("$TEST_NAME on GPU $GPU: FAIL (exit code: $EXIT_CODE)")
-                FAILED_TESTS+=("$TEST_NAME on GPU $GPU")
-                printf " FAIL (exit code: %d)\n" "$EXIT_CODE"
-                ;;
-        esac
+    for EXEC in "${EXECS[@]}"; do
+        printf "        %s:\n" "$EXEC"
+        printf "        {\n"
+        for TOOL in "${TOOLS[@]}"; do
+            TEST_NAME="${EXEC}_${TOOL}"
+            LOG_FILE="$LOG_DIR/${TEST_NAME}_GPU${GPU}.log"
+            
+            printf "            %s:" "$TOOL"
+            
+            # Clean case and run test, capturing output and exit code
+            cleanCase
+            compute-sanitizer --tool="$TOOL" $COMMON_FLAGS "$EXEC" -GPU "$GPU" > "$LOG_FILE" 2>&1
+            EXIT_CODE=$?
+            
+            # Store result based on exit code
+            case $EXIT_CODE in
+                0)
+                    RESULTS+=("$TEST_NAME on GPU $GPU: PASS")
+                    printf " PASS\n"
+                    ;;
+                101)
+                    RESULTS+=("$TEST_NAME on GPU $GPU: SKIPPED (NO GPU)")
+                    SKIPPED_TESTS+=("$TEST_NAME on GPU $GPU")
+                    printf " SKIPPED (NO GPU)\n"
+                    ;;
+                *)
+                    RESULTS+=("$TEST_NAME on GPU $GPU: FAIL (exit code: $EXIT_CODE)")
+                    FAILED_TESTS+=("$TEST_NAME on GPU $GPU")
+                    printf " FAIL (exit code: %d)\n" "$EXIT_CODE"
+                    ;;
+            esac
+        done
+        printf "        };\n"
+        printf "\n"
     done
     printf "    };\n"
     printf "\n"
@@ -167,6 +178,7 @@ fi
 unset DEVICES_OUTPUT CLEAN_DEVICES GPUS COMMON_FLAGS TOOLS TIMESTAMP LOG_DIR
 unset RESULTS FAILED_TESTS SKIPPED_TESTS GPU TOOL TEST_NAME LOG_FILE EXIT_CODE
 unset TOTAL_TESTS FAILED_COUNT SKIPPED_COUNT PASSED_COUNT
+unset EXEC EXECS
 
 # Use return instead of exit to avoid closing the terminal
 [[ "${BASH_SOURCE[0]}" != "${0}" ]] && return $EXIT_STATUS || exit $EXIT_STATUS

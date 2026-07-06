@@ -67,6 +67,16 @@ namespace LBM
     template <const thermalModel_t ThermalModel>
     class D3Q27 : public velocitySet<27, ThermalModel>
     {
+    public:
+        using Base = velocitySet<27, ThermalModel>;
+
+        /**
+         * @brief Determines the amount of shared memory required for a kernel based on the velocity set
+         **/
+        __device__ __host__ [[nodiscard]] static inline consteval host::label_t smem_alloc_size() noexcept
+        {
+            return block::sharedMemoryBufferSize<Base::Q(), NUMBER_MOMENTS<host::label_t>()>(sizeof(scalar_t));
+        }
     };
 }
 

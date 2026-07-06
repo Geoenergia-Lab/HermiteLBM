@@ -56,7 +56,7 @@ namespace LBM
     class lattice
     {
     public:
-        static_assert(((Q_ == 19) || (Q_ == 27)), "VelocitySet must be D3Q19 or D3Q27.");
+        static_assert(((Q_ == 19) || (Q_ == 27)), "Lattice velocity set must be D3Q19 or D3Q27.");
 
         /**
          * @brief Get weight for stationary component (q=0)
