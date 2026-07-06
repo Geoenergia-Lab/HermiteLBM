@@ -15,16 +15,16 @@ Re              10000;
 
 Ma              0.1;
 
-L_char          8;
+L_char          127;
 
 startFrom       latestTime;
 
 startTime       0;
 
-nTimeSteps      201;
+nTimeSteps      101;
 
-saveInterval    200;
+saveInterval    10000;
 
-infoInterval    20;
+infoInterval    1000;
 
 \*---------------------------------------------------------------------------*/

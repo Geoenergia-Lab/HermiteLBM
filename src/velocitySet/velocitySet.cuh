@@ -520,39 +520,4 @@ namespace LBM
 #include "D3Q19.cuh"
 #include "D3Q27.cuh"
 
-namespace LBM
-{
-    namespace assertions
-    {
-        namespace velocitySet
-        {
-            /**
-             * @brief Asserts that VelocitySet is a valid velocity set (D3Q19 or D3Q27)
-             * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
-             **/
-            template <class VelocitySet>
-            __device__ __host__ inline consteval void validate() noexcept
-            {
-                static_assert(((std::is_same_v<VelocitySet, D3Q19<Thermal>>) || (std::is_same_v<VelocitySet, D3Q27<Thermal>>) || (std::is_same_v<VelocitySet, D3Q19<Isothermal>>) || (std::is_same_v<VelocitySet, D3Q27<Isothermal>>)), "VelocitySet must be D3Q19 or D3Q27.");
-            }
-        }
-    }
-
-    /**
-     * @brief Determines the amount of shared memory required for a kernel based on the velocity set
-     **/
-    template <class VelocitySet>
-    __device__ __host__ [[nodiscard]] inline consteval host::label_t smem_alloc_size() noexcept
-    {
-        if constexpr ((std::is_same_v<VelocitySet, D3Q19<Thermal>>) || (std::is_same_v<VelocitySet, D3Q19<Isothermal>>))
-        {
-            return 0;
-        }
-        else
-        {
-            return block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<host::label_t>()>(sizeof(scalar_t));
-        }
-    }
-}
-
 #endif

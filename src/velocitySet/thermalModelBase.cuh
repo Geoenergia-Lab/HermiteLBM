@@ -65,6 +65,8 @@ namespace LBM
     class thermalModelBase
     {
     public:
+        static_assert(((ThermalModel == Thermal) || (ThermalModel == Isothermal)), "ThermalModel must be Thermal or Isothermal.");
+
         /**
          * @brief Get the thermal model of the velocity set
          **/

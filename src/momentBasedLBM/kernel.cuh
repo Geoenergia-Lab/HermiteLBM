@@ -313,9 +313,9 @@ namespace LBM
             const device::ptrCollection<6, scalar_t> writeBuffer,
             const device::label_t bzOffset)
         {
-            if constexpr ((std::is_same_v<VelocitySet, D3Q19<Thermal>>) || (std::is_same_v<VelocitySet, D3Q19<Isothermal>>))
+            if constexpr (VelocitySet::smem_alloc_size() == 0)
             {
-                __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<host::label_t>()>()> shared_buffer;
+                __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet::Q(), NUMBER_MOMENTS<host::label_t>()>()> shared_buffer;
 
                 detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer, bzOffset);
             }
@@ -352,7 +352,7 @@ namespace LBM
                 // Launch the kernels for the specified streams and block offsets
                 for (host::label_t idxStream : idxStreams)
                 {
-                    kernel::momentBasedLBM<<<mesh.gridBlock()[idxStream], host::latticeMesh::threadBlock(), smem_alloc_size<VelocitySet>(), programCtrl.streams()[device::idxStream(deviceIdx, idxStream)]>>>(
+                    kernel::momentBasedLBM<<<mesh.gridBlock()[idxStream], host::latticeMesh::threadBlock(), VelocitySet::smem_alloc_size(), programCtrl.streams()[device::idxStream(deviceIdx, idxStream)]>>>(
                         devPtrs[deviceIdx],
                         haloPtrs.readBuffer(deviceIdx, timeStep),
                         haloPtrs.writeBuffer(deviceIdx, timeStep),

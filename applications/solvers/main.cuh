@@ -83,7 +83,7 @@ int main(const int argc, const char *const argv[])
 
     host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.size() * 6, mesh);
 
-    programCtrl.configure<smem_alloc_size<VelocitySet>()>(kernel::momentBasedLBM);
+    programCtrl.configure<VelocitySet::smem_alloc_size()>(kernel::momentBasedLBM);
 
     objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, U, Pi, programCtrl);
 
