@@ -123,6 +123,19 @@ namespace LBM
             }
 
             /**
+             * @brief Addition operator
+             * @return The sum of the array and a constant of type T
+             **/
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator+(const T &A) const __restrict__ noexcept
+            {
+                return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
+                {
+                    return thread::array<T, N>{
+                        (data_[size_constant<Is>{}] + A)...};
+                }(std::make_index_sequence<N>{});
+            }
+
+            /**
              * @brief Subtraction operator
              * @return The subtraction of two arrays of the same type and size
              **/
@@ -132,6 +145,19 @@ namespace LBM
                 {
                     return thread::array<T, N>{
                         (data_[size_constant<Is>{}] - A[size_constant<Is>{}])...};
+                }(std::make_index_sequence<N>{});
+            }
+
+            /**
+             * @brief Subtraction operator
+             * @return The subtraction of the array and a constant of type T
+             **/
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator-(const T &A) const __restrict__ noexcept
+            {
+                return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
+                {
+                    return thread::array<T, N>{
+                        (data_[size_constant<Is>{}] - A)...};
                 }(std::make_index_sequence<N>{});
             }
 
@@ -149,6 +175,19 @@ namespace LBM
             }
 
             /**
+             * @brief Multiplication operator
+             * @return The product of the array and a constant of type T
+             **/
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator*(const T &A) const __restrict__ noexcept
+            {
+                return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
+                {
+                    return thread::array<T, N>{
+                        (data_[size_constant<Is>{}] * A)...};
+                }(std::make_index_sequence<N>{});
+            }
+
+            /**
              * @brief Division operator
              * @return The dot product of the first array and the inverse of the second, both of which are of the same type and size
              **/
@@ -158,6 +197,19 @@ namespace LBM
                 {
                     return thread::array<T, N>{
                         (data_[size_constant<Is>{}] / A[size_constant<Is>{}])...};
+                }(std::make_index_sequence<N>{});
+            }
+
+            /**
+             * @brief Division operator
+             * @return The dot product of the first array and the inverse of the second, both of which are of the same type and size
+             **/
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator/(const T &A) const __restrict__ noexcept
+            {
+                return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
+                {
+                    return thread::array<T, N>{
+                        (data_[size_constant<Is>{}] / A)...};
                 }(std::make_index_sequence<N>{});
             }
 
@@ -245,23 +297,43 @@ namespace LBM
             }
 
             /**
-             * @brief Computes the number of non-zero elements of an array
-             * @param[in] arr The input array
-             * @return Number of non-zero elements in the array
+             * @brief Computes the number of elements equal to a value in an array
+             * @tparam val The value to compare against
+             * @return Number of elements in the array equal to val
              **/
-            __device__ __host__ [[nodiscard]] inline consteval host::label_t number_non_zero() const noexcept
+            template <const T val, const bool Equal>
+            __device__ __host__ [[nodiscard]] inline consteval host::label_t count() const noexcept
             {
                 host::label_t n = 0;
 
                 for (host::label_t i = 0; i < N; i++)
                 {
-                    if (!(data_[i] == 0))
+                    if constexpr (Equal)
                     {
-                        n++;
+                        if (data_[i] == val)
+                        {
+                            n++;
+                        }
+                    }
+                    else
+                    {
+                        if (!(data_[i] == val))
+                        {
+                            n++;
+                        }
                     }
                 }
 
                 return n;
+            }
+
+            /**
+             * @brief Computes the number of non-zero elements of an array
+             * @return Number of non-zero elements in the array
+             **/
+            __device__ __host__ [[nodiscard]] inline consteval host::label_t number_non_zero() const noexcept
+            {
+                return count<0, false>();
             }
 
             /**
@@ -334,6 +406,12 @@ namespace LBM
             }
         };
     }
+
+    /**
+     * @brief Type alias for a thread array of scalar_t with size equal to the number of moments
+     * @note This alias simplifies the declaration of moment arrays in the code
+     **/
+    using momentsArray = thread::array<scalar_t, NUMBER_MOMENTS<host::label_t>()>;
 }
 
 #endif

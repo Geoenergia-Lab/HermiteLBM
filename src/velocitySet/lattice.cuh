@@ -55,8 +55,80 @@ namespace LBM
     template <const host::label_t Q_>
     class lattice
     {
+        using This = lattice<Q_>;
+
+    private:
+        /**
+         * @brief Valid lattice velocity set sizes (D3Q7, D3Q19, D3Q27)
+         * @tparam T The underlying type of the array
+         **/
+        template <typename T>
+        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, 3> validQ() noexcept
+        {
+            return {static_cast<T>(7), static_cast<T>(19), static_cast<T>(27)};
+        }
+
+        /**
+         * @brief Checks if the provided lattice velocity set size is valid (D3Q7, D3Q19, D3Q27)
+         * @param[in] Q The lattice velocity set size to check
+         * @return True if the provided lattice velocity set size is valid, false otherwise
+         **/
+        __device__ __host__ [[nodiscard]] static inline consteval bool isValidQ(const host::label_t Q) noexcept
+        {
+            for (host::label_t i = 0; i < validQ<host::label_t>().size(); i++)
+            {
+                if (Q == validQ<host::label_t>()[i])
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
     public:
-        static_assert(((Q_ == 19) || (Q_ == 27)), "Lattice velocity set must be D3Q19 or D3Q27.");
+        static_assert(isValidQ(Q_), "Lattice velocity set must be D3Q7, D3Q19 or D3Q27.");
+
+        /**
+         * @brief Returns the number of unique weights in the velocity set
+         * @return The number of unique weights in the velocity set
+         **/
+        __device__ __host__ static inline consteval host::label_t nPerm() noexcept
+        {
+            return static_cast<host::label_t>(1) + static_cast<host::label_t>(Q_ > 7) + static_cast<host::label_t>(Q_ > 19);
+        }
+
+        /**
+         * @brief Calculates the weighted density for each population based on the total density
+         * @param[in] rho The total density
+         * @return An array of weighted densities for the populations
+         **/
+        __device__ __host__ static inline constexpr const thread::array<const scalar_t, This::nPerm()> rhow(const scalar_t rho) noexcept
+        {
+            if constexpr (Q_ == 7)
+            {
+                return {rho * This::template w_1<scalar_t>()};
+            }
+            if constexpr (Q_ == 19)
+            {
+                return {rho * This::template w_1<scalar_t>(), rho * This::template w_2<scalar_t>()};
+            }
+            if constexpr (Q_ == 27)
+            {
+                return {rho * This::template w_1<scalar_t>(), rho * This::template w_2<scalar_t>(), rho * This::template w_3<scalar_t>()};
+            }
+        }
+
+        /**
+         * @brief Calculates the weighted density for a specific population index
+         * @tparam i The population index
+         * @param[in] rho_w The array of weighted densities for the populations
+         * @return The weighted density for the specified population index
+         **/
+        template <const host::label_t i>
+        __device__ __host__ static inline constexpr scalar_t rhow(const thread::array<const scalar_t, This::nPerm()> &rho_w) noexcept
+        {
+            return rho_w[m_i<static_cast<host::label_t>(i >= 7) + static_cast<host::label_t>(i >= 19)>()];
+        }
 
         /**
          * @brief Get weight for stationary component (q=0)
@@ -133,7 +205,7 @@ namespace LBM
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, Q_> w_q() noexcept
         {
-            return make_first_n<T>(w_impl<T>());
+            return make_first_Q<T>(w_impl<T>());
         }
 
         /**
@@ -144,7 +216,7 @@ namespace LBM
         template <typename T, const axis::type alpha>
         __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, Q_> c() noexcept
         {
-            return make_first_n<T>(c_base_impl<T, alpha>());
+            return make_first_Q<T>(c_base_impl<T, alpha>());
         }
 
         /**
@@ -174,15 +246,7 @@ namespace LBM
         template <typename T = host::label_t>
         __device__ __host__ [[nodiscard]] static inline consteval T QF() noexcept
         {
-            if constexpr (Q_ == 27)
-            {
-                return 9;
-            }
-
-            if constexpr (Q_ == 19)
-            {
-                return 5;
-            }
+            return make_first_Q<int>(cx_base<int>()).template count<1, true>();
         }
 
     private:
@@ -193,7 +257,34 @@ namespace LBM
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, 27> cx_base() noexcept
         {
-            return {static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(-1), static_cast<T>(1)};
+            return {
+                static_cast<T>(0),  // 0
+                static_cast<T>(1),  // 1
+                static_cast<T>(-1), // 2
+                static_cast<T>(0),  // 3
+                static_cast<T>(0),  // 4
+                static_cast<T>(0),  // 5
+                static_cast<T>(0),  // 6
+                static_cast<T>(1),  // 7
+                static_cast<T>(-1), // 8
+                static_cast<T>(1),  // 9
+                static_cast<T>(-1), // 10
+                static_cast<T>(0),  // 11
+                static_cast<T>(0),  // 12
+                static_cast<T>(1),  // 13
+                static_cast<T>(-1), // 14
+                static_cast<T>(1),  // 15
+                static_cast<T>(-1), // 16
+                static_cast<T>(0),  // 17
+                static_cast<T>(0),  // 18
+                static_cast<T>(1),  // 19
+                static_cast<T>(-1), // 20
+                static_cast<T>(1),  // 21
+                static_cast<T>(-1), // 22
+                static_cast<T>(1),  // 23
+                static_cast<T>(-1), // 24
+                static_cast<T>(-1), // 25
+                static_cast<T>(1)}; // 26
         }
 
         /**
@@ -203,7 +294,34 @@ namespace LBM
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, 27> cy_base() noexcept
         {
-            return {static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(1), static_cast<T>(-1)};
+            return {
+                static_cast<T>(0),   // 0
+                static_cast<T>(0),   // 1
+                static_cast<T>(0),   // 2
+                static_cast<T>(1),   // 3
+                static_cast<T>(-1),  // 4
+                static_cast<T>(0),   // 5
+                static_cast<T>(0),   // 6
+                static_cast<T>(1),   // 7
+                static_cast<T>(-1),  // 8
+                static_cast<T>(0),   // 9
+                static_cast<T>(0),   // 10
+                static_cast<T>(1),   // 11
+                static_cast<T>(-1),  // 12
+                static_cast<T>(-1),  // 13
+                static_cast<T>(1),   // 14
+                static_cast<T>(0),   // 15
+                static_cast<T>(0),   // 16
+                static_cast<T>(1),   // 17
+                static_cast<T>(-1),  // 18
+                static_cast<T>(1),   // 19
+                static_cast<T>(-1),  // 20
+                static_cast<T>(1),   // 21
+                static_cast<T>(-1),  // 22
+                static_cast<T>(-1),  // 23
+                static_cast<T>(1),   // 24
+                static_cast<T>(1),   // 25
+                static_cast<T>(-1)}; // 26
         }
 
         /**
@@ -213,22 +331,69 @@ namespace LBM
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, 27> cz_base() noexcept
         {
-            return {static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1)};
+            return {
+                static_cast<T>(0),   // 0
+                static_cast<T>(0),   // 1
+                static_cast<T>(0),   // 2
+                static_cast<T>(0),   // 3
+                static_cast<T>(0),   // 4
+                static_cast<T>(1),   // 5
+                static_cast<T>(-1),  // 6
+                static_cast<T>(0),   // 7
+                static_cast<T>(0),   // 8
+                static_cast<T>(1),   // 9
+                static_cast<T>(-1),  // 10
+                static_cast<T>(1),   // 11
+                static_cast<T>(-1),  // 12
+                static_cast<T>(0),   // 13
+                static_cast<T>(0),   // 14
+                static_cast<T>(-1),  // 15
+                static_cast<T>(1),   // 16
+                static_cast<T>(-1),  // 17
+                static_cast<T>(1),   // 18
+                static_cast<T>(1),   // 19
+                static_cast<T>(-1),  // 20
+                static_cast<T>(-1),  // 21
+                static_cast<T>(1),   // 22
+                static_cast<T>(1),   // 23
+                static_cast<T>(-1),  // 24
+                static_cast<T>(1),   // 25
+                static_cast<T>(-1)}; // 26
+        }
+
+        /**
+         * @brief Generic function to return the first N values of an array of arbitrary size
+         * @tparam T The fundamental type of the underlying array
+         * @tparam N The number of elements to return
+         * @tparam M The size of the input array
+         * @param[in] arr The input array of size M
+         * @return A thread::array containing the first N elements of the input array
+         **/
+        template <typename T, const host::label_t N, const host::label_t M>
+        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, N> make_first_N(const thread::array<T, M> &arr) noexcept
+        {
+            return [&]<std::size_t... Is>(std::index_sequence<Is...>)
+            {
+                // arr[Is]... expands to arr[0], arr[1], ..., arr[N-1]
+                return thread::array<T, N>{arr[Is]...};
+            }(std::make_index_sequence<N>{});
+            // thread::array<T, N> result;
+            // for (host::label_t i = 0; i < N; i++)
+            // {
+            //     result[i] = arr[i];
+            // }
+            // return result;
         }
 
         /**
          * @brief Returns the first Q_ elements of an arbitrary array
          * @tparam Fundamental type of the underlying array
+         * @return A thread::array containing the first Q_ elements of the input array
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, Q_> make_first_n(const thread::array<T, 27> &arr) noexcept
+        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, Q_> make_first_Q(const thread::array<T, 27> &arr) noexcept
         {
-            thread::array<T, Q_> result;
-            for (host::label_t i = 0; i < Q_; i++)
-            {
-                result[i] = arr[i];
-            }
-            return result;
+            return make_first_N<T, Q_>(arr);
         }
 
         /**
