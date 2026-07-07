@@ -183,7 +183,7 @@ namespace LBM
          * @brief Calculates the diagonal correction term for the isothermal velocity set
          * @param[in] moments Moment array (rho, U, Pi)
          **/
-        __device__ __host__ [[nodiscard]] static inline constexpr const thread::array<const scalar_t, 3> diagonalTerm(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ __host__ [[nodiscard]] static inline constexpr const thread::array<const scalar_t, 3> diagonalTerm(const momentsArray &moments) noexcept
         {
             const scalar_t Delta_m = (moments[q_i<1>()] * moments[q_i<1>()] + moments[q_i<2>()] * moments[q_i<2>()] + moments[q_i<3>()] * moments[q_i<3>()] - moments[q_i<4>()] - moments[q_i<7>()] - moments[q_i<9>()]) / static_cast<scalar_t>(3);
 

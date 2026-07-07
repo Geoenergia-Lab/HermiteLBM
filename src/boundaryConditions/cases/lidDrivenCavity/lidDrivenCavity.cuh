@@ -98,7 +98,7 @@ namespace LBM
         template <class VelocitySet, class SharedBuffer>
         __device__ static inline constexpr void calculate_moments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
-            thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
+            momentsArray &moments,
             const normalVector &boundaryNormal,
             [[maybe_unused]] const SharedBuffer &shared_buffer,
             [[maybe_unused]] const thread::coordinate &Tx,
