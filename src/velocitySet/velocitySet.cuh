@@ -69,11 +69,12 @@ namespace LBM
      * different velocity set configurations in the Lattice Boltzmann Method.
      **/
     template <const host::label_t Q_, const thermalModel_t ThermalModel>
-    class velocitySet : public velocitySetBase, public lattice<Q_>, public thermalModelBase<ThermalModel>
+    class velocitySet : public velocitySetBase, public lattice<Q_>, public thermalModel<ThermalModel>
     {
     public:
         using Lattice = lattice<Q_>;
-        using ThermoModel = thermalModelBase<ThermalModel>;
+        using ThermoModel = thermalModel<ThermalModel>;
+        using This = velocitySet<Q_, ThermalModel>;
 
         /**
          * @brief Default constructor (consteval)
@@ -84,7 +85,7 @@ namespace LBM
          * @brief Calculates the diagonal correction term for the isothermal velocity set
          * @param[in] moments Moment array (rho, U, Pi)
          **/
-        __device__ __host__ [[nodiscard]] static inline constexpr const thread::array<scalar_t, 3> diagonal_term(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ __host__ [[nodiscard]] static inline constexpr const thread::array<const scalar_t, 3> diagonal_term(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
             const scalar_t Delta_m = (moments[q_i<1>()] * moments[q_i<1>()] + moments[q_i<2>()] * moments[q_i<2>()] + moments[q_i<3>()] * moments[q_i<3>()] - moments[q_i<4>()] - moments[q_i<7>()] - moments[q_i<9>()]) / static_cast<scalar_t>(3);
 
@@ -101,7 +102,7 @@ namespace LBM
         template <const axis::type alpha, const axis::type beta>
         __device__ __host__ [[nodiscard]] static inline constexpr scalar_t calculate_moment(const thread::array<scalar_t, Lattice::Q()> &pop) noexcept
         {
-            constexpr const thread::array<int, Lattice::Q()> c_AB = c_AlphaBeta<alpha, beta>();
+            constexpr const thread::array<int, Lattice::Q()> c_AB = c_product<alpha, beta>();
             constexpr const host::label_t N = c_AB.number_non_zero();
             constexpr const thread::array<int, N> C = c_AB.template non_zero_values<N>();
             constexpr const thread::array<host::label_t, N> indices = c_AB.template non_zero_indices<N>();
@@ -124,7 +125,7 @@ namespace LBM
         template <const axis::type alpha, const axis::type beta, class BoundaryNormal>
         __device__ __host__ [[nodiscard]] static inline constexpr scalar_t calculate_moment(const thread::array<scalar_t, Lattice::Q()> &pop, const BoundaryNormal &boundaryNormal) noexcept
         {
-            constexpr const thread::array<int, Lattice::Q()> c_AB = c_AlphaBeta<alpha, beta>();
+            constexpr const thread::array<int, Lattice::Q()> c_AB = c_product<alpha, beta>();
             constexpr const host::label_t N = c_AB.number_non_zero();
             constexpr const thread::array<int, N> C = c_AB.template non_zero_values<N>();
             constexpr const thread::array<host::label_t, N> indices = c_AB.template non_zero_indices<N>();
@@ -238,99 +239,30 @@ namespace LBM
          * @param[in] moments The calculated moments array
          **/
         template <const bool CalculateRest = true>
-        __device__ __host__ static inline void reconstruct(thread::array<scalar_t, Lattice::Q()> &pop, const thread::array<scalar_t, NUMBER_MOMENTS<host::label_t>()> &moments) noexcept
+        __device__ __host__ static inline constexpr void reconstruct(
+            thread::array<scalar_t, Lattice::Q()> &pop,
+            const momentsArray &moments) noexcept
         {
-            if constexpr (ThermoModel::thermalModel() == thermalModel_t::Isothermal)
+            const ThermoModel thermo(moments);
+
+            if constexpr (CalculateRest)
             {
-                const thread::array<scalar_t, 3> diagonalTerm = velocitySet::diagonal_term(moments);
-                const scalar_t pics2 = static_cast<scalar_t>(1) - cs2<scalar_t>() * (diagonalTerm[q_i<0>()] + diagonalTerm[q_i<1>()] + diagonalTerm[q_i<2>()]);
-
-                if constexpr (CalculateRest)
-                {
-                    const scalar_t rhow_0 = moments[m_i<0>()] * Lattice::template w_0<scalar_t>();
-                    pop[0] = rhow_0 * (pics2);
-                }
-
-                const scalar_t rhow_1 = moments[m_i<0>()] * Lattice::template w_1<scalar_t>();
-                pop[1] = rhow_1 * (pics2 + moments[q_i<1>()] + diagonalTerm[q_i<0>()]);
-                pop[2] = rhow_1 * (pics2 - moments[q_i<1>()] + diagonalTerm[q_i<0>()]);
-                pop[3] = rhow_1 * (pics2 + moments[q_i<2>()] + diagonalTerm[q_i<1>()]);
-                pop[4] = rhow_1 * (pics2 - moments[q_i<2>()] + diagonalTerm[q_i<1>()]);
-                pop[5] = rhow_1 * (pics2 + moments[q_i<3>()] + diagonalTerm[q_i<2>()]);
-                pop[6] = rhow_1 * (pics2 - moments[q_i<3>()] + diagonalTerm[q_i<2>()]);
-
-                const scalar_t rhow_2 = moments[m_i<0>()] * Lattice::template w_2<scalar_t>();
-                pop[7] = rhow_2 * (pics2 + moments[q_i<1>()] + moments[q_i<2>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<1>()] + moments[q_i<5>()]);
-                pop[8] = rhow_2 * (pics2 - moments[q_i<1>()] - moments[q_i<2>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<1>()] + moments[q_i<5>()]);
-                pop[9] = rhow_2 * (pics2 + moments[q_i<1>()] + moments[q_i<3>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<2>()] + moments[q_i<6>()]);
-                pop[10] = rhow_2 * (pics2 - moments[q_i<1>()] - moments[q_i<3>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<2>()] + moments[q_i<6>()]);
-                pop[11] = rhow_2 * (pics2 + moments[q_i<2>()] + moments[q_i<3>()] + diagonalTerm[q_i<1>()] + diagonalTerm[q_i<2>()] + moments[q_i<8>()]);
-                pop[12] = rhow_2 * (pics2 - moments[q_i<2>()] - moments[q_i<3>()] + diagonalTerm[q_i<1>()] + diagonalTerm[q_i<2>()] + moments[q_i<8>()]);
-                pop[13] = rhow_2 * (pics2 + moments[q_i<1>()] - moments[q_i<2>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<1>()] - moments[q_i<5>()]);
-                pop[14] = rhow_2 * (pics2 - moments[q_i<1>()] + moments[q_i<2>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<1>()] - moments[q_i<5>()]);
-                pop[15] = rhow_2 * (pics2 + moments[q_i<1>()] - moments[q_i<3>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<2>()] - moments[q_i<6>()]);
-                pop[16] = rhow_2 * (pics2 - moments[q_i<1>()] + moments[q_i<3>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<2>()] - moments[q_i<6>()]);
-                pop[17] = rhow_2 * (pics2 + moments[q_i<2>()] - moments[q_i<3>()] + diagonalTerm[q_i<1>()] + diagonalTerm[q_i<2>()] - moments[q_i<8>()]);
-                pop[18] = rhow_2 * (pics2 - moments[q_i<2>()] + moments[q_i<3>()] + diagonalTerm[q_i<1>()] + diagonalTerm[q_i<2>()] - moments[q_i<8>()]);
-
-                if constexpr (Lattice::Q() == 27)
-                {
-                    const scalar_t rhow_3 = moments[m_i<0>()] * Lattice::template w_3<scalar_t>();
-                    pop[19] = rhow_3 * (pics2 + moments[q_i<1>()] + moments[q_i<2>()] + moments[q_i<3>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<1>()] + diagonalTerm[q_i<2>()] + (moments[q_i<5>()] + moments[q_i<6>()] + moments[q_i<8>()]));
-                    pop[20] = rhow_3 * (pics2 - moments[q_i<1>()] - moments[q_i<2>()] - moments[q_i<3>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<1>()] + diagonalTerm[q_i<2>()] + (moments[q_i<5>()] + moments[q_i<6>()] + moments[q_i<8>()]));
-                    pop[21] = rhow_3 * (pics2 + moments[q_i<1>()] + moments[q_i<2>()] - moments[q_i<3>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<1>()] + diagonalTerm[q_i<2>()] + (moments[q_i<5>()] - moments[q_i<6>()] - moments[q_i<8>()]));
-                    pop[22] = rhow_3 * (pics2 - moments[q_i<1>()] - moments[q_i<2>()] + moments[q_i<3>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<1>()] + diagonalTerm[q_i<2>()] + (moments[q_i<5>()] - moments[q_i<6>()] - moments[q_i<8>()]));
-                    pop[23] = rhow_3 * (pics2 + moments[q_i<1>()] - moments[q_i<2>()] + moments[q_i<3>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<1>()] + diagonalTerm[q_i<2>()] - (moments[q_i<5>()] - moments[q_i<6>()] + moments[q_i<8>()]));
-                    pop[24] = rhow_3 * (pics2 - moments[q_i<1>()] + moments[q_i<2>()] - moments[q_i<3>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<1>()] + diagonalTerm[q_i<2>()] - (moments[q_i<5>()] - moments[q_i<6>()] + moments[q_i<8>()]));
-                    pop[25] = rhow_3 * (pics2 - moments[q_i<1>()] + moments[q_i<2>()] + moments[q_i<3>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<1>()] + diagonalTerm[q_i<2>()] - (moments[q_i<5>()] + moments[q_i<6>()] - moments[q_i<8>()]));
-                    pop[26] = rhow_3 * (pics2 + moments[q_i<1>()] - moments[q_i<2>()] - moments[q_i<3>()] + diagonalTerm[q_i<0>()] + diagonalTerm[q_i<1>()] + diagonalTerm[q_i<2>()] - (moments[q_i<5>()] + moments[q_i<6>()] - moments[q_i<8>()]));
-                }
+                pop[q_i<0>()] = moments[m_i<0>()] * Lattice::template w_0<scalar_t>() * thermo.pics2();
             }
-            else
-            {
-                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()]);
+            const thread::array<const scalar_t, This::nPerm()> rho_w = This::rhow(moments[m_i<0>()]);
 
-                if constexpr (CalculateRest)
+            // Loop over the non-rest populations
+            device::constexpr_for<1, This::Q()>(
+                [&](const auto i)
                 {
-                    const scalar_t rhow_0 = moments[m_i<0>()] * Lattice::template w_0<scalar_t>();
-                    pop[q_i<0>()] = rhow_0 * pics2;
-                }
+                    // Folded sum over all non-zero parts
+                    const auto sum_moments = [&]<host::label_t... Is>(const std::index_sequence<Is...>)
+                    {
+                        return (process_momentum_element<This::C<i>().template non_zero_values<C<i>().number_non_zero()>()[Is]>(thermo.moment<This::C<i>().template non_zero_indices<C<i>().number_non_zero()>()[Is]>(moments)) + ...);
+                    };
 
-                const scalar_t rhow_1 = moments[m_i<0>()] * Lattice::template w_1<scalar_t>();
-                pop[q_i<1>()] = rhow_1 * (pics2 + moments[m_i<1>()] + moments[m_i<4>()]);
-                pop[q_i<2>()] = rhow_1 * (pics2 - moments[m_i<1>()] + moments[m_i<4>()]);
-                pop[q_i<3>()] = rhow_1 * (pics2 + moments[m_i<2>()] + moments[m_i<7>()]);
-                pop[q_i<4>()] = rhow_1 * (pics2 - moments[m_i<2>()] + moments[m_i<7>()]);
-                pop[q_i<5>()] = rhow_1 * (pics2 + moments[m_i<3>()] + moments[m_i<9>()]);
-                pop[q_i<6>()] = rhow_1 * (pics2 - moments[m_i<3>()] + moments[m_i<9>()]);
-
-                const scalar_t rhow_2 = moments[m_i<0>()] * Lattice::template w_2<scalar_t>();
-                pop[q_i<7>()] = rhow_2 * (pics2 + moments[m_i<1>()] + moments[m_i<2>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<5>()]);
-                pop[q_i<8>()] = rhow_2 * (pics2 - moments[m_i<1>()] - moments[m_i<2>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<5>()]);
-                pop[q_i<9>()] = rhow_2 * (pics2 + moments[m_i<1>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<9>()] + moments[m_i<6>()]);
-                pop[q_i<10>()] = rhow_2 * (pics2 - moments[m_i<1>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<9>()] + moments[m_i<6>()]);
-                pop[q_i<11>()] = rhow_2 * (pics2 + moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<7>()] + moments[m_i<9>()] + moments[m_i<8>()]);
-                pop[q_i<12>()] = rhow_2 * (pics2 - moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<7>()] + moments[m_i<9>()] + moments[m_i<8>()]);
-                pop[q_i<13>()] = rhow_2 * (pics2 + moments[m_i<1>()] - moments[m_i<2>()] + moments[m_i<4>()] + moments[m_i<7>()] - moments[m_i<5>()]);
-                pop[q_i<14>()] = rhow_2 * (pics2 - moments[m_i<1>()] + moments[m_i<2>()] + moments[m_i<4>()] + moments[m_i<7>()] - moments[m_i<5>()]);
-                pop[q_i<15>()] = rhow_2 * (pics2 + moments[m_i<1>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<9>()] - moments[m_i<6>()]);
-                pop[q_i<16>()] = rhow_2 * (pics2 - moments[m_i<1>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<9>()] - moments[m_i<6>()]);
-                pop[q_i<17>()] = rhow_2 * (pics2 + moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<7>()] + moments[m_i<9>()] - moments[m_i<8>()]);
-                pop[q_i<18>()] = rhow_2 * (pics2 - moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<7>()] + moments[m_i<9>()] - moments[m_i<8>()]);
-
-                if constexpr (Lattice::Q() == 27)
-                {
-                    const scalar_t rhow_3 = moments[m_i<0>()] * Lattice::template w_3<scalar_t>();
-                    pop[q_i<19>()] = rhow_3 * (pics2 + moments[m_i<1>()] + moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] + (moments[m_i<5>()] + moments[m_i<6>()] + moments[m_i<8>()]));
-                    pop[q_i<20>()] = rhow_3 * (pics2 - moments[m_i<1>()] - moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] + (moments[m_i<5>()] + moments[m_i<6>()] + moments[m_i<8>()]));
-                    pop[q_i<21>()] = rhow_3 * (pics2 + moments[m_i<1>()] + moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] + (moments[m_i<5>()] - moments[m_i<6>()] - moments[m_i<8>()]));
-                    pop[q_i<22>()] = rhow_3 * (pics2 - moments[m_i<1>()] - moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] + (moments[m_i<5>()] - moments[m_i<6>()] - moments[m_i<8>()]));
-                    pop[q_i<23>()] = rhow_3 * (pics2 + moments[m_i<1>()] - moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] - (moments[m_i<5>()] - moments[m_i<6>()] + moments[m_i<8>()]));
-                    pop[q_i<24>()] = rhow_3 * (pics2 - moments[m_i<1>()] + moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] - (moments[m_i<5>()] - moments[m_i<6>()] + moments[m_i<8>()]));
-                    pop[q_i<25>()] = rhow_3 * (pics2 - moments[m_i<1>()] + moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] - (moments[m_i<5>()] + moments[m_i<6>()] - moments[m_i<8>()]));
-                    pop[q_i<26>()] = rhow_3 * (pics2 + moments[m_i<1>()] - moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()] - (moments[m_i<5>()] + moments[m_i<6>()] - moments[m_i<8>()]));
-                }
-            }
+                    pop[q_i<i>()] = This::rhow<i>(rho_w) * (thermo.pics2() + sum_moments(std::make_index_sequence<C<i>().number_non_zero()>{}));
+                });
         }
 
         /**
@@ -338,8 +270,7 @@ namespace LBM
          * @param[in] moments Moment array (rho, U, Pi)
          * @return Population array with Q components
          **/
-        __device__ __host__ [[nodiscard]] static inline thread::array<scalar_t, Lattice::Q()> reconstruct(
-            const thread::array<scalar_t, NUMBER_MOMENTS<host::label_t>()> &moments) noexcept
+        __device__ __host__ [[nodiscard]] static inline constexpr thread::array<scalar_t, Lattice::Q()> reconstruct(const momentsArray &moments) noexcept
         {
             thread::array<scalar_t, Lattice::Q()> pop;
 
@@ -349,6 +280,16 @@ namespace LBM
         }
 
     private:
+        /**
+         * @brief Returns the coefficients for a specific moment index and a given population
+         * @tparam i The moment index
+         **/
+        template <const host::label_t i>
+        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<int, 10> C() noexcept
+        {
+            return {static_cast<int>(0), c_product<axis::X>()[i], c_product<axis::Y>()[i], c_product<axis::Z>()[i], c_product<axis::X, axis::X>()[i], c_product<axis::X, axis::Y>()[i], c_product<axis::X, axis::Z>()[i], c_product<axis::Y, axis::Y>()[i], c_product<axis::Y, axis::Z>()[i], c_product<axis::Z, axis::Z>()[i]};
+        }
+
         /**
          * @brief Determines if a discrete velocity direction is incoming relative to a boundary normal
          * @tparam T Return type (typically numeric type)
@@ -386,16 +327,27 @@ namespace LBM
         }
 
         /**
-         * @brief Returns the product of the c values for two directions
-         * @tparam alpha The axis direction (X, Y, Z or NULL)
+         * @brief Returns the product of the c values for up to 3 directions
+         * @tparam Axes The axis directions (X, Y, Z or NULL)
          **/
-        template <const axis::type alpha, const axis::type beta>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<int, Lattice::Q()> c_AlphaBeta() noexcept
+        template <const axis::type... Axes>
+        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<int, Lattice::Q()> c_product() noexcept
         {
-            axis::assertions::validate<alpha, axis::CAN_BE_NULL>();
-            axis::assertions::validate<beta, axis::CAN_BE_NULL>();
+            static_assert(sizeof...(Axes) <= 3, "c_product supports at most three axes.");
 
-            return Lattice::template c<int, alpha>() * Lattice::template c<int, beta>();
+            // Validate each axis (comma-fold over the assertions)
+            (axis::assertions::validate<Axes, axis::CAN_BE_NULL>(), ...);
+
+            if constexpr (sizeof...(Axes) == 0)
+            {
+                // Return all 1s if no axes are provided (equivalent to multiplying by 1)
+                return Lattice::template c<int, axis::NO_DIRECTION>();
+            }
+            else
+            {
+                // Multiply all Lattice::c<int, Axes>() element‑wise
+                return (... * Lattice::template c<int, Axes>());
+            }
         }
 
         /**
