@@ -72,6 +72,7 @@ namespace LBM
     class velocitySet : public velocitySetBase, public lattice<Q_>, public thermalModel<ThermalModel>
     {
     public:
+        using Base = velocitySetBase;
         using Lattice = lattice<Q_>;
         using ThermoModel = thermalModel<ThermalModel>;
         using This = velocitySet<Q_, ThermalModel>;
@@ -85,7 +86,7 @@ namespace LBM
          * @brief Calculates the diagonal correction term for the isothermal velocity set
          * @param[in] moments Moment array (rho, U, Pi)
          **/
-        __device__ __host__ [[nodiscard]] static inline constexpr const thread::array<const scalar_t, 3> diagonal_term(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ __host__ [[nodiscard]] static inline constexpr const thread::array<const scalar_t, 3> diagonal_term(const momentsArray &moments) noexcept
         {
             const scalar_t Delta_m = (moments[q_i<1>()] * moments[q_i<1>()] + moments[q_i<2>()] * moments[q_i<2>()] + moments[q_i<3>()] * moments[q_i<3>()] - moments[q_i<4>()] - moments[q_i<7>()] - moments[q_i<9>()]) / static_cast<scalar_t>(3);
 
@@ -141,7 +142,7 @@ namespace LBM
          * @param[in] pop The distribution function array
          * @param[out] moments The calculated moments array
          **/
-        __device__ __host__ static inline void calculate_moments(const thread::array<scalar_t, Lattice::Q()> &pop, thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ __host__ static inline void calculate_moments(const thread::array<scalar_t, Lattice::Q()> &pop, momentsArray &moments) noexcept
         {
             // Density
             moments[m_i<0>()] = calculate_moment<axis::NO_DIRECTION, axis::NO_DIRECTION>(pop);
@@ -153,12 +154,12 @@ namespace LBM
             moments[m_i<3>()] = calculate_moment<axis::Z, axis::NO_DIRECTION>(pop) * inv_rho;
 
             // Second order moments
-            moments[m_i<4>()] = (calculate_moment<axis::X, axis::X>(pop) * inv_rho) - cs2<scalar_t>();
+            moments[m_i<4>()] = (calculate_moment<axis::X, axis::X>(pop) * inv_rho) - Base::cs2<scalar_t>();
             moments[m_i<5>()] = calculate_moment<axis::X, axis::Y>(pop) * inv_rho;
             moments[m_i<6>()] = calculate_moment<axis::X, axis::Z>(pop) * inv_rho;
-            moments[m_i<7>()] = (calculate_moment<axis::Y, axis::Y>(pop) * inv_rho) - cs2<scalar_t>();
+            moments[m_i<7>()] = (calculate_moment<axis::Y, axis::Y>(pop) * inv_rho) - Base::cs2<scalar_t>();
             moments[m_i<8>()] = calculate_moment<axis::Y, axis::Z>(pop) * inv_rho;
-            moments[m_i<9>()] = (calculate_moment<axis::Z, axis::Z>(pop) * inv_rho) - cs2<scalar_t>();
+            moments[m_i<9>()] = (calculate_moment<axis::Z, axis::Z>(pop) * inv_rho) - Base::cs2<scalar_t>();
         }
 
         /**
@@ -169,7 +170,7 @@ namespace LBM
          * @param[in] boundaryNormal Normal vector information at boundary node
          **/
         template <class BoundaryNormal>
-        __device__ __host__ static inline void calculate_moments(const thread::array<scalar_t, Lattice::Q()> &pop, thread::array<scalar_t, NUMBER_MOMENTS()> &moments, const BoundaryNormal &boundaryNormal) noexcept
+        __device__ __host__ static inline void calculate_moments(const thread::array<scalar_t, Lattice::Q()> &pop, momentsArray &moments, const BoundaryNormal &boundaryNormal) noexcept
         {
             // Density
             moments[m_i<0>()] = calculate_moment<axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
@@ -181,12 +182,12 @@ namespace LBM
             moments[m_i<3>()] = calculate_moment<axis::Z, axis::NO_DIRECTION>(pop, boundaryNormal) * inv_rho;
 
             // Second order moments
-            moments[m_i<4>()] = (calculate_moment<axis::X, axis::X>(pop, boundaryNormal) * inv_rho) - cs2<scalar_t>();
+            moments[m_i<4>()] = (calculate_moment<axis::X, axis::X>(pop, boundaryNormal) * inv_rho) - Base::cs2<scalar_t>();
             moments[m_i<5>()] = calculate_moment<axis::X, axis::Y>(pop, boundaryNormal) * inv_rho;
             moments[m_i<6>()] = calculate_moment<axis::X, axis::Z>(pop, boundaryNormal) * inv_rho;
-            moments[m_i<7>()] = (calculate_moment<axis::Y, axis::Y>(pop, boundaryNormal) * inv_rho) - cs2<scalar_t>();
+            moments[m_i<7>()] = (calculate_moment<axis::Y, axis::Y>(pop, boundaryNormal) * inv_rho) - Base::cs2<scalar_t>();
             moments[m_i<8>()] = calculate_moment<axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho;
-            moments[m_i<9>()] = (calculate_moment<axis::Z, axis::Z>(pop, boundaryNormal) * inv_rho) - cs2<scalar_t>();
+            moments[m_i<9>()] = (calculate_moment<axis::Z, axis::Z>(pop, boundaryNormal) * inv_rho) - Base::cs2<scalar_t>();
         }
 
         /**
@@ -202,22 +203,7 @@ namespace LBM
 
             velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
-            constexpr const thread::array<int, Lattice::Q()> vals = Lattice::template c<int, alpha>();
-
-            thread::array<host::label_t, Lattice::QF()> indices;
-
-            host::label_t j = 0;
-
-            for (host::label_t i = 0; i < Lattice::Q(); i++)
-            {
-                if (vals[i] == coeff)
-                {
-                    indices[j] = i;
-                    j++;
-                }
-            }
-
-            return indices;
+            return Lattice::template c<int, alpha>().template indices_of<coeff, true, Lattice::QF()>();
         }
 
         /**
