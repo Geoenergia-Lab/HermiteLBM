@@ -63,7 +63,7 @@ namespace LBM
          **/
         template <typename VelocitySet>
         __device__ inline void saveHalo(
-            const thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
+            const momentsArray &moments,
             const device::ptrCollection<6, scalar_t> &readBuffer,
             const device::ptrCollection<6, scalar_t> &writeBuffer,
             const thread::coordinate &Tx,
@@ -109,7 +109,7 @@ namespace LBM
             }
 
             // Coalesced read from global memory
-            thread::array<scalar_t, NUMBER_MOMENTS()> moments;
+            momentsArray moments;
             device::constexpr_for<0, NUMBER_MOMENTS()>(
                 [&](const auto moment)
                 {

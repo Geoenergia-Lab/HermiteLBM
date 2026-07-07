@@ -176,11 +176,11 @@ namespace LBM
                 {
                     if constexpr (isPeriodic)
                     {
-                        return (Tx.value<alpha>() == 0);
+                        return (Tx.value<alpha>() == static_cast<device::label_t>(0));
                     }
                     else
                     {
-                        return (Tx.value<alpha>() == 0 && alpha_v != 0);
+                        return (Tx.value<alpha>() == static_cast<device::label_t>(0) && alpha_v != static_cast<device::label_t>(0));
                     }
                 }
 
@@ -188,11 +188,11 @@ namespace LBM
                 {
                     if constexpr (isPeriodic)
                     {
-                        return (Tx.value<alpha>() == (block::n<alpha>() - 1));
+                        return (Tx.value<alpha>() == (block::n<alpha>() - static_cast<device::label_t>(1)));
                     }
                     else
                     {
-                        return (Tx.value<alpha>() == (block::n<alpha>() - 1) && alpha_v != (device::n<alpha>() - 1));
+                        return (Tx.value<alpha>() == (block::n<alpha>() - static_cast<device::label_t>(1)) && alpha_v != (device::n<alpha>() - static_cast<device::label_t>(1)));
                     }
                 }
             }
@@ -241,7 +241,7 @@ namespace LBM
 
                 if constexpr (coeff == -1)
                 {
-                    return (t == 0) ? (b_shifted) : (b);
+                    return (t == static_cast<device::label_t>(0)) ? (b_shifted) : (b);
                 }
 
                 if constexpr (coeff == 0)
@@ -251,7 +251,7 @@ namespace LBM
 
                 if constexpr (coeff == 1)
                 {
-                    return (t == block::n<alpha>() - 1) ? (b_shifted) : (b);
+                    return (t == block::n<alpha>() - static_cast<device::label_t>(1)) ? (b_shifted) : (b);
                 }
             }
 
@@ -283,86 +283,42 @@ namespace LBM
                 const thread::array<device::label_t, 2> da{Tx.shifted_coordinate<axis::orthogonal<alpha, 0>(), -1>(), Tx.shifted_coordinate<axis::orthogonal<alpha, 0>(), +1>()};
                 const thread::array<device::label_t, 2> db{Tx.shifted_coordinate<axis::orthogonal<alpha, 1>(), -1>(), Tx.shifted_coordinate<axis::orthogonal<alpha, 1>(), +1>()};
 
-                if constexpr (alpha == axis::X)
-                {
-                    const device::label_t b_x = block_stencil<axis::X, -coeff>(
-                        Tx.value<axis::X>(),
-                        thread_stencil<-coeff>(dBx, Bx.value<axis::X>()),
-                        Bx.value<axis::X>());
+                const device::label_t b_alpha = block_stencil<alpha, -coeff>(
+                    Tx.value<alpha>(),
+                    thread_stencil<-coeff>(dBz, Bx.value<alpha>()),
+                    Bx.value<alpha>());
 
-                    device::constexpr_for<0, VelocitySet::QF()>(
-                        [&](const auto i)
+                device::constexpr_for<0, VelocitySet::QF()>(
+                    [&](const auto i)
+                    {
+                        const device::label_t t_a = thread_stencil<-VelocitySet::template c<int, axis::orthogonal<alpha, 0>()>()[streaming_index<alpha, coeff>(i)]>(da, Tx.value<axis::orthogonal<alpha, 0>()>());
+                        const device::label_t t_b = thread_stencil<-VelocitySet::template c<int, axis::orthogonal<alpha, 1>()>()[streaming_index<alpha, coeff>(i)]>(db, Tx.value<axis::orthogonal<alpha, 1>()>());
+
+                        // Then we should select the true block based on the thread
+                        const device::label_t b_beta = block_stencil<axis::orthogonal<alpha, 0>(), -VelocitySet::template c<int, axis::orthogonal<alpha, 0>()>()[streaming_index<alpha, coeff>(i)]>(
+                            Tx.value<axis::orthogonal<alpha, 0>()>(),
+                            thread_stencil<-VelocitySet::template c<int, axis::orthogonal<alpha, 0>()>()[streaming_index<alpha, coeff>(i)]>(dBx, Bx.value<axis::orthogonal<alpha, 0>()>()),
+                            Bx.value<axis::orthogonal<alpha, 0>()>());
+                        const device::label_t b_gamma = block_stencil<axis::orthogonal<alpha, 1>(), -VelocitySet::template c<int, axis::orthogonal<alpha, 1>()>()[streaming_index<alpha, coeff>(i)]>(
+                            Tx.value<axis::orthogonal<alpha, 1>()>(),
+                            thread_stencil<-VelocitySet::template c<int, axis::orthogonal<alpha, 1>()>()[streaming_index<alpha, coeff>(i)]>(dBy, Bx.value<axis::orthogonal<alpha, 1>()>()),
+                            Bx.value<axis::orthogonal<alpha, 1>()>());
+
+                        if constexpr (alpha == axis::X)
                         {
-                            const device::label_t t_a = thread_stencil<-VelocitySet::template c<int, axis::orthogonal<alpha, 0>()>()[streaming_index<alpha, coeff>(i)]>(da, Tx.value<axis::orthogonal<alpha, 0>()>());
-                            const device::label_t t_b = thread_stencil<-VelocitySet::template c<int, axis::orthogonal<alpha, 1>()>()[streaming_index<alpha, coeff>(i)]>(db, Tx.value<axis::orthogonal<alpha, 1>()>());
+                            pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&(readBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::QF()>(t_a, t_b, b_alpha, b_beta, b_gamma)]));
+                        }
 
-                            // Then we should select the true block based on the thread
-                            const device::label_t b_y = block_stencil<axis::Y, -VelocitySet::template c<int, axis::Y>()[streaming_index<alpha, coeff>(i)]>(
-                                Tx.value<axis::Y>(),
-                                thread_stencil<-VelocitySet::template c<int, axis::Y>()[streaming_index<alpha, coeff>(i)]>(dBy, Bx.value<axis::Y>()),
-                                Bx.value<axis::Y>());
-                            const device::label_t b_z = block_stencil<axis::Z, -VelocitySet::template c<int, axis::Z>()[streaming_index<alpha, coeff>(i)]>(
-                                Tx.value<axis::Z>(),
-                                thread_stencil<-VelocitySet::template c<int, axis::Z>()[streaming_index<alpha, coeff>(i)]>(dBz, Bx.value<axis::Z>()),
-                                Bx.value<axis::Z>());
-
-                            pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&(readBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::QF()>(t_a, t_b, b_x, b_y, b_z)]));
-                        });
-                }
-
-                if constexpr (alpha == axis::Y)
-                {
-                    const device::label_t b_y = block_stencil<axis::Y, -coeff>(
-                        Tx.value<axis::Y>(),
-                        thread_stencil<-coeff>(dBy, Bx.value<axis::Y>()),
-                        Bx.value<axis::Y>());
-
-                    device::constexpr_for<0, VelocitySet::QF()>(
-                        [&](const auto i)
+                        if constexpr (alpha == axis::Y)
                         {
-                            const device::label_t t_a = thread_stencil<-VelocitySet::template c<int, axis::orthogonal<alpha, 0>()>()[streaming_index<alpha, coeff>(i)]>(da, Tx.value<axis::orthogonal<alpha, 0>()>());
-                            const device::label_t t_b = thread_stencil<-VelocitySet::template c<int, axis::orthogonal<alpha, 1>()>()[streaming_index<alpha, coeff>(i)]>(db, Tx.value<axis::orthogonal<alpha, 1>()>());
+                            pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&(readBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::QF()>(t_a, t_b, b_beta, b_alpha, b_gamma)]));
+                        }
 
-                            // Then we should select the true block based on the thread
-                            const device::label_t b_x = block_stencil<axis::X, -VelocitySet::template c<int, axis::X>()[streaming_index<alpha, coeff>(i)]>(
-                                Tx.value<axis::X>(),
-                                thread_stencil<-VelocitySet::template c<int, axis::X>()[streaming_index<alpha, coeff>(i)]>(dBx, Bx.value<axis::X>()),
-                                Bx.value<axis::X>());
-                            const device::label_t b_z = block_stencil<axis::Z, -VelocitySet::template c<int, axis::Z>()[streaming_index<alpha, coeff>(i)]>(
-                                Tx.value<axis::Z>(),
-                                thread_stencil<-VelocitySet::template c<int, axis::Z>()[streaming_index<alpha, coeff>(i)]>(dBz, Bx.value<axis::Z>()),
-                                Bx.value<axis::Z>());
-
-                            pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&(readBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::QF()>(t_a, t_b, b_x, b_y, b_z)]));
-                        });
-                }
-
-                if constexpr (alpha == axis::Z)
-                {
-                    const device::label_t b_z = block_stencil<axis::Z, -coeff>(
-                        Tx.value<axis::Z>(),
-                        thread_stencil<-coeff>(dBz, Bx.value<axis::Z>()),
-                        Bx.value<axis::Z>());
-
-                    device::constexpr_for<0, VelocitySet::QF()>(
-                        [&](const auto i)
+                        if constexpr (alpha == axis::Z)
                         {
-                            const device::label_t t_a = thread_stencil<-VelocitySet::template c<int, axis::orthogonal<alpha, 0>()>()[streaming_index<alpha, coeff>(i)]>(da, Tx.value<axis::orthogonal<alpha, 0>()>());
-                            const device::label_t t_b = thread_stencil<-VelocitySet::template c<int, axis::orthogonal<alpha, 1>()>()[streaming_index<alpha, coeff>(i)]>(db, Tx.value<axis::orthogonal<alpha, 1>()>());
-
-                            // Then we should select the true block based on the thread
-                            const device::label_t b_x = block_stencil<axis::X, -VelocitySet::template c<int, axis::X>()[streaming_index<alpha, coeff>(i)]>(
-                                Tx.value<axis::X>(),
-                                thread_stencil<-VelocitySet::template c<int, axis::X>()[streaming_index<alpha, coeff>(i)]>(dBx, Bx.value<axis::X>()),
-                                Bx.value<axis::X>());
-                            const device::label_t b_y = block_stencil<axis::Y, -VelocitySet::template c<int, axis::Y>()[streaming_index<alpha, coeff>(i)]>(
-                                Tx.value<axis::Y>(),
-                                thread_stencil<-VelocitySet::template c<int, axis::Y>()[streaming_index<alpha, coeff>(i)]>(dBy, Bx.value<axis::Y>()),
-                                Bx.value<axis::Y>());
-
-                            pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&(readBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::QF()>(t_a, t_b, b_x, b_y, b_z)]));
-                        });
-                }
+                            pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&(readBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::QF()>(t_a, t_b, b_beta, b_gamma, b_alpha)]));
+                        }
+                    });
             }
 
             /**

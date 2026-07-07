@@ -302,7 +302,7 @@ namespace LBM
              * @return Number of elements in the array equal to val
              **/
             template <const T val, const bool Equal>
-            __device__ __host__ [[nodiscard]] inline consteval host::label_t count() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr host::label_t count() const noexcept
             {
                 host::label_t n = 0;
 
@@ -328,10 +328,102 @@ namespace LBM
             }
 
             /**
+             * @brief Computes the indices of elements equal to a value in an array
+             * @tparam val The value to compare against
+             * @tparam Equal Whether to count equal or not equal elements
+             * @tparam ReturnSize Size of the returned array (must be equal to count<val, Equal>())
+             * @return Array containing indices of elements equal to val
+             **/
+            template <const T val, const bool Equal, const host::label_t ReturnSize>
+            __device__ __host__ [[nodiscard]] inline constexpr const thread::array<host::label_t, ReturnSize> indices_of() const noexcept
+            {
+                host::label_t j = 0;
+
+                thread::array<host::label_t, ReturnSize> indices{};
+
+                for (host::label_t i = 0; i < N; i++)
+                {
+                    if constexpr (Equal)
+                    {
+                        if (data_[i] == val)
+                        {
+                            indices[j] = i;
+                            j++;
+                        }
+                    }
+                    else
+                    {
+                        if (!(data_[i] == val))
+                        {
+                            indices[j] = i;
+                            j++;
+                        }
+                    }
+                }
+
+                return indices;
+            }
+
+            /**
+             * @brief Computes the indices of elements equal to a value in an array
+             * @tparam val The value to compare against
+             * @tparam Equal Whether to count equal or not equal elements
+             * @tparam ReturnSize Size of the returned array (must be equal to count<val, Equal>())
+             * @return Array containing indices of elements equal to val
+             **/
+            template <const T val, const bool Equal, const host::label_t ReturnSize>
+            __device__ __host__ [[nodiscard]] inline constexpr const thread::array<T, ReturnSize> values_of() const noexcept
+            {
+                thread::array<T, ReturnSize> coefficients{};
+
+                host::label_t count = 0;
+
+                for (host::label_t i = 0; i < N; i++)
+                {
+                    if constexpr (Equal)
+                    {
+                        if (data_[i] == val)
+                        {
+                            coefficients[count] = data_[i];
+                            count++;
+                        }
+                    }
+                    else
+                    {
+                        if (!(data_[i] == val))
+                        {
+                            coefficients[count] = data_[i];
+                            count++;
+                        }
+                    }
+                }
+
+                return coefficients;
+            }
+
+            /**
+             * @brief Checks if the array contains a specific value
+             * @tparam val The value to check for
+             * @return True if the array contains val, false otherwise
+             **/
+            template <const T val>
+            __device__ __host__ [[nodiscard]] inline constexpr bool contains() const noexcept
+            {
+                for (host::label_t i = 0; i < N; i++)
+                {
+                    if (data_[i] == val)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            /**
              * @brief Computes the number of non-zero elements of an array
              * @return Number of non-zero elements in the array
              **/
-            __device__ __host__ [[nodiscard]] inline consteval host::label_t number_non_zero() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr host::label_t number_non_zero() const noexcept
             {
                 return count<0, false>();
             }
@@ -347,20 +439,7 @@ namespace LBM
             template <const host::label_t ReturnSize>
             __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, ReturnSize> non_zero_values() const noexcept
             {
-                thread::array<T, ReturnSize> coefficients{};
-
-                host::label_t count = 0;
-
-                for (host::label_t i = 0; i < N; i++)
-                {
-                    if (data_[i] != 0)
-                    {
-                        coefficients[count] = data_[i];
-                        count++;
-                    }
-                }
-
-                return coefficients;
+                return values_of<0, false, ReturnSize>();
             }
 
             /**
@@ -374,20 +453,7 @@ namespace LBM
             template <const device::label_t ReturnSize>
             __device__ __host__ [[nodiscard]] inline constexpr thread::array<host::label_t, ReturnSize> non_zero_indices() const noexcept
             {
-                thread::array<host::label_t, ReturnSize> indices{};
-
-                host::label_t count = 0;
-
-                for (host::label_t i = 0; i < N; i++)
-                {
-                    if (data_[i] != 0)
-                    {
-                        indices[count] = i;
-                        count++;
-                    }
-                }
-
-                return indices;
+                return indices_of<0, false, ReturnSize>();
             }
 
         private:

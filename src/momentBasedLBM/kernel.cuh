@@ -107,7 +107,7 @@ namespace LBM
                 });
 
             // Coalesced read from global memory
-            thread::array<scalar_t, NUMBER_MOMENTS()> moments;
+            momentsArray moments;
             device::constexpr_for<0, NUMBER_MOMENTS()>(
                 [&](const auto moment)
                 {
