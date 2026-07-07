@@ -81,6 +81,9 @@ namespace LBM
         {
             return 1;
         }
+
+        // Default
+        return 1;
     }
 
     /**

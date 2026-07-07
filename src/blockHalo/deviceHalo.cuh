@@ -238,7 +238,7 @@ namespace LBM
                 devPtrs,
                 haloBuffers,
                 VelocitySet::Q(),
-                VelocitySet::thermalModel());
+                VelocitySet::modelType());
 
             errorHandler::check(cudaDeviceSynchronize());
 

@@ -103,7 +103,7 @@ namespace LBM
              **/
             __device__ static inline constexpr void save(
                 thread::array<scalar_t, VelocitySet::Q()> &pop,
-                const thread::array<scalar_t, NUMBER_MOMENTS<host::label_t>()> &moments,
+                const momentsArray &moments,
                 const device::ptrCollection<6, scalar_t> &writeBuffer,
                 const thread::coordinate &Tx,
                 const block::coordinate &Bx,
