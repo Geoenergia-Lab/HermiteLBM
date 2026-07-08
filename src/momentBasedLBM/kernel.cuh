@@ -57,6 +57,8 @@ namespace LBM
 {
     namespace detail
     {
+        using Streaming = streaming<VelocitySet>;
+
         /**
          * @brief Implements solution of the lattice Boltzmann method using the moment representation and a chosen velocity set
          * @tparam BoundaryConditions The boundary conditions of the solver
@@ -131,12 +133,12 @@ namespace LBM
             // Save/pull from shared memory
             {
                 // Save populations in shared memory
-                streaming::save<VelocitySet>(pop, sharedBuffer, tid);
+                Streaming::save(pop, sharedBuffer, tid);
 
                 block::sync();
 
                 // Pull from shared memory
-                streaming::pull<VelocitySet>(pop, sharedBuffer, Tx);
+                Streaming::pull(pop, sharedBuffer, Tx);
 
                 // Pull pop from global memory in cover nodes
                 BlockHalo::pull(pop, readBuffer, Tx, Bx, point);
@@ -144,47 +146,8 @@ namespace LBM
                 block::sync();
             }
 
-            if constexpr (std::is_same_v<BoundaryConditions, lidDrivenCavity>)
-            {
-                // Calculate the moments either at the boundary or interior
-                {
-                    const normalVector boundaryNormal(point);
-
-                    VelocitySet::template calculate_moments(pop, moments, boundaryNormal);
-
-                    if (boundaryNormal.isBoundary())
-                    {
-                        BoundaryConditions::template calculate_moments<VelocitySet>(pop, moments, boundaryNormal, sharedBuffer, Tx, point);
-                    }
-                }
-            }
-
-            if constexpr (std::is_same_v<BoundaryConditions, jetFlow>)
-            {
-                // Compute post-stream moments
-                VelocitySet::template calculate_moments<VelocitySet>(pop, moments);
-                {
-                    // Update the shared buffer with the refreshed moments
-                    device::constexpr_for<0, NUMBER_MOMENTS()>(
-                        [&](const auto moment)
-                        {
-                            const device::label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
-                            sharedBuffer[ID] = moments[moment];
-                        });
-                }
-
-                block::sync();
-
-                // Calculate the moments at the boundary
-                {
-                    const normalVector boundaryNormal(point);
-
-                    if (boundaryNormal.isBoundary())
-                    {
-                        BoundaryConditions::template calculate_moments<VelocitySet>(pop, moments, boundaryNormal, sharedBuffer, Tx, point);
-                    }
-                }
-            }
+            // Update the post-streaming moments according to the interior and/or boundary conditions
+            BoundaryConditions::template calculate_moments<VelocitySet>(pop, moments, sharedBuffer, Tx, point, tid);
 
             // Scale the moments correctly
             velocitySetBase::scale(moments);
@@ -315,15 +278,15 @@ namespace LBM
         {
             if constexpr (VelocitySet::smem_alloc_size() == 0)
             {
-                __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet::Q(), NUMBER_MOMENTS<host::label_t>()>()> shared_buffer;
+                __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet::Q(), NUMBER_MOMENTS<host::label_t>()>()> sharedBuffer;
 
-                detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer, bzOffset);
+                detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, sharedBuffer, bzOffset);
             }
             else
             {
-                extern __shared__ scalar_t shared_buffer[];
+                extern __shared__ scalar_t sharedBuffer[];
 
-                detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, shared_buffer, bzOffset);
+                detail::momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, sharedBuffer, bzOffset);
             }
         }
 

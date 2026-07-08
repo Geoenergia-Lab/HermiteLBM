@@ -83,6 +83,42 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval bool periodicZ() noexcept { return false; }
 
         /**
+         * @brief Public method to calculate the post-streaming methods and update boundary conditions
+         **/
+        template <class VelocitySet, class SharedBuffer>
+        __device__ static inline constexpr void calculate_moments(
+            const thread::array<scalar_t, VelocitySet::Q()> &pop,
+            momentsArray &moments,
+            SharedBuffer &sharedBuffer,
+            const thread::coordinate &Tx,
+            const device::pointCoordinate &point,
+            const device::label_t tid) noexcept
+        {
+            // Compute post-stream moments
+            VelocitySet::template calculate_moments(pop, moments);
+
+            // Update the shared buffer with the refreshed moments
+            device::constexpr_for<0, NUMBER_MOMENTS()>(
+                [&](const auto moment)
+                {
+                    const device::label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
+                    sharedBuffer[ID] = moments[moment];
+                });
+
+            block::sync();
+
+            // Calculate the moments at the boundary
+
+            const normalVector boundaryNormal(point);
+
+            if (boundaryNormal.isBoundary())
+            {
+                calculate_moments<VelocitySet>(pop, moments, boundaryNormal, sharedBuffer, Tx, point);
+            }
+        }
+
+    private:
+        /**
          * @brief Calculate moment variables at boundary nodes
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @param[in] pop Population density array at current lattice node
@@ -109,14 +145,13 @@ namespace LBM
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             momentsArray &moments,
             const normalVector &boundaryNormal,
-            const SharedBuffer &shared_buffer,
+            const SharedBuffer &sharedBuffer,
             const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept
         {
 #include "jetBoundaryCondition.cuh"
         }
 
-    private:
         __device__ [[nodiscard]] static inline scalar_t center_x() noexcept
         {
             return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::n<axis::X>() - 1);

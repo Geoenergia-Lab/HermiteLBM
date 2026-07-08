@@ -79,6 +79,29 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval bool periodicZ() noexcept { return false; }
 
         /**
+         * @brief Public method to calculate the post-streaming methods and update boundary conditions
+         **/
+        template <class VelocitySet, class SharedBuffer>
+        __device__ static inline constexpr void calculate_moments(
+            const thread::array<scalar_t, VelocitySet::Q()> &pop,
+            momentsArray &moments,
+            [[maybe_unused]] SharedBuffer &sharedBuffer,
+            [[maybe_unused]] const thread::coordinate &Tx,
+            [[maybe_unused]] const device::pointCoordinate &point,
+            const device::label_t tid) noexcept
+        {
+            const normalVector boundaryNormal(point);
+
+            VelocitySet::template calculate_moments(pop, moments, boundaryNormal);
+
+            if (boundaryNormal.isBoundary())
+            {
+                calculate_moments<VelocitySet>(pop, moments, boundaryNormal, sharedBuffer, Tx, point);
+            }
+        }
+
+    private:
+        /**
          * @brief Calculate moment variables at boundary nodes
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @param[in] pop Population density array at current lattice node
@@ -100,7 +123,7 @@ namespace LBM
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             momentsArray &moments,
             const normalVector &boundaryNormal,
-            [[maybe_unused]] const SharedBuffer &shared_buffer,
+            [[maybe_unused]] const SharedBuffer &sharedBuffer,
             [[maybe_unused]] const thread::coordinate &Tx,
             [[maybe_unused]] const device::pointCoordinate &point) noexcept
         {
@@ -472,7 +495,6 @@ namespace LBM
             }
         }
 
-    private:
         /**
          * @brief Branchless computation of the velocity component based on the boundary
          * @param[in] boundarySwitches Switches indicating active boundary conditions
