@@ -50,7 +50,7 @@ Notes
 
 if (!(boundaryNormal.isBack() || boundaryNormal.isFront()))
 {
-    // moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    // moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     // moments[m_i<0>()] = rho0();
     return;
 }
@@ -63,10 +63,10 @@ const scalar_t is_jet = static_cast<scalar_t>(boundaryNormal.isBack() && rms_sq(
 
 const scalar_t is_outlet = static_cast<scalar_t>(boundaryNormal.isFront());
 
-moments[m_i<0>()] = (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()]);
-moments[m_i<1>()] = (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()]) + (is_jet * device::U_Back[0]);
-moments[m_i<2>()] = (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()]) + (is_jet * device::U_Back[1]);
-moments[m_i<3>()] = (is_outlet * shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()]) + (is_jet * device::U_Back[2]);
+moments[m_i<0>()] = (is_outlet * sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()]);
+moments[m_i<1>()] = (is_outlet * sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()]) + (is_jet * device::U_Back[0]);
+moments[m_i<2>()] = (is_outlet * sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()]) + (is_jet * device::U_Back[1]);
+moments[m_i<3>()] = (is_outlet * sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()]) + (is_jet * device::U_Back[2]);
 
 // Set equilibrium velocities
 moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];
@@ -96,7 +96,7 @@ case normalVector::BACK():
         // moments[m_i<0>()] = rho0() + ((static_cast<scalar_t>(6) * rho_I) / (static_cast<scalar_t>(-5) + (A * is_jet))); // rho
 
         // Now try this if stable
-        moments[m_i<0>()] = shared_buffer[block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), 1) * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+        moments[m_i<0>()] = sharedBuffer[block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), 1) * (NUMBER_MOMENTS() + 1) + m_i<0>()];
 
         // Velocity
         // moments[m_i<1>()] = is_jet * device::U_Back[0]; // ux

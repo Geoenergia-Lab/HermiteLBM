@@ -78,11 +78,9 @@ namespace LBM
             [[maybe_unused]] const thread::array<scalar_t, VelocitySet::Q()> &pop,
             [[maybe_unused]] momentsArray &moments,
             [[maybe_unused]] const normalVector &boundaryNormal,
-            [[maybe_unused]] const scalar_t *const ptrRestrict shared_buffer,
+            [[maybe_unused]] const scalar_t *const ptrRestrict sharedBuffer,
             [[maybe_unused]] const thread::coordinate &Tx,
-            [[maybe_unused]] const device::pointCoordinate &point) noexcept
-        {
-        }
+            [[maybe_unused]] const device::pointCoordinate &point) noexcept {}
 
     private:
     };
