@@ -52,11 +52,11 @@ Notes
 case normalVector::FRONT():
 {
     // Classic Neumann
-    // const scalar_t moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    // const scalar_t moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     // moments[m_i<0>()] = moments[m_i<0>()];
-    // moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    // moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    // moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    // moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
+    // moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
+    // moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -98,11 +98,11 @@ case normalVector::FRONT():
 case normalVector::WEST_FRONT():
 {
     // Classic Neumann
-    // const scalar_t moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    // const scalar_t moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     // moments[m_i<0>()] = moments[m_i<0>()];
-    // moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    // moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    // moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    // moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
+    // moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
+    // moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -136,11 +136,11 @@ case normalVector::WEST_FRONT():
 case normalVector::EAST_FRONT():
 {
     // Classic Neumann
-    // const scalar_t moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    // const scalar_t moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     // moments[m_i<0>()] = moments[m_i<0>()];
-    // moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    // moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    // moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    // moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
+    // moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
+    // moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -174,11 +174,11 @@ case normalVector::EAST_FRONT():
 case normalVector::SOUTH_FRONT():
 {
     // Classic Neumann
-    // const scalar_t moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    // const scalar_t moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     // moments[m_i<0>()] = moments[m_i<0>()];
-    // moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    // moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    // moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    // moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
+    // moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
+    // moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -212,11 +212,11 @@ case normalVector::SOUTH_FRONT():
 case normalVector::NORTH_FRONT():
 {
     // Classic Neumann
-    // const scalar_t moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    // const scalar_t moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     // moments[m_i<0>()] = moments[m_i<0>()];
-    // moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    // moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    // moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    // moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
+    // moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
+    // moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -252,11 +252,11 @@ case normalVector::NORTH_FRONT():
 case normalVector::SOUTH_WEST_FRONT():
 {
     // Classic Neumann
-    // moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    // moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     // moments[m_i<0>()] = rho0();
-    // moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    // moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    // moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    // moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
+    // moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
+    // moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
     // IRBC-Neumann
     // moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
@@ -271,11 +271,11 @@ case normalVector::SOUTH_WEST_FRONT():
 case normalVector::NORTH_WEST_FRONT():
 {
     // Classic Neumann
-    // moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    // moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     // moments[m_i<0>()] = rho0();
-    // moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    // moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    // moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    // moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
+    // moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
+    // moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
     // IRBC-Neumann
     // moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
@@ -290,11 +290,11 @@ case normalVector::NORTH_WEST_FRONT():
 case normalVector::SOUTH_EAST_FRONT():
 {
     // Classic Neumann
-    // moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    // moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     // moments[m_i<0>()] = rho0();
-    // moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    // moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    // moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    // moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
+    // moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
+    // moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
     // IRBC-Neumann
     // moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
@@ -309,11 +309,11 @@ case normalVector::SOUTH_EAST_FRONT():
 case normalVector::NORTH_EAST_FRONT():
 {
     // Classic Neumann
-    // moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    // moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
     // moments[m_i<0>()] = rho0();
-    // moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    // moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    // moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    // moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
+    // moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
+    // moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
     // IRBC-Neumann
     // moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx

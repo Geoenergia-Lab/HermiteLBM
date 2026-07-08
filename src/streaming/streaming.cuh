@@ -66,6 +66,7 @@ namespace LBM
      * efficient shared memory operations for storing and retrieving population
      * data with optimized periodic boundary handling.
      **/
+    template <class VelocitySet>
     class streaming
     {
     public:
@@ -76,7 +77,6 @@ namespace LBM
 
         /**
          * @brief Saves thread population density to shared memory
-         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam N Size of shared memory array
          * @param[in] pop Population density array for current thread
          * @param[out] s_pop Shared memory array for population storage
@@ -86,13 +86,12 @@ namespace LBM
          * shared memory for efficient access during the streaming step.
          * It uses compile-time loop unrolling for optimal performance.
          **/
-        template <class VelocitySet>
         __device__ static inline void save(
-            const thread::array<scalar_t, VelocitySet::Q()> &pop,
+            const thread::array<scalar_t, VelocitySet::template Q()> &pop,
             scalar_t *const ptrRestrict s_pop,
             const device::label_t tid) noexcept
         {
-            device::constexpr_for<0, (VelocitySet::Q() - 1)>(
+            device::constexpr_for<0, (VelocitySet::template Q() - 1)>(
                 [&](const auto i)
                 {
                     s_pop[q_i<i * block::stride()>() + tid] = pop[q_i<i + 1>()];
@@ -102,18 +101,17 @@ namespace LBM
         /**
          * @overload Accepts a thread::array for shared memory storage
          **/
-        template <class VelocitySet, const host::label_t N>
+        template <const host::label_t N>
         __device__ static inline void save(
-            const thread::array<scalar_t, VelocitySet::Q()> &pop,
+            const thread::array<scalar_t, VelocitySet::template Q()> &pop,
             thread::array<scalar_t, N> &s_pop,
             const device::label_t tid) noexcept
         {
-            save<VelocitySet>(pop, s_pop.data(), tid);
+            save(pop, s_pop.data(), tid);
         }
 
         /**
          * @brief Pulls population density from shared memory with periodic boundaries
-         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam N Size of shared memory array
          * @param[out] pop Population density array to be populated
          * @param[in] s_pop Shared memory array containing population data
@@ -122,13 +120,12 @@ namespace LBM
          * periodic boundary conditions to handle data exchange between threads
          * at block boundaries. It implements the D3Q19 streaming pattern.
          **/
-        template <class VelocitySet>
         __device__ static inline void pull(
-            thread::array<scalar_t, VelocitySet::Q()> &pop,
+            thread::array<scalar_t, VelocitySet::template Q()> &pop,
             const scalar_t *const ptrRestrict s_pop,
             const thread::coordinate &Tx) noexcept
         {
-            device::constexpr_for<0, (VelocitySet::Q() - 1)>(
+            device::constexpr_for<0, (VelocitySet::template Q() - 1)>(
                 [&](const auto i)
                 {
                     const device::label_t x = periodic_index<-VelocitySet::template c<int, axis::X>(q_i<i + 1>()), block::nx()>(Tx.value<axis::X>());
@@ -141,13 +138,13 @@ namespace LBM
         /**
          * @overload Accepts a thread::array for shared memory storage
          **/
-        template <class VelocitySet, const host::label_t N>
+        template <const host::label_t N>
         __device__ static inline void pull(
-            thread::array<scalar_t, VelocitySet::Q()> &pop,
+            thread::array<scalar_t, VelocitySet::template Q()> &pop,
             const thread::array<scalar_t, N> &s_pop,
             const thread::coordinate &Tx) noexcept
         {
-            pull<VelocitySet>(pop, s_pop.data(), Tx);
+            pull(pop, s_pop.data(), Tx);
         }
 
     private:
