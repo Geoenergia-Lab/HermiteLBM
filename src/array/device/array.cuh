@@ -65,6 +65,9 @@ namespace LBM
         template <const field::type FieldType, typename T, class VelocitySet, const time::type TimeType>
         class array;
 
+        template <typename T>
+        using devPtr_t = T **const ptrRestrict;
+
         /**
          * @brief Base class for device-side arrays, managing a collection of device pointers.
          *
@@ -83,7 +86,7 @@ namespace LBM
             /**
              * @brief Array of device pointers (one per GPU)
              **/
-            T **const ptrRestrict ptr_;
+            devPtr_t<T> ptr_;
 
             /**
              * @brief Reference to the lattice mesh
@@ -96,25 +99,13 @@ namespace LBM
             const programControl &programCtrl_;
 
             /**
-             * @brief Construct a base object without initialising the pointer array.
-             * @param[in] mesh The lattice mesh
-             * @param[in] programCtrl The program control object
-             **/
-            __host__ [[nodiscard]] arrayBase(
-                const host::latticeMesh &mesh,
-                const programControl &programCtrl) noexcept
-                : ptr_(nullptr),
-                  mesh_(mesh),
-                  programCtrl_(programCtrl) {}
-
-            /**
              * @brief Construct a base object with an already allocated pointer array.
              * @param[in] ptr Pointer to the array of device pointers (host memory).
              * @param[in] mesh The lattice mesh
              * @param[in] programCtrl The program control object
              **/
             __host__ [[nodiscard]] arrayBase(
-                T **ptr,
+                devPtr_t<T> ptr,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl) noexcept
                 : ptr_(ptr),
@@ -162,7 +153,7 @@ namespace LBM
                 const programControl &programCtrl,
                 const host::label_t allocationSize)
             {
-                T **hostPtrsToDevice = host::allocate<T *>(mesh.nDevices().size(), nullptr);
+                devPtr_t<T> hostPtrsToDevice = host::allocate<T *>(mesh.nDevices().size(), nullptr);
 
                 GPU::forAll(
                     mesh.nDevices(),

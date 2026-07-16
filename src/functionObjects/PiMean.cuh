@@ -57,7 +57,7 @@ namespace LBM
         struct Pi
         {
             /**
-             * @brief Number of components of the velocity vector
+             * @brief Number of components of the tensor of second order moments
              **/
             static constexpr const host::label_t N = 6;
 
@@ -117,12 +117,14 @@ namespace LBM
              **/
             using BaseType::calculate_;
             using BaseType::calculateMean_;
+            using BaseType::calculatePrime_;
             using BaseType::componentNames_;
             using BaseType::componentNamesMean_;
             using BaseType::hostWriteBuffer_;
             using BaseType::mesh_;
             using BaseType::name_;
             using BaseType::nameMean_;
+            using BaseType::namePrime_;
             using BaseType::Pi_;
             using BaseType::programCtrl_;
             using BaseType::rho_;
@@ -135,7 +137,6 @@ namespace LBM
              * @param[in] rho Device scalar field containing the density values on the GPU
              * @param[in] U Device vector field containing the velocity values on the GPU
              * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
-             * @param[in] streamsLBM Stream handler for LBM operations
              * @param[in] programCtrl The program control object
              **/
             __host__ [[nodiscard]] secondOrderMoments(
@@ -146,7 +147,8 @@ namespace LBM
                 const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
                 const programControl &programCtrl) noexcept
                 : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
-                  PiMean_(nameMean_, mesh, {0, 0, 0, 0, 0, 0}, programCtrl, calculateMean_)
+                  PiMean_(nameMean_, name_, mesh, programCtrl, (calculateMean_ || calculatePrime_)),
+                  PiPrime_(namePrime_, mesh, {0, 0, 0, 0, 0, 0}, programCtrl, calculatePrime_)
             {
                 BaseType::template configure<Kernel>(programCtrl);
             }
@@ -159,7 +161,7 @@ namespace LBM
             __host__ [[nodiscard]] secondOrderMoments &operator=(const secondOrderMoments &) = delete;
 
             /**
-             * @brief Calculate the time-averaged density
+             * @brief Calculate the time-averaged second order moments
              **/
             __host__ void calculateMean() noexcept
             {
@@ -167,11 +169,27 @@ namespace LBM
             }
 
             /**
-             * @brief Save the time-averaged density to a file
+             * @brief Calculate the perturbation of the second order moments
+             **/
+            __host__ void calculatePrime() noexcept
+            {
+                BaseType::prime(Kernel::prime(), *this);
+            }
+
+            /**
+             * @brief Save the second order moments to a file
              **/
             __host__ void saveMean(const host::label_t timeStep) noexcept
             {
                 PiMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
+            }
+
+            /**
+             * @brief Save the second order moments to a file
+             **/
+            __host__ void savePrime(const host::label_t timeStep) noexcept
+            {
+                PiPrime_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
             }
 
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
@@ -179,11 +197,21 @@ namespace LBM
                 return {PiMean_.ptr(idx)};
             }
 
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept
+            {
+                return {PiPrime_.ptr(idx)};
+            }
+
         private:
             /**
-             * @brief Time-averaged density field
+             * @brief Time-averaged second order moments
              **/
             device::symmetricTensorField<VelocitySet, time::timeAverage> PiMean_;
+
+            /**
+             * @brief Time-averaged second order moments
+             **/
+            device::symmetricTensorField<VelocitySet, time::instantaneous> PiPrime_;
         };
     }
 }

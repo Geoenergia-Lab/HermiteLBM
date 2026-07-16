@@ -127,12 +127,14 @@ namespace LBM
              **/
             using BaseType::calculate_;
             using BaseType::calculateMean_;
+            using BaseType::calculatePrime_;
             using BaseType::componentNames_;
             using BaseType::componentNamesMean_;
             using BaseType::hostWriteBuffer_;
             using BaseType::mesh_;
             using BaseType::name_;
             using BaseType::nameMean_;
+            using BaseType::namePrime_;
             using BaseType::Pi_;
             using BaseType::programCtrl_;
             using BaseType::rho_;
@@ -145,7 +147,6 @@ namespace LBM
              * @param[in] rho Device scalar field containing the density values on the GPU
              * @param[in] U Device vector field containing the velocity values on the GPU
              * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
-             * @param[in] streamsLBM Stream handler for LBM operations
              * @param[in] programCtrl The program control object
              **/
             __host__ [[nodiscard]] kineticEnergy(
@@ -157,7 +158,8 @@ namespace LBM
                 const programControl &programCtrl) noexcept
                 : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
                   k_(name_, mesh_, {0}, programCtrl, calculate_),
-                  kMean_(nameMean_, mesh, {0}, programCtrl, calculateMean_)
+                  kMean_(nameMean_, mesh, {0}, programCtrl, (calculateMean_ || calculatePrime_)),
+                  kPrime_(namePrime_, mesh, {0}, programCtrl, calculatePrime_)
             {
                 BaseType::template configure<Kernel>(programCtrl);
             }
@@ -194,6 +196,14 @@ namespace LBM
             }
 
             /**
+             * @brief Calculate the perturbation of the kinetic energy
+             **/
+            __host__ void calculatePrime() noexcept
+            {
+                BaseType::prime(Kernel::prime(), *this);
+            }
+
+            /**
              * @brief Save the instantaneous kinetic energy to a file
              **/
             __host__ void saveInstantaneous(const host::label_t timeStep) noexcept
@@ -209,6 +219,14 @@ namespace LBM
                 kMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
             }
 
+            /**
+             * @brief Save the time-averaged kinetic energy to a file
+             **/
+            __host__ void savePrime(const host::label_t timeStep) noexcept
+            {
+                kPrime_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
+            }
+
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> instantaneousPtrs(const host::label_t idx) noexcept
             {
                 return k_.ptr(idx);
@@ -217,6 +235,11 @@ namespace LBM
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
             {
                 return {kMean_.ptr(idx)};
+            }
+
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept
+            {
+                return {kPrime_.ptr(idx)};
             }
 
         private:
@@ -229,6 +252,11 @@ namespace LBM
              * @brief Time-averaged kinetic energy
              **/
             device::scalarField<VelocitySet, time::instantaneous> kMean_;
+
+            /**
+             * @brief Perturbation of the kinetic energy
+             **/
+            device::scalarField<VelocitySet, time::instantaneous> kPrime_;
         };
     }
 }

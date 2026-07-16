@@ -56,7 +56,6 @@ SourceFiles
 #include "../postProcess/postProcess.cuh"
 #include "functionObjects.cuh"
 #include "functionObjectBase.cuh"
-#include "moments.cuh"
 #include "strainRateTensor.cuh"
 #include "kineticEnergy.cuh"
 #include "rhoMean.cuh"
@@ -75,9 +74,12 @@ namespace LBM
     public:
         /**
          * @brief Constructs an objectRegistry with mesh, device pointers and streams
+         * @param[in] hostWriteBuffer Reference to the host-side write buffer
          * @param[in] mesh The lattice mesh
-         * @param[in] devPtrs Device pointer collection for memory management
-         * @param[in] streamsLBM Stream handler for LBM operations
+         * @param[in] rho Device scalar field containing the density values on the GPU
+         * @param[in] U Device vector field containing the velocity values on the GPU
+         * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
+         * @param[in] programCtrl The program control object
          **/
         __host__ [[nodiscard]] objectRegistry(
             host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
@@ -213,6 +215,16 @@ namespace LBM
                         object.calculateMean();
                     });
             }
+
+            // Push back the call to calculate the mean quantity
+            if (object.doPrime())
+            {
+                calls.push_back(
+                    [&object]()
+                    {
+                        object.calculatePrime();
+                    });
+            }
         }
 
         /**
@@ -247,12 +259,20 @@ namespace LBM
                         });
                 }
             }
-            if (object.doMean())
+            if (object.doMean() || object.doPrime())
             {
                 calls.push_back(
                     [&object](const host::label_t label)
                     {
                         object.saveMean(label);
+                    });
+            }
+            if (object.doPrime())
+            {
+                calls.push_back(
+                    [&object](const host::label_t label)
+                    {
+                        object.savePrime(label);
                     });
             }
         }

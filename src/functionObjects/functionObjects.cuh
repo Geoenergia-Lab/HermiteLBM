@@ -234,6 +234,34 @@ namespace LBM
         }
 
         /**
+         * @brief Device-side function for calculating the instantaneous quantity only
+         * @tparam FunctionObject The function object to calculate
+         * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
+         * @param[out] resulPtrs Device pointer collection for the instantaneous quantity
+         **/
+        template <class FunctionObject>
+        __device__ inline void prime(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
+            const device::ptrCollection<FunctionObject::N, scalar_t> resultMeanPtrs,
+            const device::ptrCollection<FunctionObject::N, scalar_t> resultPtrs) noexcept
+        {
+            // Calculate the index
+            const device::label_t idx = device::idx(thread::coordinate(), block::coordinate());
+
+            // Calculate the instantaneous
+            const thread::array<scalar_t, FunctionObject::N> resultInstantaneous = FunctionObject::calculate(devPtrs, idx);
+
+            // Read the mean values from global memory
+            const thread::array<scalar_t, FunctionObject::N> resultMean = read(resultMeanPtrs, idx);
+
+            // Update the prime value
+            const thread::array<scalar_t, FunctionObject::N> resultMeanNew = resultInstantaneous - resultMean;
+
+            // Write the prime value back to global
+            save(resultMeanNew, resultPtrs, idx);
+        }
+
+        /**
          * @brief Initializes calculation switches based on function object configuration
          * @param[in] objectName Name of the function object to check
          * @return True if the object is enabled in configuration

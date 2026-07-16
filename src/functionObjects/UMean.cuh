@@ -117,12 +117,14 @@ namespace LBM
              **/
             using BaseType::calculate_;
             using BaseType::calculateMean_;
+            using BaseType::calculatePrime_;
             using BaseType::componentNames_;
             using BaseType::componentNamesMean_;
             using BaseType::hostWriteBuffer_;
             using BaseType::mesh_;
             using BaseType::name_;
             using BaseType::nameMean_;
+            using BaseType::namePrime_;
             using BaseType::Pi_;
             using BaseType::programCtrl_;
             using BaseType::rho_;
@@ -135,7 +137,6 @@ namespace LBM
              * @param[in] rho Device scalar field containing the density values on the GPU
              * @param[in] U Device vector field containing the velocity values on the GPU
              * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
-             * @param[in] streamsLBM Stream handler for LBM operations
              * @param[in] programCtrl The program control object
              **/
             __host__ [[nodiscard]] velocityVector(
@@ -146,7 +147,8 @@ namespace LBM
                 const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
                 const programControl &programCtrl) noexcept
                 : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
-                  UMean_(nameMean_, mesh, {0, 0, 0}, programCtrl, calculateMean_)
+                  UMean_(nameMean_, name_, mesh, programCtrl, (calculateMean_ || calculatePrime_)),
+                  UPrime_(namePrime_, mesh, {0, 0, 0}, programCtrl, calculatePrime_)
             {
                 BaseType::template configure<Kernel>(programCtrl);
             }
@@ -167,6 +169,14 @@ namespace LBM
             }
 
             /**
+             * @brief Calculate the perturbation of the velocity
+             **/
+            __host__ void calculatePrime() noexcept
+            {
+                BaseType::prime(Kernel::prime(), *this);
+            }
+
+            /**
              * @brief Save the time-averaged velocity to a file
              **/
             __host__ void saveMean(const host::label_t timeStep) noexcept
@@ -174,9 +184,27 @@ namespace LBM
                 UMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
             }
 
+            /**
+             * @brief Save the time-averaged velocity to a file
+             **/
+            __host__ void savePrime(const host::label_t timeStep) noexcept
+            {
+                UPrime_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
+            }
+
+            __host__ [[nodiscard]] inline constexpr const device::vectorField<VelocitySet, time::timeAverage> &UMean() const noexcept
+            {
+                return UMean_;
+            }
+
             __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
             {
                 return {UMean_.ptr(idx)};
+            }
+
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept
+            {
+                return {UPrime_.ptr(idx)};
             }
 
         private:
@@ -184,6 +212,11 @@ namespace LBM
              * @brief Time-averaged velocity vector field
              **/
             device::vectorField<VelocitySet, time::timeAverage> UMean_;
+
+            /**
+             * @brief Perturbation of the velocity vector field
+             **/
+            device::vectorField<VelocitySet, time::instantaneous> UPrime_;
         };
     }
 }

@@ -55,18 +55,21 @@ namespace LBM
              **/
             const name_t name_;
             const name_t nameMean_;
+            const name_t namePrime_;
 
             /**
              * @brief Name of the field's components and their time-averaged counterpart
              **/
             const words_t componentNames_;
             const words_t componentNamesMean_;
+            const words_t componentNamesPrime_;
 
             /**
              * @brief Switches to determine whether or not the field is to be calculated
              **/
             const bool calculate_;
             const bool calculateMean_;
+            const bool calculatePrime_;
 
             /**
              * @brief Reference to the write buffer
@@ -100,6 +103,7 @@ namespace LBM
                 programCtrl.configure<0, false>(Kernel::instantaneous());
                 programCtrl.configure<0, false>(Kernel::instantaneousAndMean());
                 programCtrl.configure<0, false>(Kernel::mean());
+                programCtrl.configure<0, false>(Kernel::prime());
             }
 
             /**
@@ -215,6 +219,29 @@ namespace LBM
                 meanCount++;
             }
 
+            /**
+             * @brief Calculate both an instantaneous and a time-averaged quantity
+             * @param[in] func The kernel to execute
+             * @param[out] object The function object to calculate
+             * @param[out] meanCount Counter of time averaging steps
+             **/
+            template <class FunctionObject, class F>
+            __host__ inline void prime(
+                F *func,
+                FunctionObject &object)
+            {
+                static_assert(functionObjectReady(), "Need to fix the launch configuration and stream handling in functionObjectBase");
+
+                const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
+                for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
+                {
+                    func<<<nBlocks, host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[(deviceIdx * 3) + 1]>>>(
+                        devPtrs(deviceIdx),
+                        object.meanPtrs(deviceIdx),
+                        object.primePtrs(deviceIdx));
+                }
+            }
+
         public:
             /**
              * @brief Constructs a function object base with common input data.
@@ -223,7 +250,7 @@ namespace LBM
              * @param[in] rho Device scalar field containing the density values on the GPU
              * @param[in] U Device vector field containing the velocity values on the GPU
              * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
-             * @param[in] streamsLBM Stream handler for LBM operations
+             * @param[in] programCtrl The program control object
              **/
             __host__ [[nodiscard]] FunctionObjectBase(
                 const name_t &name,
@@ -235,10 +262,13 @@ namespace LBM
                 const programControl &programCtrl) noexcept
                 : name_(name),
                   nameMean_(name + "Mean"),
+                  namePrime_(name + "Prime"),
                   componentNames_(componentNames(name_)),
                   componentNamesMean_(componentNames(nameMean_)),
+                  componentNamesPrime_(componentNames(namePrime_)),
                   calculate_(initialiserSwitch(name_)),
                   calculateMean_(initialiserSwitch(nameMean_)),
+                  calculatePrime_(initialiserSwitch(namePrime_)),
                   hostWriteBuffer_(hostWriteBuffer),
                   mesh_(mesh),
                   rho_(rho),
@@ -262,6 +292,15 @@ namespace LBM
             __host__ [[nodiscard]] inline constexpr bool doMean() const noexcept
             {
                 return calculateMean_;
+            }
+
+            /**
+             * @brief Check if perturbation calculation is enabled
+             * @return True if perturbation calculation is enabled
+             **/
+            __host__ [[nodiscard]] inline constexpr bool doPrime() const noexcept
+            {
+                return calculatePrime_;
             }
         };
     }

@@ -140,6 +140,16 @@ namespace LBM
             return 0;
         }
     }
+
+    /**
+     * @brief Returns whether the field was found at a given time step or not
+     * @param[in] fieldName The name of the field
+     * @param[in] timeStep The time step to search
+     **/
+    __host__ [[nodiscard]] bool foundArray(const name_t &fieldName, const host::label_t timeStep) noexcept
+    {
+        return std::filesystem::exists("timeStep/" + std::to_string(timeStep) + "/" + fieldName + ".LBMBin");
+    }
 }
 
 #include "host/array.cuh"

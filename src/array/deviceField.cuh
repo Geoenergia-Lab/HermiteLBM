@@ -94,7 +94,7 @@ namespace LBM
              * @param[in] name Name of the field
              * @param[in] mesh Reference to the lattice mesh
              * @param[in] values Initial values for each component (only used if allocate=true)
-             * @param[in] programCtrl Reference to the program control object
+             * @param[in] programCtrl The program control object
              * @param[in] allocate Whether to allocate memory and initialize values
              **/
             __host__ [[nodiscard]] fieldBase(
@@ -113,7 +113,7 @@ namespace LBM
              * @brief Constructor for fieldBase
              * @param[in] name Name of the field
              * @param[in] mesh Reference to the lattice mesh
-             * @param[in] programCtrl Reference to the program control object
+             * @param[in] programCtrl The program control object
              * @param[in] allocate Whether to allocate memory and initialize values
              **/
             __host__ [[nodiscard]] fieldBase(
@@ -126,6 +126,26 @@ namespace LBM
                   name_(name),
                   meanCount_(initialiseMeanCount(name, programCtrl)),
                   components_(makeComponents(std::make_index_sequence<N>{}, name, mesh, programCtrl, allocate)) {}
+
+            /**
+             * @brief Construct from a name OR a default
+             * @param[in] name Name of the field
+             * @param[in] defaultName Name of the default field to fall back on
+             * @param[in] mesh Reference to the lattice mesh
+             * @param[in] programCtrl The program control object
+             * @param[in] allocate Whether to allocate memory and initialize values
+             **/
+            __host__ [[nodiscard]] fieldBase(
+                const name_t &name,
+                const name_t &defaultName,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl,
+                const bool allocate = true)
+                : mesh_(mesh),
+                  programCtrl_(programCtrl),
+                  name_(name),
+                  meanCount_(initialiseMeanCount(name, programCtrl)),
+                  components_(makeComponents(std::make_index_sequence<N>{}, name, defaultName, mesh, programCtrl, allocate)) {}
 
             /**
              * @brief Get the field name.
@@ -224,6 +244,16 @@ namespace LBM
                 return makePtrCollection(idx, std::make_index_sequence<N>{});
             }
 
+            /**
+             * @brief Get a collection of non-const device pointers (one per component).
+             * @param[in] idx Virtual device index.
+             * @return ptrCollection with N scalar_t*.
+             **/
+            __host__ [[nodiscard]] inline constexpr device::ptrCollection<N, scalar_t> mutPtr(const host::label_t idx) noexcept
+            {
+                return makePtrCollection(idx, std::make_index_sequence<N>{});
+            }
+
         private:
             /**
              * @brief Helper function to generate component names based on the base name and the number of components (N).
@@ -260,7 +290,7 @@ namespace LBM
              * @param[in] baseName Base name for the components.
              * @param[in] mesh Reference to the lattice mesh.
              * @param[in] values Initial values for each component (only used if allocate=true).
-             * @param[in] programCtrl Reference to the program control object.
+             * @param[in] programCtrl The program control object.
              * @param[in] allocate Whether to allocate memory and initialize values.
              * @return std::array of ComponentType with N initialized components.
              **/
@@ -283,7 +313,7 @@ namespace LBM
              * @tparam Is... Compile-time indices for pack expansion.
              * @param[in] baseName Base name for the components.
              * @param[in] mesh Reference to the lattice mesh.
-             * @param[in] programCtrl Reference to the program control object.
+             * @param[in] programCtrl The program control object.
              * @param[in] allocate Whether to allocate memory and initialize values.
              * @return std::array of ComponentType with N initialized components.
              **/
@@ -297,6 +327,37 @@ namespace LBM
             {
                 const std::array<std::string, N> compNames = makeComponentNames<std::array<std::string, N>>(baseName);
                 return {ComponentType(baseName, compNames[Is], mesh, programCtrl, allocate)...};
+            }
+
+            /**
+             * @brief Helper function to create components using pack expansion.
+             * @tparam Is... Compile-time indices for pack expansion.
+             * @param[in] baseName Base name for the components.
+             * @param[in] defaultName Default name to fall back on.
+             * @param[in] mesh Reference to the lattice mesh.
+             * @param[in] programCtrl The program control object.
+             * @param[in] allocate Whether to allocate memory and initialize values.
+             * @return std::array of ComponentType with N initialized components.
+             **/
+            template <const host::label_t... Is>
+            __host__ [[nodiscard]] static const std::array<ComponentType, N> makeComponents(
+                const std::index_sequence<Is...>,
+                const name_t &baseName,
+                const name_t &defaultName,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl,
+                const bool allocate)
+            {
+                if (foundArray(baseName, programCtrl.latestTime()))
+                {
+                    const std::array<std::string, N> compNames = makeComponentNames<std::array<std::string, N>>(baseName);
+                    return {ComponentType(baseName, compNames[Is], mesh, programCtrl, allocate)...};
+                }
+                else
+                {
+                    const std::array<std::string, N> compNames = makeComponentNames<std::array<std::string, N>>(defaultName);
+                    return {ComponentType(defaultName, compNames[Is], mesh, programCtrl, allocate)...};
+                }
             }
 
             /**

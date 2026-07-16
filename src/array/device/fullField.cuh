@@ -168,7 +168,7 @@ namespace LBM
                 const bool allocate = true)
                 : arrayBase<T>(
                       This::allocate_on_devices(
-                          host::array<host::PAGED, T, VelocitySet, TimeType>(name, componentName, mesh, programCtrl),
+                          from_host(name, componentName, mesh, programCtrl),
                           allocate, programCtrl),
                       mesh,
                       programCtrl),
@@ -336,6 +336,18 @@ namespace LBM
                         device::copyToSymbol(device::U_Front, Front() * U_inf, i);
                     }
                 }
+            }
+
+            /**
+             * @brief Constructs a host array with a given name
+             **/
+            __host__ [[nodiscard]] host::array<host::PAGED, T, VelocitySet, TimeType> from_host(
+                const name_t &name,
+                const name_t &componentName,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl)
+            {
+                return host::array<host::PAGED, T, VelocitySet, TimeType>(name, componentName, mesh, programCtrl);
             }
         };
     }
