@@ -81,6 +81,9 @@ namespace LBM
             }
 
         private:
+            /**
+             * @brief Name of the field
+             **/
             const name_t name_;
 
             /**
@@ -123,6 +126,9 @@ namespace LBM
             }
 
         private:
+            /**
+             * @brief Name of the field
+             **/
             const name_t name_;
 
             /**
@@ -176,6 +182,9 @@ namespace LBM
             }
 
         private:
+            /**
+             * @brief Name of the field
+             **/
             const name_t name_;
 
             /**

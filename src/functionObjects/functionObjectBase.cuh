@@ -56,6 +56,7 @@ namespace LBM
             const name_t name_;
             const name_t nameMean_;
             const name_t namePrime_;
+            const name_t namePrimeSqMean_;
 
             /**
              * @brief Name of the field's components and their time-averaged counterpart
@@ -63,6 +64,7 @@ namespace LBM
             const words_t componentNames_;
             const words_t componentNamesMean_;
             const words_t componentNamesPrime_;
+            const words_t componentNamesPrimeSqMean_;
 
             /**
              * @brief Switches to determine whether or not the field is to be calculated
@@ -70,6 +72,7 @@ namespace LBM
             const bool calculate_;
             const bool calculateMean_;
             const bool calculatePrime_;
+            const bool calculatePrimeSqMean_;
 
             /**
              * @brief Reference to the write buffer
@@ -104,6 +107,7 @@ namespace LBM
                 programCtrl.configure<0, false>(Kernel::instantaneousAndMean());
                 programCtrl.configure<0, false>(Kernel::mean());
                 programCtrl.configure<0, false>(Kernel::prime());
+                programCtrl.configure<0, false>(Kernel::primeSqMean());
             }
 
             /**
@@ -220,7 +224,7 @@ namespace LBM
             }
 
             /**
-             * @brief Calculate both an instantaneous and a time-averaged quantity
+             * @brief Calculate the perturbation quantity
              * @param[in] func The kernel to execute
              * @param[out] object The function object to calculate
              * @param[out] meanCount Counter of time averaging steps
@@ -239,6 +243,31 @@ namespace LBM
                         devPtrs(deviceIdx),
                         object.meanPtrs(deviceIdx),
                         object.primePtrs(deviceIdx));
+                }
+            }
+
+            /**
+             * @brief Calculate the time average of the square of the perturbation quantity
+             * @param[in] func The kernel to execute
+             * @param[out] object The function object to calculate
+             * @param[out] meanCount Counter of time averaging steps
+             **/
+            template <class FunctionObject, class F>
+            __host__ inline void primeSqMean(
+                F *func,
+                FunctionObject &object,
+                host::label_t &meanCount)
+            {
+                const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
+
+                const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
+                for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
+                {
+                    func<<<nBlocks, host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[(deviceIdx * 3) + 1]>>>(
+                        devPtrs(deviceIdx),
+                        object.meanPtrs(deviceIdx),
+                        object.primeSqMeanPtrs(deviceIdx),
+                        invNewCount);
                 }
             }
 
@@ -263,12 +292,15 @@ namespace LBM
                 : name_(name),
                   nameMean_(name + "Mean"),
                   namePrime_(name + "Prime"),
+                  namePrimeSqMean_(name + "PrimeSqMean"),
                   componentNames_(componentNames(name_)),
                   componentNamesMean_(componentNames(nameMean_)),
                   componentNamesPrime_(componentNames(namePrime_)),
+                  componentNamesPrimeSqMean_(componentNames(namePrimeSqMean_)),
                   calculate_(initialiserSwitch(name_)),
                   calculateMean_(initialiserSwitch(nameMean_)),
                   calculatePrime_(initialiserSwitch(namePrime_)),
+                  calculatePrimeSqMean_(initialiserSwitch(namePrimeSqMean_)),
                   hostWriteBuffer_(hostWriteBuffer),
                   mesh_(mesh),
                   rho_(rho),
@@ -277,8 +309,7 @@ namespace LBM
                   programCtrl_(programCtrl) {}
 
             /**
-             * @brief Check if instantaneous calculation is enabled
-             * @return True if instantaneous calculation is enabled
+             * @brief Check if calculation of the instantaneous quantity is enabled
              **/
             __host__ [[nodiscard]] inline constexpr bool doInstantaneous() const noexcept
             {
@@ -286,8 +317,7 @@ namespace LBM
             }
 
             /**
-             * @brief Check if mean calculation is enabled
-             * @return True if mean calculation is enabled
+             * @brief Check if calculation of the time average is enabled
              **/
             __host__ [[nodiscard]] inline constexpr bool doMean() const noexcept
             {
@@ -295,12 +325,19 @@ namespace LBM
             }
 
             /**
-             * @brief Check if perturbation calculation is enabled
-             * @return True if perturbation calculation is enabled
+             * @brief Check if calculation of the perturbation is enabled
              **/
             __host__ [[nodiscard]] inline constexpr bool doPrime() const noexcept
             {
                 return calculatePrime_;
+            }
+
+            /**
+             * @brief Check if calculation of the time average of the square of the perturbation is enabled
+             **/
+            __host__ [[nodiscard]] inline constexpr bool doPrimeSqMean() const noexcept
+            {
+                return calculatePrimeSqMean_;
             }
         };
     }

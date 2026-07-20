@@ -68,7 +68,7 @@ __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ stati
 /**
  * @brief CUDA kernel for calculating the instantaneous and time averaged quantity
  * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
- * @param[out] resulPtrs Device pointer collection for the instantaneous quantity
+ * @param[out] resultPtrs Device pointer collection for the instantaneous quantity
  * @param[out] resultMeanPtrs Device pointer collection for the time averaged quantity
  * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
  **/
@@ -84,7 +84,7 @@ __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ stati
 /**
  * @brief CUDA kernel for calculating the instantaneous quantity only
  * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
- * @param[out] resulPtrs Device pointer collection for the instantaneous quantity
+ * @param[out] resultPtrs Device pointer collection for the instantaneous quantity
  **/
 __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ static void instantaneousKernel(
     const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
@@ -96,7 +96,7 @@ __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ stati
 /**
  * @brief CUDA kernel for calculating the prime quantity only
  * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
- * @param[out] resulPtrs Device pointer collection for the instantaneous quantity
+ * @param[out] resultPtrs Device pointer collection for the instantaneous quantity
  **/
 __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ static void primeKernel(
     const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
@@ -104,6 +104,22 @@ __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ stati
     const device::ptrCollection<This::N, scalar_t> resultPtrs)
 {
     functionObjects::prime<This>(devPtrs, resultMeanPtrs, resultPtrs);
+}
+
+/**
+ * @brief CUDA kernel for calculating the time average of the square of the prime quantity
+ * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
+ * @param[in] resultMeanPtrs Device pointer collection for the time average quantity
+ * @param[out] resultPrimeMeanSqPtrs Device pointer collection for the time average of the square of the prime quantity
+ * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
+ **/
+__launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ static void primeSqMeanKernel(
+    const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
+    const device::ptrCollection<This::N, scalar_t> resultMeanPtrs,
+    const device::ptrCollection<This::N, scalar_t> resultPrimeMeanSqPtrs,
+    const scalar_t invNewCount)
+{
+    functionObjects::primeSqMean<This>(devPtrs, resultMeanPtrs, resultPrimeMeanSqPtrs, invNewCount);
 }
 
 struct kernel
@@ -127,4 +143,9 @@ struct kernel
      * @brief Returns a function pointer to the prime kernel
      **/
     __host__ [[nodiscard]] static inline constexpr auto prime() noexcept { return primeKernel; }
+
+    /**
+     * @brief Returns a function pointer to the prime squared time average kernel
+     **/
+    __host__ [[nodiscard]] static inline constexpr auto primeSqMean() noexcept { return primeSqMeanKernel; }
 };

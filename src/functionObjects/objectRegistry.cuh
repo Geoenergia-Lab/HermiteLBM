@@ -225,6 +225,15 @@ namespace LBM
                         object.calculatePrime();
                     });
             }
+
+            if (object.doPrimeSqMean())
+            {
+                calls.push_back(
+                    [&object]()
+                    {
+                        object.calculatePrimeSqMean();
+                    });
+            }
         }
 
         /**
@@ -259,7 +268,7 @@ namespace LBM
                         });
                 }
             }
-            if (object.doMean() || object.doPrime())
+            if (object.doMean() || object.doPrime() || object.doPrimeSqMean())
             {
                 calls.push_back(
                     [&object](const host::label_t label)
@@ -273,6 +282,15 @@ namespace LBM
                     [&object](const host::label_t label)
                     {
                         object.savePrime(label);
+                    });
+            }
+
+            if (object.doPrimeSqMean())
+            {
+                calls.push_back(
+                    [&object](const host::label_t label)
+                    {
+                        object.savePrimeSqMean(label);
                     });
             }
         }

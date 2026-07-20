@@ -249,7 +249,7 @@ namespace LBM
         template <typename T, const host::label_t N, const host::label_t M>
         __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, N> make_first_N(const thread::array<T, M> &arr) noexcept
         {
-            return [&]<std::size_t... Is>(const std::index_sequence<Is...>)
+            return [&]<const host::label_t... Is>(const std::index_sequence<Is...>)
             {
                 return thread::array<T, N>{arr[Is]...};
             }(std::make_index_sequence<N>{});

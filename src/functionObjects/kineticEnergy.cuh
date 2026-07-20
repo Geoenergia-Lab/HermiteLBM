@@ -126,8 +126,6 @@ namespace LBM
              * @brief Bring base members into scope
              **/
             using BaseType::calculate_;
-            using BaseType::calculateMean_;
-            using BaseType::calculatePrime_;
             using BaseType::componentNames_;
             using BaseType::componentNamesMean_;
             using BaseType::hostWriteBuffer_;
@@ -135,6 +133,7 @@ namespace LBM
             using BaseType::name_;
             using BaseType::nameMean_;
             using BaseType::namePrime_;
+            using BaseType::namePrimeSqMean_;
             using BaseType::Pi_;
             using BaseType::programCtrl_;
             using BaseType::rho_;
@@ -157,9 +156,10 @@ namespace LBM
                 const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
                 const programControl &programCtrl) noexcept
                 : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
-                  k_(name_, mesh_, {0}, programCtrl, calculate_),
-                  kMean_(nameMean_, mesh, {0}, programCtrl, (calculateMean_ || calculatePrime_)),
-                  kPrime_(namePrime_, mesh, {0}, programCtrl, calculatePrime_)
+                  k_(name_, mesh_, {static_cast<scalar_t>(0)}, programCtrl, calculate_),
+                  kMean_(nameMean_, mesh, {static_cast<scalar_t>(0)}, programCtrl, (BaseType::doMean() || BaseType::doPrime() || BaseType::doPrimeSqMean())),
+                  kPrime_(namePrime_, mesh, {static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrime()),
+                  kPrimeSqMean_(namePrimeSqMean_, mesh, {static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrimeSqMean())
             {
                 BaseType::template configure<Kernel>(programCtrl);
             }
@@ -204,6 +204,14 @@ namespace LBM
             }
 
             /**
+             * @brief Calculate the time-averaged square of the perturbation of the kinetic energy
+             **/
+            __host__ void calculatePrimeSqMean() noexcept
+            {
+                BaseType::primeSqMean(Kernel::primeSqMean(), *this, kPrimeSqMean_.meanCountRef());
+            }
+
+            /**
              * @brief Save the instantaneous kinetic energy to a file
              **/
             __host__ void saveInstantaneous(const host::label_t timeStep) noexcept
@@ -227,20 +235,21 @@ namespace LBM
                 kPrime_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
             }
 
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> instantaneousPtrs(const host::label_t idx) noexcept
+            /**
+             * @brief Save the time average of the square of the perturbation of the kinetic energy to a file
+             **/
+            __host__ void savePrimeSqMean(const host::label_t timeStep) noexcept
             {
-                return k_.ptr(idx);
+                kPrimeSqMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
             }
 
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
-            {
-                return {kMean_.ptr(idx)};
-            }
-
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept
-            {
-                return {kPrime_.ptr(idx)};
-            }
+            /**
+             * @brief Access to the pointers of the underlying device fields
+             **/
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> instantaneousPtrs(const host::label_t idx) noexcept { return k_.ptr(idx); }
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept { return {kMean_.ptr(idx)}; }
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept { return {kPrime_.ptr(idx)}; }
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primeSqMeanPtrs(const host::label_t idx) noexcept { return {kPrimeSqMean_.ptr(idx)}; }
 
         private:
             /**
@@ -257,6 +266,11 @@ namespace LBM
              * @brief Perturbation of the kinetic energy
              **/
             device::scalarField<VelocitySet, time::instantaneous> kPrime_;
+
+            /**
+             * @brief Time average of the square of the perturbation of the kinetic energy
+             **/
+            device::scalarField<VelocitySet, time::timeAverage> kPrimeSqMean_;
         };
     }
 }

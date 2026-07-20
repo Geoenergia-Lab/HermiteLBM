@@ -116,8 +116,6 @@ namespace LBM
              * @brief Bring base members into scope
              **/
             using BaseType::calculate_;
-            using BaseType::calculateMean_;
-            using BaseType::calculatePrime_;
             using BaseType::componentNames_;
             using BaseType::componentNamesMean_;
             using BaseType::hostWriteBuffer_;
@@ -125,6 +123,7 @@ namespace LBM
             using BaseType::name_;
             using BaseType::nameMean_;
             using BaseType::namePrime_;
+            using BaseType::namePrimeSqMean_;
             using BaseType::Pi_;
             using BaseType::programCtrl_;
             using BaseType::rho_;
@@ -147,8 +146,9 @@ namespace LBM
                 const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
                 const programControl &programCtrl) noexcept
                 : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
-                  rhoMean_(nameMean_, name_, mesh, programCtrl, (calculateMean_ || calculatePrime_)),
-                  rhoPrime_(namePrime_, mesh, {0}, programCtrl, calculatePrime_)
+                  rhoMean_(nameMean_, name_, mesh, programCtrl, (BaseType::doMean() || BaseType::doPrime() || BaseType::doPrimeSqMean())),
+                  rhoPrime_(namePrime_, mesh, {static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrime()),
+                  rhoPrimeSqMean_(namePrimeSqMean_, mesh, {static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrimeSqMean())
             {
                 BaseType::template configure<Kernel>(programCtrl);
             }
@@ -177,6 +177,14 @@ namespace LBM
             }
 
             /**
+             * @brief Calculate the time-averaged square of the perturbation of the density
+             **/
+            __host__ void calculatePrimeSqMean() noexcept
+            {
+                BaseType::primeSqMean(Kernel::primeSqMean(), *this, rhoPrimeSqMean_.meanCountRef());
+            }
+
+            /**
              * @brief Save the time-averaged density to a file
              **/
             __host__ void saveMean(const host::label_t timeStep) noexcept
@@ -192,15 +200,20 @@ namespace LBM
                 rhoPrime_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
             }
 
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
+            /**
+             * @brief Save the time average of the square of the perturbation of the density to a file
+             **/
+            __host__ void savePrimeSqMean(const host::label_t timeStep) noexcept
             {
-                return {rhoMean_.ptr(idx)};
+                rhoPrimeSqMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
             }
 
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept
-            {
-                return {rhoPrime_.ptr(idx)};
-            }
+            /**
+             * @brief Access to the pointers of the underlying device fields
+             **/
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept { return {rhoMean_.ptr(idx)}; }
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept { return {rhoPrime_.ptr(idx)}; }
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primeSqMeanPtrs(const host::label_t idx) noexcept { return {rhoPrimeSqMean_.ptr(idx)}; }
 
         private:
             /**
@@ -212,6 +225,11 @@ namespace LBM
              * @brief Perturbation of the density field
              **/
             device::scalarField<VelocitySet, time::instantaneous> rhoPrime_;
+
+            /**
+             * @brief Time average of the square of the perturbation of the density field
+             **/
+            device::scalarField<VelocitySet, time::timeAverage> rhoPrimeSqMean_;
         };
     }
 }

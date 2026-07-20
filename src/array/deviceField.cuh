@@ -100,7 +100,7 @@ namespace LBM
             __host__ [[nodiscard]] fieldBase(
                 const name_t &name,
                 const host::latticeMesh &mesh,
-                const std::array<scalar_t, N> values,
+                const thread::array<scalar_t, N> &values,
                 const programControl &programCtrl,
                 const bool allocate = true)
                 : mesh_(mesh),
@@ -299,13 +299,21 @@ namespace LBM
                 const std::index_sequence<Is...>,
                 const name_t &baseName,
                 const host::latticeMesh &mesh,
-                const std::array<scalar_t, N> values,
+                const thread::array<scalar_t, N> &values,
                 const programControl &programCtrl,
                 const bool allocate)
             {
                 const std::array<std::string, N> compNames = makeComponentNames<std::array<std::string, N>>(baseName);
-                // Use pack expansion to construct each element in-place
-                return {ComponentType(baseName, compNames[Is], mesh, values[Is], programCtrl, allocate)...};
+
+                if (foundArray(baseName, programCtrl.latestTime()))
+                {
+                    return {ComponentType(baseName, compNames[Is], mesh, programCtrl, allocate)...};
+                }
+                else
+                {
+                    // Use pack expansion to construct each element in-place
+                    return {ComponentType(baseName, compNames[Is], mesh, values[Is], programCtrl, allocate)...};
+                }
             }
 
             /**
