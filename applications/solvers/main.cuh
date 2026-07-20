@@ -81,7 +81,7 @@ int main(const int argc, const char *const argv[])
 
     const haloBuffer<VelocitySet> haloPtrs(rho, U, Pi, mesh, programCtrl);
 
-    host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> hostWriteBuffer(mesh.size() * 6, mesh);
+    host::array<host::PINNED, scalar_t, VelocitySet> hostWriteBuffer(mesh.size() * 6, mesh);
 
     programCtrl.configure<VelocitySet::smem_alloc_size()>(kernel::momentBasedLBM);
 

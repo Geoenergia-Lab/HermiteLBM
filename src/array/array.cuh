@@ -85,20 +85,6 @@ namespace LBM
         } mallocType;
     }
 
-    namespace field
-    {
-        /**
-         * @brief Type of field to be allocated
-         * @note The skeleton type contains only a pointer;
-         * FULL_FIELD contains a pointer, name and a reference to the mesh
-         **/
-        typedef enum Enum : bool
-        {
-            SKELETON = 0,
-            FULL_FIELD = 1
-        } type;
-    }
-
     /**
      * @brief Constructor read types
      * @note Has to be enumerated because there are only so many possible read configurations
@@ -152,6 +138,7 @@ namespace LBM
     }
 }
 
+#include "fieldType.cuh"
 #include "host/array.cuh"
 #include "device/array.cuh"
 #include "hostArrayCollection.cuh"

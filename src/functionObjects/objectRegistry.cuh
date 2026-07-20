@@ -82,7 +82,7 @@ namespace LBM
          * @param[in] programCtrl The program control object
          **/
         __host__ [[nodiscard]] objectRegistry(
-            host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
+            host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer,
             const host::latticeMesh &mesh,
             const device::scalarField<VelocitySet, time::instantaneous> &rho,
             const device::vectorField<VelocitySet, time::instantaneous> &U,
@@ -134,7 +134,7 @@ namespace LBM
         }
 
     private:
-        host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer_;
+        host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer_;
 
         /**
          * @brief Reference to lattice mesh

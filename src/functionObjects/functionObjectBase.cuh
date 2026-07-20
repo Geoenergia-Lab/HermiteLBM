@@ -77,7 +77,7 @@ namespace LBM
             /**
              * @brief Reference to the write buffer
              **/
-            host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer_;
+            host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer_;
 
             /**
              * @brief Reference to lattice mesh
@@ -108,28 +108,6 @@ namespace LBM
                 programCtrl.configure<0, false>(Kernel::mean());
                 programCtrl.configure<0, false>(Kernel::prime());
                 programCtrl.configure<0, false>(Kernel::primeSqMean());
-            }
-
-            /**
-             * @brief Construct the component names from the field name
-             * @param[in] name Name of the field
-             **/
-            __host__ [[nodiscard]] static inline constexpr const words_t componentNames(const name_t &name)
-            {
-                if constexpr (N == 1)
-                {
-                    return {name};
-                }
-
-                if constexpr (N == 3)
-                {
-                    return string::catenate(name, {"_x", "_y", "_z"});
-                }
-
-                if constexpr (N == 6)
-                {
-                    return string::catenate(name, {"_xx", "_xy", "_xz", "_yy", "_yz", "_zz"});
-                }
             }
 
             /**
@@ -283,7 +261,7 @@ namespace LBM
              **/
             __host__ [[nodiscard]] FunctionObjectBase(
                 const name_t &name,
-                host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
+                host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer,
                 const host::latticeMesh &mesh,
                 const device::scalarField<VelocitySet, time::instantaneous> &rho,
                 const device::vectorField<VelocitySet, time::instantaneous> &U,
@@ -293,10 +271,10 @@ namespace LBM
                   nameMean_(name + "Mean"),
                   namePrime_(name + "Prime"),
                   namePrimeSqMean_(name + "PrimeSqMean"),
-                  componentNames_(componentNames(name_)),
-                  componentNamesMean_(componentNames(nameMean_)),
-                  componentNamesPrime_(componentNames(namePrime_)),
-                  componentNamesPrimeSqMean_(componentNames(namePrimeSqMean_)),
+                  componentNames_(fieldType<N>::template makeComponentNames<words_t>(name_)),
+                  componentNamesMean_(fieldType<N>::template makeComponentNames<words_t>(nameMean_)),
+                  componentNamesPrime_(fieldType<N>::template makeComponentNames<words_t>(namePrime_)),
+                  componentNamesPrimeSqMean_(fieldType<N>::template makeComponentNames<words_t>(namePrimeSqMean_)),
                   calculate_(initialiserSwitch(name_)),
                   calculateMean_(initialiserSwitch(nameMean_)),
                   calculatePrime_(initialiserSwitch(namePrime_)),

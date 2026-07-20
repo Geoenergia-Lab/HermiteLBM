@@ -55,13 +55,14 @@ namespace LBM
     namespace device
     {
         template <class VelocitySet, const time::type TimeType, const host::label_t N>
-        class fieldBase
+        class fieldBase : public fieldType<N>, timeType<TimeType>
         {
         protected:
             /**
              * @brief Type alias for the components of a field
              **/
-            using ComponentType = device::array<field::FULL_FIELD, scalar_t, VelocitySet, TimeType>;
+            using ComponentType = device::array<scalar_t, VelocitySet>;
+            using FieldType = fieldType<N>;
 
             /**
              * @brief Reference to the lattice mesh
@@ -72,11 +73,6 @@ namespace LBM
              * @brief Reference to program control
              **/
             const programControl &programCtrl_;
-
-            /**
-             * @brief Name of the field
-             **/
-            const name_t name_;
 
             /**
              * @brief Count of time steps averaged (for time-averaged fields)
@@ -103,9 +99,9 @@ namespace LBM
                 const thread::array<scalar_t, N> &values,
                 const programControl &programCtrl,
                 const bool allocate = true)
-                : mesh_(mesh),
+                : FieldType(name),
+                  mesh_(mesh),
                   programCtrl_(programCtrl),
-                  name_(name),
                   meanCount_(initialiseMeanCount(name, programCtrl)),
                   components_(makeComponents(std::make_index_sequence<N>{}, name, mesh, values, programCtrl, allocate)) {}
 
@@ -121,9 +117,9 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl,
                 const bool allocate = true)
-                : mesh_(mesh),
+                : FieldType(name),
+                  mesh_(mesh),
                   programCtrl_(programCtrl),
-                  name_(name),
                   meanCount_(initialiseMeanCount(name, programCtrl)),
                   components_(makeComponents(std::make_index_sequence<N>{}, name, mesh, programCtrl, allocate)) {}
 
@@ -141,20 +137,11 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl,
                 const bool allocate = true)
-                : mesh_(mesh),
+                : FieldType(name),
+                  mesh_(mesh),
                   programCtrl_(programCtrl),
-                  name_(name),
                   meanCount_(initialiseMeanCount(name, programCtrl)),
                   components_(makeComponents(std::make_index_sequence<N>{}, name, defaultName, mesh, programCtrl, allocate)) {}
-
-            /**
-             * @brief Get the field name.
-             * @return Const reference to the name string.
-             **/
-            __host__ [[nodiscard]] inline constexpr const name_t &name() const noexcept
-            {
-                return name_;
-            }
 
             /**
              * @brief Get the current averaging count (for time‑averaged fields).
@@ -187,7 +174,7 @@ namespace LBM
              **/
             template <class Writer>
             __host__ void save(
-                host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
+                host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer,
                 const host::label_t timeStep) const
             {
                 programCtrl_.allsync();
@@ -206,18 +193,18 @@ namespace LBM
                 if constexpr (TimeType == time::instantaneous)
                 {
                     Writer::write(
-                        name_,
+                        FieldType::name(),
                         mesh_,
-                        makeComponentNames<std::vector<std::string>>(name_),
+                        FieldType::template makeComponentNames<words_t>(FieldType::name()),
                         hostWriteBuffer.data(),
                         timeStep);
                 }
                 else
                 {
                     Writer::write(
-                        name_,
+                        FieldType::name(),
                         mesh_,
-                        makeComponentNames<std::vector<std::string>>(name_),
+                        FieldType::template makeComponentNames<words_t>(FieldType::name()),
                         hostWriteBuffer.data(),
                         timeStep,
                         meanCount());
@@ -256,35 +243,6 @@ namespace LBM
 
         private:
             /**
-             * @brief Helper function to generate component names based on the base name and the number of components (N).
-             * @tparam ReturnType The type of the returned collection (e.g., std::array<std::string, N> or std::vector<std::string>).
-             * @param[in] baseName The base name for the field, used to generate component names.
-             * @return A collection of component names corresponding to the field components, following a consistent naming convention based on N.
-             **/
-            template <class ReturnType>
-            __host__ [[nodiscard]] static const ReturnType makeComponentNames(const name_t &baseName)
-            {
-                static_assert(N == 1 || N == 3 || N == 6, "Unsupported component count");
-
-                if constexpr (N == 1)
-                {
-                    return {baseName};
-                }
-                else if constexpr (N == 3)
-                {
-                    return {baseName + "_x", baseName + "_y", baseName + "_z"};
-                }
-                else if constexpr (N == 6)
-                {
-                    return {baseName + "_xx", baseName + "_xy", baseName + "_xz", baseName + "_yy", baseName + "_yz", baseName + "_zz"};
-                }
-                else
-                {
-                    static_assert(N == 1 || N == 3 || N == 6, "Unsupported component count");
-                }
-            }
-
-            /**
              * @brief Helper function to create components using pack expansion.
              * @tparam Is... Compile-time indices for pack expansion.
              * @param[in] baseName Base name for the components.
@@ -303,7 +261,7 @@ namespace LBM
                 const programControl &programCtrl,
                 const bool allocate)
             {
-                const std::array<std::string, N> compNames = makeComponentNames<std::array<std::string, N>>(baseName);
+                const std::array<std::string, N> compNames = FieldType::template makeComponentNames<std::array<std::string, N>>(baseName);
 
                 if (foundArray(baseName, programCtrl.latestTime()))
                 {
@@ -333,7 +291,7 @@ namespace LBM
                 const programControl &programCtrl,
                 const bool allocate)
             {
-                const std::array<std::string, N> compNames = makeComponentNames<std::array<std::string, N>>(baseName);
+                const std::array<std::string, N> compNames = FieldType::template makeComponentNames<std::array<std::string, N>>(baseName);
                 return {ComponentType(baseName, compNames[Is], mesh, programCtrl, allocate)...};
             }
 
@@ -358,12 +316,12 @@ namespace LBM
             {
                 if (foundArray(baseName, programCtrl.latestTime()))
                 {
-                    const std::array<std::string, N> compNames = makeComponentNames<std::array<std::string, N>>(baseName);
+                    const std::array<std::string, N> compNames = FieldType::template makeComponentNames<std::array<std::string, N>>(baseName);
                     return {ComponentType(baseName, compNames[Is], mesh, programCtrl, allocate)...};
                 }
                 else
                 {
-                    const std::array<std::string, N> compNames = makeComponentNames<std::array<std::string, N>>(defaultName);
+                    const std::array<std::string, N> compNames = FieldType::template makeComponentNames<std::array<std::string, N>>(defaultName);
                     return {ComponentType(defaultName, compNames[Is], mesh, programCtrl, allocate)...};
                 }
             }

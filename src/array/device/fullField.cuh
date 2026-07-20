@@ -70,10 +70,9 @@ namespace LBM
          *
          * @tparam T Fundamental type of the array.
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
-         * @tparam TimeType Type of time stepping (instantaneous or timeAverage)
          **/
-        template <typename T, class VelocitySet, const time::type TimeType>
-        class array<field::FULL_FIELD, T, VelocitySet, TimeType> : public arrayBase<T>
+        template <typename T, class VelocitySet>
+        class array : public fieldType<1>, arrayBase<T>
         {
         private:
             /**
@@ -85,56 +84,10 @@ namespace LBM
             /**
              * @brief Alias for the current specialization
              **/
-            using This = array<field::FULL_FIELD, T, VelocitySet, TimeType>;
+            using This = array<T, VelocitySet>;
+            using FieldType = fieldType<1>;
 
         public:
-            /**
-             * @brief Construct a device array with a uniform value.
-             * @param[in] name Name of the field.
-             * @param[in] mesh The lattice mesh
-             * @param[in] value Uniform value to initialise the array.
-             * @param[in] programCtrl The program control object
-             * @param[in] allocate If false, the array is not allocated.
-             **/
-            __host__ [[nodiscard]] array(
-                const name_t &name,
-                const host::latticeMesh &mesh,
-                const T value,
-                const programControl &programCtrl,
-                const bool allocate = true)
-                : arrayBase<T>(
-                      This::allocate_on_devices(
-                          mesh, value, allocate, programCtrl),
-                      mesh,
-                      programCtrl),
-                  name_(name)
-            {
-                initialise_boundary_condition(name_, programCtrl.deviceList(), programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3)));
-            }
-
-            /**
-             * @brief Construct a device array from checkpoint or initial condition files.
-             * @param[in] name Name of the field.
-             * @param[in] mesh The lattice mesh
-             * @param[in] programCtrl The program control object
-             * @param[in] allocate If false, the array is not allocated.
-             **/
-            __host__ [[nodiscard]] array(
-                const name_t &name,
-                const host::latticeMesh &mesh,
-                const programControl &programCtrl,
-                const bool allocate = true)
-                : arrayBase<T>(
-                      This::allocate_on_devices(
-                          host::array<host::PAGED, T, VelocitySet, TimeType>(name, mesh, programCtrl),
-                          allocate, programCtrl),
-                      mesh,
-                      programCtrl),
-                  name_(name)
-            {
-                initialise_boundary_condition(name_, programCtrl.deviceList(), programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3)));
-            }
-
             __host__ [[nodiscard]] array(
                 [[maybe_unused]] const name_t &name,
                 const name_t &componentName,
@@ -142,12 +95,12 @@ namespace LBM
                 const T value,
                 const programControl &programCtrl,
                 const bool allocate = true)
-                : arrayBase<T>(
+                : FieldType(componentName),
+                  arrayBase<T>(
                       This::allocate_on_devices(
                           mesh, value, allocate, programCtrl),
                       mesh,
-                      programCtrl),
-                  name_(componentName)
+                      programCtrl)
             {
                 initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3)));
             }
@@ -166,13 +119,13 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl,
                 const bool allocate = true)
-                : arrayBase<T>(
+                : FieldType(componentName),
+                  arrayBase<T>(
                       This::allocate_on_devices(
                           from_host(name, componentName, mesh, programCtrl),
                           allocate, programCtrl),
                       mesh,
-                      programCtrl),
-                  name_(componentName)
+                      programCtrl)
             {
                 initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3)));
             }
@@ -213,27 +166,13 @@ namespace LBM
                 return ptr_[idx];
             }
 
-            /**
-             * @brief Get the field name.
-             * @return Const reference to the name string.
-             **/
-            __host__ [[nodiscard]] inline const name_t &name() const noexcept { return name_; }
-
-            /**
-             * @brief Returns the time type of the array.
-             * @return time::type value (instantaneous or time‑averaged).
-             **/
-            __host__ [[nodiscard]] static inline consteval time::type timeType() noexcept
-            {
-                return TimeType;
-            }
+            // /**
+            //  * @brief Get the field name.
+            //  * @return Const reference to the name string.
+            //  **/
+            // __host__ [[nodiscard]] inline const name_t &name() const noexcept { return FieldType::name_; }
 
         private:
-            /**
-             * @brief Name of the field
-             **/
-            const name_t name_;
-
             /**
              * @brief Allocate all GPU segments for a full field from a raw host pointer.
              * @param[in] mesh The lattice mesh
@@ -279,7 +218,7 @@ namespace LBM
              **/
             template <const host::mallocType MallocType>
             __host__ [[nodiscard]] static inline T **allocate_on_devices(
-                const host::array<MallocType, T, VelocitySet, TimeType> &hostArrayGlobal,
+                const host::array<MallocType, T, VelocitySet> &hostArrayGlobal,
                 const bool allocate,
                 const programControl &programCtrl)
             {
@@ -341,13 +280,13 @@ namespace LBM
             /**
              * @brief Constructs a host array with a given name
              **/
-            __host__ [[nodiscard]] host::array<host::PAGED, T, VelocitySet, TimeType> from_host(
+            __host__ [[nodiscard]] host::array<host::PAGED, T, VelocitySet> from_host(
                 const name_t &name,
                 const name_t &componentName,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
             {
-                return host::array<host::PAGED, T, VelocitySet, TimeType>(name, componentName, mesh, programCtrl);
+                return host::array<host::PAGED, T, VelocitySet>(name, componentName, mesh, programCtrl);
             }
         };
     }

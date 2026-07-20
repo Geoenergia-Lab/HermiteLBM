@@ -67,16 +67,14 @@ namespace LBM
          *
          * @tparam T Data type of array elements.
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
-         * @tparam TimeType Type of time stepping (instantaneous or timeAverage)
          **/
-        template <typename T, class VelocitySet, const time::type TimeType>
-        class array<host::PINNED, T, VelocitySet, TimeType> : public arrayBase<T, VelocitySet, TimeType>
+        template <typename T, class VelocitySet>
+        class array<host::PINNED, T, VelocitySet> : public arrayBase<T, VelocitySet>
         {
             /**
              * @brief Bring base members into scope
              **/
-            using arrayBase<T, VelocitySet, TimeType>::name_;
-            using arrayBase<T, VelocitySet, TimeType>::mesh_;
+            using arrayBase<T, VelocitySet>::mesh_;
 
         public:
             /**
@@ -87,7 +85,7 @@ namespace LBM
             __host__ [[nodiscard]] array(
                 const host::label_t nPoints,
                 const host::latticeMesh &mesh)
-                : arrayBase<T, VelocitySet, TimeType>("", mesh),
+                : arrayBase<T, VelocitySet>("", mesh),
                   ptr_(host::allocate<T>(nPoints, 0)),
                   nPoints_(nPoints) {}
 
@@ -101,7 +99,7 @@ namespace LBM
                 const host::label_t nPoints,
                 const T val,
                 const host::latticeMesh &mesh)
-                : arrayBase<T, VelocitySet, TimeType>("", mesh),
+                : arrayBase<T, VelocitySet>("", mesh),
                   ptr_(host::allocate<T>(nPoints, val)),
                   nPoints_(nPoints) {}
 
@@ -197,7 +195,7 @@ namespace LBM
             /**
              * @brief Pointer to pinned host memory
              **/
-            T *const ptrRestrict ptr_;
+            hostPtr_t<T> ptr_;
 
             /**
              * @brief Number of elements
@@ -205,6 +203,12 @@ namespace LBM
             const host::label_t nPoints_;
         };
     }
+
+    /**
+     * @brief Shorthand for the type used for file I/O
+     **/
+    // template <class VelocitySet>
+    // using writeBuffer = host::array<host::PINNED, scalar_t, VelocitySet>;
 }
 
 #endif

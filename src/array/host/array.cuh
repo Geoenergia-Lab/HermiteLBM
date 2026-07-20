@@ -61,9 +61,15 @@ namespace LBM
     namespace host
     {
         /**
+         * @brief Templated shorthand for pointer type
+         **/
+        template <typename T>
+        using hostPtr_t = T *const ptrRestrict;
+
+        /**
          * @brief Forward declaration of the primary template
          **/
-        template <const host::mallocType AllocationType, typename T, class VelocitySet, const time::type TimeType>
+        template <const host::mallocType AllocationType, typename T, class VelocitySet>
         class array;
 
         /**
@@ -76,17 +82,13 @@ namespace LBM
          *
          * @tparam T Fundamental type of the array elements.
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
-         * @tparam TimeType Type of time stepping (instantaneous or timeAverage)
          **/
-        template <typename T, class VelocitySet, const time::type TimeType>
-        class arrayBase
+        template <typename T, class VelocitySet>
+        class arrayBase : public fieldType<1>
         {
-        protected:
-            /**
-             * @brief Name of the field
-             **/
-            const name_t name_;
+            using FieldType = fieldType<1>;
 
+        protected:
             /**
              * @brief Reference to the lattice mesh
              **/
@@ -100,7 +102,7 @@ namespace LBM
             __host__ [[nodiscard]] arrayBase(
                 const name_t &name,
                 const host::latticeMesh &mesh) noexcept
-                : name_(name),
+                : FieldType(name),
                   mesh_(mesh) {}
 
         public:
@@ -116,22 +118,10 @@ namespace LBM
             __host__ [[nodiscard]] arrayBase &operator=(const arrayBase &) = delete;
 
             /**
-             * @brief Get the field name.
-             * @return Const reference to the name string.
-             **/
-            __host__ [[nodiscard]] inline constexpr const name_t &name() const noexcept { return name_; }
-
-            /**
              * @brief Get the associated lattice mesh.
              * @return Const reference to the mesh.
              **/
             __host__ [[nodiscard]] inline constexpr const host::latticeMesh &mesh() const noexcept { return mesh_; }
-
-            /**
-             * @brief Returns the time type of the array.
-             * @return time::type value (instantaneous or time‑averaged).
-             **/
-            __host__ [[nodiscard]] static inline consteval time::type timeType() noexcept { return TimeType; }
         };
     }
 }

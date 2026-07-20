@@ -60,11 +60,8 @@ namespace LBM
     namespace device
     {
         /**
-         * @brief Forward declaration of the primary template
+         * @brief Templated shorthand for pointer type
          **/
-        template <const field::type FieldType, typename T, class VelocitySet, const time::type TimeType>
-        class array;
-
         template <typename T>
         using devPtr_t = T **const ptrRestrict;
 
