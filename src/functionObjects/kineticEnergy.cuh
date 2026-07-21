@@ -260,7 +260,7 @@ namespace LBM
             /**
              * @brief Time-averaged kinetic energy
              **/
-            device::scalarField<VelocitySet, time::instantaneous> kMean_;
+            device::scalarField<VelocitySet, time::timeAverage> kMean_;
 
             /**
              * @brief Perturbation of the kinetic energy
