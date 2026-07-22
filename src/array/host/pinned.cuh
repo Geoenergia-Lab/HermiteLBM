@@ -104,7 +104,7 @@ namespace LBM
                   nPoints_(nPoints) {}
 
             /**
-             * @brief Destructor – frees the pinned memory.
+             * @brief Destructor - frees the pinned memory.
              **/
             __host__ ~array()
             {

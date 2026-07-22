@@ -165,7 +165,7 @@ namespace LBM
 
         public:
             /**
-             * @brief Virtual destructor – automatically releases all device memory.
+             * @brief Virtual destructor - automatically releases all device memory.
              **/
             __host__ virtual ~arrayBase()
             {

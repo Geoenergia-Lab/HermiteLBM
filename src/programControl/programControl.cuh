@@ -461,11 +461,11 @@ namespace LBM
                     }
                     catch (const std::invalid_argument &)
                     {
-                        // Name is not a number – skip
+                        // Name is not a number - skip
                     }
                     catch (const std::out_of_range &)
                     {
-                        // Number is too large for unsigned long – skip
+                        // Number is too large for unsigned long - skip
                     }
                 }
             }

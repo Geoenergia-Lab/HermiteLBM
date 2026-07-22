@@ -80,10 +80,10 @@ int main(const int argc, const char *const argv[])
     const std::vector<host::label_t> fileNameIndices = programCtrl.timeStepIndices();
 
     // Parse the argument if present, otherwise set to empty string
-    const name_t calculationTypeString = programCtrl.getArgument("-calculationType");
+    const name_t calculationType = programCtrl.getArgument("-calculationType");
 
     // Get the calculation function
-    const std::unordered_map<name_t, calculator::functionType>::const_iterator it = calculators.find(calculationTypeString);
+    const std::unordered_map<name_t, calculator::functionType>::const_iterator it = calculators.find(calculationType);
 
     if (it != calculators.end())
     {
@@ -106,7 +106,7 @@ int main(const int argc, const char *const argv[])
                 {
                     foundField = true;
 
-                    calculation(hostMoments, mesh, timeStep, status);
+                    calculation(hostMoments, mesh, timeStep, status, fieldName);
 
                     if (!(timeStep == fileNameIndices.back()))
                     {
@@ -132,7 +132,7 @@ int main(const int argc, const char *const argv[])
     }
     else
     {
-        errorHandler::check<throws::NO_THROW>(-1, "Invalid calculation function for calculation type: " + calculationTypeString);
+        errorHandler::check<throws::NO_THROW>(-1, "Invalid calculation function for calculation type: " + calculationType);
     }
 
     return 0;

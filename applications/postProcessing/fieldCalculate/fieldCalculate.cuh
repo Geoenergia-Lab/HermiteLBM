@@ -73,10 +73,13 @@ namespace LBM
     const std::unordered_map<name_t, calculator::functionType> calculators = {
         {"containsNaN", calculator::containsNaN},
         {"spatialMean", calculator::spatialMean},
+        {"spatialSum", calculator::spatialSum},
         {"fieldMax", calculator::fieldMax},
         {"fieldMin", calculator::fieldMin},
         {"fieldAbsMax", calculator::fieldAbsMax},
-        {"fieldAbsMin", calculator::fieldAbsMin}};
+        {"fieldAbsMin", calculator::fieldAbsMin},
+        {"magnitude", calculator::magnitude},
+        {"magnitudeSquared", calculator::magnitudeSquared}};
 }
 
 #endif
