@@ -55,23 +55,29 @@ namespace LBM
              **/
             const name_t name_;
             const name_t nameMean_;
+            const name_t namePrime_;
+            const name_t namePrimeSqMean_;
 
             /**
              * @brief Name of the field's components and their time-averaged counterpart
              **/
             const words_t componentNames_;
             const words_t componentNamesMean_;
+            const words_t componentNamesPrime_;
+            const words_t componentNamesPrimeSqMean_;
 
             /**
              * @brief Switches to determine whether or not the field is to be calculated
              **/
             const bool calculate_;
             const bool calculateMean_;
+            const bool calculatePrime_;
+            const bool calculatePrimeSqMean_;
 
             /**
              * @brief Reference to the write buffer
              **/
-            host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer_;
+            host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer_;
 
             /**
              * @brief Reference to lattice mesh
@@ -100,28 +106,8 @@ namespace LBM
                 programCtrl.configure<0, false>(Kernel::instantaneous());
                 programCtrl.configure<0, false>(Kernel::instantaneousAndMean());
                 programCtrl.configure<0, false>(Kernel::mean());
-            }
-
-            /**
-             * @brief Construct the component names from the field name
-             * @param[in] name Name of the field
-             **/
-            __host__ [[nodiscard]] static inline constexpr const words_t componentNames(const name_t &name)
-            {
-                if constexpr (N == 1)
-                {
-                    return {name};
-                }
-
-                if constexpr (N == 3)
-                {
-                    return string::catenate(name, {"_x", "_y", "_z"});
-                }
-
-                if constexpr (N == 6)
-                {
-                    return string::catenate(name, {"_xx", "_xy", "_xz", "_yy", "_yz", "_zz"});
-                }
+                programCtrl.configure<0, false>(Kernel::prime());
+                programCtrl.configure<0, false>(Kernel::primeSqMean());
             }
 
             /**
@@ -215,6 +201,54 @@ namespace LBM
                 meanCount++;
             }
 
+            /**
+             * @brief Calculate the perturbation quantity
+             * @param[in] func The kernel to execute
+             * @param[out] object The function object to calculate
+             * @param[out] meanCount Counter of time averaging steps
+             **/
+            template <class FunctionObject, class F>
+            __host__ inline void prime(
+                F *func,
+                FunctionObject &object)
+            {
+                static_assert(functionObjectReady(), "Need to fix the launch configuration and stream handling in functionObjectBase");
+
+                const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
+                for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
+                {
+                    func<<<nBlocks, host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[(deviceIdx * 3) + 1]>>>(
+                        devPtrs(deviceIdx),
+                        object.meanPtrs(deviceIdx),
+                        object.primePtrs(deviceIdx));
+                }
+            }
+
+            /**
+             * @brief Calculate the time average of the square of the perturbation quantity
+             * @param[in] func The kernel to execute
+             * @param[out] object The function object to calculate
+             * @param[out] meanCount Counter of time averaging steps
+             **/
+            template <class FunctionObject, class F>
+            __host__ inline void primeSqMean(
+                F *func,
+                FunctionObject &object,
+                host::label_t &meanCount)
+            {
+                const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
+
+                const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
+                for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
+                {
+                    func<<<nBlocks, host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[(deviceIdx * 3) + 1]>>>(
+                        devPtrs(deviceIdx),
+                        object.meanPtrs(deviceIdx),
+                        object.primeSqMeanPtrs(deviceIdx),
+                        invNewCount);
+                }
+            }
+
         public:
             /**
              * @brief Constructs a function object base with common input data.
@@ -223,11 +257,11 @@ namespace LBM
              * @param[in] rho Device scalar field containing the density values on the GPU
              * @param[in] U Device vector field containing the velocity values on the GPU
              * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
-             * @param[in] streamsLBM Stream handler for LBM operations
+             * @param[in] programCtrl The program control object
              **/
             __host__ [[nodiscard]] FunctionObjectBase(
                 const name_t &name,
-                host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
+                host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer,
                 const host::latticeMesh &mesh,
                 const device::scalarField<VelocitySet, time::instantaneous> &rho,
                 const device::vectorField<VelocitySet, time::instantaneous> &U,
@@ -235,10 +269,16 @@ namespace LBM
                 const programControl &programCtrl) noexcept
                 : name_(name),
                   nameMean_(name + "Mean"),
-                  componentNames_(componentNames(name_)),
-                  componentNamesMean_(componentNames(nameMean_)),
+                  namePrime_(name + "Prime"),
+                  namePrimeSqMean_(name + "PrimeSqMean"),
+                  componentNames_(fieldType<N>::template makeComponentNames<words_t>(name_)),
+                  componentNamesMean_(fieldType<N>::template makeComponentNames<words_t>(nameMean_)),
+                  componentNamesPrime_(fieldType<N>::template makeComponentNames<words_t>(namePrime_)),
+                  componentNamesPrimeSqMean_(fieldType<N>::template makeComponentNames<words_t>(namePrimeSqMean_)),
                   calculate_(initialiserSwitch(name_)),
                   calculateMean_(initialiserSwitch(nameMean_)),
+                  calculatePrime_(initialiserSwitch(namePrime_)),
+                  calculatePrimeSqMean_(initialiserSwitch(namePrimeSqMean_)),
                   hostWriteBuffer_(hostWriteBuffer),
                   mesh_(mesh),
                   rho_(rho),
@@ -247,8 +287,7 @@ namespace LBM
                   programCtrl_(programCtrl) {}
 
             /**
-             * @brief Check if instantaneous calculation is enabled
-             * @return True if instantaneous calculation is enabled
+             * @brief Check if calculation of the instantaneous quantity is enabled
              **/
             __host__ [[nodiscard]] inline constexpr bool doInstantaneous() const noexcept
             {
@@ -256,12 +295,27 @@ namespace LBM
             }
 
             /**
-             * @brief Check if mean calculation is enabled
-             * @return True if mean calculation is enabled
+             * @brief Check if calculation of the time average is enabled
              **/
             __host__ [[nodiscard]] inline constexpr bool doMean() const noexcept
             {
                 return calculateMean_;
+            }
+
+            /**
+             * @brief Check if calculation of the perturbation is enabled
+             **/
+            __host__ [[nodiscard]] inline constexpr bool doPrime() const noexcept
+            {
+                return calculatePrime_;
+            }
+
+            /**
+             * @brief Check if calculation of the time average of the square of the perturbation is enabled
+             **/
+            __host__ [[nodiscard]] inline constexpr bool doPrimeSqMean() const noexcept
+            {
+                return calculatePrimeSqMean_;
             }
         };
     }

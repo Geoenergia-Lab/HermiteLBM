@@ -58,16 +58,17 @@ namespace LBM
          * @brief Class representing a scalar field on the host, derived from fieldBase with N=1 component.
          **/
         template <const host::mallocType AllocationType, class VelocitySet, const time::type TimeType>
-        class scalarField
+        class scalarField : public fieldType<1>, timeType<TimeType>
         {
-            using ComponentType = host::array<AllocationType, scalar_t, VelocitySet, TimeType>;
+            using ComponentType = host::array<AllocationType, scalar_t, VelocitySet>;
+            using FieldType = fieldType<1>;
 
         public:
             __host__ [[nodiscard]] scalarField(
                 const name_t &name,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
-                : name_(name),
+                : FieldType(name),
                   self_(name, name, mesh, programCtrl) {}
 
             ~scalarField() {}
@@ -75,14 +76,7 @@ namespace LBM
             __host__ [[nodiscard]] inline constexpr ComponentType &self() noexcept { return self_; }
             __host__ [[nodiscard]] inline constexpr const ComponentType &self() const noexcept { return self_; }
 
-            __host__ [[nodiscard]] inline constexpr const name_t &name() const noexcept
-            {
-                return name_;
-            }
-
         private:
-            const name_t name_;
-
             /**
              * @brief Components of the vector field
              **/
@@ -93,16 +87,17 @@ namespace LBM
          * @brief Class representing a vector field on the host, derived from fieldBase with N=3 components.
          **/
         template <const host::mallocType AllocationType, class VelocitySet, const time::type TimeType>
-        class vectorField
+        class vectorField : public fieldType<3>, timeType<TimeType>
         {
-            using ComponentType = host::array<AllocationType, scalar_t, VelocitySet, TimeType>;
+            using ComponentType = host::array<AllocationType, scalar_t, VelocitySet>;
+            using FieldType = fieldType<3>;
 
         public:
             __host__ [[nodiscard]] vectorField(
                 const name_t &name,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
-                : name_(name),
+                : FieldType(name),
                   x_(name, name + "_x", mesh, programCtrl),
                   y_(name, name + "_y", mesh, programCtrl),
                   z_(name, name + "_z", mesh, programCtrl) {}
@@ -117,14 +112,7 @@ namespace LBM
             __host__ [[nodiscard]] inline constexpr const ComponentType &y() const noexcept { return y_; }
             __host__ [[nodiscard]] inline constexpr const ComponentType &z() const noexcept { return z_; }
 
-            __host__ [[nodiscard]] inline constexpr const name_t &name() const noexcept
-            {
-                return name_;
-            }
-
         private:
-            const name_t name_;
-
             /**
              * @brief Components of the vector field
              **/
@@ -137,16 +125,17 @@ namespace LBM
          * @brief Class representing a symmetric tensor field on the host, derived from fieldBase with N=6 components.
          **/
         template <const host::mallocType AllocationType, class VelocitySet, const time::type TimeType>
-        class symmetricTensorField
+        class symmetricTensorField : public fieldType<6>, timeType<TimeType>
         {
-            using ComponentType = host::array<AllocationType, scalar_t, VelocitySet, TimeType>;
+            using ComponentType = host::array<AllocationType, scalar_t, VelocitySet>;
+            using FieldType = fieldType<6>;
 
         public:
             __host__ [[nodiscard]] symmetricTensorField(
                 const name_t &name,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
-                : name_(name),
+                : FieldType(name),
                   xx_(name, name + "_xx", mesh, programCtrl),
                   xy_(name, name + "_xy", mesh, programCtrl),
                   xz_(name, name + "_xz", mesh, programCtrl),
@@ -170,14 +159,7 @@ namespace LBM
             __host__ [[nodiscard]] inline constexpr const ComponentType &yz() const noexcept { return yz_; }
             __host__ [[nodiscard]] inline constexpr const ComponentType &zz() const noexcept { return zz_; }
 
-            __host__ [[nodiscard]] inline constexpr const name_t &name() const noexcept
-            {
-                return name_;
-            }
-
         private:
-            const name_t name_;
-
             /**
              * @brief Components of the symmetric tensor field
              **/

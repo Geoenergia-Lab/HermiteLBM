@@ -70,27 +70,71 @@ namespace LBM
         }
 
         /**
-         * @brief Calculates the magnitude of a 3D vector field.
-         * @tparam T The data type of the vector components.
-         * @param[in] u A vector representing the x-components of the vector field.
-         * @param[in] v A vector representing the y-components of the vector field.
-         * @param[in] w A vector representing the z-components of the vector field.
-         * @return A vector containing the magnitude of the vector field at each point.
+         * @brief Indicates whether a field extremum is computed on raw or absolute values.
          **/
-        template <typename T>
-        __host__ [[nodiscard]] const std::vector<T> mag(const std::vector<T> &u, const std::vector<T> &v, const std::vector<T> &w)
+        typedef enum absModeEnum : bool
         {
-            // Add a size check here
+            SIGNED = false, // Use signed (raw) values.
+            ABS = true      // Use absolute values.
+        } absMode;
 
-            std::vector<scalar_t> magu(u.size(), 0);
+        /**
+         * @brief Indicates whether or not a term is to be squared
+         **/
+        typedef enum sqModeEnum : bool
+        {
+            NOT_SQUARED = false, // Use non-squared values.
+            SQUARED = true       // Use squared values.
+        } sqMode;
 
-            for (host::label_t i = 0; i < u.size(); i++)
+        /**
+         * @brief Calculates the magnitude of a tensor of arbitrary rank at a given index
+         * @tparam T The data type of the vector components.
+         * @param[in] f The tensor
+         * @param[in] i The index
+         * @return The magnitude of the tensor at the given index
+         **/
+        template <const sqMode Squared, typename T>
+        __host__ [[nodiscard]] T mag(const std::vector<std::vector<T>> &f, const host::label_t i)
+        {
+            // Do the accumulation of the magnitude in double precision
+            double result = static_cast<double>(0);
+            for (host::label_t field = 0; field < f.size(); field++)
             {
-                magu[i] = std::sqrt((u[i] * u[i]) + (v[i] * v[i]) + (w[i] * w[i]));
+                const double component = static_cast<double>(f[field][i]);
+                result = result + (component * component);
             }
 
-            return magu;
+            if constexpr (Squared == SQUARED)
+            {
+                return static_cast<T>(result);
+            }
+            else
+            {
+                return static_cast<T>(std::sqrt(result));
+            }
         }
+
+        /**
+         * @brief Calculates the magnitude of a tensor of arbitrary rank
+         * @tparam T The data type of the vector components.
+         * @param[in] f The tensor
+         * @return The magnitude of the tensor
+         **/
+        template <const sqMode Squared, typename T>
+        __host__ [[nodiscard]] const std::vector<T> mag(const std::vector<std::vector<T>> &f)
+        {
+            std::vector<T> vec_result(f[0].size(), 0);
+
+            for (host::label_t i = 0; i < f[0].size(); i++)
+            {
+                // Cast the result back to the desired type
+                vec_result[i] = mag<Squared>(f, i);
+            }
+
+            return vec_result;
+        }
+
     }
 }
 

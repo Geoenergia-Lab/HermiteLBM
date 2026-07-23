@@ -307,13 +307,13 @@ namespace LBM
                 errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
 
                 // Sync the streams to ensure previous operations are complete before launching new kernels
-                for (host::label_t idxStream : idxStreams)
+                for (const host::label_t idxStream : idxStreams)
                 {
                     programCtrl.streams().synchronize(device::idxStream(deviceIdx, idxStream));
                 }
 
                 // Launch the kernels for the specified streams and block offsets
-                for (host::label_t idxStream : idxStreams)
+                for (const host::label_t idxStream : idxStreams)
                 {
                     kernel::momentBasedLBM<<<mesh.gridBlock()[idxStream], host::latticeMesh::threadBlock(), VelocitySet::smem_alloc_size(), programCtrl.streams()[device::idxStream(deviceIdx, idxStream)]>>>(
                         devPtrs[deviceIdx],
@@ -326,7 +326,7 @@ namespace LBM
             // Sync the streams
             for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
             {
-                for (host::label_t idxStream : idxStreams)
+                for (const host::label_t idxStream : idxStreams)
                 {
                     programCtrl.streams().synchronize(device::idxStream(deviceIdx, idxStream));
                 }

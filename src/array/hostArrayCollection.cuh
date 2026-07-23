@@ -102,7 +102,7 @@ namespace LBM
             }
 
             /**
-             * @brief Convert Array of Structures (AoS) to Structure of Arrays (SoA)
+             * @brief Splits the underlying large vector into N fields
              * @param[in] mesh The lattice mesh
              * @return Vector of vectors where each inner vector contains all values for one variable
              * @throws std::invalid_argument if input size doesn't match mesh dimensions
@@ -111,15 +111,17 @@ namespace LBM
              * each point are stored together) to SoA format (where each variable's values
              * are stored in separate contiguous arrays).
              **/
-            __host__ [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoS(const host::latticeMesh &mesh) const
+            template <const bool Deinterleave>
+            __host__ [[nodiscard]] const std::vector<std::vector<T>> splitFields(const host::latticeMesh &mesh) const
             {
                 const host::label_t nNodes = mesh.dimension<axis::X>() * mesh.dimension<axis::Y>() * mesh.dimension<axis::Z>();
+
                 if (arr().size() % nNodes != 0)
                 {
                     throw std::invalid_argument("fMom size (" + std::to_string(arr().size()) + ") is not divisible by mesh points (" + std::to_string(nNodes) + ")");
                 }
-                const host::label_t nFields = arr().size() / nNodes;
 
+                const host::label_t nFields = arr().size() / nNodes;
                 std::vector<std::vector<T>> soa(nFields, std::vector<T>(nNodes, 0));
 
                 const host::label_t nxGPUs = mesh.nDevices<axis::X>();
@@ -144,27 +146,37 @@ namespace LBM
                             [&](const host::label_t bx, const host::label_t by, const host::label_t bz,
                                 const host::label_t tx, const host::label_t ty, const host::label_t tz)
                             {
-                                // Global coordinates (for output)
-                                const host::label_t x = (GPU_x * nxBlocksPerDevice + bx) * block::nx<host::label_t>() + tx;
-                                const host::label_t y = (GPU_y * nyBlocksPerDevice + by) * block::ny<host::label_t>() + ty;
-                                const host::label_t z = (GPU_z * nzBlocksPerDevice + bz) * block::nz<host::label_t>() + tz;
-
-                                const host::label_t idxGlobal = global::idx(x, y, z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
-
-                                // Local index within this GPU's storage (block‑major order)
+                                // Local (GPU‑order) index
                                 const host::label_t blockLin = (bz * nyBlocksPerDevice + by) * nxBlocksPerDevice + bx;
                                 const host::label_t threadLin = (tz * block::ny<host::label_t>() + ty) * block::nx<host::label_t>() + tx;
                                 const host::label_t localIdx = blockLin * pointsPerBlock + threadLin;
 
-                                for (host::label_t field = 0; field < nFields; field++)
+                                // Fill all fields
+                                for (host::label_t field = 0; field < nFields; ++field)
                                 {
                                     const host::label_t srcIdx = field * nNodes + virtualDeviceIndex * nPointsPerDevice + localIdx;
-                                    soa[field][idxGlobal] = arr()[srcIdx];
+                                    soa[field][destIndex<Deinterleave>(mesh, localIdx, tx, ty, tz, bx, by, bz, GPU_x, GPU_y, GPU_z, nxBlocksPerDevice, nyBlocksPerDevice, nzBlocksPerDevice)] = arr()[srcIdx];
                                 }
                             });
                     });
 
                 return soa;
+            }
+
+            /**
+             * @brief Split the fields into separate vectors and de-interleave into natural Cartesian coordinates
+             **/
+            __host__ [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoS(const host::latticeMesh &mesh) const
+            {
+                return splitFields<true>(mesh);
+            }
+
+            /**
+             * @brief Split the fields into separate vectors without de-interleaving
+             **/
+            __host__ [[nodiscard]] const std::vector<std::vector<T>> splitFieldsRaw(const host::latticeMesh &mesh) const
+            {
+                return splitFields<false>(mesh);
             }
 
         private:
@@ -199,6 +211,40 @@ namespace LBM
                 else
                 {
                     return fileIO::readFieldFile<T>(fileName);
+                }
+            }
+
+            /**
+             * @brief Calculates the destination index for separation and de-interleaving of fields
+             * @tparam Deinterleave If true, the fields will be deinterleaved during separation
+             * @param[in] mesh The lattice mesh
+             * @param[in] localIdx The GPU-order index
+             * @param[in] tx,ty,tz Thread coordinates per-block
+             * @param[in] bx,by,bz Block coordinates
+             * @param[in] GPU_x,GPU_y,GPU_z GPU coordinates
+             * @param[in] nxBlocksPerDevice,nyBlocksPerDevice,nzBlocksPerDevice Number of blocks per device in each spatial dimension
+             **/
+            template <const bool Deinterleave>
+            __host__ [[nodiscard]] static host::label_t destIndex(
+                const host::latticeMesh &mesh,
+                const host::label_t localIdx,
+                const host::label_t tx, const host::label_t ty, const host::label_t tz,
+                const host::label_t bx, const host::label_t by, const host::label_t bz,
+                const host::label_t GPU_x, const host::label_t GPU_y, const host::label_t GPU_z,
+                const host::label_t nxBlocksPerDevice,
+                const host::label_t nyBlocksPerDevice,
+                const host::label_t nzBlocksPerDevice)
+            {
+                if constexpr (Deinterleave)
+                {
+                    const host::label_t x = (GPU_x * nxBlocksPerDevice + bx) * block::nx<host::label_t>() + tx;
+                    const host::label_t y = (GPU_y * nyBlocksPerDevice + by) * block::ny<host::label_t>() + ty;
+                    const host::label_t z = (GPU_z * nzBlocksPerDevice + bz) * block::nz<host::label_t>() + tz;
+                    return global::idx(x, y, z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
+                }
+                else
+                {
+                    return localIdx;
                 }
             }
         };
