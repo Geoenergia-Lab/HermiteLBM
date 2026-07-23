@@ -57,7 +57,7 @@ namespace LBM
         struct Pi
         {
             /**
-             * @brief Number of components of the velocity vector
+             * @brief Number of components of the tensor of second order moments
              **/
             static constexpr const host::label_t N = 6;
 
@@ -116,13 +116,14 @@ namespace LBM
              * @brief Bring base members into scope
              **/
             using BaseType::calculate_;
-            using BaseType::calculateMean_;
             using BaseType::componentNames_;
             using BaseType::componentNamesMean_;
             using BaseType::hostWriteBuffer_;
             using BaseType::mesh_;
             using BaseType::name_;
             using BaseType::nameMean_;
+            using BaseType::namePrime_;
+            using BaseType::namePrimeSqMean_;
             using BaseType::Pi_;
             using BaseType::programCtrl_;
             using BaseType::rho_;
@@ -135,18 +136,19 @@ namespace LBM
              * @param[in] rho Device scalar field containing the density values on the GPU
              * @param[in] U Device vector field containing the velocity values on the GPU
              * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
-             * @param[in] streamsLBM Stream handler for LBM operations
              * @param[in] programCtrl The program control object
              **/
             __host__ [[nodiscard]] secondOrderMoments(
-                host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
+                host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer,
                 const host::latticeMesh &mesh,
                 const device::scalarField<VelocitySet, time::instantaneous> &rho,
                 const device::vectorField<VelocitySet, time::instantaneous> &U,
                 const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
                 const programControl &programCtrl) noexcept
                 : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
-                  PiMean_(nameMean_, mesh, {0, 0, 0, 0, 0, 0}, programCtrl, calculateMean_)
+                  PiMean_(nameMean_, name_, mesh, programCtrl, (BaseType::doMean() || BaseType::doPrime() || BaseType::doPrimeSqMean())),
+                  PiPrime_(namePrime_, mesh, {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrime()),
+                  PiPrimeSqMean_(namePrimeSqMean_, mesh, {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrimeSqMean())
             {
                 BaseType::template configure<Kernel>(programCtrl);
             }
@@ -159,7 +161,7 @@ namespace LBM
             __host__ [[nodiscard]] secondOrderMoments &operator=(const secondOrderMoments &) = delete;
 
             /**
-             * @brief Calculate the time-averaged density
+             * @brief Calculate the time-averaged second order moments
              **/
             __host__ void calculateMean() noexcept
             {
@@ -167,23 +169,67 @@ namespace LBM
             }
 
             /**
-             * @brief Save the time-averaged density to a file
+             * @brief Calculate the perturbation of the second order moments
+             **/
+            __host__ void calculatePrime() noexcept
+            {
+                BaseType::prime(Kernel::prime(), *this);
+            }
+
+            /**
+             * @brief Calculate the time-averaged square of the perturbation of the second order moments
+             **/
+            __host__ void calculatePrimeSqMean() noexcept
+            {
+                BaseType::primeSqMean(Kernel::primeSqMean(), *this, PiPrimeSqMean_.meanCountRef());
+            }
+
+            /**
+             * @brief Save the second order moments to a file
              **/
             __host__ void saveMean(const host::label_t timeStep) noexcept
             {
                 PiMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
             }
 
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
+            /**
+             * @brief Save the second order moments to a file
+             **/
+            __host__ void savePrime(const host::label_t timeStep) noexcept
             {
-                return {PiMean_.ptr(idx)};
+                PiPrime_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
             }
+
+            /**
+             * @brief Save the time average of the square of the perturbation of the second order moments to a file
+             **/
+            __host__ void savePrimeSqMean(const host::label_t timeStep) noexcept
+            {
+                PiPrimeSqMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
+            }
+
+            /**
+             * @brief Access to the pointers of the underlying device fields
+             **/
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept { return {PiMean_.ptr(idx)}; }
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept { return {PiPrime_.ptr(idx)}; }
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primeSqMeanPtrs(const host::label_t idx) noexcept { return {PiPrimeSqMean_.ptr(idx)}; }
 
         private:
             /**
-             * @brief Time-averaged density field
+             * @brief Time-averaged second order moments
              **/
             device::symmetricTensorField<VelocitySet, time::timeAverage> PiMean_;
+
+            /**
+             * @brief Time-averaged second order moments
+             **/
+            device::symmetricTensorField<VelocitySet, time::instantaneous> PiPrime_;
+
+            /**
+             * @brief Time average of the square of the perturbation of the second order moments
+             **/
+            device::symmetricTensorField<VelocitySet, time::timeAverage> PiPrimeSqMean_;
         };
     }
 }

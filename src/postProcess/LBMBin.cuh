@@ -200,7 +200,7 @@ namespace LBM
                     out << std::endl;
                 }
 
-                out << "    nFields\t\t" << varNames.size() << ";" << std::endl;
+                out << "    nFields\t" << varNames.size() << ";" << std::endl;
                 out << std::endl;
                 out << "    fieldNames[" << varNames.size() << "]" << std::endl;
                 out << "    {" << std::endl;

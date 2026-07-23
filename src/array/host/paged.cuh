@@ -66,22 +66,20 @@ namespace LBM
          *
          * @tparam T Data type of array elements.
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
-         * @tparam TimeType Type of time stepping (instantaneous or timeAverage)
          **/
-        template <typename T, class VelocitySet, const time::type TimeType>
-        class array<host::PAGED, T, VelocitySet, TimeType> : public arrayBase<T, VelocitySet, TimeType>
+        template <typename T, class VelocitySet>
+        class array<host::PAGED, T, VelocitySet> : public arrayBase<T, VelocitySet>
         {
             /**
              * @brief Bring base members into scope
              **/
-            using arrayBase<T, VelocitySet, TimeType>::name_;
-            using arrayBase<T, VelocitySet, TimeType>::mesh_;
+            using arrayBase<T, VelocitySet>::mesh_;
 
         private:
             /**
              * @brief Alias for the current specialization
              **/
-            using This = array<host::PAGED, T, VelocitySet, TimeType>;
+            using This = array<host::PAGED, T, VelocitySet>;
 
         public:
             /**
@@ -94,7 +92,7 @@ namespace LBM
                 const name_t &name,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
-                : arrayBase<T, VelocitySet, TimeType>(name, mesh),
+                : arrayBase<T, VelocitySet>(name, mesh),
                   arr_(initialise_array(mesh, name, name, programCtrl)),
                   meanCount_(initialiseMeanCount(name, programCtrl)) {}
 
@@ -110,7 +108,7 @@ namespace LBM
                 const name_t &componentName,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
-                : arrayBase<T, VelocitySet, TimeType>(name, mesh),
+                : arrayBase<T, VelocitySet>(name, mesh),
                   arr_(initialise_array(mesh, name, componentName, programCtrl)),
                   meanCount_(initialiseMeanCount(name, programCtrl)) {}
 

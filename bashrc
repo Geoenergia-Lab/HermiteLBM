@@ -22,7 +22,7 @@ export HERMITELBM_ARCHITECTURE_DETECTION="Automatic"
 export HERMITELBM_ARCHITECTURE_VERSION="89"
 
 # --------------------------------------------------------------------------- #
-#  AUTOMATIC SETUP – DO NOT MODIFY BELOW UNLESS YOU KNOW WHAT YOU ARE DOING   #
+#  AUTOMATIC SETUP - DO NOT MODIFY BELOW UNLESS YOU KNOW WHAT YOU ARE DOING   #
 # --------------------------------------------------------------------------- #
 
 # Project root directory (where this bashrc file lives)

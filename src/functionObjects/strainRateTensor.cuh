@@ -142,13 +142,14 @@ namespace LBM
              * @brief Bring base members into scope
              **/
             using BaseType::calculate_;
-            using BaseType::calculateMean_;
             using BaseType::componentNames_;
             using BaseType::componentNamesMean_;
             using BaseType::hostWriteBuffer_;
             using BaseType::mesh_;
             using BaseType::name_;
             using BaseType::nameMean_;
+            using BaseType::namePrime_;
+            using BaseType::namePrimeSqMean_;
             using BaseType::Pi_;
             using BaseType::programCtrl_;
             using BaseType::rho_;
@@ -161,19 +162,20 @@ namespace LBM
              * @param[in] rho Device scalar field containing the density values on the GPU
              * @param[in] U Device vector field containing the velocity values on the GPU
              * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
-             * @param[in] streamsLBM Stream handler for LBM operations
              * @param[in] programCtrl The program control object
              **/
             __host__ [[nodiscard]] strainRateTensor(
-                host::array<host::PINNED, scalar_t, VelocitySet, time::instantaneous> &hostWriteBuffer,
+                host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer,
                 const host::latticeMesh &mesh,
                 const device::scalarField<VelocitySet, time::instantaneous> &rho,
                 const device::vectorField<VelocitySet, time::instantaneous> &U,
                 const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
                 const programControl &programCtrl) noexcept
                 : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
-                  S_(name_, mesh_, {0, 0, 0, 0, 0, 0}, programCtrl, calculate_),
-                  SMean_(nameMean_, mesh_, {0, 0, 0, 0, 0, 0}, programCtrl, calculateMean_)
+                  S_(name_, mesh_, {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)}, programCtrl, calculate_),
+                  SMean_(nameMean_, mesh_, {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)}, programCtrl, (BaseType::doMean() || BaseType::doPrime() || BaseType::doPrimeSqMean())),
+                  SPrime_(namePrime_, mesh_, {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrime()),
+                  SPrimeSqMean_(namePrimeSqMean_, mesh_, {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrimeSqMean())
             {
                 BaseType::template configure<Kernel>(programCtrl);
             }
@@ -202,6 +204,22 @@ namespace LBM
             }
 
             /**
+             * @brief Calculate the perturbation of the strain rate tensor
+             **/
+            __host__ void calculatePrime() noexcept
+            {
+                BaseType::prime(Kernel::prime(), *this);
+            }
+
+            /**
+             * @brief Calculate the time-averaged square of the perturbation of the strain rate tensor
+             **/
+            __host__ void calculatePrimeSqMean() noexcept
+            {
+                BaseType::primeSqMean(Kernel::primeSqMean(), *this, SPrimeSqMean_.meanCountRef());
+            }
+
+            /**
              * @brief Calculate both the instantaneous and time-averaged strain rate tensor
              **/
             __host__ void calculateInstantaneousAndMean() noexcept
@@ -225,15 +243,29 @@ namespace LBM
                 SMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
             }
 
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> instantaneousPtrs(const host::label_t idx) noexcept
+            /**
+             * @brief Save the time-averaged strain rate tensor to a file
+             **/
+            __host__ void savePrime(const host::label_t timeStep) noexcept
             {
-                return S_.ptr(idx);
+                SPrime_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
             }
 
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
+            /**
+             * @brief Save the time average of the square of the perturbation of the strain rate tensor to a file
+             **/
+            __host__ void savePrimeSqMean(const host::label_t timeStep) noexcept
             {
-                return SMean_.ptr(idx);
+                SPrimeSqMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
             }
+
+            /**
+             * @brief Access to the pointers of the underlying device fields
+             **/
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> instantaneousPtrs(const host::label_t idx) noexcept { return S_.ptr(idx); }
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept { return SMean_.ptr(idx); }
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept { return SPrime_.ptr(idx); }
+            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primeSqMeanPtrs(const host::label_t idx) noexcept { return {SPrimeSqMean_.ptr(idx)}; }
 
         private:
             /**
@@ -245,6 +277,16 @@ namespace LBM
              * @brief Time-averaged strain rate tensor
              **/
             device::symmetricTensorField<VelocitySet, time::timeAverage> SMean_;
+
+            /**
+             * @brief Perturbation of the strain rate tensor
+             **/
+            device::symmetricTensorField<VelocitySet, time::instantaneous> SPrime_;
+
+            /**
+             * @brief Time average of the square of the perturbation of the strain rate tensor
+             **/
+            device::symmetricTensorField<VelocitySet, time::timeAverage> SPrimeSqMean_;
         };
     }
 }
