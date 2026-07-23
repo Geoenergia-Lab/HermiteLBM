@@ -128,6 +128,26 @@ namespace LBM
         }
 
         /**
+         * @brief Checks if a field contains any NaN values
+         * @param[in] field The field to check
+         * @return True if the field contains NaN values, false otherwise
+         **/
+        template <typename T>
+        __host__ [[nodiscard]] inline host::label_t containsNaN(const std::vector<T> &field, int &status) noexcept
+        {
+            host::label_t count = 0;
+            for (const T &value : field)
+            {
+                if (std::isnan(value))
+                {
+                    status = 1;
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        /**
          * @brief Prints a per‑field reduction for all fields in a collection.
          * @tparam Reducer A callable that computes a scalar from a field vector, e.g. fieldExtremaImpl<Sign> or spatialMean.
          * @param[in] variables The arrayCollection of fields.
@@ -263,7 +283,25 @@ namespace LBM
                 return spatialSum<scalar_t>(f);
             };
 
-            printFieldReduction(variables, mesh, timeStep, compute, "mean");
+            printFieldReduction(variables, mesh, timeStep, compute, "sum");
+        }
+
+        /**
+         * @brief Convenience function - prints the spatial sum of each field
+         **/
+        __host__ void containsNaN(
+            const host::arrayCollection<scalar_t> &variables,
+            const host::latticeMesh &mesh,
+            const host::label_t timeStep,
+            int &status,
+            [[maybe_unused]] const name_t &fileName) noexcept
+        {
+            const auto compute = [&](const std::vector<scalar_t> &f)
+            {
+                return containsNaN(f, status);
+            };
+
+            printFieldReduction(variables, mesh, timeStep, compute, "containsNaN");
         }
     }
 }

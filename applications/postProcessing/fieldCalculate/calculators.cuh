@@ -66,73 +66,7 @@ namespace LBM
             const host::label_t,
             int &,
             const std::string &);
-
-        /**
-         * @brief Checks if a field contains any NaN values
-         * @param[in] field The field to check
-         * @return True if the field contains NaN values, false otherwise
-         **/
-        __host__ [[nodiscard]] inline bool containsNaN(const std::vector<scalar_t> &field) noexcept
-        {
-            for (const scalar_t &value : field)
-            {
-                if (std::isnan(value))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        /**
-         * @brief Checks if any of the fields in the arrayCollection contain NaN values and prints the result
-         * @param[in] variables The arrayCollection containing the fields to check
-         * @param[in] mesh The lattice mesh
-         * @param[in] timeStep The current time step for logging purposes
-         * @param[in,out] status The status flag for error handling
-         * @param[in] fileName The field name to operate
-         **/
-        __host__ void containsNaN(
-            const host::arrayCollection<scalar_t> &variables,
-            const host::latticeMesh &mesh,
-            const host::label_t timeStep,
-            int &status,
-            [[maybe_unused]] const name_t &fileName) noexcept
-        {
-            // De-interleave the fields
-            const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);
-
-            std::cout << "Time: " << timeStep << std::endl;
-            std::cout << "{" << std::endl;
-
-            host::label_t numberNaNs = 0;
-
-            // Loop over the fields checking for NaN
-            for (host::label_t field = 0; field < fields.size(); field++)
-            {
-                if (containsNaN(fields[field]))
-                {
-                    std::cout << "    NaN detected in field " << variables.varNames()[field] << std::endl;
-                    numberNaNs++;
-                }
-            }
-
-            if (numberNaNs == 0)
-            {
-                std::cout << "    No NaN values detected in any field." << std::endl;
-            }
-            else
-            {
-                status = 1; // Set status to indicate that NaN values were found
-                std::cout << "    Total number of fields with NaN values: " << numberNaNs << std::endl;
-            }
-
-            std::cout << "};" << std::endl;
-        }
     }
 }
-
-#include "reductionCalculators.cuh"
-#include "pointwiseCalculators.cuh"
 
 #endif
