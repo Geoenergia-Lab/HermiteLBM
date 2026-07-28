@@ -205,7 +205,6 @@ namespace LBM
              * @brief Calculate the perturbation quantity
              * @param[in] func The kernel to execute
              * @param[out] object The function object to calculate
-             * @param[out] meanCount Counter of time averaging steps
              **/
             template <class FunctionObject, class F>
             __host__ inline void prime(
@@ -247,6 +246,8 @@ namespace LBM
                         object.primeSqMeanPtrs(deviceIdx),
                         invNewCount);
                 }
+
+                meanCount++;
             }
 
         public:
