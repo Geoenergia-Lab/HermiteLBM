@@ -98,9 +98,9 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
                 : FieldType(name),
-                  x_(name, name + "_x", mesh, programCtrl),
-                  y_(name, name + "_y", mesh, programCtrl),
-                  z_(name, name + "_z", mesh, programCtrl) {}
+                  x_(name, fieldType<3>::makeComponentNames<words_t>(name)[0], mesh, programCtrl),
+                  y_(name, fieldType<3>::makeComponentNames<words_t>(name)[1], mesh, programCtrl),
+                  z_(name, fieldType<3>::makeComponentNames<words_t>(name)[2], mesh, programCtrl) {}
 
             ~vectorField() {}
 
@@ -136,12 +136,12 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
                 : FieldType(name),
-                  xx_(name, name + "_xx", mesh, programCtrl),
-                  xy_(name, name + "_xy", mesh, programCtrl),
-                  xz_(name, name + "_xz", mesh, programCtrl),
-                  yy_(name, name + "_yy", mesh, programCtrl),
-                  yz_(name, name + "_yz", mesh, programCtrl),
-                  zz_(name, name + "_zz", mesh, programCtrl) {}
+                  xx_(name, fieldType<6>::makeComponentNames<words_t>(name)[0], mesh, programCtrl),
+                  xy_(name, fieldType<6>::makeComponentNames<words_t>(name)[1], mesh, programCtrl),
+                  xz_(name, fieldType<6>::makeComponentNames<words_t>(name)[2], mesh, programCtrl),
+                  yy_(name, fieldType<6>::makeComponentNames<words_t>(name)[3], mesh, programCtrl),
+                  yz_(name, fieldType<6>::makeComponentNames<words_t>(name)[4], mesh, programCtrl),
+                  zz_(name, fieldType<6>::makeComponentNames<words_t>(name)[5], mesh, programCtrl) {}
 
             ~symmetricTensorField() {}
 

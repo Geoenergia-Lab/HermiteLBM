@@ -165,7 +165,8 @@ namespace LBM
                 const bool isMember = allowed.find(fieldName) != allowed.end();
 
                 if (isMember)
-                { // Check to see if it is a moment or a velocity and scale appropriately
+                {
+                    // Check to see if it is a moment or a velocity and scale appropriately
                     if (fieldName == "rho")
                     {
                         return string::extractParameter<scalar_t>(regionFieldBlock, "value");
@@ -211,47 +212,20 @@ namespace LBM
             else if (value_ == "equilibrium")
             {
                 // Check to see if the variable is one of the moments
-                const std::unordered_set<name_t> allowed = {"Pi_xx", "Pi_xy", "Pi_xz", "Pi_yy", "Pi_yz", "Pi_zz"};
+                const std::unordered_set<name_t> allowed = fieldType<6>::makeComponentNames<std::unordered_set<name_t>>("Pi");
+
                 const bool isMember = allowed.find(fieldName) != allowed.end();
 
                 // It is an equilibrium moment
                 if (isMember)
                 {
-                    // Store second-order moments
-                    if (fieldName == "Pi_xx")
-                    {
-                        const scalar_t u = extractParameter<true>("U_x", regionName, initialConditionsName);
-                        return velocitySetBase::scale_ii<scalar_t>() * ((u * u)) / rho0();
-                    }
-                    else if (fieldName == "Pi_xy")
-                    {
-                        const scalar_t u = extractParameter<true>("U_x", regionName, initialConditionsName);
-                        const scalar_t v = extractParameter<true>("U_y", regionName, initialConditionsName);
-                        return velocitySetBase::scale_ii<scalar_t>() * ((u * v)) / rho0();
-                    }
-                    else if (fieldName == "Pi_xz")
-                    {
-                        const scalar_t u = extractParameter<true>("U_x", regionName, initialConditionsName);
-                        const scalar_t w = extractParameter<true>("U_z", regionName, initialConditionsName);
-                        return velocitySetBase::scale_ii<scalar_t>() * ((u * w)) / rho0();
-                    }
-                    else if (fieldName == "Pi_yy")
-                    {
-                        const scalar_t v = extractParameter<true>("U_y", regionName, initialConditionsName);
-                        return velocitySetBase::scale_ii<scalar_t>() * ((v * v)) / rho0();
-                    }
-                    else if (fieldName == "Pi_yz")
-                    {
-                        const scalar_t v = extractParameter<true>("U_y", regionName, initialConditionsName);
-                        const scalar_t w = extractParameter<true>("U_z", regionName, initialConditionsName);
-                        return velocitySetBase::scale_ii<scalar_t>() * ((v * w)) / rho0();
-                    }
-                    else if (fieldName == "Pi_zz")
-                    {
-                        const scalar_t w = extractParameter<true>("U_z", regionName, initialConditionsName);
-                        return velocitySetBase::scale_ii<scalar_t>() * ((w * w)) / rho0();
-                    }
-                    return 0; // Should never get here
+                    const char A = fieldName[fieldName.size() - 2];
+                    const char B = fieldName[fieldName.size() - 1];
+
+                    const scalar_t u_A = extractParameter<true>("U_" + A, regionName, initialConditionsName);
+                    const scalar_t u_B = extractParameter<true>("U_" + B, regionName, initialConditionsName);
+
+                    return velocitySetBase::scale<scalar_t>(A == B) * ((u_A * u_B)) / rho0();
                 }
                 // Otherwise, not valid
                 else

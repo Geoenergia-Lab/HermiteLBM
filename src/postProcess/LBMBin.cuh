@@ -96,6 +96,29 @@ namespace LBM
                 common_write<time::instantaneous>(fileName, mesh, varNames, fields, timeStep, 0);
             }
 
+            template <typename T>
+            __host__ static void write(
+                const name_t &fileName,
+                const host::latticeMesh &mesh,
+                const words_t &varNames,
+                const std::vector<std::vector<T>> &fields,
+                const host::label_t timeStep,
+                const host::label_t meanCount)
+            {
+                common_write<time::timeAverage>(fileName, mesh, varNames, fields, timeStep, meanCount);
+            }
+
+            template <typename T>
+            __host__ static void write(
+                const name_t &fileName,
+                const host::latticeMesh &mesh,
+                const words_t &varNames,
+                const std::vector<std::vector<T>> &fields,
+                const host::label_t timeStep)
+            {
+                common_write<time::instantaneous>(fileName, mesh, varNames, fields, timeStep, 0);
+            }
+
             __host__ static inline const name_t make_filename(const name_t &dirName, const name_t &fieldName)
             {
                 return "timeStep/" + dirName + "/" + fieldName + fileExtension;
@@ -107,6 +130,53 @@ namespace LBM
             }
 
         private:
+            template <const time::type TimeType, typename T>
+            __host__ static void common_write(
+                const name_t &fileName,
+                const host::latticeMesh &mesh,
+                const words_t &varNames,
+                const std::vector<std::vector<T>> &fields,
+                const host::label_t timeStep,
+                const host::label_t meanCount)
+            {
+                const name_t resolvedName = make_filename(timeStep, fileName);
+
+                if (!fileSystem::makeDirectory("timeStep"))
+                {
+                    throw std::runtime_error("Error: unable to create timeStep directory");
+                }
+
+                if (!fileSystem::makeDirectory("timeStep/" + std::to_string(timeStep)))
+                {
+                    throw std::runtime_error("Error: unable to create directory for time step " + std::to_string(timeStep));
+                }
+
+                types::assertions::validate<T>();
+                endian::assertions::validate();
+
+                // Check if there is enough disk space to store the file
+                writer::diskSpaceAssertion<This>(mesh, varNames, resolvedName);
+
+                std::ofstream out(resolvedName, std::ios::binary);
+                if (!out)
+                {
+                    throw std::runtime_error("Cannot open file: " + resolvedName);
+                }
+
+                // Write the system information
+                systemInfo::print(out);
+
+                // Write the mesh information: number of points, number of devices
+                mesh.dimensions().print<true>("latticeMesh", out);
+                mesh.nDevices().print<true>("deviceDecomposition", out);
+
+                // Write the field information: instantaneous or time-averaged, field names
+                writeFieldInformation<TimeType>(timeStep, varNames, meanCount, out);
+
+                // Write binary data with safe size conversion
+                writeFieldData(mesh, fields, varNames, out);
+            }
+
             template <const time::type TimeType, typename T>
             __host__ static void common_write(
                 const name_t &fileName,
@@ -179,6 +249,31 @@ namespace LBM
                 out << "};" << std::endl;
             }
 
+            template <typename T>
+            __host__ static void writeFieldData(
+                const host::latticeMesh &mesh,
+                const std::vector<std::vector<T>> &fields,
+                const words_t &varNames,
+                std::ofstream &out)
+            {
+                const host::label_t nPoints = mesh.size();
+                const host::label_t expectedSize = nPoints * varNames.size();
+                // const host::label_t byteSize = expectedSize * sizeof(T);
+
+                out << "fieldData" << std::endl;
+                out << "{" << std::endl;
+                out << "    fieldType\tnonUniform;" << std::endl;
+                out << std::endl;
+                out << "    field[" << expectedSize << "][" << varNames.size() << "][" << mesh.template dimension<axis::Z>() << "][" << mesh.template dimension<axis::Y>() << "][" << mesh.template dimension<axis::X>() << "]" << std::endl;
+                out << "    {" << std::endl;
+
+                fileIO::writeBinaryBlock(fields, out);
+
+                out << std::endl;
+                out << "    };" << std::endl;
+                out << "};" << std::endl;
+            }
+
             template <const time::type TimeType>
             __host__ static void writeFieldInformation(
                 const host::label_t timeStep,
@@ -191,7 +286,7 @@ namespace LBM
                 out << "    timeStep\t" << timeStep << ";" << std::endl;
                 out << std::endl;
                 // For now, only writing instantaneous fields
-                out << "    timeType\t" << fileIO::timeTypeString<TimeType>() << ";" << std::endl;
+                out << "    timeType\t" << time::nameString<TimeType>() << ";" << std::endl;
                 out << std::endl;
 
                 if constexpr (TimeType == time::timeAverage)
@@ -204,7 +299,7 @@ namespace LBM
                 out << std::endl;
                 out << "    fieldNames[" << varNames.size() << "]" << std::endl;
                 out << "    {" << std::endl;
-                for (const auto &name : varNames)
+                for (const name_t &name : varNames)
                 {
                     out << "    \t" << name << ";" << std::endl;
                 }

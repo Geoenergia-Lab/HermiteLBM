@@ -55,23 +55,6 @@ namespace LBM
     namespace fileIO
     {
         /**
-         * @brief Returns a string based on the type of time stepping
-         **/
-        template <const time::type TimeType>
-        __host__ [[nodiscard]] const name_t timeTypeString() noexcept
-        {
-            if constexpr (TimeType == time::instantaneous)
-            {
-                return "instantaneous";
-            }
-
-            if constexpr (TimeType == time::timeAverage)
-            {
-                return "timeAverage";
-            }
-        }
-
-        /**
          * @brief Write a pointer of type T to an ofstream object
          * @tparam T The type of the pointer
          * @param[in] ptr The pointer to write from

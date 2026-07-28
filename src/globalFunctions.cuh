@@ -316,6 +316,9 @@ namespace LBM
             return (tx + block::nx<label_t>() * (ty + block::ny<label_t>() * (tz + block::nz<label_t>() * (bx + nxBlocks * (by + nyBlocks * bz)))));
         }
 
+        /**
+         * @overload Compute the memory index from a thread and block label
+         **/
         __host__ [[nodiscard]] inline constexpr label_t idx(const host::threadLabel &Tx, const host::blockLabel &Bx, const label_t nxBlocks, const label_t nyBlocks) noexcept
         {
             return idx(Tx.x, Tx.y, Tx.z, Bx.x, Bx.y, Bx.z, nxBlocks, nyBlocks);
@@ -333,6 +336,15 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline constexpr host::label_t idx(const host::label_t x, const host::label_t y, const host::label_t z, const host::label_t nx, const host::label_t ny) noexcept
         {
             return x + (nx * (y + (ny * z)));
+        }
+
+        /**
+         * @overload
+         * @param[in] point Point coordinates
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr host::label_t idx(const host::pointLabel &point, const host::label_t nx, const host::label_t ny) noexcept
+        {
+            return idx(point.value<axis::X>(), point.value<axis::Y>(), point.value<axis::Z>(), nx, ny);
         }
     }
 

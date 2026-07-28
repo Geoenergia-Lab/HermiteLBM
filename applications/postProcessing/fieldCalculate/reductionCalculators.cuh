@@ -108,12 +108,12 @@ namespace LBM
         template <typename ReturnType, typename T>
         __host__ [[nodiscard]] inline ReturnType spatialSum(const std::vector<T> &field) noexcept
         {
-            ReturnType sum = static_cast<ReturnType>(0);
+            double sum = static_cast<double>(0);
             for (const T &value : field)
             {
-                sum += static_cast<ReturnType>(value);
+                sum += static_cast<double>(value);
             }
-            return sum;
+            return static_cast<ReturnType>(sum);
         }
 
         /**
@@ -151,12 +151,12 @@ namespace LBM
          * @brief Prints a per‑field reduction for all fields in a collection.
          * @tparam Reducer A callable that computes a scalar from a field vector, e.g. fieldExtremaImpl<Sign> or spatialMean.
          * @param[in] variables The arrayCollection of fields.
-         * @param[in] mesh The lattice mesh (for deinterleaving).
+         * @param[in] mesh Reference to the lattice mesh
          * @param[in] timeStep Current time step.
          * @param[in] compute The reduction function. Must have signature scalar_t(const std::vector<scalar_t>&) or be a template that can accept a single argument.
          * @param[in] label A string printed before the value (used as-is).
          */
-        template <typename Reducer>
+        template <const bool Deinterleave, const bool Sort, typename Reducer>
         __host__ void printFieldReduction(
             const host::arrayCollection<scalar_t> &variables,
             const host::latticeMesh &mesh,
@@ -164,12 +164,12 @@ namespace LBM
             const Reducer &compute,
             const std::string &label) noexcept
         {
-            const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);
+            const std::vector<std::vector<scalar_t>> fields = variables.splitFields<Deinterleave, Sort>(mesh);
             std::cout << "Time: " << timeStep << std::endl;
             std::cout << "{" << std::endl;
             for (host::label_t field = 0; field < fields.size(); field++)
             {
-                std::cout << "    " << label << "(" << variables.varNames()[field] << "): " << compute(fields[field]) << ";" << std::endl;
+                std::cout << std::setprecision(15) << "    " << label << "(" << variables.varNames()[field] << "): " << compute(fields[field]) << ";" << std::endl;
             }
             std::cout << "};" << std::endl;
         }
@@ -178,7 +178,7 @@ namespace LBM
          * @brief Prints a per‑field reduction for all fields in a collection.
          * @tparam Reducer A callable that computes a scalar from a field vector, e.g. fieldExtremaImpl<Sign> or spatialMean.
          * @param[in] variables The arrayCollection of fields.
-         * @param[in] mesh The lattice mesh (for deinterleaving).
+         * @param[in] mesh Reference to the lattice mesh
          * @param[in] timeStep Current time step.
          * @param[in] comp Comparator (e.g., std::greater for max)
          * @param[in] label A string printed before the value (used as-is).
@@ -195,7 +195,7 @@ namespace LBM
             {
                 return fieldExtremaImpl<Sign>(f, comp);
             };
-            printFieldReduction(variables, mesh, timeStep, compute, label);
+            printFieldReduction<false, false>(variables, mesh, timeStep, compute, label);
         }
 
         /**
@@ -265,7 +265,7 @@ namespace LBM
                 return spatialMean<scalar_t>(f);
             };
 
-            printFieldReduction(variables, mesh, timeStep, compute, "mean");
+            printFieldReduction<false, true>(variables, mesh, timeStep, compute, "mean");
         }
 
         /**
@@ -283,7 +283,7 @@ namespace LBM
                 return spatialSum<scalar_t>(f);
             };
 
-            printFieldReduction(variables, mesh, timeStep, compute, "sum");
+            printFieldReduction<false, true>(variables, mesh, timeStep, compute, "sum");
         }
 
         /**
@@ -301,7 +301,7 @@ namespace LBM
                 return containsNaN(f, status);
             };
 
-            printFieldReduction(variables, mesh, timeStep, compute, "containsNaN");
+            printFieldReduction<false, false>(variables, mesh, timeStep, compute, "containsNaN");
         }
     }
 }

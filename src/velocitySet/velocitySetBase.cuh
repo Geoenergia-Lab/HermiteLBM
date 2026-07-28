@@ -100,6 +100,19 @@ namespace LBM
             return static_cast<T>(9);
         }
 
+        template <typename T>
+        __device__ __host__ [[nodiscard]] static inline constexpr T scale(const bool is_diagonal) noexcept
+        {
+            if (is_diagonal)
+            {
+                return static_cast<T>(4.5);
+            }
+            else
+            {
+                return static_cast<T>(9);
+            }
+        }
+
         /**
          * @brief Apply velocity set scaling factors to moment array
          * @param[out] moments Moment array (rho, U, Pi)

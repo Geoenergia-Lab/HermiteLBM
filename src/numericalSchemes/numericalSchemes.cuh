@@ -65,7 +65,7 @@ namespace LBM
             template <const host::label_t Order, const host::label_t MaximumSchemeOrder>
             __device__ __host__ inline consteval void validate() noexcept
             {
-                static_assert(((Order % 2 == 0) && (Order < (1 << MaximumSchemeOrder))), "Invalid numerical scheme order");
+                static_assert(((Order % 2 == 0) && (Order <= MaximumSchemeOrder)), "Invalid numerical scheme order");
             }
         }
 
