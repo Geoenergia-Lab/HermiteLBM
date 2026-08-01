@@ -71,8 +71,6 @@ namespace LBM
             {
                 LBM::numericalSchemes::assertions::validate<SchemeOrder, maxSchemeOrder()>();
 
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(derivative::dfdx));
-
                 const host::label_t nx = mesh.dimension<axis::X>();
                 const host::label_t ny = mesh.dimension<axis::Y>();
                 const host::label_t nz = mesh.dimension<axis::Z>();
@@ -162,8 +160,6 @@ namespace LBM
             {
                 LBM::numericalSchemes::assertions::validate<SchemeOrder, maxSchemeOrder()>();
 
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(derivative::dfdy));
-
                 const host::label_t nx = mesh.dimension<axis::X>();
                 const host::label_t ny = mesh.dimension<axis::Y>();
                 const host::label_t nz = mesh.dimension<axis::Z>();
@@ -251,8 +247,6 @@ namespace LBM
                 const host::latticeMesh &mesh)
             {
                 LBM::numericalSchemes::assertions::validate<SchemeOrder, maxSchemeOrder()>();
-
-                static_assert(MULTI_GPU_ASSERTION(), MULTI_GPU_MSG(derivative::dfdz));
 
                 const host::label_t nx = mesh.dimension<axis::X>();
                 const host::label_t ny = mesh.dimension<axis::Y>();
