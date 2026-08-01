@@ -56,7 +56,7 @@ namespace LBM
     class deviceCommunicator
     {
         using This = deviceCommunicator<ExplicitSync, VelocitySet>;
-        using exchangeFunction = std::function<void(const host::label_t)>;
+        using exchangeFunction = std::function<void(const host::label_t, const host::label_t)>;
 
     public:
         /**
@@ -91,9 +91,9 @@ namespace LBM
          **/
         __host__ inline void exchange(const host::label_t timeStep) const
         {
-            for (const exchangeFunction &commFunction : commList_)
+            for (host::label_t idxPair = 0; idxPair < commList_.size(); idxPair++)
             {
-                commFunction(timeStep);
+                commList_[idxPair](idxPair, timeStep);
             }
         }
 
@@ -129,11 +129,14 @@ namespace LBM
 
             if (programCtrl.deviceList().size() > 1)
             {
-                commList.push_back(
-                    [this](const host::label_t timeStep)
-                    {
-                        this->exchangeImpl<axis::Z>(timeStep);
-                    });
+                for (host::label_t idxPair = 0; idxPair < programCtrl.deviceList().size() - 1; idxPair++)
+                {
+                    commList.push_back(
+                        [this](const host::label_t pair, const host::label_t timeStep)
+                        {
+                            this->exchangeImpl<axis::Z>(pair, timeStep);
+                        });
+                }
             }
 
             return commList;
@@ -163,22 +166,15 @@ namespace LBM
             }
         }
 
-        __host__ [[nodiscard]] static inline consteval bool exchangeHardcodeDevFix() noexcept { return true; }
-        __host__ [[nodiscard]] static inline consteval bool blockDecompImplemented() noexcept { return true; }
-
         /**
          * @brief Implementation of the exchange function
          * @tparam alpha The axis direction (X, Y or Z)
          * @param[in] timeStep The current time step
          **/
         template <const axis::type alpha>
-        __host__ inline void exchangeImpl(const host::label_t timeStep) const
+        __host__ inline void exchangeImpl(const host::label_t idxExchange, const host::label_t timeStep) const
         {
             static_assert(alpha == axis::Z, "HermiteLBM currently only supports decomposition in the z axis");
-
-            static_assert(exchangeHardcodeDevFix(), "The current implementation of exchangeImpl is hard-coded for a specific device configuration. This function should be refactored to be more flexible and support arbitrary device topologies. The definition of idxDevL and idxDevR need to be fixed.");
-
-            static_assert(blockDecompImplemented(), "The current implementation of exchangeImpl assumes a specific block decomposition. This function should be refactored to support arbitrary block decompositions. The definitions of nab and nbb may not be correct for brick decomposition.");
 
             const host::label_t nab = mesh_.nBlocks<axis::orthogonal<alpha, 0>()>();
             const host::label_t nbb = mesh_.nBlocks<axis::orthogonal<alpha, 1>()>();
@@ -194,8 +190,8 @@ namespace LBM
                 mesh_.blocksPerDevice<axis::orthogonal<alpha, 1>()>();
 
             // Hard-coded for now
-            constexpr const host::label_t idxDevL = 0;
-            constexpr const host::label_t idxDevR = 1;
+            const host::label_t idxDevL = idxExchange;
+            const host::label_t idxDevR = idxExchange + 1;
 
             // Right to Left exchange
             constexpr const host::blockLabel blockIdxDestL(0, 0, 0);
@@ -216,8 +212,8 @@ namespace LBM
             // Sync devices and streams - the cudaDeviceSynchronize() may not be 100% necessary, not sure yet
             if constexpr (ExplicitSync)
             {
-                constexpr const host::label_t idxStreamL = device::idxStream(idxDevL, 2); // Stream 2 is the East stream of GPU 0
-                constexpr const host::label_t idxStreamR = device::idxStream(idxDevR, 0); // Stream 3 is the West stream of GPU 1
+                const host::label_t idxStreamL = device::idxStream(idxDevL, 2); // Stream 2 is the East stream of GPU 0
+                const host::label_t idxStreamR = device::idxStream(idxDevR, 0); // Stream 3 is the West stream of GPU 1
                 programCtrl_.streams().synchronize(idxStreamL);
                 programCtrl_.streams().synchronize(idxStreamR);
             }
