@@ -56,7 +56,7 @@ namespace LBM
     class deviceCommunicator
     {
         using This = deviceCommunicator<ExplicitSync, VelocitySet>;
-        using exchangeFunction = std::function<void(const host::label_t)>;
+        using exchangeFunction = std::function<void(const host::label_t, const host::label_t)>;
 
     public:
         /**
@@ -72,7 +72,8 @@ namespace LBM
             : mesh_(mesh),
               programCtrl_(programCtrl),
               haloPtrs_(haloPtrs),
-              commList_(assembleCommList(programCtrl)) {}
+              commList_(assembleCommList(programCtrl)),
+              devPairList_(assembleDevicePairs(programCtrl)) {}
 
         /**
          * @brief Destructor
@@ -91,9 +92,9 @@ namespace LBM
          **/
         __host__ inline void exchange(const host::label_t timeStep) const
         {
-            for (const exchangeFunction &commFunction : commList_)
+            for (host::label_t idxPair = 0; idxPair < devPairList_.size(); idxPair++)
             {
-                commFunction(timeStep);
+                commList_[idxPair](idxPair, timeStep);
             }
         }
 
@@ -119,6 +120,11 @@ namespace LBM
         const std::vector<exchangeFunction> commList_;
 
         /**
+         * @brief List of device communication pairs
+         **/
+        const std::vector<thread::array<host::label_t, 2>> devPairList_;
+
+        /**
          * @brief Assemble the list of exchange functions from the program control object
          * @param[in] programCtrl The program control object
          * @return A std::vector of exchange functions to be called at run time
@@ -129,14 +135,32 @@ namespace LBM
 
             if (programCtrl.deviceList().size() > 1)
             {
-                commList.push_back(
-                    [this](const host::label_t timeStep)
-                    {
-                        this->exchangeImpl<axis::Z>(timeStep);
-                    });
+                for (host::label_t idxPair = 0; idxPair < programCtrl.deviceList().size() - 1; idxPair++)
+                {
+                    commList.push_back(
+                        [this](const host::label_t pair, const host::label_t timeStep)
+                        {
+                            this->exchangeImpl<axis::Z>(pair, timeStep);
+                        });
+                }
             }
 
             return commList;
+        }
+
+        __host__ [[nodiscard]] const std::vector<thread::array<host::label_t, 2>> assembleDevicePairs(const programControl &programCtrl) const
+        {
+            std::vector<thread::array<host::label_t, 2>> devicePairList;
+
+            if (programCtrl.deviceList().size() > 1)
+            {
+                for (host::label_t idxPair = 0; idxPair < programCtrl.deviceList().size() - 1; idxPair++)
+                {
+                    devicePairList.push_back({idxPair, idxPair + 1});
+                }
+            }
+
+            return devicePairList;
         }
 
         /**
@@ -172,7 +196,7 @@ namespace LBM
          * @param[in] timeStep The current time step
          **/
         template <const axis::type alpha>
-        __host__ inline void exchangeImpl(const host::label_t timeStep) const
+        __host__ inline void exchangeImpl(const host::label_t idxExchange, const host::label_t timeStep) const
         {
             static_assert(alpha == axis::Z, "HermiteLBM currently only supports decomposition in the z axis");
 
@@ -194,8 +218,8 @@ namespace LBM
                 mesh_.blocksPerDevice<axis::orthogonal<alpha, 1>()>();
 
             // Hard-coded for now
-            constexpr const host::label_t idxDevL = 0;
-            constexpr const host::label_t idxDevR = 1;
+            const host::label_t idxDevL = devPairList_[idxExchange][0];
+            const host::label_t idxDevR = devPairList_[idxExchange][1];
 
             // Right to Left exchange
             constexpr const host::blockLabel blockIdxDestL(0, 0, 0);
@@ -216,8 +240,8 @@ namespace LBM
             // Sync devices and streams - the cudaDeviceSynchronize() may not be 100% necessary, not sure yet
             if constexpr (ExplicitSync)
             {
-                constexpr const host::label_t idxStreamL = device::idxStream(idxDevL, 2); // Stream 2 is the East stream of GPU 0
-                constexpr const host::label_t idxStreamR = device::idxStream(idxDevR, 0); // Stream 3 is the West stream of GPU 1
+                const host::label_t idxStreamL = device::idxStream(idxDevL, 2); // Stream 2 is the East stream of GPU 0
+                const host::label_t idxStreamR = device::idxStream(idxDevR, 0); // Stream 3 is the West stream of GPU 1
                 programCtrl_.streams().synchronize(idxStreamL);
                 programCtrl_.streams().synchronize(idxStreamR);
             }
