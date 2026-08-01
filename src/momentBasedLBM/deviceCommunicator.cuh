@@ -72,8 +72,7 @@ namespace LBM
             : mesh_(mesh),
               programCtrl_(programCtrl),
               haloPtrs_(haloPtrs),
-              commList_(assembleCommList(programCtrl)),
-              devPairList_(assembleDevicePairs(programCtrl)) {}
+              commList_(assembleCommList(programCtrl)) {}
 
         /**
          * @brief Destructor
@@ -92,7 +91,7 @@ namespace LBM
          **/
         __host__ inline void exchange(const host::label_t timeStep) const
         {
-            for (host::label_t idxPair = 0; idxPair < devPairList_.size(); idxPair++)
+            for (host::label_t idxPair = 0; idxPair < commList_.size(); idxPair++)
             {
                 commList_[idxPair](idxPair, timeStep);
             }
@@ -120,11 +119,6 @@ namespace LBM
         const std::vector<exchangeFunction> commList_;
 
         /**
-         * @brief List of device communication pairs
-         **/
-        const std::vector<thread::array<host::label_t, 2>> devPairList_;
-
-        /**
          * @brief Assemble the list of exchange functions from the program control object
          * @param[in] programCtrl The program control object
          * @return A std::vector of exchange functions to be called at run time
@@ -146,21 +140,6 @@ namespace LBM
             }
 
             return commList;
-        }
-
-        __host__ [[nodiscard]] const std::vector<thread::array<host::label_t, 2>> assembleDevicePairs(const programControl &programCtrl) const
-        {
-            std::vector<thread::array<host::label_t, 2>> devicePairList;
-
-            if (programCtrl.deviceList().size() > 1)
-            {
-                for (host::label_t idxPair = 0; idxPair < programCtrl.deviceList().size() - 1; idxPair++)
-                {
-                    devicePairList.push_back({idxPair, idxPair + 1});
-                }
-            }
-
-            return devicePairList;
         }
 
         /**
@@ -187,9 +166,6 @@ namespace LBM
             }
         }
 
-        __host__ [[nodiscard]] static inline consteval bool exchangeHardcodeDevFix() noexcept { return true; }
-        __host__ [[nodiscard]] static inline consteval bool blockDecompImplemented() noexcept { return true; }
-
         /**
          * @brief Implementation of the exchange function
          * @tparam alpha The axis direction (X, Y or Z)
@@ -199,10 +175,6 @@ namespace LBM
         __host__ inline void exchangeImpl(const host::label_t idxExchange, const host::label_t timeStep) const
         {
             static_assert(alpha == axis::Z, "HermiteLBM currently only supports decomposition in the z axis");
-
-            static_assert(exchangeHardcodeDevFix(), "The current implementation of exchangeImpl is hard-coded for a specific device configuration. This function should be refactored to be more flexible and support arbitrary device topologies. The definition of idxDevL and idxDevR need to be fixed.");
-
-            static_assert(blockDecompImplemented(), "The current implementation of exchangeImpl assumes a specific block decomposition. This function should be refactored to support arbitrary block decompositions. The definitions of nab and nbb may not be correct for brick decomposition.");
 
             const host::label_t nab = mesh_.nBlocks<axis::orthogonal<alpha, 0>()>();
             const host::label_t nbb = mesh_.nBlocks<axis::orthogonal<alpha, 1>()>();
@@ -218,8 +190,8 @@ namespace LBM
                 mesh_.blocksPerDevice<axis::orthogonal<alpha, 1>()>();
 
             // Hard-coded for now
-            const host::label_t idxDevL = devPairList_[idxExchange][0];
-            const host::label_t idxDevR = devPairList_[idxExchange][1];
+            const host::label_t idxDevL = idxExchange;
+            const host::label_t idxDevR = idxExchange + 1;
 
             // Right to Left exchange
             constexpr const host::blockLabel blockIdxDestL(0, 0, 0);
