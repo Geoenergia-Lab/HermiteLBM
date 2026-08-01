@@ -89,13 +89,14 @@ SourceFiles
 #include <unordered_set>
 #include <vector>
 
-#define MULTI_GPU_MSG_NOTE(func, note) #func " not implemented for multi GPU yet: " note
-
-#define MULTI_GPU_MSG(func) #func " not implemented for multi GPU yet"
-
 namespace LBM
 {
+    /**
+     * @brief Multi-GPU related static asserts
+     **/
     __host__ [[nodiscard]] inline consteval bool MULTI_GPU_ASSERTION() { return true; }
+#define MULTI_GPU_MSG_NOTE(func, note) #func " not implemented for multi GPU yet: " note
+#define MULTI_GPU_MSG(func) #func " not implemented for multi GPU yet"
 
     /**
      * @brief Verbose logging

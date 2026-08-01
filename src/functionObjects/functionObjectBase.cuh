@@ -39,8 +39,6 @@ namespace LBM
 {
     namespace functionObjects
     {
-        __host__ [[nodiscard]] inline consteval bool functionObjectReady() noexcept { return true; }
-
         /**
          * @brief Base class for LBM function objects, providing common data members.
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
@@ -135,8 +133,6 @@ namespace LBM
                 FunctionObject &object,
                 host::label_t &meanCount)
             {
-                static_assert(functionObjectReady(), "Need to fix the launch configuration and stream handling in functionObjectBase");
-
                 const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
 
                 const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
@@ -161,8 +157,6 @@ namespace LBM
                 F *func,
                 FunctionObject &object)
             {
-                static_assert(functionObjectReady(), "Need to fix the launch configuration and stream handling in functionObjectBase");
-
                 const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
                 for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
                 {
@@ -184,8 +178,6 @@ namespace LBM
                 FunctionObject &object,
                 host::label_t &meanCount)
             {
-                static_assert(functionObjectReady(), "Need to fix the launch configuration and stream handling in functionObjectBase");
-
                 const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
 
                 const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
@@ -211,8 +203,6 @@ namespace LBM
                 F *func,
                 FunctionObject &object)
             {
-                static_assert(functionObjectReady(), "Need to fix the launch configuration and stream handling in functionObjectBase");
-
                 const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
                 for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
                 {
