@@ -56,274 +56,354 @@ namespace LBM
     {
         namespace derivative
         {
-            __device__ __host__ [[nodiscard]] inline consteval host::label_t maxSchemeOrder() noexcept { return 8; }
-
-            /**
-             * @brief Calculates the x derivative of a scalar field
-             * @return The x-derivative of f
-             * @param[in] f The field to be differentiated
-             * @param[in] mesh The lattice mesh
-             **/
-            template <const host::label_t SchemeOrder, typename TReturn, typename T>
-            __host__ [[nodiscard]] const std::vector<TReturn> dfdx(
-                const std::vector<T> &f,
-                const host::latticeMesh &mesh)
+            __device__ __host__ [[nodiscard]] inline consteval host::label_t maxSchemeOrder() noexcept
             {
-                LBM::numericalSchemes::assertions::validate<SchemeOrder, maxSchemeOrder()>();
+                return 8;
+            }
 
-                const host::label_t nx = mesh.dimension<axis::X>();
-                const host::label_t ny = mesh.dimension<axis::Y>();
-                const host::label_t nz = mesh.dimension<axis::Z>();
-
-                const double dx = 1;
-
-                std::vector<TReturn> dfdx(f.size(), 0);
-                constexpr const host::label_t pad = SchemeOrder - 1;
-                const host::label_t nx_padded = nx + 2 * pad;
-                std::vector<double> padded_line(nx_padded, 0);
-
-                for (host::label_t z = 0; z < nz; ++z)
-                {
-                    for (host::label_t y = 0; y < ny; ++y)
-                    {
-                        // Fill interior region of padded_line
-                        for (host::label_t x = 0; x < nx; ++x)
-                        {
-                            padded_line[pad + x] = static_cast<double>(f[global::idx(x, y, z, nx, ny)]);
-                        }
-
-                        // Set left ghost cells (reflect & negate)
-                        for (host::label_t i = 0; i < pad; ++i)
-                        {
-                            padded_line[i] = static_cast<double>(-f[global::idx(pad - i, y, z, nx, ny)]);
-                        }
-
-                        // Set right ghost cells (reflect & negate)
-                        for (host::label_t i = 0; i < pad; ++i)
-                        {
-                            padded_line[pad + nx + i] = static_cast<double>(-f[global::idx(nx - 2 - i, y, z, nx, ny)]);
-                        }
-
-                        // Compute derivatives for each point in x-direction
-                        for (host::label_t x = 0; x < nx; ++x)
-                        {
-                            const host::label_t center = pad + x;
-
-                            if constexpr (SchemeOrder == 2)
-                            {
-                                dfdx[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
-                                    (padded_line[center + 1] - padded_line[center - 1]) / (2.0 * static_cast<double>(dx)));
-                            }
-
-                            if constexpr (SchemeOrder == 4)
-                            {
-                                dfdx[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
-                                    (2.0 / 3.0 * (padded_line[center + 1] - padded_line[center - 1]) +
-                                     1.0 / 12.0 * (padded_line[center + 2] - padded_line[center - 2])) /
-                                    static_cast<double>(dx));
-                            }
-
-                            if constexpr (SchemeOrder == 6)
-                            {
-                                dfdx[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
-                                    (3.0 / 4.0 * (padded_line[center + 1] - padded_line[center - 1]) +
-                                     3.0 / 20.0 * (padded_line[center + 2] - padded_line[center - 2]) +
-                                     1.0 / 60.0 * (padded_line[center + 3] - padded_line[center - 3])) /
-                                    static_cast<double>(dx));
-                            }
-
-                            if constexpr (SchemeOrder == 8)
-                            {
-                                dfdx[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
-                                    (4.0 / 5.0 * (padded_line[center + 1] - padded_line[center - 1]) +
-                                     1.0 / 5.0 * (padded_line[center + 2] - padded_line[center - 2]) +
-                                     4.0 / 105.0 * (padded_line[center + 3] - padded_line[center - 3]) +
-                                     1.0 / 280.0 * (padded_line[center + 4] - padded_line[center - 4])) /
-                                    static_cast<double>(dx));
-                            }
-                        }
-                    }
-                }
-                return dfdx;
+            __device__ __host__ [[nodiscard]] inline consteval host::label_t gridPadding(const host::label_t SchemeOrder) noexcept
+            {
+                return SchemeOrder - 1;
             }
 
             /**
-             * @brief Calculates the y derivative of a scalar field
-             * @return The y-derivative of f
-             * @param[in] f The field to be differentiated
-             * @param[in] mesh The lattice mesh
+             * @brief Calculate the centered finite difference for a given numerical scheme order
+             * @tparam SchemeOrder The order of the numerical scheme
+             * @tparam ReturnType The return type of the function
+             * @param[in] padded_line The line of the field to calculate the derivative of
+             * @param[in] center The coordinate at which to evaluate the finite difference
              **/
-            template <const host::label_t SchemeOrder, typename TReturn, typename T>
-            __host__ [[nodiscard]] const std::vector<TReturn> dfdy(
-                const std::vector<T> &f,
-                const host::latticeMesh &mesh)
+            template <const host::label_t SchemeOrder, typename ReturnType, class PaddedLine>
+            __host__ [[nodiscard]] inline constexpr ReturnType finite_difference(
+                const PaddedLine &padded_line,
+                const host::label_t center) noexcept
             {
                 LBM::numericalSchemes::assertions::validate<SchemeOrder, maxSchemeOrder()>();
 
-                const host::label_t nx = mesh.dimension<axis::X>();
-                const host::label_t ny = mesh.dimension<axis::Y>();
-                const host::label_t nz = mesh.dimension<axis::Z>();
-                constexpr const double dy = 1; // Adjust based on actual grid spacing
+                constexpr const double d_alpha = static_cast<double>(1);
 
-                std::vector<TReturn> dfdy(f.size(), 0);
-                constexpr const host::label_t pad = SchemeOrder - 1;
-                const host::label_t ny_padded = ny + 2 * pad;
-                std::vector<double> padded_line(ny_padded, 0);
-
-                for (host::label_t z = 0; z < nz; ++z)
+                if constexpr (SchemeOrder == 2)
                 {
-                    for (host::label_t x = 0; x < nx; ++x)
-                    {
-                        // Fill interior region of padded_line
-                        for (host::label_t y = 0; y < ny; ++y)
-                        {
-                            padded_line[pad + y] = static_cast<double>(f[global::idx(x, y, z, nx, ny)]);
-                        }
-
-                        // Set bottom ghost cells (reflect & negate)
-                        for (host::label_t i = 0; i < pad; ++i)
-                        {
-                            padded_line[i] = -static_cast<double>(f[global::idx(x, pad - i, z, nx, ny)]);
-                        }
-
-                        // Set top ghost cells (reflect & negate)
-                        for (host::label_t i = 0; i < pad; ++i)
-                        {
-                            padded_line[pad + ny + i] = -static_cast<double>(f[global::idx(x, ny - 2 - i, z, nx, ny)]);
-                        }
-
-                        // Compute derivatives for each point in y-direction
-                        for (host::label_t y = 0; y < ny; ++y)
-                        {
-                            const host::label_t center = pad + y;
-
-                            if constexpr (SchemeOrder == 2)
-                            {
-                                dfdy[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
-                                    (padded_line[center + 1] - padded_line[center - 1]) / (2.0 * static_cast<double>(dy)));
-                            }
-
-                            if constexpr (SchemeOrder == 4)
-                            {
-                                dfdy[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
-                                    (2.0 / 3.0 * (padded_line[center + 1] - padded_line[center - 1]) +
-                                     1.0 / 12.0 * (padded_line[center + 2] - padded_line[center - 2])) /
-                                    static_cast<double>(dy));
-                            }
-
-                            if constexpr (SchemeOrder == 6)
-                            {
-                                dfdy[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
-                                    (3.0 / 4.0 * (padded_line[center + 1] - padded_line[center - 1]) +
-                                     3.0 / 20.0 * (padded_line[center + 2] - padded_line[center - 2]) +
-                                     1.0 / 60.0 * (padded_line[center + 3] - padded_line[center - 3])) /
-                                    static_cast<double>(dy));
-                            }
-
-                            if constexpr (SchemeOrder == 8)
-                            {
-                                dfdy[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
-                                    (4.0 / 5.0 * (padded_line[center + 1] - padded_line[center - 1]) +
-                                     1.0 / 5.0 * (padded_line[center + 2] - padded_line[center - 2]) +
-                                     4.0 / 105.0 * (padded_line[center + 3] - padded_line[center - 3]) +
-                                     1.0 / 280.0 * (padded_line[center + 4] - padded_line[center - 4])) /
-                                    static_cast<double>(dy));
-                            }
-                        }
-                    }
+                    return static_cast<ReturnType>(
+                        (padded_line[center + 1] - padded_line[center - 1]) / (2.0 * d_alpha));
                 }
-                return dfdy;
+
+                if constexpr (SchemeOrder == 4)
+                {
+                    return static_cast<ReturnType>(
+                        (2.0 / 3.0 * (padded_line[center + 1] - padded_line[center - 1]) +
+                         1.0 / 12.0 * (padded_line[center + 2] - padded_line[center - 2])) /
+                        d_alpha);
+                }
+
+                if constexpr (SchemeOrder == 6)
+                {
+                    return static_cast<ReturnType>(
+                        (3.0 / 4.0 * (padded_line[center + 1] - padded_line[center - 1]) +
+                         3.0 / 20.0 * (padded_line[center + 2] - padded_line[center - 2]) +
+                         1.0 / 60.0 * (padded_line[center + 3] - padded_line[center - 3])) /
+                        d_alpha);
+                }
+
+                if constexpr (SchemeOrder == 8)
+                {
+                    return static_cast<ReturnType>(
+                        (4.0 / 5.0 * (padded_line[center + 1] - padded_line[center - 1]) +
+                         1.0 / 5.0 * (padded_line[center + 2] - padded_line[center - 2]) +
+                         4.0 / 105.0 * (padded_line[center + 3] - padded_line[center - 3]) +
+                         1.0 / 280.0 * (padded_line[center + 4] - padded_line[center - 4])) /
+                        d_alpha);
+                }
+
+                return static_cast<ReturnType>(0);
             }
 
             /**
-             * @brief Calculates the z derivative of a scalar field
-             * @return The z-derivative of f
+             * @brief Fill a line of the field along an arbitrary axis for a given numerical scheme order
+             * @tparam alpha The axis direction (X, Y or Z)
+             * @tparam SchemeOrder The order of the numerical scheme
+             * @param[in] mesh Reference to the lattice mesh
+             * @param[in] padded_line The line of the field to fill from f
+             * @param[in] f The field of which the derivative is to be computed
+             * @param[in] beta The first orthogonal coordinate to alpha
+             * @param[in] gamma The second orthogonal coordinate to beta
+             **/
+            template <const axis::type alpha, const host::label_t SchemeOrder, typename T, typename ReturnType>
+            void fill_padded_line(
+                const host::latticeMesh &mesh,
+                std::vector<ReturnType> &padded_line,
+                const std::vector<T> &f,
+                const host::label_t beta,
+                const host::label_t gamma)
+            {
+                // Fill interior region
+                for (host::label_t i = 0; i < mesh.dimension<alpha>(); i++)
+                {
+                    const host::pointLabel I = axis::to_3d<alpha>(beta, gamma, i);
+                    padded_line[gridPadding(SchemeOrder) + i] = static_cast<ReturnType>(f[global::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())]);
+                }
+
+                // Set front ghost cells
+                for (host::label_t i = 0; i < gridPadding(SchemeOrder); i++)
+                {
+                    const host::pointLabel I = axis::to_3d<alpha>(beta, gamma, gridPadding(SchemeOrder) - i);
+                    padded_line[i] = -static_cast<ReturnType>(f[global::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())]);
+                }
+
+                // Set back ghost cells
+                for (host::label_t i = 0; i < gridPadding(SchemeOrder); i++)
+                {
+                    const host::pointLabel I = axis::to_3d<alpha>(beta, gamma, mesh.dimension<alpha>() - static_cast<host::label_t>(2) - i);
+                    padded_line[gridPadding(SchemeOrder) + mesh.dimension<alpha>() + i] = -static_cast<ReturnType>(f[global::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())]);
+                }
+            }
+
+            /**
+             * @brief Calculates the derivative of a scalar field in the alpha-direction
+             * @tparam alpha The axis direction (X, Y or Z)
+             * @return The alpha-derivative of f
              * @param[in] f The field to be differentiated
              * @param[in] mesh The lattice mesh
              **/
-            template <const host::label_t SchemeOrder, typename TReturn, typename T>
-            __host__ [[nodiscard]] const std::vector<TReturn> dfdz(
+            template <const axis::type alpha, const host::label_t SchemeOrder, typename ReturnType, typename T>
+            __host__ [[nodiscard]] const std::vector<ReturnType> diff(
                 const std::vector<T> &f,
                 const host::latticeMesh &mesh)
             {
                 LBM::numericalSchemes::assertions::validate<SchemeOrder, maxSchemeOrder()>();
 
-                const host::label_t nx = mesh.dimension<axis::X>();
-                const host::label_t ny = mesh.dimension<axis::Y>();
-                const host::label_t nz = mesh.dimension<axis::Z>();
-                constexpr const double dz = 1; // Adjust based on actual grid spacing
+                std::vector<ReturnType> dfdz(f.size(), 0);
+                std::vector<double> padded_line(mesh.dimension<alpha>() + static_cast<host::label_t>(2) * gridPadding(SchemeOrder), 0);
 
-                std::vector<TReturn> dfdz(f.size(), 0);
-                constexpr const host::label_t pad = SchemeOrder - 1;
-                const host::label_t nz_padded = nz + 2 * pad;
-                std::vector<double> padded_line(nz_padded, 0);
-
-                for (host::label_t y = 0; y < ny; ++y)
+                for (host::label_t gamma = 0; gamma < mesh.dimension<axis::orthogonal<alpha, 1>()>(); gamma++)
                 {
-                    for (host::label_t x = 0; x < nx; ++x)
+                    for (host::label_t beta = 0; beta < mesh.dimension<axis::orthogonal<alpha, 0>()>(); beta++)
                     {
-                        // Fill interior region of padded_line
-                        for (host::label_t z = 0; z < nz; ++z)
+                        fill_padded_line<alpha, SchemeOrder>(mesh, padded_line, f, beta, gamma);
+
+                        // Compute derivatives for each point in the alpha direction
+                        for (host::label_t i = 0; i < mesh.dimension<alpha>(); i++)
                         {
-                            padded_line[pad + z] = static_cast<double>(f[global::idx(x, y, z, nx, ny)]);
-                        }
+                            const host::label_t center = gridPadding(SchemeOrder) + i;
 
-                        // Set front ghost cells (reflect & negate)
-                        for (host::label_t i = 0; i < pad; ++i)
-                        {
-                            padded_line[i] = -static_cast<double>(f[global::idx(x, y, pad - i, nx, ny)]);
-                        }
+                            const host::pointLabel I = axis::to_3d<alpha>(beta, gamma, i);
 
-                        // Set back ghost cells (reflect & negate)
-                        for (host::label_t i = 0; i < pad; ++i)
-                        {
-                            padded_line[pad + nz + i] = -static_cast<double>(f[global::idx(x, y, nz - 2 - i, nx, ny)]);
-                        }
-
-                        // Compute derivatives for each point in z-direction
-                        for (host::label_t z = 0; z < nz; ++z)
-                        {
-                            const host::label_t center = pad + z;
-
-                            if constexpr (SchemeOrder == 2)
-                            {
-                                dfdz[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
-                                    (padded_line[center + 1] - padded_line[center - 1]) / (2.0 * static_cast<double>(dz)));
-                            }
-
-                            if constexpr (SchemeOrder == 4)
-                            {
-                                dfdz[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
-                                    (2.0 / 3.0 * (padded_line[center + 1] - padded_line[center - 1]) +
-                                     1.0 / 12.0 * (padded_line[center + 2] - padded_line[center - 2])) /
-                                    static_cast<double>(dz));
-                            }
-
-                            if constexpr (SchemeOrder == 6)
-                            {
-                                dfdz[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
-                                    (3.0 / 4.0 * (padded_line[center + 1] - padded_line[center - 1]) +
-                                     3.0 / 20.0 * (padded_line[center + 2] - padded_line[center - 2]) +
-                                     1.0 / 60.0 * (padded_line[center + 3] - padded_line[center - 3])) /
-                                    static_cast<double>(dz));
-                            }
-
-                            if constexpr (SchemeOrder == 8)
-                            {
-                                dfdz[global::idx(x, y, z, nx, ny)] = static_cast<TReturn>(
-                                    (4.0 / 5.0 * (padded_line[center + 1] - padded_line[center - 1]) +
-                                     1.0 / 5.0 * (padded_line[center + 2] - padded_line[center - 2]) +
-                                     4.0 / 105.0 * (padded_line[center + 3] - padded_line[center - 3]) +
-                                     1.0 / 280.0 * (padded_line[center + 4] - padded_line[center - 4])) /
-                                    static_cast<double>(dz));
-                            }
+                            dfdz[global::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())] = finite_difference<SchemeOrder, ReturnType>(padded_line, center);
                         }
                     }
                 }
 
                 return dfdz;
             }
+
+            template <const host::label_t SchemeOrder, typename ReturnType, typename T>
+            __host__ [[nodiscard]] const std::vector<ReturnType> dfdx(
+                const std::vector<T> &f,
+                const host::latticeMesh &mesh)
+            {
+                return diff<axis::X, SchemeOrder, ReturnType>(f, mesh);
+            }
+
+            template <const host::label_t SchemeOrder, typename ReturnType, typename T>
+            __host__ [[nodiscard]] const std::vector<ReturnType> dfdy(
+                const std::vector<T> &f,
+                const host::latticeMesh &mesh)
+            {
+                return diff<axis::Y, SchemeOrder, ReturnType>(f, mesh);
+            }
+
+            template <const host::label_t SchemeOrder, typename ReturnType, typename T>
+            __host__ [[nodiscard]] const std::vector<ReturnType> dfdz(
+                const std::vector<T> &f,
+                const host::latticeMesh &mesh)
+            {
+                return diff<axis::Z, SchemeOrder, ReturnType>(f, mesh);
+            }
+
+            template <typename ReturnType, const bool LeftBoundary, const bool RightBoundary>
+            __host__ [[nodiscard]] inline const thread::array<const ReturnType, block::nx() * 3> stencil_line(
+                const std::vector<scalar_t> &f,
+                const host::label_t ty, const host::label_t tz,
+                const host::label_t bx, const host::label_t by, const host::label_t bz,
+                const host::latticeMesh &mesh) noexcept
+            {
+                if constexpr (LeftBoundary)
+                {
+                    return {
+                        static_cast<ReturnType>(-f[host::idx(0, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(7, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(6, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(5, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(4, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(3, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(2, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(1, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(0, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(1, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(2, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(3, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(4, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(5, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(6, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(7, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(0, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(1, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(2, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(3, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(4, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(5, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(6, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(7, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())])};
+                }
+
+                if constexpr (RightBoundary)
+                {
+                    return {
+                        static_cast<ReturnType>(f[host::idx(0, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(1, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(2, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(3, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(4, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(5, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(6, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(7, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(0, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(1, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(2, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(3, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(4, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(5, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(6, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(7, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(6, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(5, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(4, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(3, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(2, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(1, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(0, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(-f[host::idx(7, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())])};
+                }
+
+                return {
+                    static_cast<ReturnType>(f[host::idx(0, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(1, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(2, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(3, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(4, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(5, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(6, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(7, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(0, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(1, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(2, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(3, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(4, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(5, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(6, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(7, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(0, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(1, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(2, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(3, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(4, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(5, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(6, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                    static_cast<ReturnType>(f[host::idx(7, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())])};
+            };
+
+            template <typename ReturnType, typename T>
+            __host__ [[nodiscard]] const std::vector<ReturnType> dfdx_v2(
+                const std::vector<T> &f,
+                const host::latticeMesh &mesh)
+            {
+                std::vector<ReturnType> result(f.size(), 0);
+
+                GPU::forAll(
+                    mesh.nDevices(),
+                    [&]([[maybe_unused]] const host::label_t GPU_x, [[maybe_unused]] const host::label_t GPU_y, [[maybe_unused]] const host::label_t GPU_z)
+                    {
+                        for (host::label_t bz = 0; bz < mesh.blocksPerDevice<axis::Z>(); bz++)
+                        {
+                            for (host::label_t by = 0; by < mesh.blocksPerDevice<axis::Y>(); by++)
+                            {
+                                for (host::label_t bx = 1; bx < mesh.blocksPerDevice<axis::X>() - 1; bx++)
+                                {
+                                    for (host::label_t tz = 0; tz < block::nz(); tz++)
+                                    {
+                                        for (host::label_t ty = 0; ty < block::ny(); ty++)
+                                        {
+                                            // Construct a line that spans the width of the stencil across the entire block x dimension
+                                            const thread::array<const double, block::nx() * 3> stencil_array = stencil_line<double, false, false>(f, ty, tz, bx, by, bz, mesh);
+
+                                            for (host::label_t tx = 0; tx < block::nx(); tx++)
+                                            {
+                                                const host::label_t center = host::idx(tx, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
+
+                                                // Get the finite difference value
+                                                result[center] = finite_difference<8, ReturnType>(stencil_array, tx + block::nx());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        for (host::label_t bz = 0; bz < mesh.blocksPerDevice<axis::Z>(); bz++)
+                        {
+                            for (host::label_t by = 0; by < mesh.blocksPerDevice<axis::Y>(); by++)
+                            {
+                                for (host::label_t tz = 0; tz < block::nz(); tz++)
+                                {
+                                    for (host::label_t ty = 0; ty < block::ny(); ty++)
+                                    {
+                                        constexpr const host::label_t bx = 0;
+
+                                        // Construct a line that spans the width of the stencil across the entire block x dimension
+                                        const thread::array<const double, block::nx() * 3> stencil_array = stencil_line<double, true, false>(f, ty, tz, bx, by, bz, mesh);
+
+                                        for (host::label_t tx = 0; tx < block::nx(); tx++)
+                                        {
+                                            const host::label_t center = host::idx(tx, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
+
+                                            // Get the finite difference value
+                                            result[center] = finite_difference<8, ReturnType>(stencil_array, tx + block::nx());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        for (host::label_t bz = 0; bz < mesh.blocksPerDevice<axis::Z>(); bz++)
+                        {
+                            for (host::label_t by = 0; by < mesh.blocksPerDevice<axis::Y>(); by++)
+                            {
+                                for (host::label_t tz = 0; tz < block::nz(); tz++)
+                                {
+                                    for (host::label_t ty = 0; ty < block::ny(); ty++)
+                                    {
+                                        const host::label_t bx = mesh.blocksPerDevice<axis::X>() - 1;
+
+                                        // Construct a line that spans the width of the stencil across the entire block x dimension
+                                        const thread::array<const double, block::nx() * 3> stencil_array = stencil_line<double, false, true>(f, ty, tz, bx, by, bz, mesh);
+
+                                        for (host::label_t tx = 0; tx < block::nx(); tx++)
+                                        {
+                                            const host::label_t center = host::idx(tx, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
+
+                                            // Get the finite difference value
+                                            result[center] = finite_difference<8, ReturnType>(stencil_array, tx + block::nx());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                return result;
+            }
         }
+
     }
 }
 

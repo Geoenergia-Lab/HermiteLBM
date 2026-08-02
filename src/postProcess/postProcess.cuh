@@ -197,7 +197,7 @@ namespace LBM
 
             if (numVars != varNames.size())
             {
-                throw std::runtime_error("Error: The number of solution (" + std::to_string(numVars) + ") does not match the count of variable names (" + std::to_string(varNames.size()));
+                throw std::runtime_error("Error: The number of solution (" + std::to_string(numVars) + ") does not match the count of variable names (" + std::to_string(varNames.size()) + ")");
             }
 
             for (host::label_t i = 0; i < numVars; i++)

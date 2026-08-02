@@ -50,6 +50,8 @@ SourceFiles
 #ifndef __MBLBM_FILEHEADER_CUH
 #define __MBLBM_FILEHEADER_CUH
 
+#include "../array/fieldType.cuh"
+
 namespace LBM
 {
     namespace fileIO
@@ -242,19 +244,19 @@ namespace LBM
                     // If it is 1, then it is a scalar
                     if (N == 1)
                     {
-                        return {fieldName};
+                        return fieldType<1>::makeComponentNames<words_t>(fieldName);
                     }
 
                     // If it is 3, then it is a vector
                     if (N == 3)
                     {
-                        return string::catenate(fieldName, {"_x", "_y", "_z"});
+                        return fieldType<3>::makeComponentNames<words_t>(fieldName);
                     }
 
                     // If it is 6, then it is a symmetric tensor
                     if (N == 6)
                     {
-                        return string::catenate(fieldName, {"_xx", "_xy", "_xz", "_yy", "_yz", "_zz"});
+                        return fieldType<6>::makeComponentNames<words_t>(fieldName);
                     }
                 }
 

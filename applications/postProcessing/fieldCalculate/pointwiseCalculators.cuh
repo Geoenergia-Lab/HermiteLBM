@@ -58,7 +58,7 @@ namespace LBM
          * @brief Writes the magnitude (or squared magnitude) of a tensor field to file.
          * @tparam Squared  If true, computes the squared magnitude; otherwise the regular magnitude.
          * @param[in] variables The arrayCollection containing the fields.
-         * @param[in] mesh The lattice mesh.
+         * @param[in] mesh Reference to the lattice mesh
          * @param[in] timeStep Current simulation time step (for logging).
          * @param[in] fileName Base name for the output file.
          */
@@ -108,6 +108,82 @@ namespace LBM
             const name_t &fileName) noexcept
         {
             magnitudeImpl<numericalSchemes::SQUARED>(variables, mesh, timeStep, fileName);
+        }
+
+        /**
+         * @brief Convenience function - calculates the square of the magnitude
+         **/
+        template <const axis::type alpha>
+        __host__ void diff(
+            const host::arrayCollection<scalar_t> &variables,
+            const host::latticeMesh &mesh,
+            const host::label_t timeStep,
+            [[maybe_unused]] int &status,
+            const name_t &fileName) noexcept
+        {
+            const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);
+
+            std::cout << "Time: " << timeStep << std::endl;
+            std::cout << "{" << std::endl;
+
+            std::vector<std::vector<scalar_t>> result;
+            for (host::label_t field = 0; field < fields.size(); field++)
+            {
+                result.push_back(numericalSchemes::derivative::diff<alpha, 8, scalar_t>(fields[field], mesh));
+            }
+
+            constexpr const char *suffix = (alpha == axis::X ? "x" : (alpha == axis::Y ? "y" : "z"));
+
+            writer::write<postProcess::VTS>(result, "d" + fileName + "_d" + std::string(suffix), mesh, string::catenate("d", string::catenate(variables.varNames(), "_d" + std::string(suffix))));
+
+            std::cout << "};" << std::endl;
+        }
+
+        __host__ void div(
+            const host::arrayCollection<scalar_t> &variables,
+            const host::latticeMesh &mesh,
+            const host::label_t timeStep,
+            [[maybe_unused]] int &status,
+            const name_t &fileName) noexcept
+        {
+            const std::vector<std::vector<scalar_t>> fields = variables.deinterleaveAoS(mesh);
+
+            std::cout << "Time: " << timeStep << std::endl;
+            std::cout << "{" << std::endl;
+
+            const std::vector<std::vector<scalar_t>> result = {numericalSchemes::derivative::div<8, scalar_t>(fields[0], fields[1], fields[2], mesh)};
+
+            writer::write<postProcess::VTS>(result, "div" + fileName, mesh, {"div" + fileName});
+
+            std::cout << "};" << std::endl;
+        }
+
+        __host__ void dfdx_v2(
+            const host::arrayCollection<scalar_t> &variables,
+            const host::latticeMesh &mesh,
+            const host::label_t timeStep,
+            [[maybe_unused]] int &status,
+            const name_t &fileName) noexcept
+        {
+            const std::vector<std::vector<scalar_t>> fields = variables.splitFieldsRaw(mesh);
+
+            std::cout << "Time: " << timeStep << std::endl;
+            std::cout << "{" << std::endl;
+
+            std::vector<std::vector<scalar_t>> result;
+            for (host::label_t field = 0; field < fields.size(); field++)
+            {
+                result.push_back(numericalSchemes::derivative::dfdx_v2<scalar_t>(fields[field], mesh));
+            }
+
+            constexpr const char *suffix = "_dx";
+            const std::string outputName = "d" + fileName + suffix;
+
+            postProcess::LBMBin::write(outputName, mesh, string::catenate("d", string::catenate(variables.varNames(), "_dx")), result, timeStep);
+
+            std::cout << "    Written d" << fileName << "/dx to " << outputName << std::endl;
+
+            std::cout << "};" << std::endl;
         }
     }
 }
