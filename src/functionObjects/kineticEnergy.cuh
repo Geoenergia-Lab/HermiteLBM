@@ -176,7 +176,7 @@ namespace LBM
              **/
             __host__ void calculateInstantaneous() noexcept
             {
-                BaseType::instantaneous(Kernel::instantaneous(), *this);
+                BaseType::instantaneous(*this);
             }
 
             /**
@@ -184,7 +184,7 @@ namespace LBM
              **/
             __host__ void calculateMean() noexcept
             {
-                BaseType::mean(Kernel::mean(), *this, kMean_.meanCountRef());
+                BaseType::mean(*this, kMean_.meanCountRef());
             }
 
             /**
@@ -192,7 +192,7 @@ namespace LBM
              **/
             __host__ void calculateInstantaneousAndMean() noexcept
             {
-                BaseType::instantaneousAndMean(Kernel::instantaneousAndMean(), *this, kMean_.meanCountRef());
+                BaseType::instantaneousAndMean(*this, kMean_.meanCountRef());
             }
 
             /**
@@ -200,7 +200,7 @@ namespace LBM
              **/
             __host__ void calculatePrime() noexcept
             {
-                BaseType::prime(Kernel::prime(), *this);
+                BaseType::prime(*this);
             }
 
             /**
@@ -208,7 +208,7 @@ namespace LBM
              **/
             __host__ void calculatePrimeSqMean() noexcept
             {
-                BaseType::primeSqMean(Kernel::primeSqMean(), *this, kPrimeSqMean_.meanCountRef());
+                BaseType::primeSqMean(*this, kPrimeSqMean_.meanCountRef());
             }
 
             /**
