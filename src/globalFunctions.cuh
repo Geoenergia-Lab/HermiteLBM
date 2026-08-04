@@ -107,6 +107,38 @@ namespace LBM
         }
     }
 
+    namespace kernel
+    {
+        /**
+         * @brief Assert that no arguments are passed by reference
+         **/
+        template <typename T, typename... Args>
+        __device__ __host__ [[nodiscard]] inline consteval bool has_reference_parameters(T (*)(Args...))
+        {
+            // Folds over all arguments, returning true if ANY are references
+            return (std::is_reference_v<Args> || ...);
+        }
+
+        /**
+         * @brief Host-side helper function to launch kernels
+         * @tparam KernelFunc The kernel function to launch
+         * @tparam sharedMem The amount of dynamic shared memory in bytes
+         * @tparam threadBlock The size of the block as a dim3
+         * @param[in] grid The number of blocks to launch
+         * @param[in] stream The execution stream on which to launch the kernel
+         * @param[in] args Arguments to pass to the kernel
+         **/
+        template <const auto KernelFunc, const host::label_t sharedMem = 0, const dim3 threadBlock = dim3{block::nx<uint32_t>(), block::ny<uint32_t>(), block::nz<uint32_t>()}, typename... Args>
+        __host__ inline void launch(const dim3 &grid, const cudaStream_t &stream, const Args... args) noexcept
+        {
+            //  Enforce that the kernel signature doesn't take references
+            static_assert(!has_reference_parameters(KernelFunc), "Kernel signature cannot contain reference parameters!");
+
+            // Launch the kernel
+            KernelFunc<<<grid, threadBlock, sharedMem, stream>>>(args...);
+        }
+    }
+
     /**
      * @brief Raise a variable to a compile-time constant integer power
      * @tparam N The power
@@ -316,6 +348,9 @@ namespace LBM
             return (tx + block::nx<label_t>() * (ty + block::ny<label_t>() * (tz + block::nz<label_t>() * (bx + nxBlocks * (by + nyBlocks * bz)))));
         }
 
+        /**
+         * @overload Compute the memory index from a thread and block label
+         **/
         __host__ [[nodiscard]] inline constexpr label_t idx(const host::threadLabel &Tx, const host::blockLabel &Bx, const label_t nxBlocks, const label_t nyBlocks) noexcept
         {
             return idx(Tx.x, Tx.y, Tx.z, Bx.x, Bx.y, Bx.z, nxBlocks, nyBlocks);
@@ -333,6 +368,15 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline constexpr host::label_t idx(const host::label_t x, const host::label_t y, const host::label_t z, const host::label_t nx, const host::label_t ny) noexcept
         {
             return x + (nx * (y + (ny * z)));
+        }
+
+        /**
+         * @overload
+         * @param[in] point Point coordinates
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr host::label_t idx(const host::pointLabel &point, const host::label_t nx, const host::label_t ny) noexcept
+        {
+            return idx(point.value<axis::X>(), point.value<axis::Y>(), point.value<axis::Z>(), nx, ny);
         }
     }
 

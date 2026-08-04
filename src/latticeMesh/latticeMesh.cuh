@@ -87,6 +87,26 @@ namespace LBM
             return idx(Tx.x, Tx.y, Tx.z, Bx.x, Bx.y, Bx.z, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
         }
     }
+
+    namespace kernel
+    {
+        /**
+         * @brief Host-side helper function to launch kernels
+         * @tparam KernelFunc The kernel function to launch
+         * @tparam sharedMem The amount of dynamic shared memory in bytes
+         * @tparam threadBlock The size of the block as a dim3
+         * @param[in] mesh The lattice mesh
+         * @param[in] stream The execution stream on which to launch the kernel
+         * @param[in] args Arguments to pass to the kernel
+         **/
+        template <const auto KernelFunc, const host::label_t sharedMem = 0, const dim3 threadBlock = dim3{block::nx<uint32_t>(), block::ny<uint32_t>(), block::nz<uint32_t>()}, typename... Args>
+        __host__ inline void launch(const host::latticeMesh &mesh, const cudaStream_t &stream, const Args... args) noexcept
+        {
+            const dim3 nBlocks(static_cast<uint32_t>(mesh.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh.blocksPerDevice<axis::Z>()));
+
+            launch<KernelFunc, sharedMem, threadBlock>(nBlocks, stream, args...);
+        }
+    }
 }
 
 #endif

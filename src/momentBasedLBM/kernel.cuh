@@ -313,9 +313,9 @@ namespace LBM
                 }
 
                 // Launch the kernels for the specified streams and block offsets
-                for (const host::label_t idxStream : idxStreams)
+                for (host::label_t idxStream = 0; idxStream < idxStreams.size(); idxStream++)
                 {
-                    kernel::momentBasedLBM<<<mesh.gridBlock()[idxStream], host::latticeMesh::threadBlock(), VelocitySet::smem_alloc_size(), programCtrl.streams()[device::idxStream(deviceIdx, idxStream)]>>>(
+                    kernel::momentBasedLBM<<<mesh.gridBlock()[device::idxStream(deviceIdx, idxStreams[idxStream])], host::latticeMesh::threadBlock(), VelocitySet::smem_alloc_size(), programCtrl.streams()[device::idxStream(deviceIdx, idxStreams[idxStream])]>>>(
                         devPtrs[deviceIdx],
                         haloPtrs.readBuffer(deviceIdx, timeStep),
                         haloPtrs.writeBuffer(deviceIdx, timeStep),

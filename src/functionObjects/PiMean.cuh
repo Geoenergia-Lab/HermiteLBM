@@ -165,7 +165,7 @@ namespace LBM
              **/
             __host__ void calculateMean() noexcept
             {
-                BaseType::mean(Kernel::mean(), *this, PiMean_.meanCountRef());
+                BaseType::mean(*this, PiMean_.meanCountRef());
             }
 
             /**
@@ -173,7 +173,7 @@ namespace LBM
              **/
             __host__ void calculatePrime() noexcept
             {
-                BaseType::prime(Kernel::prime(), *this);
+                BaseType::prime(*this);
             }
 
             /**
@@ -181,7 +181,7 @@ namespace LBM
              **/
             __host__ void calculatePrimeSqMean() noexcept
             {
-                BaseType::primeSqMean(Kernel::primeSqMean(), *this, PiPrimeSqMean_.meanCountRef());
+                BaseType::primeSqMean(*this, PiPrimeSqMean_.meanCountRef());
             }
 
             /**

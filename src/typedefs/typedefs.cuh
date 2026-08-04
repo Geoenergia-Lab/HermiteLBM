@@ -129,6 +129,9 @@ namespace LBM
             }
         }
 
+        /**
+         * @brief Returns a string based on the type of time stepping
+         **/
         template <const type TimeType>
         __device__ __host__ inline consteval const char *nameString() noexcept
         {

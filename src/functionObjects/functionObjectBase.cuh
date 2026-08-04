@@ -95,6 +95,16 @@ namespace LBM
             const programControl &programCtrl_;
 
             /**
+             * @brief Calculate the inverse of the new mean count for time averaging
+             * @param[in] meanCount The current mean count
+             * @return The inverse of the new mean count
+             **/
+            __device__ __host__ [[nodisacrd]] static inline constexpr scalar_t invNewCount(const host::label_t meanCount) noexcept
+            {
+                return static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
+            }
+
+            /**
              * @brief Configures the kernels to allocate no dynamic shared memory and prefer L1 cache
              * @param[in] programCtrl The program control object
              **/
@@ -127,21 +137,21 @@ namespace LBM
              * @param[out] object The function object to calculate
              * @param[out] meanCount Counter of time averaging steps
              **/
-            template <class FunctionObject, class F>
+            template <class FunctionObject>
             __host__ inline void mean(
-                F *func,
                 FunctionObject &object,
                 host::label_t &meanCount)
             {
-                const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
+                const scalar_t invCount = invNewCount(meanCount);
 
-                const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
                 for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
                 {
-                    func<<<nBlocks, host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[(deviceIdx * 3) + 1]>>>(
+                    kernel::launch<FunctionObject::Kernel::mean()>(
+                        mesh_,
+                        programCtrl_.streams()[GPU::internalStreamID(deviceIdx)],
                         devPtrs(deviceIdx),
                         object.meanPtrs(deviceIdx),
-                        invNewCount);
+                        invCount);
                 }
 
                 meanCount++;
@@ -152,15 +162,15 @@ namespace LBM
              * @param[in] func The kernel to execute
              * @param[out] object The function object to calculate
              **/
-            template <class FunctionObject, class F>
+            template <class FunctionObject>
             __host__ inline void instantaneous(
-                F *func,
                 FunctionObject &object)
             {
-                const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
                 for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
                 {
-                    func<<<nBlocks, host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[(deviceIdx * 3) + 1]>>>(
+                    kernel::launch<FunctionObject::Kernel::instantaneous()>(
+                        mesh_,
+                        programCtrl_.streams()[GPU::internalStreamID(deviceIdx)],
                         devPtrs(deviceIdx),
                         object.meanPtrs(deviceIdx));
                 }
@@ -172,22 +182,22 @@ namespace LBM
              * @param[out] object The function object to calculate
              * @param[out] meanCount Counter of time averaging steps
              **/
-            template <class FunctionObject, class F>
+            template <class FunctionObject>
             __host__ inline void instantaneousAndMean(
-                F *func,
                 FunctionObject &object,
                 host::label_t &meanCount)
             {
-                const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
+                const scalar_t invCount = invNewCount(meanCount);
 
-                const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
                 for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
                 {
-                    func<<<nBlocks, host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[(deviceIdx * 3) + 1]>>>(
+                    kernel::launch<FunctionObject::Kernel::instantaneousAndMean()>(
+                        mesh_,
+                        programCtrl_.streams()[GPU::internalStreamID(deviceIdx)],
                         devPtrs(deviceIdx),
                         object.instantaneousPtrs(deviceIdx),
                         object.meanPtrs(deviceIdx),
-                        invNewCount);
+                        invCount);
                 }
 
                 meanCount++;
@@ -198,15 +208,15 @@ namespace LBM
              * @param[in] func The kernel to execute
              * @param[out] object The function object to calculate
              **/
-            template <class FunctionObject, class F>
+            template <class FunctionObject>
             __host__ inline void prime(
-                F *func,
                 FunctionObject &object)
             {
-                const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
                 for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
                 {
-                    func<<<nBlocks, host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[(deviceIdx * 3) + 1]>>>(
+                    kernel::launch<FunctionObject::Kernel::prime()>(
+                        mesh_,
+                        programCtrl_.streams()[GPU::internalStreamID(deviceIdx)],
                         devPtrs(deviceIdx),
                         object.meanPtrs(deviceIdx),
                         object.primePtrs(deviceIdx));
@@ -219,22 +229,22 @@ namespace LBM
              * @param[out] object The function object to calculate
              * @param[out] meanCount Counter of time averaging steps
              **/
-            template <class FunctionObject, class F>
+            template <class FunctionObject>
             __host__ inline void primeSqMean(
-                F *func,
                 FunctionObject &object,
                 host::label_t &meanCount)
             {
-                const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
+                const scalar_t invCount = invNewCount(meanCount);
 
-                const dim3 nBlocks(static_cast<uint32_t>(mesh_.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh_.blocksPerDevice<axis::Z>()));
                 for (host::label_t deviceIdx = 0; deviceIdx < programCtrl_.deviceList().size(); deviceIdx++)
                 {
-                    func<<<nBlocks, host::latticeMesh::threadBlock(), 0, programCtrl_.streams()[(deviceIdx * 3) + 1]>>>(
+                    kernel::launch<FunctionObject::Kernel::primeSqMean()>(
+                        mesh_,
+                        programCtrl_.streams()[GPU::internalStreamID(deviceIdx)],
                         devPtrs(deviceIdx),
                         object.meanPtrs(deviceIdx),
                         object.primeSqMeanPtrs(deviceIdx),
-                        invNewCount);
+                        invCount);
                 }
 
                 meanCount++;

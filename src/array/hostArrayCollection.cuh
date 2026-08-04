@@ -111,9 +111,14 @@ namespace LBM
              * each point are stored together) to SoA format (where each variable's values
              * are stored in separate contiguous arrays).
              **/
-            template <const bool Deinterleave>
+            template <const bool Deinterleave, const bool Sort>
             __host__ [[nodiscard]] const std::vector<std::vector<T>> splitFields(const host::latticeMesh &mesh) const
             {
+                if constexpr (Deinterleave)
+                {
+                    static_assert(Sort == false, "Cannot de-interleave and sort fields at the same time; this makes no sense!");
+                }
+
                 const host::label_t nNodes = mesh.dimension<axis::X>() * mesh.dimension<axis::Y>() * mesh.dimension<axis::Z>();
 
                 if (arr().size() % nNodes != 0)
@@ -132,7 +137,7 @@ namespace LBM
                 const host::label_t nyBlocksPerDevice = mesh.nBlocks<axis::Y>() / nyGPUs;
                 const host::label_t nzBlocksPerDevice = mesh.nBlocks<axis::Z>() / nzGPUs;
 
-                const host::label_t pointsPerBlock = block::size<host::label_t>();
+                constexpr const host::label_t pointsPerBlock = block::size<host::label_t>();
                 const host::label_t nPointsPerDevice = nxBlocksPerDevice * nyBlocksPerDevice * nzBlocksPerDevice * pointsPerBlock;
 
                 GPU::forAll(
@@ -160,6 +165,14 @@ namespace LBM
                             });
                     });
 
+                if constexpr (Sort)
+                {
+                    for (std::vector<T> &fieldVec : soa)
+                    {
+                        std::sort(fieldVec.begin(), fieldVec.end());
+                    }
+                }
+
                 return soa;
             }
 
@@ -168,7 +181,7 @@ namespace LBM
              **/
             __host__ [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoS(const host::latticeMesh &mesh) const
             {
-                return splitFields<true>(mesh);
+                return splitFields<true, false>(mesh);
             }
 
             /**
@@ -176,7 +189,15 @@ namespace LBM
              **/
             __host__ [[nodiscard]] const std::vector<std::vector<T>> splitFieldsRaw(const host::latticeMesh &mesh) const
             {
-                return splitFields<false>(mesh);
+                return splitFields<false, false>(mesh);
+            }
+
+            /**
+             * @brief Split the fields into separate vectors and sort each field in ascending order
+             **/
+            __host__ [[nodiscard]] const std::vector<std::vector<T>> splitFieldsAndSort(const host::latticeMesh &mesh) const
+            {
+                return splitFields<false, true>(mesh);
             }
 
         private:

@@ -237,7 +237,7 @@ namespace LBM
             {
                 // Create a list of available field names for better error message
                 name_t availableFields;
-                for (const auto &name : header.fieldNames)
+                for (const name_t &name : header.fieldNames)
                 {
                     if (!availableFields.empty())
                     {
