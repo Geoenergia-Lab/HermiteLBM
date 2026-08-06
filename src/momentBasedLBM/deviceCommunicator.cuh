@@ -52,10 +52,10 @@ SourceFiles
 
 namespace LBM
 {
-    template <const bool ExplicitSync, class VelocitySet>
+    template <class VelocitySet>
     class deviceCommunicator
     {
-        using This = deviceCommunicator<ExplicitSync, VelocitySet>;
+        using This = deviceCommunicator<VelocitySet>;
         using exchangeFunction = std::function<void(const host::label_t, const host::label_t)>;
 
     public:
@@ -208,15 +208,6 @@ namespace LBM
             // Call the exchange functions
             This::exchange<alpha, -1>(idxDevR, idxDevL, idxSrcR, idxDestL, haloPtrs_, programCtrl_, Size, timeStep); // Copy to the Left GPU
             This::exchange<alpha, +1>(idxDevL, idxDevR, idxSrcL, idxDestR, haloPtrs_, programCtrl_, Size, timeStep); // Copy to the Right GPU
-
-            // Sync devices and streams - the cudaDeviceSynchronize() may not be 100% necessary, not sure yet
-            if constexpr (ExplicitSync)
-            {
-                const host::label_t idxStreamL = device::idxStream(idxDevL, 2); // Stream 2 is the East stream of GPU 0
-                const host::label_t idxStreamR = device::idxStream(idxDevR, 0); // Stream 3 is the West stream of GPU 1
-                programCtrl_.streams().synchronize(idxStreamL);
-                programCtrl_.streams().synchronize(idxStreamR);
-            }
         }
 
         /**

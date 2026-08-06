@@ -94,8 +94,9 @@ namespace LBM
              * @param[in] idx Spatial index
              * @return The calculated strain rate tensor
              **/
+            template <typename T>
             __device__ [[nodiscard]] static inline constexpr const thread::array<scalar_t, N> calculate(
-                const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
+                const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), T> &devPtrs,
                 const device::label_t idx) noexcept
             {
                 const thread::array<scalar_t, 3> U = read_from_moments<index::u, index::v, index::w>(devPtrs, idx);
