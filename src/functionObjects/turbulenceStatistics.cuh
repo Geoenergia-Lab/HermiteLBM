@@ -54,12 +54,29 @@ SourceFiles
 
 namespace LBM
 {
+    /**
+     * @brief Calculates the production term P from the Reynolds stress tensor R and the mean strain rate tensor S
+     * @param[in] R Reynolds stress tensor
+     * @param[in] S Mean strain rate tensor
+     * @return Production term P
+     **/
     __device__ __host__ [[nodiscard]] inline constexpr const scalar calculate_P(const symmetricTensor &R, const symmetricTensor &S) noexcept
     {
         const symmetricTensor RdotS = R * S;
         return {RdotS[0] + RdotS[1] + RdotS[1] + RdotS[2] + RdotS[2] + RdotS[3] + RdotS[4] + RdotS[4] + RdotS[5]};
     }
 
+    /**
+     * @brief Calculates the turbulence statistics: Reynolds stress tensor R, production term P, dissipation term epsilon, and turbulent kinetic energy k
+     * @param[in] devPtrs Pointers to the moments
+     * @param[in] RPtrs Pointers to the Reynolds stress tensor
+     * @param[in] PPtrs Pointers to the production term
+     * @param[in] epsilonPtrs Pointers to the dissipation term
+     * @param[in] kPtrs Pointers to the turbulent kinetic energy
+     * @param[in] UMeanPtrs Pointers to the mean velocity field
+     * @param[in] SMeanPtrs Pointers to the mean strain rate tensor
+     * @param[in] invNewCount Inverse of the new count for time averaging
+     **/
     __launch_bounds__(block::maxThreads(), 1) __global__ void turbulenceStatisticsCalculate(
         const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs, // Pointers to the moments
         const device::ptrCollection<6, scalar_t> RPtrs,                                 // Reynolds stress tensor
@@ -109,10 +126,21 @@ namespace LBM
         functionObjects::save(kMean, kPtrs, idx);
     }
 
+    /**
+     * @brief Class for calculating turbulence statistics: Reynolds stress tensor R, production term P, dissipation term epsilon, and turbulent kinetic energy k
+     * @tparam VelocitySet The velocity set used in the simulation
+     **/
     template <class VelocitySet>
     class turbulenceStatistics
     {
     public:
+        /**
+         * @brief Constructor for the turbulenceStatistics class
+         * @param[in] devPtrs Pointers to the moments
+         * @param[in] mesh The lattice mesh
+         * @param[in] programCtrl The program control object
+         * @param[in] hostWriteBuffer The host write buffer for saving the turbulence statistics
+         **/
         __host__ [[nodiscard]] turbulenceStatistics(
             const kernel::ptrCollection &devPtrs,
             const host::latticeMesh &mesh,
@@ -132,8 +160,14 @@ namespace LBM
         {
         }
 
+        /**
+         * @brief Destructor for the turbulenceStatistics class
+         **/
         ~turbulenceStatistics() {}
 
+        /**
+         * @brief Calculates the turbulence statistics: Reynolds stress tensor R, production term P, dissipation term epsilon, and turbulent kinetic energy k
+         **/
         __host__ inline void calculate()
         {
             if (calculate_)
@@ -162,6 +196,10 @@ namespace LBM
             }
         }
 
+        /**
+         * @brief Saves the turbulence statistics: Reynolds stress tensor R, production term P, dissipation term epsilon, and turbulent kinetic energy k to the host write buffer
+         * @param[in] timeStep The current time step for saving the turbulence statistics
+         **/
         __host__ inline void save(const host::label_t timeStep)
         {
             if (calculate_)
@@ -174,23 +212,60 @@ namespace LBM
         }
 
     private:
+        /**
+         * @brief Collection of pointers to the moments on the device
+         **/
         const kernel::ptrCollection &devPtrs_;
+
+        /**
+         * @brief Flag indicating whether to calculate the turbulence statistics
+         **/
         const bool calculate_;
 
+        /**
+         * @brief Reference to the program control object
+         **/
         const programControl &programCtrl_;
+
+        /**
+         * @brief Reference to the lattice mesh
+         **/
         const host::latticeMesh &mesh_;
 
+        /**
+         * @brief Mean velocity field UMean
+         **/
         const device::vectorField<VelocitySet, time::timeAverage> UMean_;
+
+        /**
+         * @brief Mean strain rate tensor SMean
+         **/
         const device::symmetricTensorField<VelocitySet, time::timeAverage> SMean_;
 
+        /**
+         * @brief Mean Reynolds stress tensor R
+         **/
         device::symmetricTensorField<VelocitySet, time::timeAverage> R_;
+
+        /**
+         * @brief Mean production term P
+         **/
         device::scalarField<VelocitySet, time::timeAverage> P_;
+
+        /**
+         * @brief Mean dissipation term epsilon
+         **/
         device::scalarField<VelocitySet, time::timeAverage> epsilon_;
+
+        /**
+         * @brief Mean turbulent kinetic energy k
+         **/
         device::scalarField<VelocitySet, time::timeAverage> k_;
 
+        /**
+         * @brief Reference to the host write buffer for saving the turbulence statistics
+         **/
         host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer_;
-
-        host::label_t meanCount_ = 0;
     };
 }
 
