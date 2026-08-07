@@ -115,6 +115,7 @@ namespace LBM
          * @brief Characteristic physical variables
          **/
         __device__ __constant__ scalar_t Re;
+        __device__ __constant__ scalar_t nu;
         __device__ __constant__ scalar_t tau;
         __device__ __constant__ scalar_t L_char;
         __device__ __constant__ scalar_t omega;

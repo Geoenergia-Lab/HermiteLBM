@@ -52,10 +52,10 @@ SourceFiles
 
 namespace LBM
 {
-    template <const bool ExplicitSync, class VelocitySet>
+    template <class VelocitySet>
     class deviceCommunicator
     {
-        using This = deviceCommunicator<ExplicitSync, VelocitySet>;
+        using This = deviceCommunicator<VelocitySet>;
         using exchangeFunction = std::function<void(const host::label_t, const host::label_t)>;
 
     public:
@@ -195,28 +195,19 @@ namespace LBM
 
             // Right to Left exchange
             constexpr const host::blockLabel blockIdxDestL(0, 0, 0);
-            const host::label_t idxDestL = host::idxPop<alpha, VelocitySet::QF()>(0, threadStart, blockIdxDestL, nab, nbb);
+            const host::label_t idxDestL = host::idxPop<alpha, VelocitySet::template QF<host::label_t>()>(0, threadStart, blockIdxDestL, nab, nbb);
             constexpr const host::blockLabel RDeviceSourceBlock(0, 0, 0);
-            const host::label_t idxSrcR = host::idxPop<alpha, VelocitySet::QF()>(0, threadStart, RDeviceSourceBlock, nab, nbb);
+            const host::label_t idxSrcR = host::idxPop<alpha, VelocitySet::template QF<host::label_t>()>(0, threadStart, RDeviceSourceBlock, nab, nbb);
 
             // Left to Right exchange
             const host::blockLabel blockIdxDestR = This::commBlockID<alpha>(mesh_);
-            const host::label_t idxDestR = host::idxPop<alpha, VelocitySet::QF()>(0, threadStart, blockIdxDestR, nab, nbb);
+            const host::label_t idxDestR = host::idxPop<alpha, VelocitySet::template QF<host::label_t>()>(0, threadStart, blockIdxDestR, nab, nbb);
             const host::blockLabel LDeviceSourceBlock = This::commBlockID<alpha>(mesh_);
-            const host::label_t idxSrcL = host::idxPop<alpha, VelocitySet::QF()>(0, threadStart, LDeviceSourceBlock, nab, nbb);
+            const host::label_t idxSrcL = host::idxPop<alpha, VelocitySet::template QF<host::label_t>()>(0, threadStart, LDeviceSourceBlock, nab, nbb);
 
             // Call the exchange functions
             This::exchange<alpha, -1>(idxDevR, idxDevL, idxSrcR, idxDestL, haloPtrs_, programCtrl_, Size, timeStep); // Copy to the Left GPU
             This::exchange<alpha, +1>(idxDevL, idxDevR, idxSrcL, idxDestR, haloPtrs_, programCtrl_, Size, timeStep); // Copy to the Right GPU
-
-            // Sync devices and streams - the cudaDeviceSynchronize() may not be 100% necessary, not sure yet
-            if constexpr (ExplicitSync)
-            {
-                const host::label_t idxStreamL = device::idxStream(idxDevL, 2); // Stream 2 is the East stream of GPU 0
-                const host::label_t idxStreamR = device::idxStream(idxDevR, 0); // Stream 3 is the West stream of GPU 1
-                programCtrl_.streams().synchronize(idxStreamL);
-                programCtrl_.streams().synchronize(idxStreamR);
-            }
         }
 
         /**

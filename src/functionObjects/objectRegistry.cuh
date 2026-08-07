@@ -61,6 +61,7 @@ SourceFiles
 #include "rhoMean.cuh"
 #include "UMean.cuh"
 #include "PiMean.cuh"
+#include "turbulenceStatistics.cuh"
 
 namespace LBM
 {

@@ -8,8 +8,85 @@
 # --------------------------------------------------------------------------- #
 
 # --------------------------------------------------------------------------- #
+#  Utility Functions                                                          #
+# --------------------------------------------------------------------------- #
+
+# cleanCase: Remove timeStep and postProcess directories if inside a case folder
+cleanCase()
+{
+    if [[ -f programControl ]]; then
+        rm -rf timeStep
+        rm -rf postProcess
+        return 0
+    else
+        return 1
+    fi
+}
+
+# printHeader: Prints the file header on start
+printHeader()
+{
+    printf "/*---------------------------------------------------------------------------*\\ \n"
+    printf "|                                                                             |\n"
+    printf "| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |\n"
+    printf "| Developed at UDESC - State University of Santa Catarina                     |\n"
+    printf "| Website: https://www.udesc.br                                               |\n"
+    printf "| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |\n"
+    printf "|                                                                             |\n"
+    printf "\\*---------------------------------------------------------------------------*/\n"
+    printf "\n"
+}
+
+# printEnd: Prints the file footer on exit
+printEnd()
+{
+    printf "\n"
+    printf "End\n"
+    printf "\n"
+}
+
+# notFound: Check if any listed commands are missing from PATH.
+# Arguments: list of executable names
+# Returns 0 (true) if at least one executable is NOT found, 1 (false) if all are found.
+# Prints a generic error message to stderr for each missing command.
+notFound()
+{
+    local ret=1                # assume all found, return failure (1)
+    local cmd
+    for cmd in "$@"; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            printf "Error: '%s' not found. Ensure environment is set up.\n" "$cmd" >&2
+            ret=0              # at least one missing → success (0)
+        fi
+    done
+    return $ret
+}
+
+# Check whether to skip header/footer (default: print them)
+skip_header_footer()
+{
+    case "${SKIP_HEADER_AND_FOOTER:-}" in
+        true|1|yes|on) return 0 ;;  # truthy → skip
+        *)             return 1 ;;  # unset/false/anything else → print
+    esac
+}
+
+# profileRoofline: Wrapper for the roofline profiling script
+profileRoofline()
+{
+    local script_path="$HERMITELBM_PROJECT_DIR/roofline.sh"
+    if [[ ! -f "$script_path" ]]; then
+        echo "ERROR: Profiling script not found at $script_path"
+        return 1
+    fi
+    "$script_path" "$@"
+}
+
+# --------------------------------------------------------------------------- #
 #  USER-DEFINED ENVIRONMENT VARIABLES                                         #
 # --------------------------------------------------------------------------- #
+
+printHeader
 
 # CUDA version (major and minor)
 export HERMITELBM_CUDA_VERSION_MAJOR="13"
@@ -95,6 +172,15 @@ else
     return 1
 fi
 
+echo "HermiteLBM"
+echo "{"
+echo "    CUDA version: "${HERMITELBM_CUDA_VERSION_MAJOR}"."${HERMITELBM_CUDA_VERSION_MINOR}
+echo "    Distro: "${HERMITELBM_DISTRO}
+echo "    Architecture detection: "${HERMITELBM_ARCHITECTURE_DETECTION}
+echo "    Project directory: "${HERMITELBM_PROJECT_DIR}
+echo "};"
+echo ""
+
 # --------------------------------------------------------------------------- #
 #  UCX (Unified Communication X)                                              #
 # --------------------------------------------------------------------------- #
@@ -120,80 +206,5 @@ export CPLUS_INCLUDE_PATH="$HERMITELBM_MPI_DIR/include:$CPLUS_INCLUDE_PATH"
 # --------------------------------------------------------------------------- #
 
 export PATH="$HERMITELBM_BIN_DIR:$PATH"
-
-# --------------------------------------------------------------------------- #
-#  Utility Functions                                                          #
-# --------------------------------------------------------------------------- #
-
-# cleanCase: Remove timeStep and postProcess directories if inside a case folder
-cleanCase()
-{
-    if [[ -f programControl ]]; then
-        rm -rf timeStep
-        rm -rf postProcess
-        return 0
-    else
-        return 1
-    fi
-}
-
-# printHeader: Prints the file header on start
-printHeader()
-{
-    printf "/*---------------------------------------------------------------------------*\\ \n"
-    printf "|                                                                             |\n"
-    printf "| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |\n"
-    printf "| Developed at UDESC - State University of Santa Catarina                     |\n"
-    printf "| Website: https://www.udesc.br                                               |\n"
-    printf "| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |\n"
-    printf "|                                                                             |\n"
-    printf "\\*---------------------------------------------------------------------------*/\n"
-    printf "\n"
-}
-
-# printEnd: Prints the file footer on exit
-printEnd()
-{
-    printf "\n"
-    printf "End\n"
-    printf "\n"
-}
-
-# notFound: Check if any listed commands are missing from PATH.
-# Arguments: list of executable names
-# Returns 0 (true) if at least one executable is NOT found, 1 (false) if all are found.
-# Prints a generic error message to stderr for each missing command.
-notFound()
-{
-    local ret=1                # assume all found, return failure (1)
-    local cmd
-    for cmd in "$@"; do
-        if ! command -v "$cmd" >/dev/null 2>&1; then
-            printf "Error: '%s' not found. Ensure environment is set up.\n" "$cmd" >&2
-            ret=0              # at least one missing → success (0)
-        fi
-    done
-    return $ret
-}
-
-# Check whether to skip header/footer (default: print them)
-skip_header_footer()
-{
-    case "${SKIP_HEADER_AND_FOOTER:-}" in
-        true|1|yes|on) return 0 ;;  # truthy → skip
-        *)             return 1 ;;  # unset/false/anything else → print
-    esac
-}
-
-# profileRoofline: Wrapper for the roofline profiling script
-profileRoofline()
-{
-    local script_path="$HERMITELBM_PROJECT_DIR/roofline.sh"
-    if [[ ! -f "$script_path" ]]; then
-        echo "ERROR: Profiling script not found at $script_path"
-        return 1
-    fi
-    "$script_path" "$@"
-}
 
 # --------------------------------------------------------------------------- #

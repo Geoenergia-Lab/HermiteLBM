@@ -117,7 +117,7 @@ namespace LBM
          **/
         template <const axis::type alpha, const device::label_t pop, const device::label_t QF>
         __device__ [[nodiscard]] inline device::label_t idxPop(
-            const dim2<alpha> &ij,
+            const dim2 &ij,
             const block::coordinate &Bx) noexcept
         {
             return idxPop<alpha, pop, QF>(ij.i(), ij.j(), Bx.value<axis::X>(), Bx.value<axis::Y>(), Bx.value<axis::Z>());
