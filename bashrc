@@ -157,27 +157,43 @@ if [[ "$HERMITELBM_DISTRO" =~ ^(debian|fedora) ]] && [[ "${HERMITELBM_CUDA_VERSI
     CUDA_DIR_SUFFIX="${HERMITELBM_CUDA_VERSION_MAJOR}"
 fi
 
-export HERMITELBM_CUDA_DIR="/usr/local/cuda-${CUDA_DIR_SUFFIX}"
-export PATH="$HERMITELBM_CUDA_DIR/bin:$PATH"
-export LD_LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LD_LIBRARY_PATH"
-export LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LIBRARY_PATH"
-
-# Fallback: If nvcc is found but the default path doesn't exist, resolve from nvcc
+# Check if nvcc is available; if not, skip CUDA setup but continue
 if command -v nvcc > /dev/null 2>&1; then
+    HERMITELBM_CUDA_FOUND=1
+
+    # Resolve actual CUDA directory from nvcc location
     NVCC_PATH=$(command -v nvcc)
     RESOLVED_NVCC_PATH=$(readlink -f "$NVCC_PATH" 2>/dev/null || echo "$NVCC_PATH")
-    export HERMITELBM_CUDA_DIR=$(dirname "$(dirname "$RESOLVED_NVCC_PATH")")
+    HERMITELBM_CUDA_DIR=$(dirname "$(dirname "$RESOLVED_NVCC_PATH")")
+
+    # Set CUDA paths only if the resolved directory exists
+    if [[ -d "$HERMITELBM_CUDA_DIR" ]]; then
+        export HERMITELBM_CUDA_DIR
+        export PATH="$HERMITELBM_CUDA_DIR/bin:$PATH"
+        export LD_LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LD_LIBRARY_PATH"
+        export LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LIBRARY_PATH"
+    else
+        echo "Warning: CUDA directory not found at $HERMITELBM_CUDA_DIR. Skipping CUDA paths." >&2
+        echo ""
+        HERMITELBM_CUDA_FOUND=0
+    fi
 else
-    echo "Error: nvcc not found. Ensure CUDA is installed and in your PATH." >&2
-    return 1
+    HERMITELBM_CUDA_FOUND=0
+    echo "Warning: nvcc not found. CUDA environment will not be configured." >&2
+    echo ""
 fi
 
+source /etc/os-release
 echo "HermiteLBM"
 echo "{"
-echo "    CUDA version: "${HERMITELBM_CUDA_VERSION_MAJOR}"."${HERMITELBM_CUDA_VERSION_MINOR}
-echo "    Distro: "${HERMITELBM_DISTRO}
-echo "    Architecture detection: "${HERMITELBM_ARCHITECTURE_DETECTION}
-echo "    Project directory: "${HERMITELBM_PROJECT_DIR}
+if (( HERMITELBM_CUDA_FOUND )); then
+    echo "    CUDA version: ${HERMITELBM_CUDA_VERSION_MAJOR}.${HERMITELBM_CUDA_VERSION_MINOR}"
+else
+    echo "    CUDA version: Not found"
+fi
+echo "    Distro: ${ID} ${VERSION_ID}"
+echo "    Architecture detection: ${HERMITELBM_ARCHITECTURE_DETECTION}"
+echo "    Project directory: ${HERMITELBM_PROJECT_DIR}"
 echo "};"
 echo ""
 
