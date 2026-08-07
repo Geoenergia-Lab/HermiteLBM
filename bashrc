@@ -151,7 +151,7 @@ export HERMITELBM_DISTRO
 #  CUDA Toolkit                                                               #
 # --------------------------------------------------------------------------- #
 
-# Determine the correct CUDA directory suffix based on distro and minor version
+# Determine suffix for default CUDA path, used only as a fallback
 CUDA_DIR_SUFFIX="${HERMITELBM_CUDA_VERSION_MAJOR}.${HERMITELBM_CUDA_VERSION_MINOR}"
 if [[ "$HERMITELBM_DISTRO" =~ ^(debian|fedora) ]] && [[ "${HERMITELBM_CUDA_VERSION_MINOR}" == "0" ]]; then
     CUDA_DIR_SUFFIX="${HERMITELBM_CUDA_VERSION_MAJOR}"
@@ -161,27 +161,28 @@ fi
 if command -v nvcc > /dev/null 2>&1; then
     HERMITELBM_CUDA_FOUND=1
 
-    # Resolve actual CUDA directory from nvcc location
+    # Resolve the real CUDA installation directory from nvcc
     NVCC_PATH=$(command -v nvcc)
     RESOLVED_NVCC_PATH=$(readlink -f "$NVCC_PATH" 2>/dev/null || echo "$NVCC_PATH")
-    HERMITELBM_CUDA_DIR=$(dirname "$(dirname "$RESOLVED_NVCC_PATH")")
+    export HERMITELBM_CUDA_DIR=$(dirname "$(dirname "$RESOLVED_NVCC_PATH")")
 
-    # Set CUDA paths only if the resolved directory exists
+    # Only add CUDA paths if the resolved directory exists
     if [[ -d "$HERMITELBM_CUDA_DIR" ]]; then
-        export HERMITELBM_CUDA_DIR
         export PATH="$HERMITELBM_CUDA_DIR/bin:$PATH"
         export LD_LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LD_LIBRARY_PATH"
         export LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LIBRARY_PATH"
     else
-        echo "Warning: CUDA directory not found at $HERMITELBM_CUDA_DIR. Skipping CUDA paths." >&2
-        echo ""
+        echo "Warning: CUDA directory $HERMITELBM_CUDA_DIR not found. Using system PATH only." >&2
         HERMITELBM_CUDA_FOUND=0
     fi
 else
     HERMITELBM_CUDA_FOUND=0
     echo "Warning: nvcc not found. CUDA environment will not be configured." >&2
-    echo ""
 fi
+
+# --------------------------------------------------------------------------- #
+#  Print detected environment                                                 #
+# --------------------------------------------------------------------------- #
 
 source /etc/os-release
 echo "HermiteLBM"
