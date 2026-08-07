@@ -231,7 +231,7 @@ namespace LBM
         /**
          * @brief Returns the number of components of the velocity set facing any given cardinal direction
          **/
-        template <typename T = host::label_t>
+        template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T QF() noexcept
         {
             return make_first_Q<int>(cx_base<int>()).template count<1, true>();

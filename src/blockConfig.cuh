@@ -161,6 +161,14 @@ namespace LBM
         }
 
         /**
+         * @brief Number of warps within the block
+         **/
+        __device__ __host__ [[nodiscard]] inline consteval device::label_t n_warps() noexcept
+        {
+            return block::size() / warp_size();
+        }
+
+        /**
          * @brief Launch bounds information
          * @note These variables are device specific - enable modification later
          **/

@@ -95,13 +95,13 @@ namespace LBM
              * @return The calculated strain rate tensor
              **/
             template <typename T>
-            __device__ [[nodiscard]] static inline constexpr const thread::array<scalar_t, N> calculate(
+            __device__ [[nodiscard]] static inline constexpr const symmetricTensor calculate(
                 const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), T> &devPtrs,
                 const device::label_t idx) noexcept
             {
-                const thread::array<scalar_t, 3> U = read_from_moments<index::u, index::v, index::w>(devPtrs, idx);
+                const vector U = read_from_moments<index::u, index::v, index::w>(devPtrs, idx);
 
-                const thread::array<scalar_t, 6> M = read_from_moments<index::xx, index::xy, index::xz, index::yy, index::yz, index::zz>(devPtrs, idx);
+                const symmetricTensor M = read_from_moments<index::xx, index::xy, index::xz, index::yy, index::yz, index::zz>(devPtrs, idx);
 
                 return {calculate<index::xx>(U[0], U[0], M[0]), calculate<index::xy>(U[0], U[1], M[1]), calculate<index::xz>(U[0], U[2], M[2]), calculate<index::yy>(U[1], U[1], M[3]), calculate<index::yz>(U[1], U[2], M[4]), calculate<index::zz>(U[2], U[2], M[5])};
             }
@@ -173,10 +173,10 @@ namespace LBM
                 const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
                 const programControl &programCtrl) noexcept
                 : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
-                  S_(name_, mesh_, {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)}, programCtrl, calculate_),
-                  SMean_(nameMean_, mesh_, {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)}, programCtrl, (BaseType::doMean() || BaseType::doPrime() || BaseType::doPrimeSqMean())),
-                  SPrime_(namePrime_, mesh_, {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrime()),
-                  SPrimeSqMean_(namePrimeSqMean_, mesh_, {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrimeSqMean())
+                  S_(name_, mesh_, zeros<scalar_t, 6>(), programCtrl, calculate_),
+                  SMean_(nameMean_, mesh_, zeros<scalar_t, 6>(), programCtrl, (BaseType::doMean() || BaseType::doPrime() || BaseType::doPrimeSqMean())),
+                  SPrime_(namePrime_, mesh_, zeros<scalar_t, 6>(), programCtrl, BaseType::doPrime()),
+                  SPrimeSqMean_(namePrimeSqMean_, mesh_, zeros<scalar_t, 6>(), programCtrl, BaseType::doPrimeSqMean())
             {
                 BaseType::template configure<Kernel>(programCtrl);
             }

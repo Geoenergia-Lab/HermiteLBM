@@ -195,15 +195,15 @@ namespace LBM
 
             // Right to Left exchange
             constexpr const host::blockLabel blockIdxDestL(0, 0, 0);
-            const host::label_t idxDestL = host::idxPop<alpha, VelocitySet::QF()>(0, threadStart, blockIdxDestL, nab, nbb);
+            const host::label_t idxDestL = host::idxPop<alpha, VelocitySet::template QF<host::label_t>()>(0, threadStart, blockIdxDestL, nab, nbb);
             constexpr const host::blockLabel RDeviceSourceBlock(0, 0, 0);
-            const host::label_t idxSrcR = host::idxPop<alpha, VelocitySet::QF()>(0, threadStart, RDeviceSourceBlock, nab, nbb);
+            const host::label_t idxSrcR = host::idxPop<alpha, VelocitySet::template QF<host::label_t>()>(0, threadStart, RDeviceSourceBlock, nab, nbb);
 
             // Left to Right exchange
             const host::blockLabel blockIdxDestR = This::commBlockID<alpha>(mesh_);
-            const host::label_t idxDestR = host::idxPop<alpha, VelocitySet::QF()>(0, threadStart, blockIdxDestR, nab, nbb);
+            const host::label_t idxDestR = host::idxPop<alpha, VelocitySet::template QF<host::label_t>()>(0, threadStart, blockIdxDestR, nab, nbb);
             const host::blockLabel LDeviceSourceBlock = This::commBlockID<alpha>(mesh_);
-            const host::label_t idxSrcL = host::idxPop<alpha, VelocitySet::QF()>(0, threadStart, LDeviceSourceBlock, nab, nbb);
+            const host::label_t idxSrcL = host::idxPop<alpha, VelocitySet::template QF<host::label_t>()>(0, threadStart, LDeviceSourceBlock, nab, nbb);
 
             // Call the exchange functions
             This::exchange<alpha, -1>(idxDevR, idxDevL, idxSrcR, idxDestL, haloPtrs_, programCtrl_, Size, timeStep); // Copy to the Left GPU

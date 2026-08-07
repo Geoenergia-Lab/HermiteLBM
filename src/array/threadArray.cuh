@@ -108,6 +108,8 @@ namespace LBM
              * @note Elements will be default-initialized or zero-initialized
              **/
             [[nodiscard]] inline consteval array() = default;
+            // __device__ __host__ [[nodiscard]] array(const array<T, N> &) = delete;
+            // __device__ __host__ [[nodiscard]] array &operator=(const array<T, N> &) = delete;
 
             /**
              * @brief Addition operator

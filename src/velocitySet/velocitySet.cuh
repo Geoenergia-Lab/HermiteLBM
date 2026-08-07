@@ -197,13 +197,13 @@ namespace LBM
          * @return Indices of the distribution on a specific face
          **/
         template <const axis::type alpha, const int coeff>
-        __device__ __host__ [[nodiscard]] static inline consteval thread::array<host::label_t, Lattice::QF()> indices_on_face() noexcept
+        __device__ __host__ [[nodiscard]] static inline consteval thread::array<host::label_t, Lattice::template QF<host::label_t>()> indices_on_face() noexcept
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
 
             velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
-            return Lattice::template c<int, alpha>().template indices_of<coeff, true, Lattice::QF()>();
+            return Lattice::template c<int, alpha>().template indices_of<coeff, true, Lattice::template QF<device::label_t>()>();
         }
 
         /**

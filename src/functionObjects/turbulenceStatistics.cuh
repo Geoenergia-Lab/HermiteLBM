@@ -54,16 +54,55 @@ SourceFiles
 
 namespace LBM
 {
-    /**
-     * @brief Calculates the production term P from the Reynolds stress tensor R and the mean strain rate tensor S
-     * @param[in] R Reynolds stress tensor
-     * @param[in] S Mean strain rate tensor
-     * @return Production term P
-     **/
-    __device__ __host__ [[nodiscard]] inline constexpr const scalar calculate_P(const symmetricTensor &R, const symmetricTensor &S) noexcept
+    namespace functionObjects
     {
-        const symmetricTensor RdotS = R * S;
-        return {RdotS[0] + RdotS[1] + RdotS[1] + RdotS[2] + RdotS[2] + RdotS[3] + RdotS[4] + RdotS[4] + RdotS[5]};
+        struct R
+        {
+            /**
+             * @brief Calculates the Reynolds stress tensor R from the fluctuation of the velocity vector UPrime
+             * @param[in] UPrime Fluctuation of the velocity vector
+             **/
+            __device__ __host__ [[nodiscard]] static inline constexpr const symmetricTensor calculate(const vector &UPrime) noexcept
+            {
+                return {UPrime[0] * UPrime[0], UPrime[0] * UPrime[1], UPrime[0] * UPrime[2], UPrime[1] * UPrime[1], UPrime[1] * UPrime[2], UPrime[2] * UPrime[2]};
+            }
+        };
+
+        struct P
+        {
+            /**
+             * @brief Calculates the production term P from the Reynolds stress tensor R and the mean strain rate tensor S
+             * @param[in] R Reynolds stress tensor
+             * @param[in] S Mean strain rate tensor
+             * @return Production term P
+             **/
+            __device__ __host__ [[nodiscard]] static inline constexpr const scalar calculate(const symmetricTensor &R, const symmetricTensor &S) noexcept
+            {
+                const symmetricTensor RdotS = R * S;
+                return {RdotS[0] + RdotS[1] + RdotS[1] + RdotS[2] + RdotS[2] + RdotS[3] + RdotS[4] + RdotS[4] + RdotS[5]};
+            }
+        };
+
+        struct epsilon
+        {
+            /**
+             * @brief Calculates the dissipation term epsilon from the fluctuation of the strain rate tensor SPrime and the viscosity nu
+             * @param[in] SPrime Fluctuation of the strain rate tensor
+             * @param[in] nu Kinematic viscosity
+             **/
+            __device__ __host__ [[nodiscard]] static inline constexpr const scalar calculate(const symmetricTensor &SPrime, const scalar_t nu) noexcept
+            {
+                return {static_cast<scalar_t>(2) * nu * ((SPrime[0] * SPrime[0]) + (SPrime[1] * SPrime[1]) + (SPrime[2] * SPrime[2]) + static_cast<scalar_t>(2) * ((SPrime[3] * SPrime[3]) + (SPrime[4] * SPrime[4]) + (SPrime[5] * SPrime[5])))};
+            }
+
+            /**
+             * @brief Convenience function to calculate epsilon using device-allocated constant variables
+             **/
+            __device__ [[nodiscard]] static inline const scalar calculate(const symmetricTensor &SPrime) noexcept
+            {
+                return calculate(SPrime, device::nu);
+            }
+        };
     }
 
     /**
@@ -107,16 +146,16 @@ namespace LBM
         const symmetricTensor SPrime = S - SMean; // Fluctuation of strain rate tensor
 
         // Update the Reynolds stress tensor and production term using time averaging
-        const symmetricTensor RNew = {UPrime[0] * UPrime[0], UPrime[0] * UPrime[1], UPrime[0] * UPrime[2], UPrime[1] * UPrime[1], UPrime[1] * UPrime[2], UPrime[2] * UPrime[2]};
+        const symmetricTensor RNew = functionObjects::R::calculate(UPrime);
         const symmetricTensor RMean = functionObjects::time_average(R, RNew, invNewCount);
-        const scalar PMean = calculate_P(RMean, SMean);
+        const scalar PMean = functionObjects::P::calculate(RMean, SMean);
 
         // Update the dissipation term using time averaging
-        const scalar epsilonNew = {static_cast<scalar_t>(2) * device::nu * ((SPrime[0] * SPrime[0]) + (SPrime[1] * SPrime[1]) + (SPrime[2] * SPrime[2]) + static_cast<scalar_t>(2) * ((SPrime[3] * SPrime[3]) + (SPrime[4] * SPrime[4]) + (SPrime[5] * SPrime[5])))};
+        const scalar epsilonNew = functionObjects::epsilon::calculate(SPrime);
         const scalar epsilonMean = functionObjects::time_average(epsilon, epsilonNew, invNewCount);
 
         // Update the turbulent kinetic energy using time averaging
-        const scalar kNew = {static_cast<scalar_t>(0.5) * ((UPrime[0] * UPrime[0]) + (UPrime[1] * UPrime[1]) + (UPrime[2] * UPrime[2]))};
+        const scalar kNew = functionObjects::k::calculate(UPrime);
         const scalar kMean = functionObjects::time_average(k, kNew, invNewCount);
 
         // Save the updated turbulence fields to memory
@@ -150,15 +189,13 @@ namespace LBM
               calculate_(functionObjects::initialiserSwitch("turbulenceStatistics")),
               programCtrl_(programCtrl),
               mesh_(mesh),
-              UMean_("UMean", mesh, programCtrl, calculate_),
-              SMean_("SMean", mesh, programCtrl, calculate_),
+              UMean_("UMean", mesh, zeros<scalar_t, 3>(), programCtrl, calculate_),
+              SMean_("SMean", mesh, zeros<scalar_t, 6>(), programCtrl, calculate_),
               R_("R", mesh, zeros<scalar_t, 6>(), programCtrl, calculate_),
               P_("P", mesh, zeros<scalar_t, 1>(), programCtrl, calculate_),
               epsilon_("epsilon", mesh, zeros<scalar_t, 1>(), programCtrl, calculate_),
               k_("k", mesh, zeros<scalar_t, 1>(), programCtrl, calculate_),
-              hostWriteBuffer_(hostWriteBuffer)
-        {
-        }
+              hostWriteBuffer_(hostWriteBuffer) {}
 
         /**
          * @brief Destructor for the turbulenceStatistics class
@@ -168,7 +205,7 @@ namespace LBM
         /**
          * @brief Calculates the turbulence statistics: Reynolds stress tensor R, production term P, dissipation term epsilon, and turbulent kinetic energy k
          **/
-        __host__ inline void calculate()
+        __host__ inline void calculate() noexcept
         {
             if (calculate_)
             {
@@ -200,10 +237,13 @@ namespace LBM
          * @brief Saves the turbulence statistics: Reynolds stress tensor R, production term P, dissipation term epsilon, and turbulent kinetic energy k to the host write buffer
          * @param[in] timeStep The current time step for saving the turbulence statistics
          **/
-        __host__ inline void save(const host::label_t timeStep)
+        __host__ inline void save(const host::label_t timeStep) noexcept
         {
             if (calculate_)
             {
+                UMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
+                SMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
+
                 R_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
                 P_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
                 epsilon_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
