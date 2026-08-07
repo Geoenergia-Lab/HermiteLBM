@@ -262,7 +262,7 @@ namespace LBM
     /**
      * @brief Struct used to represent 2D indices in a more readable way
      **/
-    template <const axis::type alpha>
+    // template <const axis::type alpha>
     class dim2
     {
     public:
@@ -270,23 +270,37 @@ namespace LBM
          * @brief Constructs from a linear index of a flattened 2D array with dimensions (block::n<alpha>(), block::n<beta>())
          * @param[in] linearIdx The linear index to convert to 2D indices
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr dim2(const device::label_t linearIdx) noexcept
-            : i_(linearIdx % (block::n<axis::orthogonal<alpha, 0>()>())),
-              j_(linearIdx / (block::n<axis::orthogonal<alpha, 0>()>()))
-        {
-            axis::assertions::validate<alpha, axis::NOT_NULL>();
-        };
+        // __device__ __host__ [[nodiscard]] inline constexpr dim2(const device::label_t linearIdx) noexcept
+        //     : i_(i(linearIdx)),
+        //       j_(j(linearIdx))
+        // {
+        //     axis::assertions::validate<alpha, axis::NOT_NULL>();
+        // };
 
         __device__ __host__ [[nodiscard]] inline constexpr dim2(const device::label_t a, const device::label_t b) noexcept
             : i_(a),
-              j_(b)
-        {
-            axis::assertions::validate<alpha, axis::NOT_NULL>();
-        };
+              j_(b){
+                  // axis::assertions::validate<alpha, axis::NOT_NULL>();
+              };
+
+        __device__ __host__ [[nodiscard]] dim2(const dim2 &) = delete;
+        __device__ __host__ [[nodiscard]] dim2 &operator=(const dim2 &) = delete;
 
         __device__ __host__ [[nodiscard]] inline constexpr device::label_t i() const noexcept
         {
             return i_;
+        }
+
+        template <axis::type alpha>
+        __device__ __host__ [[nodiscard]] static inline constexpr device::label_t i(const device::label_t linearIdx) noexcept
+        {
+            return linearIdx % (block::n<axis::orthogonal<alpha, 0>()>());
+        }
+
+        template <axis::type alpha>
+        __device__ __host__ [[nodiscard]] static inline constexpr device::label_t j(const device::label_t linearIdx) noexcept
+        {
+            return linearIdx / (block::n<axis::orthogonal<alpha, 0>()>());
         }
 
         __device__ __host__ [[nodiscard]] inline constexpr device::label_t j() const noexcept

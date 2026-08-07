@@ -108,6 +108,8 @@ namespace LBM
              * @note Elements will be default-initialized or zero-initialized
              **/
             [[nodiscard]] inline consteval array() = default;
+            // __device__ __host__ [[nodiscard]] array(const array<T, N> &) = delete;
+            // __device__ __host__ [[nodiscard]] array &operator=(const array<T, N> &) = delete;
 
             /**
              * @brief Addition operator
@@ -296,6 +298,14 @@ namespace LBM
                 return N;
             }
 
+            __device__ __host__ [[nodiscard]] inline constexpr T sum() const __restrict__ noexcept
+            {
+                return [&]<host::label_t... Is>(std::index_sequence<Is...>)
+                {
+                    return (T{0} + ... + data_[size_constant<Is>{}]);
+                }(std::make_index_sequence<N>{});
+            }
+
             /**
              * @brief Computes the number of elements equal to a value in an array
              * @tparam val The value to compare against
@@ -473,11 +483,25 @@ namespace LBM
         };
     }
 
+    template <typename T, const host::label_t N>
+    __device__ __host__ [[nodiscard]] inline consteval const thread::array<T, N> zeros() noexcept
+    {
+        thread::array<T, N> result;
+        for (host::label_t i = 0; i < N; i++)
+        {
+            result[i] = static_cast<T>(0);
+        }
+        return result;
+    }
+
     /**
-     * @brief Type alias for a thread array of scalar_t with size equal to the number of moments
-     * @note This alias simplifies the declaration of moment arrays in the code
+     * @brief Type alias for thread arrays of scalar_t with given size
+     * @note This alias simplifies the declaration of certain arrays in the code
      **/
     using momentsArray = thread::array<scalar_t, NUMBER_MOMENTS<host::label_t>()>;
+    using scalar = thread::array<scalar_t, 1>;
+    using vector = thread::array<scalar_t, 3>;
+    using symmetricTensor = thread::array<scalar_t, 6>;
 }
 
 #endif

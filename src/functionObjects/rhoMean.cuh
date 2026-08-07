@@ -72,7 +72,7 @@ namespace LBM
              * @param[in] idx Spatial index
              * @return The moments
              **/
-            __device__ [[nodiscard]] static inline constexpr const thread::array<scalar_t, N> calculate(
+            __device__ [[nodiscard]] static inline constexpr const scalar calculate(
                 const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
                 const device::label_t idx) noexcept
             {
@@ -147,8 +147,8 @@ namespace LBM
                 const programControl &programCtrl) noexcept
                 : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
                   rhoMean_(nameMean_, name_, mesh, programCtrl, (BaseType::doMean() || BaseType::doPrime() || BaseType::doPrimeSqMean())),
-                  rhoPrime_(namePrime_, mesh, {static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrime()),
-                  rhoPrimeSqMean_(namePrimeSqMean_, mesh, {static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrimeSqMean())
+                  rhoPrime_(namePrime_, mesh, zeros<scalar_t, 1>(), programCtrl, BaseType::doPrime()),
+                  rhoPrimeSqMean_(namePrimeSqMean_, mesh, zeros<scalar_t, 1>(), programCtrl, BaseType::doPrimeSqMean())
             {
                 BaseType::template configure<Kernel>(programCtrl);
             }

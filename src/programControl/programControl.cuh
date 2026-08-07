@@ -142,13 +142,14 @@ namespace LBM
 
                     // Allocate symbols on the GPU
                     const scalar_t U = Ma_ / std::sqrt(static_cast<scalar_t>(3));
-                    const scalar_t viscosityTemp = U * L_char() / Re();
-                    const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3) * viscosityTemp;
+                    const scalar_t nuTemp = U * L_char() / Re();
+                    const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3) * nuTemp;
                     const scalar_t omegaTemp = static_cast<scalar_t>(1) / tauTemp;
                     const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
                     const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
 
                     device::copyToSymbol(device::L_char, L_char());
+                    device::copyToSymbol(device::nu, nuTemp);
                     device::copyToSymbol(device::Re, Re());
                     device::copyToSymbol(device::tau, tauTemp);
                     device::copyToSymbol(device::omega, omegaTemp);

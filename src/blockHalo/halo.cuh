@@ -291,7 +291,7 @@ namespace LBM
                     thread_stencil<-coeff>(resolvedBlock_alpha, Bx.value<alpha>()),
                     Bx.value<alpha>());
 
-                device::constexpr_for<0, VelocitySet::QF()>(
+                device::constexpr_for<0, VelocitySet::template QF<device::label_t>()>(
                     [&](const auto i)
                     {
                         const device::label_t t_a = thread_stencil<-VelocitySet::template c<int, axis::orthogonal<alpha, 0>()>()[streaming_index<alpha, coeff>(i)]>(da, Tx.value<axis::orthogonal<alpha, 0>()>());
@@ -310,17 +310,17 @@ namespace LBM
 
                         if constexpr (alpha == axis::X)
                         {
-                            pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&(readBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::QF()>(t_a, t_b, b_alpha, b_beta, b_gamma)]));
+                            pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&(readBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::template QF<device::label_t>()>(t_a, t_b, b_alpha, b_beta, b_gamma)]));
                         }
 
                         if constexpr (alpha == axis::Y)
                         {
-                            pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&(readBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::QF()>(t_a, t_b, b_beta, b_alpha, b_gamma)]));
+                            pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&(readBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::template QF<device::label_t>()>(t_a, t_b, b_beta, b_alpha, b_gamma)]));
                         }
 
                         if constexpr (alpha == axis::Z)
                         {
-                            pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&(readBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::QF()>(t_a, t_b, b_beta, b_gamma, b_alpha)]));
+                            pop[q_i<streaming_index<alpha, coeff>(i)>()] = __ldg(&(readBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::template QF<device::label_t>()>(t_a, t_b, b_beta, b_gamma, b_alpha)]));
                         }
                     });
             }
@@ -374,10 +374,10 @@ namespace LBM
 
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
-                device::constexpr_for<0, VelocitySet::QF()>(
+                device::constexpr_for<0, VelocitySet::template QF<device::label_t>()>(
                     [&](const auto i)
                     {
-                        writeBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::QF()>(
+                        writeBuffer.ptr<static_cast<host::label_t>(pointerIndex<alpha, coeff>())>()[idxPop<alpha, i, VelocitySet::template QF<device::label_t>()>(
                             Tx.value<axis::orthogonal<alpha, 0>()>(),
                             Tx.value<axis::orthogonal<alpha, 1>()>(),
                             Bx.value<axis::X>(),

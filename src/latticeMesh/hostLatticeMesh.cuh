@@ -77,7 +77,7 @@ namespace LBM
              * - Calculation of LBM relaxation parameters
              * - Initialization of device constants for GPU execution
              **/
-            __host__ [[nodiscard]] latticeMesh([[maybe_unused]] const programControl &programCtrl)
+            __host__ [[nodiscard]] latticeMesh(const programControl &programCtrl)
                 : dimensions_(string::extractParameter<host::blockLabel>("latticeMesh", "n")),
                   L_(string::extractParameter<pointVector>("latticeMesh", "L")),
                   nDevices_(string::extractParameter<host::blockLabel>("deviceDecomposition", "n")),

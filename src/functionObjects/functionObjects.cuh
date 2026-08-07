@@ -70,24 +70,39 @@ namespace LBM
             return {devPtrs.ptr<ptrIndices>()[idx]...};
         }
 
+        template <const host::label_t... ptrIndices>
+        __device__ [[nodiscard]] inline constexpr const thread::array<scalar_t, sizeof...(ptrIndices)> read_from_moments(const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> &devPtrs, const device::label_t idx) noexcept
+        {
+            return {devPtrs.ptr<ptrIndices>()[idx]...};
+        }
+
         /**
          * @brief Reads all pointers from devPtrs
          * @param[in] devPtrs The pointers to read from
          * @param[in] idx Spatial index
          * @return The values at location idx
          **/
+        // template <const host::label_t N>
+        // __device__ [[nodiscard]] inline constexpr const thread::array<scalar_t, N> read(const device::ptrCollection<N, scalar_t> &devPtrs, const device::label_t idx) noexcept
+        // {
+        //     thread::array<scalar_t, N> result;
+
+        //     device::constexpr_for<0, N>(
+        //         [&](const auto i)
+        //         {
+        //             result[i] = devPtrs.template ptr<i>()[idx];
+        //         });
+
+        //     return result;
+        // }
         template <const host::label_t N>
         __device__ [[nodiscard]] inline constexpr const thread::array<scalar_t, N> read(const device::ptrCollection<N, scalar_t> &devPtrs, const device::label_t idx) noexcept
         {
-            thread::array<scalar_t, N> result;
-
-            device::constexpr_for<0, N>(
-                [&](const auto i)
-                {
-                    result[i] = devPtrs.template ptr<i>()[idx];
-                });
-
-            return result;
+            return [&]<std::size_t... Is>(std::index_sequence<Is...>)
+            {
+                return thread::array<scalar_t, N>{
+                    devPtrs.template ptr<static_cast<host::label_t>(Is)>()[idx]...};
+            }(std::make_index_sequence<N>{});
         }
 
         /**
@@ -281,9 +296,9 @@ namespace LBM
          **/
         template <class FunctionObject>
         __device__ inline void prime(
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
-            const device::ptrCollection<FunctionObject::N, scalar_t> resultMeanPtrs,
-            const device::ptrCollection<FunctionObject::N, scalar_t> resultPrimePtrs) noexcept
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
+            const device::ptrCollection<FunctionObject::N, scalar_t> &resultMeanPtrs,
+            const device::ptrCollection<FunctionObject::N, scalar_t> &resultPrimePtrs) noexcept
         {
             // Calculate the index
             const device::label_t idx = device::idx(thread::coordinate(), block::coordinate());
@@ -311,9 +326,9 @@ namespace LBM
          **/
         template <class FunctionObject>
         __device__ inline void primeSqMean(
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
-            const device::ptrCollection<FunctionObject::N, scalar_t> resultMeanPtrs,
-            const device::ptrCollection<FunctionObject::N, scalar_t> resultPrimeSqMeanPtrs,
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
+            const device::ptrCollection<FunctionObject::N, scalar_t> &resultMeanPtrs,
+            const device::ptrCollection<FunctionObject::N, scalar_t> &resultPrimeSqMeanPtrs,
             const scalar_t invNewCount) noexcept
         {
             // Calculate the index

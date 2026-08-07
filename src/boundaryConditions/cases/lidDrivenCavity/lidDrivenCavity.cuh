@@ -136,7 +136,7 @@ namespace LBM
             {
                 const scalar_t nBoundaries = boundaryNormal.countBoundaries<scalar_t>();
 
-                const thread::array<scalar_t, 6> boundarySwitches = {
+                const symmetricTensor boundarySwitches = {
                     boundaryNormal.isWest<scalar_t>(),
                     boundaryNormal.isEast<scalar_t>(),
                     boundaryNormal.isNorth<scalar_t>(),
@@ -503,7 +503,7 @@ namespace LBM
          * @return Velocity component value
          **/
         template <const axis::type alpha>
-        __device__ static inline constexpr scalar_t U(const thread::array<scalar_t, 6> &boundarySwitches, const scalar_t n_boundaries) noexcept
+        __device__ static inline constexpr scalar_t U(const symmetricTensor &boundarySwitches, const scalar_t n_boundaries) noexcept
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
 

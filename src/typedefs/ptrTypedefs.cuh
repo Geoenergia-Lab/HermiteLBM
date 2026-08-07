@@ -88,11 +88,13 @@ namespace LBM
 
                 return ptrs_[i];
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const T *constPtr(const host::label_t i) const noexcept
+            template <typename Idx>
+            __device__ __host__ [[nodiscard]] inline constexpr const T *constPtr(const Idx i) const noexcept
             {
                 return ptrs_[i];
             }
-            __device__ __host__ [[nodiscard]] inline constexpr T *ptr(const host::label_t i) const noexcept
+            template <typename Idx>
+            __device__ __host__ [[nodiscard]] inline constexpr T *ptr(const Idx i) const noexcept
             {
                 return ptrs_[i];
             }

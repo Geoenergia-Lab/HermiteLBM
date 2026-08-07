@@ -72,12 +72,9 @@ namespace LBM
              * @param[in] idx Spatial index
              * @return The calculated total kinetic energy
              **/
-            __device__ [[nodiscard]] static inline constexpr const thread::array<scalar_t, N> calculate(
-                const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
-                const device::label_t idx) noexcept
+            __device__ [[nodiscard]] static inline constexpr const scalar calculate(
+                const vector &U) noexcept
             {
-                const thread::array<scalar_t, 3> U = read_from_moments<index::u, index::v, index::w>(devPtrs, idx);
-
                 if constexpr (std::is_same_v<scalar_t, float>)
                 {
                     return sqrtf((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) * static_cast<scalar_t>(0.5);
@@ -87,6 +84,19 @@ namespace LBM
                 {
                     return sqrt((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) * static_cast<scalar_t>(0.5);
                 }
+            }
+
+            /**
+             * @brief Calculates the total kinetic energy
+             * @param[in] devPtrs Device pointer collection containing velocity and moment fields
+             * @param[in] idx Spatial index
+             * @return The calculated total kinetic energy
+             **/
+            __device__ [[nodiscard]] static inline constexpr const thread::array<scalar_t, N> calculate(
+                const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
+                const device::label_t idx) noexcept
+            {
+                return calculate(read_from_moments<index::u, index::v, index::w>(devPtrs, idx));
             }
 
             /**
@@ -156,10 +166,10 @@ namespace LBM
                 const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
                 const programControl &programCtrl) noexcept
                 : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
-                  k_(name_, mesh_, {static_cast<scalar_t>(0)}, programCtrl, calculate_),
-                  kMean_(nameMean_, mesh, {static_cast<scalar_t>(0)}, programCtrl, (BaseType::doMean() || BaseType::doPrime() || BaseType::doPrimeSqMean())),
-                  kPrime_(namePrime_, mesh, {static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrime()),
-                  kPrimeSqMean_(namePrimeSqMean_, mesh, {static_cast<scalar_t>(0)}, programCtrl, BaseType::doPrimeSqMean())
+                  k_(name_, mesh_, zeros<scalar_t, 1>(), programCtrl, calculate_),
+                  kMean_(nameMean_, mesh, zeros<scalar_t, 1>(), programCtrl, (BaseType::doMean() || BaseType::doPrime() || BaseType::doPrimeSqMean())),
+                  kPrime_(namePrime_, mesh, zeros<scalar_t, 1>(), programCtrl, BaseType::doPrime()),
+                  kPrimeSqMean_(namePrimeSqMean_, mesh, zeros<scalar_t, 1>(), programCtrl, BaseType::doPrimeSqMean())
             {
                 BaseType::template configure<Kernel>(programCtrl);
             }

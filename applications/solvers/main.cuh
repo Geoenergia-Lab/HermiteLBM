@@ -50,8 +50,6 @@ SourceFiles
 #ifndef __MBLBM_MAIN_CUH
 #define __MBLBM_MAIN_CUH
 
-__host__ [[nodiscard]] inline consteval bool ExplicitSync() { return false; }
-
 using namespace LBM;
 
 int main(const int argc, const char *const argv[])
@@ -91,9 +89,11 @@ int main(const int argc, const char *const argv[])
 
     const kernel::ptrCollection devPtrs(rho, U, Pi, programCtrl);
 
+    turbulenceStatistics<VelocitySet> turbulenceStats(devPtrs, mesh, programCtrl, hostWriteBuffer);
+
     programCtrl.allsync();
 
-    const deviceCommunicator<ExplicitSync(), VelocitySet> devComm(mesh, programCtrl, haloPtrs);
+    const deviceCommunicator<VelocitySet> devComm(mesh, programCtrl, haloPtrs);
 
     for (host::label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
@@ -112,12 +112,14 @@ int main(const int argc, const char *const argv[])
 
             Pi.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
 
+            turbulenceStats.save(timeStep);
+
             runTimeObjects.save(timeStep);
         }
 
         // Main kernel launches
         std::thread boundaryThread(
-            std::addressof(kernel::launchBoundary<ExplicitSync()>),
+            std::addressof(kernel::launchBoundary),
             std::cref(mesh),
             std::cref(programCtrl),
             std::cref(devPtrs),
@@ -138,6 +140,7 @@ int main(const int argc, const char *const argv[])
 
         // Evaluate the run-time function objects
         runTimeObjects.calculate();
+        turbulenceStats.calculate();
     }
 
     return 0;
