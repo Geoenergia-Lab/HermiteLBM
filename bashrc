@@ -151,30 +151,41 @@ export HERMITELBM_DISTRO
 #  CUDA Toolkit                                                               #
 # --------------------------------------------------------------------------- #
 
-# Determine suffix for default CUDA path, used only as a fallback
+# Determine suffix for default CUDA path
 CUDA_DIR_SUFFIX="${HERMITELBM_CUDA_VERSION_MAJOR}.${HERMITELBM_CUDA_VERSION_MINOR}"
 if [[ "$HERMITELBM_DISTRO" =~ ^(debian|fedora) ]] && [[ "${HERMITELBM_CUDA_VERSION_MINOR}" == "0" ]]; then
     CUDA_DIR_SUFFIX="${HERMITELBM_CUDA_VERSION_MAJOR}"
 fi
 
-# Check if nvcc is available; if not, skip CUDA setup but continue
-if command -v nvcc > /dev/null 2>&1; then
+# Default expected CUDA directory
+DEFAULT_CUDA_DIR="/usr/local/cuda-${CUDA_DIR_SUFFIX}"
+
+# 1) Try the default CUDA directory first (most common installation)
+if [[ -x "$DEFAULT_CUDA_DIR/bin/nvcc" ]]; then
+    export HERMITELBM_CUDA_DIR="$DEFAULT_CUDA_DIR"
+    export PATH="$HERMITELBM_CUDA_DIR/bin:$PATH"
+    export LD_LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LD_LIBRARY_PATH"
+    export LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LIBRARY_PATH"
     HERMITELBM_CUDA_FOUND=1
 
-    # Resolve the real CUDA installation directory from nvcc
+# 2) If not in default location, fall back to whatever nvcc is in PATH
+elif command -v nvcc > /dev/null 2>&1; then
     NVCC_PATH=$(command -v nvcc)
     RESOLVED_NVCC_PATH=$(readlink -f "$NVCC_PATH" 2>/dev/null || echo "$NVCC_PATH")
-    export HERMITELBM_CUDA_DIR=$(dirname "$(dirname "$RESOLVED_NVCC_PATH")")
+    HERMITELBM_CUDA_DIR=$(dirname "$(dirname "$RESOLVED_NVCC_PATH")")
 
-    # Only add CUDA paths if the resolved directory exists
     if [[ -d "$HERMITELBM_CUDA_DIR" ]]; then
+        export HERMITELBM_CUDA_DIR
         export PATH="$HERMITELBM_CUDA_DIR/bin:$PATH"
         export LD_LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LD_LIBRARY_PATH"
         export LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LIBRARY_PATH"
+        HERMITELBM_CUDA_FOUND=1
     else
-        echo "Warning: CUDA directory $HERMITELBM_CUDA_DIR not found. Using system PATH only." >&2
+        echo "Warning: CUDA directory $HERMITELBM_CUDA_DIR not found. Skipping CUDA paths." >&2
         HERMITELBM_CUDA_FOUND=0
     fi
+
+# 3) No CUDA found at all
 else
     HERMITELBM_CUDA_FOUND=0
     echo "Warning: nvcc not found. CUDA environment will not be configured." >&2
