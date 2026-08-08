@@ -11,7 +11,7 @@
 #  CUDA Toolkit Installer for Debian‑based distributions                      #
 # --------------------------------------------------------------------------- #
 #  Usage:                                                                     #
-#    (1) Edit bashrc and set HERMITELBM_DISTRO,                               #
+#    (1) Edit bashrc and set HERMITELBM_CUDA_DOWNLOAD_DISTRO,                 #
 #        HERMITELBM_CUDA_VERSION_MAJOR, and HERMITELBM_CUDA_VERSION_MINOR.    #
 #    (2) source bashrc                                                        #
 #    (3) make install                                                         #
@@ -21,7 +21,7 @@
 # --------------------------------------------------------------------------- #
 
 # Read from environment (set by bashrc)
-DISTRO ?= $(HERMITELBM_DISTRO)
+DISTRO ?= $(HERMITELBM_CUDA_DOWNLOAD_DISTRO)
 MAJOR ?= $(HERMITELBM_CUDA_VERSION_MAJOR)
 MINOR ?= $(HERMITELBM_CUDA_VERSION_MINOR)
 
@@ -60,7 +60,7 @@ help:
 	@echo "CUDA Toolkit Installer for Debian‑based distributions"
 	@echo ""
 	@echo "Usage:"
-	@echo "  1. Set HERMITELBM_DISTRO, HERMITELBM_CUDA_VERSION_MAJOR, and"
+	@echo "  1. Set HERMITELBM_CUDA_DOWNLOAD_DISTRO, HERMITELBM_CUDA_VERSION_MAJOR, and"
 	@echo "     HERMITELBM_CUDA_VERSION_MINOR in bashrc"
 	@echo "  2. source bashrc"
 	@echo "  3. make install"
@@ -101,7 +101,7 @@ install: check-distro check-apt
 check-distro:
 	@if [ -z "$(DISTRO)" ]; then \
 		echo "Error: DISTRO is not set."; \
-		echo "Please set HERMITELBM_DISTRO in bashrc or pass DISTRO=<code> on command line."; \
+		echo "Please set HERMITELBM_CUDA_DOWNLOAD_DISTRO in bashrc or pass DISTRO=<code> on command line."; \
 		echo "Run 'make list-distros' to see supported codes."; \
 		exit 1; \
 	fi
