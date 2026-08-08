@@ -114,37 +114,36 @@ export HERMITELBM_INCLUDE_DIR="$HERMITELBM_BUILD_DIR/include"
 #  Automatic distro detection (now supports Fedora, RHEL, CentOS)             #
 # --------------------------------------------------------------------------- #
 
-if [[ -z "$HERMITELBM_DISTRO" ]]; then
+if [[ -z "$HERMITELBM_CUDA_DOWNLOAD_DISTRO" ]]; then
     if [[ -f /etc/os-release ]]; then
         source /etc/os-release
         case "$ID" in
             ubuntu)
                 # Remove dots from version (e.g., 24.04 -> 2404)
                 VERSION_NODOTS="${VERSION_ID//./}"
-                HERMITELBM_DISTRO="ubuntu${VERSION_NODOTS}"
+                HERMITELBM_CUDA_DOWNLOAD_DISTRO="ubuntu${VERSION_NODOTS}"
                 ;;
             debian)
                 # Debian VERSION_ID is just the major number (e.g., "13")
-                HERMITELBM_DISTRO="debian${VERSION_ID}"
+                HERMITELBM_CUDA_DOWNLOAD_DISTRO="debian${VERSION_ID}"
                 ;;
             fedora)
-                HERMITELBM_DISTRO="fedora${VERSION_ID}"
+                HERMITELBM_CUDA_DOWNLOAD_DISTRO="fedora${VERSION_ID}"
                 ;;
             rhel|centos)
                 # Use major version only (e.g., "9")
-                HERMITELBM_DISTRO="${ID}${VERSION_ID%%.*}"
+                HERMITELBM_CUDA_DOWNLOAD_DISTRO="${ID}${VERSION_ID%%.*}"
                 ;;
             *)
-                echo "Warning: Unsupported distribution '$ID'. Defaulting to ubuntu2404." >&2
-                HERMITELBM_DISTRO="ubuntu2404"
+                HERMITELBM_CUDA_DOWNLOAD_DISTRO="ubuntu2404"
                 ;;
         esac
     else
-        echo "Warning: /etc/os-release not found. Defaulting to ubuntu2404." >&2
-        HERMITELBM_DISTRO="ubuntu2404"
+        HERMITELBM_CUDA_DOWNLOAD_DISTRO="ubuntu2404"
     fi
-    # echo "Auto-detected distribution: $HERMITELBM_DISTRO"
 fi
+HERMITELBM_DISTRO="${ID}${VERSION_NODOTS}"
+export HERMITELBM_CUDA_DOWNLOAD_DISTRO
 export HERMITELBM_DISTRO
 
 # --------------------------------------------------------------------------- #
@@ -200,6 +199,7 @@ echo "HermiteLBM"
 echo "{"
 if (( HERMITELBM_CUDA_FOUND )); then
     echo "    CUDA version: ${HERMITELBM_CUDA_VERSION_MAJOR}.${HERMITELBM_CUDA_VERSION_MINOR}"
+    echo "    CUDA directory: ${HERMITELBM_CUDA_DIR}"
 else
     echo "    CUDA version: Not found"
 fi
