@@ -77,12 +77,14 @@ namespace LBM
             {
                 if constexpr (std::is_same_v<scalar_t, float>)
                 {
-                    return ((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) * static_cast<scalar_t>(0.5);
+                    return static_cast<scalar_t>(0.5) * ((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) / 
+                           (velocitySetBase::scale_i<scalar_t>() * velocitySetBase::scale_i<scalar_t>());
                 }
 
                 if constexpr (std::is_same_v<scalar_t, double>)
                 {
-                    return ((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) * static_cast<scalar_t>(0.5);
+                    return (0.5) * ((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) * static_cast<scalar_t> / 
+                           (velocitySetBase::scale_i<double>() * velocitySetBase::scale_i<double>());
                 }
             }
 
