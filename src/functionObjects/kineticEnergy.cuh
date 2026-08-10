@@ -72,18 +72,9 @@ namespace LBM
              * @param[in] idx Spatial index
              * @return The calculated total kinetic energy
              **/
-            __device__ [[nodiscard]] static inline constexpr const scalar calculate(
-                const vector &U) noexcept
+            __device__ [[nodiscard]] static inline constexpr const scalar calculate(const vector &U) noexcept
             {
-                if constexpr (std::is_same_v<scalar_t, float>)
-                {
-                    return ((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) * static_cast<scalar_t>(0.5);
-                }
-
-                if constexpr (std::is_same_v<scalar_t, double>)
-                {
-                    return ((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) * static_cast<scalar_t>(0.5);
-                }
+                return ((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) / static_cast<scalar_t>(2 * velocitySetBase::scale_ij<int>());
             }
 
             /**
