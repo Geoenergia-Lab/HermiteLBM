@@ -77,12 +77,12 @@ namespace LBM
             {
                 if constexpr (std::is_same_v<scalar_t, float>)
                 {
-                    return sqrtf((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) * static_cast<scalar_t>(0.5);
+                    return ((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) * static_cast<scalar_t>(0.5);
                 }
 
                 if constexpr (std::is_same_v<scalar_t, double>)
                 {
-                    return sqrt((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) * static_cast<scalar_t>(0.5);
+                    return ((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) * static_cast<scalar_t>(0.5);
                 }
             }
 
