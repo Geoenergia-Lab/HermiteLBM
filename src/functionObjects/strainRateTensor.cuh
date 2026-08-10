@@ -77,14 +77,14 @@ namespace LBM
             __device__ [[nodiscard]] static inline constexpr scalar_t calculate(const scalar_t uAlpha, const scalar_t uBeta, const scalar_t mAlphaBeta) noexcept
             {
                 static_assert((Index == index::xx || Index == index::yy || Index == index::zz || Index == index::xy || Index == index::xz || Index == index::yz), "Invalid index");
-                
-                if constexpr (Index == index::xx || Index == index::yy || Index == index::zz)  
+
+                if constexpr (Index == index::xx || Index == index::yy || Index == index::zz)
                 {
-                    velocitySetBase::scale_ii<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / device::tau;  
-                }  
-                else  
-                {  
-                    velocitySetBase::scale_ij<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / device::tau;  
+                    return velocitySetBase::scale_ii<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / device::tau;
+                }
+                else
+                {
+                    return velocitySetBase::scale_ij<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / device::tau;
                 }
             }
 
