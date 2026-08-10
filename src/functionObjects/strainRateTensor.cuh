@@ -78,21 +78,14 @@ namespace LBM
             {
                 static_assert((Index == index::xx || Index == index::yy || Index == index::zz || Index == index::xy || Index == index::xz || Index == index::yz), "Invalid index");
                 
-                const scalar_t uA_phys = uAlpha / velocitySetBase::scale_i<scalar_t>();
-                const scalar_t uB_phys = uBeta  / velocitySetBase::scale_i<scalar_t>();
-
-                if constexpr (Index == index::xx || Index == index::yy || Index == index::zz)
+                if constexpr (Index == index::xx || Index == index::yy || Index == index::zz)  
                 {
-                    const scalar_t m_phys = mAlphaBeta / velocitySetBase::scale_ii<scalar_t>();
-
-                    return velocitySetBase::as2<scalar_t>() * ((uA_phys * uB_phys) - m_phys) / (static_cast<scalar_t>(2) * device::tau);
-                }
-                else
-                {
-                    const scalar_t m_phys = mAlphaBeta / velocitySetBase::scale_ij<scalar_t>();;
-
-                    return velocitySetBase::as2<scalar_t>() * ((uA_phys * uB_phys) - m_phys) / (static_cast<scalar_t>(2) * device::tau);
+                    velocitySetBase::scale_ii<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / device::tau;  
                 }  
+                else  
+                {  
+                    velocitySetBase::scale_ij<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / device::tau;  
+                }
             }
 
             /**
