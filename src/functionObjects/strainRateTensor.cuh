@@ -77,15 +77,22 @@ namespace LBM
             __device__ [[nodiscard]] static inline constexpr scalar_t calculate(const scalar_t uAlpha, const scalar_t uBeta, const scalar_t mAlphaBeta) noexcept
             {
                 static_assert((Index == index::xx || Index == index::yy || Index == index::zz || Index == index::xy || Index == index::xz || Index == index::yz), "Invalid index");
+                
+                const scalar_t uA_phys = uAlpha / velocitySetBase::scale_i<scalar_t>();
+                const scalar_t uB_phys = uBeta  / velocitySetBase::scale_i<scalar_t>();
 
                 if constexpr (Index == index::xx || Index == index::yy || Index == index::zz)
                 {
-                    return velocitySetBase::as2<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / (static_cast<scalar_t>(2) * velocitySetBase::scale_ii<scalar_t>() * device::tau);
+                    const scalar_t m_phys = mAlphaBeta / velocitySetBase::scale_ii<scalar_t>();
+
+                    return velocitySetBase::as2<scalar_t>() * ((uA_phys * uB_phys) - m_phys) / (static_cast<scalar_t>(2) * device::tau);
                 }
                 else
                 {
-                    return velocitySetBase::as2<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / (static_cast<scalar_t>(2) * velocitySetBase::scale_ij<scalar_t>() * device::tau);
-                }
+                    const scalar_t m_phys = mAlphaBeta / velocitySetBase::scale_ij<scalar_t>();;
+
+                    return velocitySetBase::as2<scalar_t>() * ((uA_phys * uB_phys) - m_phys) / (static_cast<scalar_t>(2) * device::tau);
+                }  
             }
 
             /**
