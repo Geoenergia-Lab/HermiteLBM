@@ -145,26 +145,19 @@ namespace LBM
      * @tparam T The arithmetic type
      * @param[in] var The variable to exponent
      **/
-    template <const host::label_t N, typename T>
-    __device__ __host__ [[nodiscard]] inline constexpr T pow(T &&var)
+    template <const host::label_t Pow, typename T>
+    __device__ __host__ [[nodiscard]] inline constexpr T pow(const T &val) noexcept
     {
-        using ReturnType = std::decay_t<T>;
-
-        if constexpr (N == 0)
+        if constexpr (Pow == 0)
         {
-            return ReturnType{0};
-        }
-        else if constexpr (N == 1)
-        {
-            return std::forward<T>(var);
+            return T{1};
         }
         else
         {
-            return []<host::label_t... Is>(std::index_sequence<Is...>, auto &&v)
+            return [&]<host::label_t... Is>(std::index_sequence<Is...>)
             {
-                // Multiply v by itself N times
-                return ((static_cast<void>(Is), v) * ...);
-            }(std::make_index_sequence<N>{}, std::forward<T>(var));
+                return (T{1} * ... * (static_cast<void>(Is), val));
+            }(std::make_index_sequence<Pow>{});
         }
     }
 

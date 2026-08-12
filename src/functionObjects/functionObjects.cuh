@@ -82,23 +82,10 @@ namespace LBM
          * @param[in] idx Spatial index
          * @return The values at location idx
          **/
-        // template <const host::label_t N>
-        // __device__ [[nodiscard]] inline constexpr const thread::array<scalar_t, N> read(const device::ptrCollection<N, scalar_t> &devPtrs, const device::label_t idx) noexcept
-        // {
-        //     thread::array<scalar_t, N> result;
-
-        //     device::constexpr_for<0, N>(
-        //         [&](const auto i)
-        //         {
-        //             result[i] = devPtrs.template ptr<i>()[idx];
-        //         });
-
-        //     return result;
-        // }
         template <const host::label_t N>
         __device__ [[nodiscard]] inline constexpr const thread::array<scalar_t, N> read(const device::ptrCollection<N, scalar_t> &devPtrs, const device::label_t idx) noexcept
         {
-            return [&]<std::size_t... Is>(std::index_sequence<Is...>)
+            return [&]<host::label_t... Is>(std::index_sequence<Is...>)
             {
                 return thread::array<scalar_t, N>{
                     devPtrs.template ptr<static_cast<host::label_t>(Is)>()[idx]...};
