@@ -229,12 +229,9 @@ namespace LBM
                 Pi.yz().constPtr(deviceIdx),
                 Pi.zz().constPtr(deviceIdx));
 
-            const dim3 gridBlock = dim3(
-                static_cast<uint32_t>(mesh.blocksPerDevice<axis::X>()),
-                static_cast<uint32_t>(mesh.blocksPerDevice<axis::Y>()),
-                static_cast<uint32_t>(mesh.blocksPerDevice<axis::Z>()));
-
-            kernel::momentBasedLBMInitialisation<<<gridBlock, host::latticeMesh::threadBlock(), 0, programCtrl.streams()[GPU::internalStreamID(deviceIdx)]>>>(
+            kernel::launch<kernel::momentBasedLBMInitialisation>(
+                mesh,
+                programCtrl.streams()[GPU::internalStreamID(deviceIdx)],
                 devPtrs,
                 haloBuffers,
                 VelocitySet::Q(),

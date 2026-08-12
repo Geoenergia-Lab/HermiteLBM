@@ -187,7 +187,7 @@ namespace LBM
                             devPtrs[field],
                             nPointsPerDevice * sizeof(T),
                             cudaMemcpyDeviceToHost,
-                            programCtrl.streams()[virtualDeviceIndex]));
+                            programCtrl.streams()[GPU::internalStreamID(virtualDeviceIndex)]));
                 }
             }
 

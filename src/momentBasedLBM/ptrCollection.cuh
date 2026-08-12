@@ -111,11 +111,12 @@ namespace LBM
             {
                 Type ptrs;
 
+                programCtrl.allsync();
+
                 for (host::label_t stream = 0; stream < programCtrl.deviceList().size(); stream++)
                 {
                     errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[stream]));
                     errorHandler::checkInline(cudaDeviceSynchronize());
-                    programCtrl.streams().synchronize(stream);
 
                     ptrs.emplace_back(
                         device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t>(

@@ -129,6 +129,26 @@ namespace LBM
                 const host::label_t nFields = arr().size() / nNodes;
                 std::vector<std::vector<T>> soa(nFields, std::vector<T>(nNodes, 0));
 
+                // We are not deinterleaving, so we can just do a straightforward copy
+                if constexpr (!Deinterleave)
+                {
+                    for (host::label_t field = 0; field < nFields; field++)
+                    {
+                        std::memcpy(soa[field].data(), std::addressof(arr()[field * nNodes]), nNodes * sizeof(T));
+                    }
+
+                    // We are sorting, so use std::sort
+                    if constexpr (Sort)
+                    {
+                        for (std::vector<T> &fieldVec : soa)
+                        {
+                            std::sort(fieldVec.begin(), fieldVec.end());
+                        }
+                    }
+
+                    return soa;
+                }
+
                 const host::label_t nxGPUs = mesh.nDevices<axis::X>();
                 const host::label_t nyGPUs = mesh.nDevices<axis::Y>();
                 const host::label_t nzGPUs = mesh.nDevices<axis::Z>();
@@ -152,9 +172,7 @@ namespace LBM
                                 const host::label_t tx, const host::label_t ty, const host::label_t tz)
                             {
                                 // Local (GPU‑order) index
-                                const host::label_t blockLin = (bz * nyBlocksPerDevice + by) * nxBlocksPerDevice + bx;
-                                const host::label_t threadLin = (tz * block::ny<host::label_t>() + ty) * block::nx<host::label_t>() + tx;
-                                const host::label_t localIdx = blockLin * pointsPerBlock + threadLin;
+                                const host::label_t localIdx = host::idx(tx, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
 
                                 // Fill all fields
                                 for (host::label_t field = 0; field < nFields; ++field)
@@ -164,14 +182,6 @@ namespace LBM
                                 }
                             });
                     });
-
-                if constexpr (Sort)
-                {
-                    for (std::vector<T> &fieldVec : soa)
-                    {
-                        std::sort(fieldVec.begin(), fieldVec.end());
-                    }
-                }
 
                 return soa;
             }

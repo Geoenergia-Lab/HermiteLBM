@@ -91,7 +91,7 @@ namespace LBM
                 if constexpr (SchemeOrder == 4)
                 {
                     return static_cast<ReturnType>(
-                        (2.0 / 3.0 * (padded_line[center + 1] - padded_line[center - 1]) +
+                        (2.0 / 3.0 * (padded_line[center + 1] - padded_line[center - 1]) -
                          1.0 / 12.0 * (padded_line[center + 2] - padded_line[center - 2])) /
                         d_alpha);
                 }
@@ -99,7 +99,7 @@ namespace LBM
                 if constexpr (SchemeOrder == 6)
                 {
                     return static_cast<ReturnType>(
-                        (3.0 / 4.0 * (padded_line[center + 1] - padded_line[center - 1]) +
+                        (3.0 / 4.0 * (padded_line[center + 1] - padded_line[center - 1]) -
                          3.0 / 20.0 * (padded_line[center + 2] - padded_line[center - 2]) +
                          1.0 / 60.0 * (padded_line[center + 3] - padded_line[center - 3])) /
                         d_alpha);
@@ -108,9 +108,9 @@ namespace LBM
                 if constexpr (SchemeOrder == 8)
                 {
                     return static_cast<ReturnType>(
-                        (4.0 / 5.0 * (padded_line[center + 1] - padded_line[center - 1]) +
+                        (4.0 / 5.0 * (padded_line[center + 1] - padded_line[center - 1]) -
                          1.0 / 5.0 * (padded_line[center + 2] - padded_line[center - 2]) +
-                         4.0 / 105.0 * (padded_line[center + 3] - padded_line[center - 3]) +
+                         4.0 / 105.0 * (padded_line[center + 3] - padded_line[center - 3]) -
                          1.0 / 280.0 * (padded_line[center + 4] - padded_line[center - 4])) /
                         d_alpha);
                 }
@@ -129,7 +129,7 @@ namespace LBM
              * @param[in] gamma The second orthogonal coordinate to beta
              **/
             template <const axis::type alpha, const host::label_t SchemeOrder, typename T, typename ReturnType>
-            void fill_padded_line(
+            __host__ void fill_padded_line(
                 const host::latticeMesh &mesh,
                 std::vector<ReturnType> &padded_line,
                 const std::vector<T> &f,
@@ -172,7 +172,7 @@ namespace LBM
             {
                 LBM::numericalSchemes::assertions::validate<SchemeOrder, maxSchemeOrder()>();
 
-                std::vector<ReturnType> dfdz(f.size(), 0);
+                std::vector<ReturnType> result(f.size(), 0);
                 std::vector<double> padded_line(mesh.dimension<alpha>() + static_cast<host::label_t>(2) * gridPadding(SchemeOrder), 0);
 
                 for (host::label_t gamma = 0; gamma < mesh.dimension<axis::orthogonal<alpha, 1>()>(); gamma++)
@@ -188,12 +188,12 @@ namespace LBM
 
                             const host::pointLabel I = axis::to_3d<alpha>(beta, gamma, i);
 
-                            dfdz[global::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())] = finite_difference<SchemeOrder, ReturnType>(padded_line, center);
+                            result[global::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())] = finite_difference<SchemeOrder, ReturnType>(padded_line, center);
                         }
                     }
                 }
 
-                return dfdz;
+                return result;
             }
 
             template <const host::label_t SchemeOrder, typename ReturnType, typename T>
@@ -285,31 +285,34 @@ namespace LBM
                         static_cast<ReturnType>(-f[host::idx(7, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())])};
                 }
 
-                return {
-                    static_cast<ReturnType>(f[host::idx(0, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(1, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(2, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(3, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(4, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(5, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(6, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(7, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(0, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(1, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(2, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(3, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(4, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(5, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(6, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(7, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(0, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(1, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(2, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(3, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(4, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(5, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(6, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
-                    static_cast<ReturnType>(f[host::idx(7, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())])};
+                if constexpr ((!LeftBoundary) && (!RightBoundary))
+                {
+                    return {
+                        static_cast<ReturnType>(f[host::idx(0, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(1, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(2, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(3, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(4, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(5, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(6, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(7, ty, tz, bx - 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(0, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(1, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(2, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(3, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(4, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(5, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(6, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(7, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(0, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(1, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(2, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(3, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(4, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(5, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(6, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())]),
+                        static_cast<ReturnType>(f[host::idx(7, ty, tz, bx + 1, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>())])};
+                }
             };
 
             template <typename ReturnType, typename T>
@@ -319,29 +322,36 @@ namespace LBM
             {
                 std::vector<ReturnType> result(f.size(), 0);
 
+                mesh.nDevices().print("nDevices");
+
                 GPU::forAll(
                     mesh.nDevices(),
                     [&]([[maybe_unused]] const host::label_t GPU_x, [[maybe_unused]] const host::label_t GPU_y, [[maybe_unused]] const host::label_t GPU_z)
                     {
+                        // const host::label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+
                         for (host::label_t bz = 0; bz < mesh.blocksPerDevice<axis::Z>(); bz++)
                         {
                             for (host::label_t by = 0; by < mesh.blocksPerDevice<axis::Y>(); by++)
                             {
                                 for (host::label_t bx = 1; bx < mesh.blocksPerDevice<axis::X>() - 1; bx++)
                                 {
-                                    for (host::label_t tz = 0; tz < block::nz(); tz++)
+                                    const host::blockLabel Bx(bx, by, bz);
+
+                                    for (host::label_t tz = 0; tz < block::nz<host::label_t>(); tz++)
                                     {
-                                        for (host::label_t ty = 0; ty < block::ny(); ty++)
+                                        for (host::label_t ty = 0; ty < block::ny<host::label_t>(); ty++)
                                         {
                                             // Construct a line that spans the width of the stencil across the entire block x dimension
                                             const thread::array<const double, block::nx() * 3> stencil_array = stencil_line<double, false, false>(f, ty, tz, bx, by, bz, mesh);
 
-                                            for (host::label_t tx = 0; tx < block::nx(); tx++)
+                                            for (host::label_t tx = 0; tx < block::nx<host::label_t>(); tx++)
                                             {
-                                                const host::label_t center = host::idx(tx, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
+                                                const host::threadLabel Tx(tx, ty, tz);
+                                                const host::label_t center = host::idx(Tx, Bx, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
 
                                                 // Get the finite difference value
-                                                result[center] = finite_difference<8, ReturnType>(stencil_array, tx + block::nx());
+                                                result[center] = finite_difference<2, ReturnType>(stencil_array, tx + block::nx<host::label_t>());
                                             }
                                         }
                                     }
@@ -353,21 +363,22 @@ namespace LBM
                         {
                             for (host::label_t by = 0; by < mesh.blocksPerDevice<axis::Y>(); by++)
                             {
-                                for (host::label_t tz = 0; tz < block::nz(); tz++)
+                                constexpr const host::label_t bx = 0;
+                                const host::blockLabel Bx(bx, by, bz);
+                                for (host::label_t tz = 0; tz < block::nz<host::label_t>(); tz++)
                                 {
-                                    for (host::label_t ty = 0; ty < block::ny(); ty++)
+                                    for (host::label_t ty = 0; ty < block::ny<host::label_t>(); ty++)
                                     {
-                                        constexpr const host::label_t bx = 0;
-
                                         // Construct a line that spans the width of the stencil across the entire block x dimension
                                         const thread::array<const double, block::nx() * 3> stencil_array = stencil_line<double, true, false>(f, ty, tz, bx, by, bz, mesh);
 
                                         for (host::label_t tx = 0; tx < block::nx(); tx++)
                                         {
-                                            const host::label_t center = host::idx(tx, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
+                                            const host::threadLabel Tx(tx, ty, tz);
+                                            const host::label_t center = host::idx(Tx, Bx, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
 
                                             // Get the finite difference value
-                                            result[center] = finite_difference<8, ReturnType>(stencil_array, tx + block::nx());
+                                            result[center] = finite_difference<2, ReturnType>(stencil_array, tx + block::nx());
                                         }
                                     }
                                 }
@@ -378,21 +389,23 @@ namespace LBM
                         {
                             for (host::label_t by = 0; by < mesh.blocksPerDevice<axis::Y>(); by++)
                             {
-                                for (host::label_t tz = 0; tz < block::nz(); tz++)
-                                {
-                                    for (host::label_t ty = 0; ty < block::ny(); ty++)
-                                    {
-                                        const host::label_t bx = mesh.blocksPerDevice<axis::X>() - 1;
+                                const host::label_t bx = mesh.blocksPerDevice<axis::X>() - 1;
+                                const host::blockLabel Bx(bx, by, bz);
 
+                                for (host::label_t tz = 0; tz < block::nz<host::label_t>(); tz++)
+                                {
+                                    for (host::label_t ty = 0; ty < block::ny<host::label_t>(); ty++)
+                                    {
                                         // Construct a line that spans the width of the stencil across the entire block x dimension
                                         const thread::array<const double, block::nx() * 3> stencil_array = stencil_line<double, false, true>(f, ty, tz, bx, by, bz, mesh);
 
                                         for (host::label_t tx = 0; tx < block::nx(); tx++)
                                         {
-                                            const host::label_t center = host::idx(tx, ty, tz, bx, by, bz, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
+                                            const host::threadLabel Tx(tx, ty, tz);
+                                            const host::label_t center = host::idx(Tx, Bx, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
 
                                             // Get the finite difference value
-                                            result[center] = finite_difference<8, ReturnType>(stencil_array, tx + block::nx());
+                                            result[center] = finite_difference<2, ReturnType>(stencil_array, tx + block::nx());
                                         }
                                     }
                                 }

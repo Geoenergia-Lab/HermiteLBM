@@ -134,7 +134,7 @@ namespace LBM
 
             constexpr const char *suffix = (alpha == axis::X ? "x" : (alpha == axis::Y ? "y" : "z"));
 
-            writer::write<postProcess::VTS>(result, "d" + fileName + "_d" + std::string(suffix), mesh, string::catenate("d", string::catenate(variables.varNames(), "_d" + std::string(suffix))));
+            writer::write<postProcess::VTS>(result, "d" + fileName + "_d" + std::string(suffix) + "_" + std::to_string(timeStep), mesh, string::catenate("d", string::catenate(variables.varNames(), "_d" + std::string(suffix))));
 
             std::cout << "};" << std::endl;
         }
