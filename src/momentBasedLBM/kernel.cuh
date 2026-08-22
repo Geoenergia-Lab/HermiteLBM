@@ -148,7 +148,10 @@ namespace LBM
             }
 
             // Update the post-streaming moments according to the interior and/or boundary conditions
-            BoundaryConditions::template calculate_moments<VelocitySet>(pop, moments, sharedBuffer, Tx, point, tid);
+            if constexpr (BoundaryConditions::appliesCondition())
+            {
+                BoundaryConditions::template calculate_moments<VelocitySet>(pop, moments, sharedBuffer, Tx, point, tid);
+            }
 
             // Scale the moments correctly
             velocitySetBase::scale(moments);
