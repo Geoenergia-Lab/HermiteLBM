@@ -109,19 +109,17 @@ namespace LBM
             }
 
             // Coalesced read from global memory
-            momentsArray moments;
-            device::constexpr_for<0, NUMBER_MOMENTS()>(
-                [&](const auto moment)
-                {
-                    if constexpr (moment == index::rho)
-                    {
-                        moments[moment] = devPtrs.ptr<moment>()[idx] + rho0();
-                    }
-                    else
-                    {
-                        moments[moment] = devPtrs.ptr<moment>()[idx];
-                    }
-                });
+            const momentsArray moments{
+                devPtrs.ptr<0>()[idx] + rho0(),
+                devPtrs.ptr<1>()[idx],
+                devPtrs.ptr<2>()[idx],
+                devPtrs.ptr<3>()[idx],
+                devPtrs.ptr<4>()[idx],
+                devPtrs.ptr<5>()[idx],
+                devPtrs.ptr<6>()[idx],
+                devPtrs.ptr<7>()[idx],
+                devPtrs.ptr<8>()[idx],
+                devPtrs.ptr<9>()[idx]};
 
             block::sync();
 
