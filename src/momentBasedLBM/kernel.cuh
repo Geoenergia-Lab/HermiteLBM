@@ -143,6 +143,7 @@ namespace LBM
                 devPtrs.ptr<index::yy>()[idx],
                 devPtrs.ptr<index::yz>()[idx],
                 devPtrs.ptr<index::zz>()[idx]};
+            block::sync();
 
             // Reconstruct the population from the moments
             thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);

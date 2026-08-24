@@ -110,17 +110,16 @@ namespace LBM
 
             // Coalesced read from global memory
             const momentsArray moments{
-                devPtrs.ptr<0>()[idx] + rho0(),
-                devPtrs.ptr<1>()[idx],
-                devPtrs.ptr<2>()[idx],
-                devPtrs.ptr<3>()[idx],
-                devPtrs.ptr<4>()[idx],
-                devPtrs.ptr<5>()[idx],
-                devPtrs.ptr<6>()[idx],
-                devPtrs.ptr<7>()[idx],
-                devPtrs.ptr<8>()[idx],
-                devPtrs.ptr<9>()[idx]};
-
+                devPtrs.ptr<index::rho>()[idx] + rho0(),
+                devPtrs.ptr<index::u>()[idx],
+                devPtrs.ptr<index::v>()[idx],
+                devPtrs.ptr<index::w>()[idx],
+                devPtrs.ptr<index::xx>()[idx],
+                devPtrs.ptr<index::xy>()[idx],
+                devPtrs.ptr<index::xz>()[idx],
+                devPtrs.ptr<index::yy>()[idx],
+                devPtrs.ptr<index::yz>()[idx],
+                devPtrs.ptr<index::zz>()[idx]};
             block::sync();
 
             // Save the halo
