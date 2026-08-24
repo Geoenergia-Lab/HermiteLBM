@@ -109,20 +109,17 @@ namespace LBM
             }
 
             // Coalesced read from global memory
-            momentsArray moments;
-            device::constexpr_for<0, NUMBER_MOMENTS()>(
-                [&](const auto moment)
-                {
-                    if constexpr (moment == index::rho)
-                    {
-                        moments[moment] = devPtrs.ptr<moment>()[idx] + rho0();
-                    }
-                    else
-                    {
-                        moments[moment] = devPtrs.ptr<moment>()[idx];
-                    }
-                });
-
+            const momentsArray moments{
+                devPtrs.ptr<index::rho>()[idx] + rho0(),
+                devPtrs.ptr<index::u>()[idx],
+                devPtrs.ptr<index::v>()[idx],
+                devPtrs.ptr<index::w>()[idx],
+                devPtrs.ptr<index::xx>()[idx],
+                devPtrs.ptr<index::xy>()[idx],
+                devPtrs.ptr<index::xz>()[idx],
+                devPtrs.ptr<index::yy>()[idx],
+                devPtrs.ptr<index::yz>()[idx],
+                devPtrs.ptr<index::zz>()[idx]};
             block::sync();
 
             // Save the halo
