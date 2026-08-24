@@ -127,17 +127,20 @@ namespace LBM
         /**
          * @brief Specialization of traits for the BENCHMARK case.
          *
-         * Provides the type alias `type` defined as `invalid`.
+         * Provides the type alias `type` defined as `benchmark`.
          **/
         template <>
         class traits<boundaryCondition_t::BENCHMARK>
         {
         public:
+            /**
+             * @brief Concrete type associated with the BENCHMARK boundary condition.
+             **/
             using type = benchmark;
         };
 
         /**
-         * @brief Specialization of traits for the INVALID case.
+         * @brief Specialization of traits for the JET_FLOW case.
          *
          * Provides the type alias `type` defined as `invalid`.
          **/

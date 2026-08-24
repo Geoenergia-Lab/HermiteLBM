@@ -61,7 +61,7 @@ namespace LBM
          **/
         __host__ [[nodiscard]] static inline constexpr host::label_t idxStream(const host::label_t idxDev, const host::label_t idxStr) noexcept
         {
-            return (3 * idxDev) + idxStr;
+            return (static_cast<host::label_t>(3) * idxDev) + idxStr;
         }
 
         /**
@@ -76,12 +76,12 @@ namespace LBM
 
             if constexpr (coeff == -1)
             {
-                return (3 * idxDev); // East stream
+                return idxStream(idxDev, 0); // East stream
             }
 
             if constexpr (coeff == +1)
             {
-                return (3 * idxDev) + 2; // West stream
+                return idxStream(idxDev, 2); // West stream
             }
         }
     }
@@ -177,7 +177,7 @@ namespace LBM
                 errorHandler::check(cudaSetDevice(deviceIndices[deviceIdx]));
                 for (device::label_t stream = 0; stream < 3; stream++)
                 {
-                    errorHandler::check(cudaStreamCreate(&streams[(deviceIdx * 3) + stream]));
+                    errorHandler::check(cudaStreamCreate(&streams[device::idxStream(deviceIdx, stream)]));
                 }
             }
 
