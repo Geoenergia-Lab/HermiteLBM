@@ -104,17 +104,20 @@ int main(const int argc, const char *const argv[])
         }
 
         // Checkpoint
-        if (programCtrl.save(timeStep))
+        if constexpr (!(std::is_same_v<BoundaryConditions, benchmark>))
         {
-            rho.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
+            if (programCtrl.save(timeStep))
+            {
+                rho.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
 
-            U.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
+                U.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
 
-            Pi.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
+                Pi.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
 
-            turbulenceStats.save(timeStep);
+                turbulenceStats.save(timeStep);
 
-            runTimeObjects.save(timeStep);
+                runTimeObjects.save(timeStep);
+            }
         }
 
         // Main kernel launches
@@ -139,8 +142,11 @@ int main(const int argc, const char *const argv[])
         internalThread.join();
 
         // Evaluate the run-time function objects
-        runTimeObjects.calculate();
-        turbulenceStats.calculate();
+        if constexpr (!(std::is_same_v<BoundaryConditions, benchmark>))
+        {
+            runTimeObjects.calculate();
+            turbulenceStats.calculate();
+        }
     }
 
     return 0;

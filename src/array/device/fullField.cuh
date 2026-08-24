@@ -131,6 +131,11 @@ namespace LBM
             }
 
             /**
+             * @brief Default destructor
+             **/
+            ~array() {}
+
+            /**
              * @brief Get read-only pointer to device memory for a given GPU.
              * @tparam Idx Type that can be converted to device::label_t.
              * @param[in] idx Virtual device index.

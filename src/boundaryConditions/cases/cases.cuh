@@ -53,9 +53,11 @@ SourceFiles
 #include "invalidBoundaryCondition.cuh"
 #include "jetFlow/jetFlow.cuh"
 #include "lidDrivenCavity/lidDrivenCavity.cuh"
+#include "benchmark/benchmark.cuh"
 
 // #define BOUNDARY_CONDITION JET_FLOW
 #define BOUNDARY_CONDITION LID_DRIVEN_CAVITY
+// #define BOUNDARY_CONDITION BENCHMARK
 
 #ifndef BOUNDARY_CONDITION
 #define BOUNDARY_CONDITION INVALID
@@ -82,7 +84,8 @@ namespace LBM
         {
             INVALID = 0,
             JET_FLOW = 1,
-            LID_DRIVEN_CAVITY = 2
+            LID_DRIVEN_CAVITY = 2,
+            BENCHMARK = 3
         } boundaryCondition_t;
 
         /**
@@ -106,9 +109,6 @@ namespace LBM
         class traits<boundaryCondition_t::JET_FLOW>
         {
         public:
-            /**
-             * @brief Concrete type associated with the LID_DRIVEN_CAVITY boundary condition.
-             **/
             using type = jetFlow;
         };
 
@@ -121,10 +121,22 @@ namespace LBM
         class traits<boundaryCondition_t::LID_DRIVEN_CAVITY>
         {
         public:
-            /**
-             * @brief Concrete type associated with the LID_DRIVEN_CAVITY boundary condition.
-             **/
             using type = lidDrivenCavity;
+        };
+
+        /**
+         * @brief Specialization of traits for the BENCHMARK case.
+         *
+         * Provides the type alias `type` defined as `benchmark`.
+         **/
+        template <>
+        class traits<boundaryCondition_t::BENCHMARK>
+        {
+        public:
+            /**
+             * @brief Concrete type associated with the BENCHMARK boundary condition.
+             **/
+            using type = benchmark;
         };
 
         /**
@@ -136,9 +148,6 @@ namespace LBM
         class traits<boundaryCondition_t::INVALID>
         {
         public:
-            /**
-             * @brief Concrete type associated with the INVALID boundary condition.
-             **/
             using type = invalidBoundaryCondition;
         };
 

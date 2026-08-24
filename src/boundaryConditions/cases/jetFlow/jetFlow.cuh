@@ -83,6 +83,11 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval bool periodicZ() noexcept { return false; }
 
         /**
+         * @brief Switch determining whether or not the boundary condition actually applies a condition
+         **/
+        __device__ __host__ [[nodiscard]] static inline consteval bool appliesCondition() noexcept { return true; }
+
+        /**
          * @brief Public method to calculate the post-streaming methods and update boundary conditions
          **/
         template <class VelocitySet, class SharedBuffer>
