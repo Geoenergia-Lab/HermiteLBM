@@ -152,6 +152,10 @@ namespace LBM
             {
                 BoundaryConditions::template calculate_moments<VelocitySet>(pop, moments, sharedBuffer, Tx, point, tid);
             }
+            else
+            {
+                VelocitySet::template calculate_moments(pop, moments);
+            }
 
             // Scale the moments correctly
             velocitySetBase::scale(moments);
