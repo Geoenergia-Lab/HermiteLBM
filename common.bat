@@ -7,8 +7,8 @@ set "NVCXX=nvcc"
 set "CXX=cl"
 
 :: Include hardware info if translated to a batch script
-if exist "%HERMITELBM_INCLUDE_DIR%\hardware.info.bat" (
-    call "%HERMITELBM_INCLUDE_DIR%\hardware.info.bat"
+if exist "%HERMITELBM_INCLUDE_DIR%\hardware.bat" (
+    call "%HERMITELBM_INCLUDE_DIR%\hardware.bat"
 )
 
 :: CUDA Compiler Flags
