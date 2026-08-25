@@ -403,7 +403,7 @@ __device__ [[nodiscard]] static inline consteval device::label_t warps_per_face(
  **/
 __device__ [[nodiscard]] static inline consteval device::label_t n_cycles() noexcept
 {
-    return static_cast<device::label_t>(std::ceil(static_cast<double>(4 * VelocitySet::template QF<device::label_t>()) / static_cast<double>(n_channels())));
+    return (static_cast<device::label_t>(4) * VelocitySet::template QF<device::label_t>() + n_channels() - static_cast<device::label_t>(1)) / n_channels();
 }
 
 /**

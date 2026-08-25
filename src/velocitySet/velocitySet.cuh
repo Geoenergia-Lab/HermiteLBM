@@ -173,6 +173,20 @@ namespace LBM
         }
 
         /**
+         * @brief Folded sum of the moments for a given distribution function
+         * @param[in] thermo The thermal model
+         * @param[in] moments The calculated moments array
+         **/
+        template <const host::label_t i>
+        __device__ __host__ [[nodiscard]] static inline constexpr scalar_t sum_moments(const ThermoModel &thermo, const momentsArray &moments) noexcept
+        {
+            return [&]<host::label_t... Is>(std::index_sequence<Is...>)
+            {
+                return (process_momentum_element<This::C<i>().template non_zero_values<This::C<i>().number_non_zero()>()[Is]>(thermo.template moment<This::C<i>().template non_zero_indices<This::C<i>().number_non_zero()>()[Is]>(moments)) + ...);
+            }(std::make_index_sequence<This::C<i>().number_non_zero()>{});
+        }
+
+        /**
          * @brief Calculate the regularized distribution function from the moments
          * @tparam CalculateRest Whether to calculate the rest population (f_0) or not
          * @param[out] pop The distribution function array
@@ -195,13 +209,7 @@ namespace LBM
             device::constexpr_for<1, This::Q()>(
                 [&](const auto i)
                 {
-                    // Folded sum over all non-zero parts
-                    const auto sum_moments = [&]<host::label_t... Is>(const std::index_sequence<Is...>)
-                    {
-                        return (process_momentum_element<This::C<i>().template non_zero_values<C<i>().number_non_zero()>()[Is]>(thermo.moment<This::C<i>().template non_zero_indices<C<i>().number_non_zero()>()[Is]>(moments)) + ...);
-                    };
-
-                    pop[q_i<i>()] = This::rhow<i>(rho_w) * (thermo.pics2() + sum_moments(std::make_index_sequence<C<i>().number_non_zero()>{}));
+                    pop[q_i<i>()] = This::rhow<i>(rho_w) * (thermo.pics2() + This::template sum_moments<i>(thermo, moments));
                 });
         }
 

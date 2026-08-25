@@ -162,11 +162,11 @@ namespace LBM
         static inline void diskSpaceAssertion(const host::latticeMesh &mesh, const words_t &varNames, const name_t &fileName)
         {
             fileSystem::diskSpaceAssertion<
-                Writer::format,
-                Writer::fields,
-                Writer::points,
-                Writer::elements,
-                Writer::offsets>(
+                Writer::file_format,
+                Writer::has_fields,
+                Writer::has_points,
+                Writer::has_elements,
+                Writer::has_offsets>(
                 mesh,
                 varNames.size(),
                 fileName);
@@ -218,12 +218,13 @@ namespace LBM
 
             printStatus("directory", directoryStatus);
 
-            std::cout << "    fileSize: " << fileSystem::to_MiB<double>(fileSystem::expectedDiskUsage<Writer::format, Writer::fields, Writer::points, Writer::elements, Writer::offsets>(mesh, solutionVars.size())) << " MiB;" << std::endl;
+            std::cout << "    fileSize: " << fileSystem::to_MiB<double>(fileSystem::expectedDiskUsage<Writer::file_format, Writer::has_fields, Writer::has_points, Writer::has_elements, Writer::has_offsets>(mesh, solutionVars.size())) << " MiB;" << std::endl;
 
             // Check if there is enough disk space to store the file
             writer::diskSpaceAssertion<Writer>(mesh, varNames, fileName);
 
-            std::ofstream outFile(trueFileName);
+            constexpr std::ios::openmode mode = std::ios::out | (Writer::file_format == fileSystem::BINARY ? std::ios::binary : std::ios::openmode(0));
+            std::ofstream outFile(trueFileName, mode);
 
             if (!outFile)
             {
@@ -233,7 +234,7 @@ namespace LBM
 
             const bool writeStatus = Writer::write(solutionVars, outFile, mesh, varNames);
 
-            printStatus("ofstream", outFile.good());
+            printStatus("ofstream", writeStatus);
 
             std::cout << "};" << std::endl;
         }

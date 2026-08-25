@@ -115,7 +115,7 @@ namespace LBM
                         d_alpha);
                 }
 
-                return static_cast<ReturnType>(0);
+                // return static_cast<ReturnType>(0);
             }
 
             /**

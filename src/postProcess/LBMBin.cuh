@@ -57,11 +57,12 @@ namespace LBM
         class LBMBin : public writer
         {
         public:
-            static constexpr const fileSystem::format format = fileSystem::BINARY;
-            static constexpr const fileSystem::fields::contained fields = fileSystem::fields::Yes;
-            static constexpr const fileSystem::points::contained points = fileSystem::points::No;
-            static constexpr const fileSystem::elements::contained elements = fileSystem::elements::No;
-            static constexpr const fileSystem::offsets::contained offsets = fileSystem::offsets::No;
+            static constexpr const fileSystem::format file_format = fileSystem::BINARY;
+            static constexpr const fileSystem::fields::contained has_fields = fileSystem::fields::Yes;
+            static constexpr const fileSystem::points::contained has_points = fileSystem::points::No;
+            static constexpr const fileSystem::elements::contained has_elements = fileSystem::elements::No;
+            static constexpr const fileSystem::offsets::contained has_offsets = fileSystem::offsets::No;
+
             static constexpr const char *fileExtension = ".LBMBin";
             static constexpr const char *name = "LBMBin";
 
@@ -299,9 +300,9 @@ namespace LBM
                 out << std::endl;
                 out << "    fieldNames[" << varNames.size() << "]" << std::endl;
                 out << "    {" << std::endl;
-                for (const name_t &name : varNames)
+                for (const name_t &varName : varNames)
                 {
-                    out << "    \t" << name << ";" << std::endl;
+                    out << "    \t" << varName << ";" << std::endl;
                 }
                 out << "    };" << std::endl;
                 out << "};" << std::endl;

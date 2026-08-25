@@ -265,12 +265,12 @@ namespace LBM
 
                 if (foundArray(baseName, programCtrl.latestTime()))
                 {
-                    return {ComponentType(baseName, compNames[Is], mesh, programCtrl, allocate)...};
+                    return std::array<ComponentType, N>{ComponentType(baseName, compNames[Is], mesh, programCtrl, allocate)...};
                 }
                 else
                 {
                     // Use pack expansion to construct each element in-place
-                    return {ComponentType(baseName, compNames[Is], mesh, values[Is], programCtrl, allocate)...};
+                    return std::array<ComponentType, N>{ComponentType(baseName, compNames[Is], mesh, values[Is], programCtrl, allocate)...};
                 }
             }
 
@@ -292,7 +292,7 @@ namespace LBM
                 const bool allocate)
             {
                 const std::array<std::string, N> compNames = FieldType::template makeComponentNames<std::array<std::string, N>>(baseName);
-                return {ComponentType(baseName, compNames[Is], mesh, programCtrl, allocate)...};
+                return std::array<ComponentType, N>{ComponentType(baseName, compNames[Is], mesh, programCtrl, allocate)...};
             }
 
             /**
@@ -317,12 +317,12 @@ namespace LBM
                 if (foundArray(baseName, programCtrl.latestTime()))
                 {
                     const std::array<std::string, N> compNames = FieldType::template makeComponentNames<std::array<std::string, N>>(baseName);
-                    return {ComponentType(baseName, compNames[Is], mesh, programCtrl, allocate)...};
+                    return std::array<ComponentType, N>{ComponentType(baseName, compNames[Is], mesh, programCtrl, allocate)...};
                 }
                 else
                 {
                     const std::array<std::string, N> compNames = FieldType::template makeComponentNames<std::array<std::string, N>>(defaultName);
-                    return {ComponentType(defaultName, compNames[Is], mesh, programCtrl, allocate)...};
+                    return std::array<ComponentType, N>{ComponentType(defaultName, compNames[Is], mesh, programCtrl, allocate)...};
                 }
             }
 
