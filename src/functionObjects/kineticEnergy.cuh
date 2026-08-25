@@ -87,7 +87,7 @@ namespace LBM
                 const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
                 const device::label_t idx) noexcept
             {
-                return calculate(read_from_moments<index::u, index::v, index::w>(devPtrs, idx));
+                return calculate(read_from_moments<axis::index<axis::X>(), axis::index<axis::Y>(), axis::index<axis::Z>()>(devPtrs, idx));
             }
 
             /**

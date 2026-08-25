@@ -50,137 +50,26 @@ SourceFiles
 #ifndef __MBLBM_CASES_CUH
 #define __MBLBM_CASES_CUH
 
-#include "invalidBoundaryCondition.cuh"
 #include "jetFlow/jetFlow.cuh"
 #include "lidDrivenCavity/lidDrivenCavity.cuh"
 #include "benchmark/benchmark.cuh"
-
-// #define BOUNDARY_CONDITION JET_FLOW
-#define BOUNDARY_CONDITION LID_DRIVEN_CAVITY
-// #define BOUNDARY_CONDITION BENCHMARK
-
-#ifndef BOUNDARY_CONDITION
-#define BOUNDARY_CONDITION INVALID
-#endif
 
 namespace LBM
 {
     namespace boundaryConditions
     {
         /**
-         * @enum Enum
-         * @brief Unscoped enumeration listing the available boundary condition types.
-         *
-         * This enum is defined with an underlying type of `int` to ensure a fixed size.
-         * The enumerators are accessible either directly (unscoped) or via the
-         * `boundaryCondition_t` typedef (as shown in the code).
-         *
-         * @var Enum::JET_FLOW
-         *      Represents a jet inflow boundary condition.
-         * @var Enum::LID_DRIVEN_CAVITY
-         *      Represents the lid‑driven cavity boundary condition.
+         * @brief Define the boundary condition case
          **/
-        typedef enum Enum : int
-        {
-            INVALID = 0,
-            JET_FLOW = 1,
-            LID_DRIVEN_CAVITY = 2,
-            BENCHMARK = 3
-        } boundaryCondition_t;
+        using Case = lidDrivenCavity;
+        // using Case = jetFlow;
+        // using Case = benchmark;
+        // using Case = invalidBoundary;
 
         /**
-         * @brief Primary template for boundary condition traits.
-         *
-         * This template maps a compile‑time boundary condition value (given as a
-         * non‑type template parameter) to a concrete type that implements or represents
-         * that boundary condition. Specializations are provided for each known enumerator.
-         *
-         * @tparam BoundaryCondition A compile‑time constant of type `boundaryCondition_t`.
+         * @brief Assert that the boundary condition is valid
          **/
-        template <const boundaryCondition_t BoundaryCondition>
-        class traits;
-
-        /**
-         * @brief Specialization of traits for the JET_FLOW case.
-         *
-         * Provides the type alias `type` defined as `jetFlow`.
-         **/
-        template <>
-        class traits<boundaryCondition_t::JET_FLOW>
-        {
-        public:
-            using type = jetFlow;
-        };
-
-        /**
-         * @brief Specialization of traits for the LID_DRIVEN_CAVITY case.
-         *
-         * Provides the type alias `type` defined as `lidDrivenCavity`.
-         **/
-        template <>
-        class traits<boundaryCondition_t::LID_DRIVEN_CAVITY>
-        {
-        public:
-            using type = lidDrivenCavity;
-        };
-
-        /**
-         * @brief Specialization of traits for the BENCHMARK case.
-         *
-         * Provides the type alias `type` defined as `benchmark`.
-         **/
-        template <>
-        class traits<boundaryCondition_t::BENCHMARK>
-        {
-        public:
-            /**
-             * @brief Concrete type associated with the BENCHMARK boundary condition.
-             **/
-            using type = benchmark;
-        };
-
-        /**
-         * @brief Specialization of traits for the JET_FLOW case.
-         *
-         * Provides the type alias `type` defined as `invalid`.
-         **/
-        template <>
-        class traits<boundaryCondition_t::INVALID>
-        {
-        public:
-            using type = invalidBoundaryCondition;
-        };
-
-        /**
-         * @brief Asserts that the boundary condition type is valid
-         **/
-        __device__ __host__ inline consteval void validate() noexcept
-        {
-            static_assert(!(BOUNDARY_CONDITION == INVALID), "BOUNDARY_CONDITION must be defined to a valid boundaryCondition_t enumerator");
-        }
-
-        /**
-         * @brief Compile‑time evaluation of the active boundary condition.
-         *
-         * This function uses preprocessor macros (`JETFLOW` or `LIDDRIVENCAVITY`) to
-         * determine which boundary condition is selected at compile time. It is marked
-         * `consteval`, guaranteeing that its result is a compile‑time constant usable
-         * as a template argument (e.g., for `traits`).
-         *
-         * The function is also decorated with `__device__ __host__` for CUDA compatibility
-         * and `[[nodiscard]]` to warn if the return value is ignored.
-         *
-         * @return The boundary condition enumerator corresponding to the defined macro.
-         * @note Exactly one of `JETFLOW` or `LIDDRIVENCAVITY` should be defined;
-         *       if neither is defined, the function falls back to `JET_FLOW` (or could
-         *       trigger a compile‑time error).
-         **/
-        __device__ __host__ [[nodiscard]] inline consteval boundaryCondition_t caseName() noexcept
-        {
-            validate();
-
-            return boundaryCondition_t::BOUNDARY_CONDITION;
-        }
+        static_assert(std::is_same_v<Case, jetFlow> || std::is_same_v<Case, lidDrivenCavity> || std::is_same_v<Case, benchmark>, "Case must be one of the available boundary condition types.");
     }
 }
 
