@@ -155,26 +155,6 @@ namespace LBM
 
 namespace LBM
 {
-    /**
-     * @brief Enumerated variable indices
-     **/
-    namespace index
-    {
-        typedef enum Enum : host::label_t
-        {
-            rho = 0,
-            u = 1,
-            v = 2,
-            w = 3,
-            xx = 4,
-            xy = 5,
-            xz = 6,
-            yy = 7,
-            yz = 8,
-            zz = 9
-        } type;
-    }
-
     namespace types
     {
         namespace assertions
@@ -210,26 +190,26 @@ namespace LBM
 {
     namespace axis
     {
-        template <const axis::type alpha>
+        template <const type alpha>
         __host__ [[nodiscard]] inline constexpr host::blockLabel to_3d(const host::label_t ta, const host::label_t tb, const host::label_t i) noexcept
         {
-            if constexpr (alpha == axis::X)
+            if constexpr (alpha == X)
             {
                 return {i, ta, tb};
             }
 
-            if constexpr (alpha == axis::Y)
+            if constexpr (alpha == Y)
             {
                 return {ta, i, tb};
             }
 
-            if constexpr (alpha == axis::Z)
+            if constexpr (alpha == Z)
             {
                 return {ta, tb, i};
             }
         }
 
-        template <const axis::type alpha, const int coeff>
+        template <const type alpha, const int coeff>
         __host__ [[nodiscard]] static inline constexpr host::blockLabel to_3d(const host::label_t ta, const host::label_t tb) noexcept
         {
             return to_3d<alpha>(ta, tb, thread::boundary<alpha, coeff>());

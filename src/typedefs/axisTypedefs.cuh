@@ -155,6 +155,77 @@ namespace LBM
                 }
             }
         }
+
+        /**
+         * @brief Returns an index based on a combination of two axes
+         * @tparam alpha The first axis
+         * @tparam beta The second axis
+         **/
+        template <const type alpha, const type beta = NO_DIRECTION>
+        __device__ __host__ [[nodiscard]] inline consteval host::label_t index() noexcept
+        {
+            assertions::validate<alpha, CAN_BE_NULL>();
+            assertions::validate<beta, CAN_BE_NULL>();
+
+            if constexpr ((alpha == NO_DIRECTION) && (beta == NO_DIRECTION))
+            {
+                return 0;
+            }
+
+            if constexpr (alpha == X)
+            {
+                if constexpr (beta == NO_DIRECTION)
+                {
+                    return 1;
+                }
+
+                if constexpr (beta == X)
+                {
+                    return 4;
+                }
+
+                if constexpr (beta == Y)
+                {
+                    return 5;
+                }
+
+                if constexpr (beta == Z)
+                {
+                    return 6;
+                }
+            }
+
+            if constexpr (alpha == Y)
+            {
+                if constexpr (beta == NO_DIRECTION)
+                {
+                    return 2;
+                }
+
+                if constexpr (beta == Y)
+                {
+                    return 7;
+                }
+
+                if constexpr (beta == Z)
+                {
+                    return 8;
+                }
+            }
+
+            if constexpr (alpha == Z)
+            {
+                if constexpr (beta == NO_DIRECTION)
+                {
+                    return 3;
+                }
+
+                if constexpr (beta == Z)
+                {
+                    return 9;
+                }
+            }
+        }
     }
 }
 

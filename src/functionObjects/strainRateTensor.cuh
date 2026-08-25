@@ -76,9 +76,9 @@ namespace LBM
             template <const host::label_t Index>
             __device__ [[nodiscard]] static inline constexpr scalar_t calculate(const scalar_t uAlpha, const scalar_t uBeta, const scalar_t mAlphaBeta) noexcept
             {
-                static_assert((Index == index::xx || Index == index::yy || Index == index::zz || Index == index::xy || Index == index::xz || Index == index::yz), "Invalid index");
+                static_assert((Index == axis::index<axis::X, axis::X>() || Index == axis::index<axis::X, axis::Y>() || Index == axis::index<axis::X, axis::Z>() || Index == axis::index<axis::Y, axis::Y>() || Index == axis::index<axis::Y, axis::Z>() || Index == axis::index<axis::Z, axis::Z>()), "Invalid index");
 
-                if constexpr (Index == index::xx || Index == index::yy || Index == index::zz)
+                if constexpr (Index == axis::index<axis::X, axis::X>() || Index == axis::index<axis::Y, axis::Y>() || Index == axis::index<axis::Z, axis::Z>())
                 {
                     return velocitySetBase::scale_ii<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / device::tau;
                 }
@@ -99,11 +99,22 @@ namespace LBM
                 const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), T> &devPtrs,
                 const device::label_t idx) noexcept
             {
-                const vector U = read_from_moments<index::u, index::v, index::w>(devPtrs, idx);
+                const vector U = read_from_moments<axis::index<axis::X>(), axis::index<axis::Y>(), axis::index<axis::Z>()>(devPtrs, idx);
 
-                const symmetricTensor M = read_from_moments<index::xx, index::xy, index::xz, index::yy, index::yz, index::zz>(devPtrs, idx);
+                const symmetricTensor M = read_from_moments<
+                    axis::index<axis::X, axis::X>(),
+                    axis::index<axis::X, axis::Y>(),
+                    axis::index<axis::X, axis::Z>(),
+                    axis::index<axis::Y, axis::Y>(),
+                    axis::index<axis::Y, axis::Z>(),
+                    axis::index<axis::Z, axis::Z>()>(devPtrs, idx);
 
-                return {calculate<index::xx>(U[0], U[0], M[0]), calculate<index::xy>(U[0], U[1], M[1]), calculate<index::xz>(U[0], U[2], M[2]), calculate<index::yy>(U[1], U[1], M[3]), calculate<index::yz>(U[1], U[2], M[4]), calculate<index::zz>(U[2], U[2], M[5])};
+                return {calculate<axis::index<axis::X, axis::X>()>(U[0], U[0], M[0]),
+                        calculate<axis::index<axis::X, axis::Y>()>(U[0], U[1], M[1]),
+                        calculate<axis::index<axis::X, axis::Z>()>(U[0], U[2], M[2]),
+                        calculate<axis::index<axis::Y, axis::Y>()>(U[1], U[1], M[3]),
+                        calculate<axis::index<axis::Y, axis::Z>()>(U[1], U[2], M[4]),
+                        calculate<axis::index<axis::Z, axis::Z>()>(U[2], U[2], M[5])};
             }
 
             /**

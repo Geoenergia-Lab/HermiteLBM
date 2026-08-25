@@ -67,7 +67,6 @@ SourceFiles
 
 #include "../boundaryConditions/normalVector.cuh"
 #include "../boundaryConditions/boundaryValue.cuh"
-#include "../boundaryConditions/boundaryRegion.cuh"
 #include "../boundaryConditions/boundaryFields.cuh"
 
 namespace LBM

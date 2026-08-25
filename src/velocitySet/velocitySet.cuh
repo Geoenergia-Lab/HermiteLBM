@@ -97,11 +97,13 @@ namespace LBM
          * @brief Calculate a specific moment of the distribution function
          * @tparam alpha The first axis direction (X, Y, or Z)
          * @tparam beta The second axis direction (X, Y, or Z)
+         * @tparam Args Additional argument types (empty or BoundaryNormal)
          * @param[in] pop The distribution function array
+         * @param[in] args Normal vector information at boundary node (optional)
          * @return The calculated moment value
          **/
-        template <const axis::type alpha, const axis::type beta>
-        __device__ __host__ [[nodiscard]] static inline constexpr scalar_t calculate_moment(const thread::array<scalar_t, Lattice::Q()> &pop) noexcept
+        template <const axis::type alpha, const axis::type beta, typename... Args>
+        __device__ __host__ [[nodiscard]] static inline constexpr scalar_t calculate_moment(const thread::array<scalar_t, Lattice::Q()> &pop, Args &&...args) noexcept
         {
             constexpr const thread::array<int, Lattice::Q()> c_AB = c_product<alpha, beta>();
             constexpr const host::label_t N = c_AB.number_non_zero();
@@ -110,84 +112,36 @@ namespace LBM
 
             return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
             {
-                return (process_momentum_element<C[Is]>(pop[indices[Is]]) + ...);
-            }(std::make_index_sequence<N>{});
-        }
-
-        /**
-         * @brief Calculate a specific moment of the distribution function
-         * @tparam alpha The first axis direction (X, Y, or Z)
-         * @tparam beta The second axis direction (X, Y, or Z)
-         * @tparam BoundaryNormal The boundary normal vector type
-         * @param[in] pop The distribution function array
-         * @param[in] boundaryNormal Normal vector information at boundary node
-         * @return The calculated moment value
-         **/
-        template <const axis::type alpha, const axis::type beta, class BoundaryNormal>
-        __device__ __host__ [[nodiscard]] static inline constexpr scalar_t calculate_moment(const thread::array<scalar_t, Lattice::Q()> &pop, const BoundaryNormal &boundaryNormal) noexcept
-        {
-            constexpr const thread::array<int, Lattice::Q()> c_AB = c_product<alpha, beta>();
-            constexpr const host::label_t N = c_AB.number_non_zero();
-            constexpr const thread::array<int, N> C = c_AB.template non_zero_values<N>();
-            constexpr const thread::array<host::label_t, N> indices = c_AB.template non_zero_indices<N>();
-
-            return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
-            {
-                return (process_momentum_element<C[Is], indices[Is]>(pop[indices[Is]], boundaryNormal) + ...);
+                return (process_momentum_element<C[Is], indices[Is]>(pop[indices[Is]], std::forward<Args>(args)...) + ...);
             }(std::make_index_sequence<N>{});
         }
 
         /**
          * @brief Calculate all moments of the distribution function
-         * @param[in] pop The distribution function array
+         * @tparam Args Additional argument types (empty or BoundaryNormal)
          * @param[out] moments The calculated moments array
+         * @param[in] pop The distribution function array
+         * @param[in] args Normal vector information at boundary node (optional)
          **/
-        __device__ __host__ static inline void calculate_moments(const thread::array<scalar_t, Lattice::Q()> &pop, momentsArray &moments) noexcept
+        template <typename... Args>
+        __device__ __host__ static inline void calculate_moments(momentsArray &moments, const thread::array<scalar_t, Lattice::Q()> &pop, Args &&...args) noexcept
         {
             // Density
-            moments[m_i<0>()] = calculate_moment<axis::NO_DIRECTION, axis::NO_DIRECTION>(pop);
+            moments[m_i<0>()] = calculate_moment<axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, std::forward<Args>(args)...);
             const scalar_t inv_rho = static_cast<scalar_t>(1) / moments[m_i<0>()];
 
             // Velocity
-            moments[m_i<1>()] = calculate_moment<axis::X, axis::NO_DIRECTION>(pop) * inv_rho;
-            moments[m_i<2>()] = calculate_moment<axis::Y, axis::NO_DIRECTION>(pop) * inv_rho;
-            moments[m_i<3>()] = calculate_moment<axis::Z, axis::NO_DIRECTION>(pop) * inv_rho;
+            calculate_moment<axis::X, axis::NO_DIRECTION>(moments, inv_rho, pop, std::forward<Args>(args)...);
+            calculate_moment<axis::Y, axis::NO_DIRECTION>(moments, inv_rho, pop, std::forward<Args>(args)...);
+            calculate_moment<axis::Z, axis::NO_DIRECTION>(moments, inv_rho, pop, std::forward<Args>(args)...);
 
-            // Second order moments
-            moments[m_i<4>()] = (calculate_moment<axis::X, axis::X>(pop) * inv_rho) - Base::cs2<scalar_t>();
-            moments[m_i<5>()] = calculate_moment<axis::X, axis::Y>(pop) * inv_rho;
-            moments[m_i<6>()] = calculate_moment<axis::X, axis::Z>(pop) * inv_rho;
-            moments[m_i<7>()] = (calculate_moment<axis::Y, axis::Y>(pop) * inv_rho) - Base::cs2<scalar_t>();
-            moments[m_i<8>()] = calculate_moment<axis::Y, axis::Z>(pop) * inv_rho;
-            moments[m_i<9>()] = (calculate_moment<axis::Z, axis::Z>(pop) * inv_rho) - Base::cs2<scalar_t>();
-        }
-
-        /**
-         * @brief Calculate all moments of the distribution function
-         * @tparam BoundaryNormal The boundary normal vector type
-         * @param[in] pop The distribution function array
-         * @param[out] moments The calculated moments array
-         * @param[in] boundaryNormal Normal vector information at boundary node
-         **/
-        template <class BoundaryNormal>
-        __device__ __host__ static inline void calculate_moments(const thread::array<scalar_t, Lattice::Q()> &pop, momentsArray &moments, const BoundaryNormal &boundaryNormal) noexcept
-        {
-            // Density
-            moments[m_i<0>()] = calculate_moment<axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
-            const scalar_t inv_rho = static_cast<scalar_t>(1) / moments[m_i<0>()];
-
-            // Velocity
-            moments[m_i<1>()] = calculate_moment<axis::X, axis::NO_DIRECTION>(pop, boundaryNormal) * inv_rho;
-            moments[m_i<2>()] = calculate_moment<axis::Y, axis::NO_DIRECTION>(pop, boundaryNormal) * inv_rho;
-            moments[m_i<3>()] = calculate_moment<axis::Z, axis::NO_DIRECTION>(pop, boundaryNormal) * inv_rho;
-
-            // Second order moments
-            moments[m_i<4>()] = (calculate_moment<axis::X, axis::X>(pop, boundaryNormal) * inv_rho) - Base::cs2<scalar_t>();
-            moments[m_i<5>()] = calculate_moment<axis::X, axis::Y>(pop, boundaryNormal) * inv_rho;
-            moments[m_i<6>()] = calculate_moment<axis::X, axis::Z>(pop, boundaryNormal) * inv_rho;
-            moments[m_i<7>()] = (calculate_moment<axis::Y, axis::Y>(pop, boundaryNormal) * inv_rho) - Base::cs2<scalar_t>();
-            moments[m_i<8>()] = calculate_moment<axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho;
-            moments[m_i<9>()] = (calculate_moment<axis::Z, axis::Z>(pop, boundaryNormal) * inv_rho) - Base::cs2<scalar_t>();
+            // Second‑order moments
+            calculate_moment<axis::X, axis::X>(moments, inv_rho, pop, std::forward<Args>(args)...);
+            calculate_moment<axis::X, axis::Y>(moments, inv_rho, pop, std::forward<Args>(args)...);
+            calculate_moment<axis::X, axis::Z>(moments, inv_rho, pop, std::forward<Args>(args)...);
+            calculate_moment<axis::Y, axis::Y>(moments, inv_rho, pop, std::forward<Args>(args)...);
+            calculate_moment<axis::Y, axis::Z>(moments, inv_rho, pop, std::forward<Args>(args)...);
+            calculate_moment<axis::Z, axis::Z>(moments, inv_rho, pop, std::forward<Args>(args)...);
         }
 
         /**
@@ -266,6 +220,29 @@ namespace LBM
         }
 
     private:
+        /**
+         * @brief Store a specific moment of the distribution function in the moments array
+         * @tparam alpha The first axis direction (X, Y, Z, or NO_DIRECTION)
+         * @tparam beta The second axis direction (X, Y, Z, or NO_DIRECTION)
+         * @tparam Args Additional argument types (empty or BoundaryNormal)
+         * @param[out] moments The calculated moments array
+         * @param[in] inv_rho Inverse of density
+         * @param[in] pop The distribution function array
+         * @param[in] args Normal vector information at boundary node (optional)
+         **/
+        template <const axis::type alpha, const axis::type beta, typename... Args>
+        __device__ __host__ static inline constexpr void calculate_moment(momentsArray &moments, const scalar_t inv_rho, const thread::array<scalar_t, Lattice::Q()> &pop, Args &&...args) noexcept
+        {
+            if constexpr ((alpha == beta) && (!(alpha == axis::NO_DIRECTION)))
+            {
+                moments[m_i<axis::index<alpha, beta>()>()] = (calculate_moment<alpha, beta>(pop, std::forward<Args>(args)...) * inv_rho) - Base::cs2<scalar_t>();
+            }
+            else
+            {
+                moments[m_i<axis::index<alpha, beta>()>()] = calculate_moment<alpha, beta>(pop, std::forward<Args>(args)...) * inv_rho;
+            }
+        }
+
         /**
          * @brief Returns the coefficients for a specific moment index and a given population
          * @tparam i The moment index
