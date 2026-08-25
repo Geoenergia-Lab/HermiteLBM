@@ -55,7 +55,6 @@ SourceFiles
 #include "../array/threadArray.cuh"
 #include "normalVector.cuh"
 #include "boundaryValue.cuh"
-#include "boundaryRegion.cuh"
 #include "boundaryFields.cuh"
 
 namespace LBM

@@ -100,7 +100,7 @@ namespace LBM
             const device::label_t tid) noexcept
         {
             // Compute post-stream moments
-            VelocitySet::template calculate_moments(pop, moments);
+            VelocitySet::template calculate_moments(moments, pop);
 
             // Update the shared buffer with the refreshed moments
             device::constexpr_for<0, NUMBER_MOMENTS()>(

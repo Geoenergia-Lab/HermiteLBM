@@ -110,16 +110,16 @@ namespace LBM
 
             // Coalesced read from global memory
             const momentsArray moments{
-                devPtrs.ptr<index::rho>()[idx] + rho0(),
-                devPtrs.ptr<index::u>()[idx],
-                devPtrs.ptr<index::v>()[idx],
-                devPtrs.ptr<index::w>()[idx],
-                devPtrs.ptr<index::xx>()[idx],
-                devPtrs.ptr<index::xy>()[idx],
-                devPtrs.ptr<index::xz>()[idx],
-                devPtrs.ptr<index::yy>()[idx],
-                devPtrs.ptr<index::yz>()[idx],
-                devPtrs.ptr<index::zz>()[idx]};
+                devPtrs.ptr<axis::index<axis::NO_DIRECTION>()>()[idx] + rho0(),
+                devPtrs.ptr<axis::index<axis::X>()>()[idx],
+                devPtrs.ptr<axis::index<axis::Y>()>()[idx],
+                devPtrs.ptr<axis::index<axis::Z>()>()[idx],
+                devPtrs.ptr<axis::index<axis::X, axis::X>()>()[idx],
+                devPtrs.ptr<axis::index<axis::X, axis::Y>()>()[idx],
+                devPtrs.ptr<axis::index<axis::X, axis::Z>()>()[idx],
+                devPtrs.ptr<axis::index<axis::Y, axis::Y>()>()[idx],
+                devPtrs.ptr<axis::index<axis::Y, axis::Z>()>()[idx],
+                devPtrs.ptr<axis::index<axis::Z, axis::Z>()>()[idx]};
             block::sync();
 
             // Save the halo
