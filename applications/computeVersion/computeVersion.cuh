@@ -57,6 +57,42 @@ SourceFiles
 
 namespace LBM
 {
+    __host__ inline consteval const char *hardware_info_file_extension() noexcept
+    {
+#if defined(_WIN32) && !defined(UNIX)
+        return ".bat";
+#elif defined(UNIX) && !defined(_WIN32)
+        return ".info";
+#else
+        static_assert(false);
+        return "";
+#endif
+    }
+
+    __host__ [[nodiscard]] inline consteval const char *comment_string() noexcept
+    {
+#if defined(_WIN32) && !defined(UNIX)
+        return "::";
+#elif defined(UNIX) && !defined(_WIN32)
+        return "#";
+#else
+        static_assert(false);
+        return "";
+#endif
+    }
+
+    __host__ inline void write_hardware_info_line(std::ofstream &outputFile, const name_t &line) noexcept
+    {
+#if defined(_WIN32) && !defined(UNIX)
+        outputFile << "set \"" << line << "\"" << std::endl;
+#elif defined(UNIX) && !defined(_WIN32)
+        outputFile << line << std::endl;
+#else
+        static_assert(false);
+        return "";
+#endif
+    }
+
     /**
      * @brief Queries and returns the number of available CUDA devices.
      * @details Checks for CUDA devices and handles potential errors during device querying.

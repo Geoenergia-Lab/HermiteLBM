@@ -57,25 +57,22 @@ if not exist "%HERMITELBM_BIN_DIR%" mkdir "%HERMITELBM_BIN_DIR%"
 if not exist "%HERMITELBM_INCLUDE_DIR%" mkdir "%HERMITELBM_INCLUDE_DIR%"
 exit /b 0
 
-
 :hardware_info
 call :directories
-echo Building computeVersion to generate hardware.info...
+echo Make: Entering directory 'applications\computeVersion'
 pushd "applications\computeVersion"
 call make.bat install
+echo Make: Leaving directory 'applications\computeVersion'
 popd
 :: Run computeVersion.exe to generate hardware.info
-computeVersion.exe
+computeVersion
 exit /b %errorlevel%
-
 
 :all
 call :directories
 
 :: Compile tool subdirectories
 for %%D in (%TOOL_SUBDIRS%) do (
-    echo.
-    echo Entering %%D
     pushd "%%D"
     call make.bat
     popd
@@ -86,47 +83,42 @@ call :hardware_info
 
 :: Compile GPU applications
 for %%D in (%GPU_SUBDIRS%) do (
-    echo.
-    echo Entering %%D
     pushd "%%D"
     call make.bat
     popd
 )
 exit /b 0
 
-
 :install
 call :directories
 call :hardware_info
 
 for %%D in (%TOOL_SUBDIRS% %GPU_SUBDIRS%) do (
-    echo.
-    echo Installing %%D
+    echo Make: Entering directory '%%D'
     pushd "%%D"
     call make.bat install
+    echo Make: Leaving directory '%%D'
     popd
 )
 exit /b 0
 
-
 :clean
 for %%D in (%TOOL_SUBDIRS% %GPU_SUBDIRS%) do (
-    echo.
-    echo Cleaning %%D
+    echo Make: Entering directory '%%D'
     pushd "%%D"
     call make.bat clean
+    echo Make: Leaving directory '%%D'
     popd
 )
 if exist "%HERMITELBM_BUILD_DIR%" rmdir /s /q "%HERMITELBM_BUILD_DIR%"
 exit /b 0
 
-
 :uninstall
 for %%D in (%TOOL_SUBDIRS% %GPU_SUBDIRS%) do (
-    echo.
-    echo Uninstalling %%D
+    echo Make: Entering directory '%%D'
     pushd "%%D"
     call make.bat uninstall
+    echo Make: Leaving directory '%%D'
     popd
 )
 if exist "%HERMITELBM_BIN_DIR%" rmdir /s /q "%HERMITELBM_BIN_DIR%"
