@@ -11,8 +11,6 @@
 #  USER-DEFINED ENVIRONMENT VARIABLES                                         #
 # --------------------------------------------------------------------------- #
 
-printHeader
-
 # CUDA version (major and minor)
 export HERMITELBM_CUDA_VERSION_MAJOR="13"
 export HERMITELBM_CUDA_VERSION_MINOR="0"
