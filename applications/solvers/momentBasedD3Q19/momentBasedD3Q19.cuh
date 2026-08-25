@@ -64,7 +64,7 @@ SourceFiles
 
 namespace LBM
 {
-    using BoundaryConditions = boundaryConditions::traits<boundaryConditions::caseName()>::type;
+    using BoundaryConditions = boundaryConditions::Case;
     using VelocitySet = D3Q19<Thermal>;
     using Collision = secondOrder;
 }
