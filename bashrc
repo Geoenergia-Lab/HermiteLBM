@@ -8,6 +8,22 @@
 # --------------------------------------------------------------------------- #
 
 # --------------------------------------------------------------------------- #
+#  USER-DEFINED ENVIRONMENT VARIABLES                                         #
+# --------------------------------------------------------------------------- #
+
+printHeader
+
+# CUDA version (major and minor)
+export HERMITELBM_CUDA_VERSION_MAJOR="13"
+export HERMITELBM_CUDA_VERSION_MINOR="0"
+
+# Architecture detection mode: "Automatic" or "Manual"
+export HERMITELBM_ARCHITECTURE_DETECTION="Automatic"
+
+# Manual architecture version (used only if HERMITELBM_ARCHITECTURE_DETECTION="Manual")
+export HERMITELBM_ARCHITECTURE_VERSION="89"
+
+# --------------------------------------------------------------------------- #
 #  Utility Functions                                                          #
 # --------------------------------------------------------------------------- #
 
@@ -83,24 +99,10 @@ profileRoofline()
 }
 
 # --------------------------------------------------------------------------- #
-#  USER-DEFINED ENVIRONMENT VARIABLES                                         #
+#  AUTOMATIC SETUP - DO NOT MODIFY BELOW UNLESS YOU KNOW WHAT YOU ARE DOING   #
 # --------------------------------------------------------------------------- #
 
 printHeader
-
-# CUDA version (major and minor)
-export HERMITELBM_CUDA_VERSION_MAJOR="13"
-export HERMITELBM_CUDA_VERSION_MINOR="0"
-
-# Architecture detection mode: "Automatic" or "Manual"
-export HERMITELBM_ARCHITECTURE_DETECTION="Automatic"
-
-# Manual architecture version (used only if HERMITELBM_ARCHITECTURE_DETECTION="Manual")
-export HERMITELBM_ARCHITECTURE_VERSION="89"
-
-# --------------------------------------------------------------------------- #
-#  AUTOMATIC SETUP - DO NOT MODIFY BELOW UNLESS YOU KNOW WHAT YOU ARE DOING   #
-# --------------------------------------------------------------------------- #
 
 # Project root directory (where this bashrc file lives)
 export HERMITELBM_PROJECT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
