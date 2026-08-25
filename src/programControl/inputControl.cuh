@@ -148,7 +148,7 @@ namespace LBM
             if (argc < 0)
             {
                 throw std::runtime_error("Bad value of argc: cannot be negative");
-                return std::numeric_limits<device::label_t>::max();
+                // return std::numeric_limits<device::label_t>::max();
             }
             else
             {

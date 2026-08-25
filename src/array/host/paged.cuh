@@ -216,9 +216,9 @@ namespace LBM
             {
                 const boundaryFields<VelocitySet, true> bField(fieldName);
 
-                const host::label_t nxGPUs = mesh.nDevices<axis::X>();
-                const host::label_t nyGPUs = mesh.nDevices<axis::Y>();
-                const host::label_t nzGPUs = mesh.nDevices<axis::Z>();
+                // const host::label_t nxGPUs = mesh.nDevices<axis::X>();
+                // const host::label_t nyGPUs = mesh.nDevices<axis::Y>();
+                // const host::label_t nzGPUs = mesh.nDevices<axis::Z>();
                 const host::label_t nPointsPerDevice = mesh.sizePerDevice();
 
                 std::vector<T> field(mesh.size(), 0);

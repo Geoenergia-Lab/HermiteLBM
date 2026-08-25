@@ -548,21 +548,24 @@ namespace LBM
         __host__ [[nodiscard]] const words_t split(const std::string_view &s) noexcept
         {
             words_t result;
-            const char *left = s.begin();
-            for (const char *it = left; it != s.end(); ++it)
+            size_t start = 0;
+
+            for (size_t i = 0; i < s.size(); ++i)
             {
-                if (*it == delim)
+                if (s[i] == delim)
                 {
-                    result.emplace_back(&*left, it - left);
-                    left = it + 1;
+                    result.emplace_back(s.substr(start, i - start));
+                    start = i + 1;
                 }
             }
-            if (left != s.end())
+
+            // Add the last token if any characters remain after the last delimiter
+            if (start < s.size())
             {
-                result.emplace_back(&*left, s.end() - left);
+                result.emplace_back(s.substr(start));
             }
 
-            // Remove whitespace from the returned vector
+            // Remove whitespace-only tokens if requested
             if constexpr (removeWhitespace)
             {
                 result.erase(std::remove(result.begin(), result.end(), " "), result.end());

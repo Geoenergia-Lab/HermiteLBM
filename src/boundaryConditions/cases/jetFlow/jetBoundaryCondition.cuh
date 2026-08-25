@@ -120,8 +120,8 @@ case normalVector::BACK():
         const scalar_t myz_I = VelocitySet::template calculate_moment<axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
 
         const scalar_t rho = rho0();
-        const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
-        const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+        // const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+        // const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
 
         moments[m_i<0>()] = rho; // rho
         // moments[m_i<1>()] = is_jet * device::U_Back[0];                             // ux
