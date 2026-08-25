@@ -57,11 +57,11 @@ namespace LBM
         class Tecplot : public writer
         {
         public:
-            static constexpr const fileSystem::format format = fileSystem::ASCII;
-            static constexpr const fileSystem::fields::contained fields = fileSystem::fields::Yes;
-            static constexpr const fileSystem::points::contained points = fileSystem::points::Yes;
-            static constexpr const fileSystem::elements::contained elements = fileSystem::elements::Yes;
-            static constexpr const fileSystem::offsets::contained offsets = fileSystem::offsets::Yes;
+            static constexpr const fileSystem::format file_format = fileSystem::ASCII;
+            static constexpr const fileSystem::fields::contained has_fields = fileSystem::fields::Yes;
+            static constexpr const fileSystem::points::contained has_points = fileSystem::points::Yes;
+            static constexpr const fileSystem::elements::contained has_elements = fileSystem::elements::Yes;
+            static constexpr const fileSystem::offsets::contained has_offsets = fileSystem::offsets::Yes;
             static constexpr const char *fileExtension = ".dat";
             static constexpr const char *name = "Tecplot";
 
@@ -93,15 +93,15 @@ namespace LBM
 
                 // Write Tecplot header
                 outFile << "VARIABLES = \"X\" \"Y\" \"Z\" ";
-                for (const name_t &name : varNames)
+                for (const name_t &varName : varNames)
                 {
-                    outFile << "\"" << name << "\" ";
+                    outFile << "\"" << varName << "\" ";
                 }
-                outFile << "\n";
+                outFile << std::endl;
 
                 // UNSTRUCTURED GRID FORMAT
                 const host::label_t numElements = (mesh.dimension<axis::X>() - 1) * (mesh.dimension<axis::Y>() - 1) * (mesh.dimension<axis::Z>() - 1);
-                outFile << "ZONE T=\"Hexahedral Zone\", NODES=" << numNodes << ", ELEMENTS=" << numElements << ", DATAPACKING=BLOCK, ZONETYPE=FEBRICK\n";
+                outFile << "ZONE T=\"Hexahedral Zone\", NODES=" << numNodes << ", ELEMENTS=" << numElements << ", DATAPACKING=BLOCK, ZONETYPE=FEBRICK" << std::endl;
 
                 const std::vector<scalar_t> coords = meshCoordinates<scalar_t>(mesh);
 
@@ -109,19 +109,19 @@ namespace LBM
                 // Write X
                 for (host::label_t n = 0; n < numNodes; ++n)
                 {
-                    outFile << coords[3 * n + 0] << "\n";
+                    outFile << coords[3 * n + 0] << std::endl;
                 }
 
                 // Write Y
                 for (host::label_t n = 0; n < numNodes; ++n)
                 {
-                    outFile << coords[3 * n + 1] << "\n";
+                    outFile << coords[3 * n + 1] << std::endl;
                 }
 
                 // Write Z
                 for (host::label_t n = 0; n < numNodes; ++n)
                 {
-                    outFile << coords[3 * n + 2] << "\n";
+                    outFile << coords[3 * n + 2] << std::endl;
                 }
 
                 // Write solution variables (each as a separate block)
@@ -129,7 +129,7 @@ namespace LBM
                 {
                     for (const scalar_t &value : varData)
                     {
-                        outFile << value << "\n";
+                        outFile << value << std::endl;
                     }
                 }
 

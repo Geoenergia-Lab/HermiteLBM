@@ -113,7 +113,8 @@ namespace LBM
         {
             // Handle sign and absolute value conversion
             const bool isNegative = (totalSeconds < 0);
-            const unsigned long long abs_seconds = isNegative ? -static_cast<unsigned long long>(totalSeconds) : static_cast<unsigned long long>(totalSeconds);
+            // const unsigned long long abs_seconds = isNegative ? -static_cast<unsigned long long>(totalSeconds) : static_cast<unsigned long long>(totalSeconds);
+            const unsigned long long abs_seconds = isNegative ? 0ULL - static_cast<unsigned long long>(totalSeconds) : static_cast<unsigned long long>(totalSeconds);
 
             // Calculate time components
             const unsigned long long hours = abs_seconds / 3600;

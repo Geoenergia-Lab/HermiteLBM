@@ -470,7 +470,7 @@ namespace LBM
             /**
              * @brief The underlying data
              **/
-            T ptrRestrict data_[N];
+            T data_[N];
 
             /**
              * @brief Compile-time check that accesses are valid
