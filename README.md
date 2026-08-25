@@ -2,13 +2,13 @@
 
 # HermiteLBM
 
-`HermiteLBM` is a high-performance computing project that implements the moment representation of the Lattice Boltzmann Method (LBM) on NVIDIA GPUs using CUDA. The code supports both single‑GPU and multi‑GPU execution (via domain decomposition and peer‑to‑peer memory transfers). This project is under active development and is primarily targeted at Linux‑based systems.
+`HermiteLBM` is a high-performance computing project that implements the moment representation of the Lattice Boltzmann Method (LBM) on NVIDIA GPUs using CUDA. The code supports both single‑GPU and multi‑GPU execution (via domain decomposition and peer‑to‑peer memory transfers). This project is under active development and supports both Linux‑based and Windows systems.
 
 ## 🚀 Features
 
 * **Lattice Boltzmann Method:** Implements the moment‑based LBM for fluid dynamics simulations.
 * **D3Q19 and D3Q27 Velocity Sets:** Both **D3Q19** and **D3Q27** lattices are fully supported for three‑dimensional simulations.
-* **Multi‑GPU Support:** Scales across multiple GPUs using domain decomposition. The communication between GPUs is currently synchronous and not overlapped with computation.
+* **Multi‑GPU Support:** Scales across multiple GPUs using domain decomposition. The inter-GPU communication is fully overlapped.
 * **Example Cases:** Two validation cases are provided:
   * **Lid‑Driven Cavity:** Standard benchmark for 3D flows.
   * **Jet Flow:** A submerged jet configuration demonstrating shear‑layer dynamics.
@@ -31,7 +31,7 @@ MLUPS stands for Million Lattice Updates Per Second. There is still room for imp
 
 ### Prerequisites
 
-* A C++ compiler (e.g., GCC)
+* A C++ compiler with **C++20** support (e.g., GCC or MSVC)
 * NVIDIA CUDA Toolkit
 
 ### Installation
@@ -41,14 +41,21 @@ MLUPS stands for Million Lattice Updates Per Second. There is still room for imp
     ```bash
     git clone [https://github.com/Geoenergia-Lab/HermiteLBM.git](https://github.com/Geoenergia-Lab/HermiteLBM.git)
     ```
-2.  Navigate to the project directory and load the bashrc file:
-   
-    ```bash
-    cd HermiteLBM
-    source bashrc
-    ```
     
-3.  Compile the project:
+2.  Navigate to the project directory and load the environment variables:
+   
+    * **On Linux:**
+      ```bash
+      cd HermiteLBM
+      source bashrc
+      ```
+    * **On Windows:** *(Note: It is highly recommended to use the Developer Command Prompt for Windows)*
+      ```cmd
+      cd HermiteLBM
+      bashrc
+      ```
+    
+3.  Compile the project (the command is the same for both operating systems):
     ```bash
     make install
     ```
