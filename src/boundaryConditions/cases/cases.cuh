@@ -50,7 +50,6 @@ SourceFiles
 #ifndef __MBLBM_CASES_CUH
 #define __MBLBM_CASES_CUH
 
-// #include "invalidBoundaryCondition.cuh"
 #include "jetFlow/jetFlow.cuh"
 #include "lidDrivenCavity/lidDrivenCavity.cuh"
 #include "benchmark/benchmark.cuh"
