@@ -109,6 +109,35 @@ namespace LBM
         return false;
 #endif
     }
+
+    /**
+     * @brief Supported operating systems (Linux, Windows)
+     **/
+    typedef enum OSEnum : int64_t
+    {
+        UNDEFINED = -1,
+        LINUX = 0,
+        WINDOWS = 1,
+    } OSType;
+
+    /**
+     * @brief Get the name of the operating system
+     **/
+    __host__ [[nodiscard]] inline consteval OSEnum OSName() noexcept
+    {
+#if defined(_WIN32) && !defined(__linux__)
+        return WINDOWS;
+#elif defined(__linux__) && !defined(_WIN32)
+        return LINUX;
+#else
+        return UNDEFINED;
+#endif
+    }
+
+    /**
+     * @brief Assert that the operating system is valid
+     **/
+    static_assert(!(OSName() == UNDEFINED));
 }
 
 #endif
