@@ -127,25 +127,25 @@ struct kernel
     /**
      * @brief Returns a function pointer to the instantaneous kernel
      **/
-    __host__ [[nodiscard]] static inline constexpr auto instantaneous() noexcept { return instantaneousKernel; }
+    __host__ [[nodiscard]] static inline consteval auto instantaneous() noexcept { return instantaneousKernel; }
 
     /**
      * @brief Returns a function pointer to the time average kernel
      **/
-    __host__ [[nodiscard]] static inline constexpr auto mean() noexcept { return meanKernel; }
+    __host__ [[nodiscard]] static inline consteval auto mean() noexcept { return meanKernel; }
 
     /**
      * @brief Returns a function pointer to the instantaneous and time average kernel
      **/
-    __host__ [[nodiscard]] static inline constexpr auto instantaneousAndMean() noexcept { return instantaneousAndMeanKernel; }
+    __host__ [[nodiscard]] static inline consteval auto instantaneousAndMean() noexcept { return instantaneousAndMeanKernel; }
 
     /**
      * @brief Returns a function pointer to the prime kernel
      **/
-    __host__ [[nodiscard]] static inline constexpr auto prime() noexcept { return primeKernel; }
+    __host__ [[nodiscard]] static inline consteval auto prime() noexcept { return primeKernel; }
 
     /**
      * @brief Returns a function pointer to the prime squared time average kernel
      **/
-    __host__ [[nodiscard]] static inline constexpr auto primeSqMean() noexcept { return primeSqMeanKernel; }
+    __host__ [[nodiscard]] static inline consteval auto primeSqMean() noexcept { return primeSqMeanKernel; }
 };

@@ -60,25 +60,19 @@ int main(const int argc, const char *const argv[])
     {
         const deviceIndex_t deviceCount = countDevices<false>();
 
-        std::cout << "(";
-        if (deviceCount > 1)
+        if (!input.isArgPresent("-quiet"))
         {
-            for (deviceIndex_t index = 0; index < deviceCount - 1; index++)
-            {
-                std::cout << index << " ";
-            }
-            std::cout << deviceCount - 1;
+            programControl::printHeader();
+            std::cout << std::endl;
         }
-        else
-        {
-            std::cout << 0;
-        }
-        std::cout << ")" << std::endl;
+
+        fileIO::print(0, deviceCount - 1, "devList");
 
         return 0;
     }
 
     const name_t HERMITELBM_ARCHITECTURE_DETECTION = getEnvironmentVariable("HERMITELBM_ARCHITECTURE_DETECTION", "Automatic");
+    const name_t HERMITELBM_NUM_DEVICES = getEnvironmentVariable("HERMITELBM_NUM_DEVICES", "0");
     const name_t HERMITELBM_ARCHITECTURE_VERSION = getEnvironmentVariable("HERMITELBM_ARCHITECTURE_VERSION");
     const name_t HERMITELBM_BUILD_DIR = getEnvironmentVariable("HERMITELBM_BUILD_DIR");
     const name_t HERMITELBM_BIN_DIR = getEnvironmentVariable("HERMITELBM_BIN_DIR");
@@ -109,6 +103,8 @@ int main(const int argc, const char *const argv[])
     outputFile << comment_string() << " Executed on: " << std::put_time(std::localtime(&time_now), "%Y-%m-%d %H:%M:%S") << std::endl;
     outputFile << std::endl;
 
+    const deviceIndex_t deviceCount = (HERMITELBM_ARCHITECTURE_DETECTION == "Manual" ? std::atoi(HERMITELBM_NUM_DEVICES.c_str()) : countDevices<false>());
+
     if (HERMITELBM_ARCHITECTURE_DETECTION == "Manual")
     {
         const name_t all_arch_flags = "-gencode arch=compute_" + HERMITELBM_ARCHITECTURE_VERSION + ",code=sm_" + HERMITELBM_ARCHITECTURE_VERSION;
@@ -118,8 +114,6 @@ int main(const int argc, const char *const argv[])
     }
     else
     {
-        const deviceIndex_t deviceCount = countDevices<false>();
-
         name_t all_arch_flags = "";
 
         for (deviceIndex_t i = 0; i < deviceCount; ++i)
@@ -169,6 +163,8 @@ int main(const int argc, const char *const argv[])
 
         write_hardware_info_line(outputFile, "NVCXX_ALL_ARCHFLAGS=" + all_arch_flags);
     }
+
+    write_hardware_info_line(outputFile, "HAS_MULTI_GPU=-DHAS_MULTI_GPU=" + std::string(deviceCount > 1 ? "true" : "false"));
 
     outputFile.close();
 

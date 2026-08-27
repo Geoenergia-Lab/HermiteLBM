@@ -60,6 +60,81 @@ namespace LBM
     namespace fileIO
     {
         /**
+         * @brief Print a range of values from v1 to v2 with a name to a particular ostream
+         * @tparam T The type of variable to print
+         * @param[in] v1 The initial value
+         * @param[in] v2 The final value
+         * @param[in] name The name of the variable
+         * @param[in] os The ostream object to print to
+         **/
+        template <typename T>
+        __host__ void print(const T v1, const T v2, const std::string &name, std::ostream &os) noexcept
+        {
+            os << name << std::endl;
+            os << "{";
+
+            for (T v = v1; v < v2; v++)
+            {
+                os << v << ", ";
+            }
+            os << v2;
+            os << "};" << std::endl;
+        }
+
+        /**
+         * @overload Print to std::cout
+         **/
+        template <typename T>
+        __host__ void print(const T v1, const T v2, const std::string &name) noexcept
+        {
+            print(v1, v2, name, std::cout);
+        }
+
+        /**
+         * @brief Print a vector of values with a name to a particular ostream
+         * @tparam T The type of variable to print
+         * @param[in] vec The values to print
+         * @param[in] name The name of the variable
+         * @param[in] os The ostream object to print to
+         **/
+        template <const bool Indent, typename T>
+        __host__ void print(const std::vector<T> &vec, const name_t &name, std::ostream &os)
+        {
+            if (vec.size() > 0)
+            {
+                if constexpr (Indent)
+                {
+                    os << "    ";
+                }
+                os << name << ": {";
+
+                if (vec.size() == 1)
+                {
+                    os << vec[0];
+                }
+                else
+                {
+                    for (host::label_t i = 0; i < vec.size() - 1; i++)
+                    {
+                        os << vec[i] << ", ";
+                    }
+                    os << vec[vec.size() - 1];
+                }
+
+                os << "};" << std::endl;
+            }
+        }
+
+        /**
+         * @overload Print to std::cout
+         **/
+        template <const bool Indent, typename T>
+        __host__ void print(const std::vector<T> &vec, const name_t &name)
+        {
+            print<Indent>(vec, name, std::cout);
+        }
+
+        /**
          * @brief Safely converts an integer of type T to a std::streamsize
          * @param[in] size The size to convert
          **/
