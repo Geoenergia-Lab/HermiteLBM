@@ -121,25 +121,38 @@ int main(const int argc, const char *const argv[])
         }
 
         // Main kernel launches
-        std::thread boundaryThread(
-            std::addressof(kernel::launchBoundary),
-            std::cref(mesh),
-            std::cref(programCtrl),
-            std::cref(devPtrs),
-            std::cref(haloPtrs),
-            std::cref(devComm),
-            timeStep);
-        std::thread internalThread(
-            std::addressof(kernel::launchInternal),
-            std::cref(mesh),
-            std::cref(programCtrl),
-            std::cref(devPtrs),
-            std::cref(haloPtrs),
-            timeStep);
+        if constexpr (system::hasMultiGPU())
+        {
+            std::thread boundaryThread(
+                std::addressof(kernel::launchBoundary),
+                std::cref(mesh),
+                std::cref(programCtrl),
+                std::cref(devPtrs),
+                std::cref(haloPtrs),
+                std::cref(devComm),
+                timeStep);
+            std::thread internalThread(
+                std::addressof(kernel::launchInternal),
+                std::cref(mesh),
+                std::cref(programCtrl),
+                std::cref(devPtrs),
+                std::cref(haloPtrs),
+                timeStep);
 
-        // Synchronize computation and communication
-        boundaryThread.join();
-        internalThread.join();
+            // Synchronize computation and communication
+            boundaryThread.join();
+            internalThread.join();
+        }
+        else
+        {
+            kernel::launch<kernel::momentBasedLBM, VelocitySet::smem_alloc_size()>(
+                mesh,
+                programCtrl.streams()[GPU::internalStreamID(0)],
+                devPtrs[0],
+                haloPtrs.readBuffer(0, timeStep),
+                haloPtrs.writeBuffer(0, timeStep),
+                static_cast<device::label_t>(0));
+        }
 
         // Evaluate the run-time function objects
         if constexpr (boundaryConditions::save())

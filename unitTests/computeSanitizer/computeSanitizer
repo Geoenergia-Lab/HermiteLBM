@@ -35,21 +35,24 @@ if notFound compute-sanitizer; then
 fi
 
 # Run computeVersion and capture its output
-DEVICES_OUTPUT=$(computeVersion -countDevices)
+DEVICES_OUTPUT=$(computeVersion -countDevices -quiet)
 
-# Remove parentheses and convert to array
-if [ "$DEVICES_OUTPUT" = "()" ]; then
+# Extract the content between { and }; from the line that starts with '{'
+DEVICES_LINE=$(printf '%s\n' "$DEVICES_OUTPUT" | sed -n 's/^{\(.*\)};$/\1/p')
+
+# If the line is empty (i.e. "{};") there are no devices
+if [ -z "$DEVICES_LINE" ]; then
     GPUS=()
     printf "No GPUs detected by computeVersion. Test execution aborted.\n" >&2
     # Clean up all variables at the end
-    unset DEVICES_OUTPUT CLEAN_DEVICES GPUS COMMON_FLAGS TOOLS TIMESTAMP LOG_DIR
+    unset DEVICES_OUTPUT DEVICES_LINE GPUS COMMON_FLAGS TOOLS TIMESTAMP LOG_DIR
     unset RESULTS FAILED_TESTS SKIPPED_TESTS GPU TOOL TEST_NAME LOG_FILE EXIT_CODE
     unset TOTAL_TESTS FAILED_COUNT SKIPPED_COUNT PASSED_COUNT EXIT_STATUS
     unset EXEC EXECS
     return 1 2>/dev/null || exit 1
 else
-    # Remove parentheses and convert to array
-    CLEAN_DEVICES="${DEVICES_OUTPUT//[()]/}"
+    # Replace commas with spaces and read into the array
+    CLEAN_DEVICES="${DEVICES_LINE//,/ }"
     GPUS=($CLEAN_DEVICES)
 fi
 
