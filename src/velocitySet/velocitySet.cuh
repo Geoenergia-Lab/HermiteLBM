@@ -112,7 +112,16 @@ namespace LBM
 
             return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
             {
-                return (process_momentum_element<C[Is], indices[Is]>(pop[indices[Is]], std::forward<Args>(args)...) + ...);
+                if constexpr (sizeof...(Args) == 0)
+                {
+                    // No boundary normal → use the first overload
+                    return (process_momentum_element<C[Is]>(pop[indices[Is]]) + ...);
+                }
+                else
+                {
+                    // Boundary normal present → use the second overload
+                    return (process_momentum_element<C[Is], indices[Is]>(pop[indices[Is]], std::forward<Args>(args)...) + ...);
+                }
             }(std::make_index_sequence<N>{});
         }
 

@@ -104,7 +104,7 @@ int main(const int argc, const char *const argv[])
         }
 
         // Checkpoint
-        if constexpr (!(std::is_same_v<BoundaryConditions, benchmark>))
+        if constexpr (boundaryConditions::save())
         {
             if (programCtrl.save(timeStep))
             {
@@ -142,7 +142,7 @@ int main(const int argc, const char *const argv[])
         internalThread.join();
 
         // Evaluate the run-time function objects
-        if constexpr (!(std::is_same_v<BoundaryConditions, benchmark>))
+        if constexpr (boundaryConditions::save())
         {
             runTimeObjects.calculate();
             turbulenceStats.calculate();
