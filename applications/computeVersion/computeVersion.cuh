@@ -59,9 +59,9 @@ namespace LBM
 {
     __host__ inline consteval const char *hardware_info_file_extension() noexcept
     {
-#if defined(_WIN32) && !defined(UNIX)
+#if defined(_WIN32) && !defined(__linux__)
         return ".bat";
-#elif defined(UNIX) && !defined(_WIN32)
+#elif defined(__linux__) && !defined(_WIN32)
         return ".info";
 #else
         static_assert(false);
@@ -71,9 +71,9 @@ namespace LBM
 
     __host__ [[nodiscard]] inline consteval const char *comment_string() noexcept
     {
-#if defined(_WIN32) && !defined(UNIX)
+#if defined(_WIN32) && !defined(__linux__)
         return "::";
-#elif defined(UNIX) && !defined(_WIN32)
+#elif defined(__linux__) && !defined(_WIN32)
         return "#";
 #else
         static_assert(false);
@@ -81,11 +81,11 @@ namespace LBM
 #endif
     }
 
-    __host__ inline void write_hardware_info_line(std::ofstream &outputFile, const name_t &line) noexcept
+    __host__ void write_hardware_info_line(std::ofstream &outputFile, const name_t &line) noexcept
     {
-#if defined(_WIN32) && !defined(UNIX)
+#if defined(_WIN32) && !defined(__linux__)
         outputFile << "set \"" << line << "\"" << std::endl;
-#elif defined(UNIX) && !defined(_WIN32)
+#elif defined(__linux__) && !defined(_WIN32)
         outputFile << line << std::endl;
 #else
         static_assert(false);

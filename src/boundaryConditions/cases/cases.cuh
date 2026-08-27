@@ -64,7 +64,11 @@ namespace LBM
         using Case = lidDrivenCavity;
         // using Case = jetFlow;
         // using Case = benchmark;
-        // using Case = invalidBoundary;
+
+        /**
+         * @brief Switch determining whether or not the simulation should save to a file
+         **/
+        __device__ __host__ [[nodiscard]] static inline consteval bool save() noexcept { return true; }
 
         /**
          * @brief Assert that the boundary condition is valid
