@@ -59,12 +59,12 @@ namespace LBM
 {
     __host__ inline consteval const char *hardware_info_file_extension() noexcept
     {
-        if constexpr (OSName() == WINDOWS)
+        if constexpr (system::distro() == system::WINDOWS)
         {
             return ".bat";
         }
 
-        if constexpr (OSName() == LINUX)
+        if constexpr (system::distro() == system::LINUX)
         {
             return ".info";
         }
@@ -75,12 +75,12 @@ namespace LBM
 
     __host__ [[nodiscard]] inline consteval const char *comment_string() noexcept
     {
-        if constexpr (OSName() == WINDOWS)
+        if constexpr (system::distro() == system::WINDOWS)
         {
             return "::";
         }
 
-        if constexpr (OSName() == LINUX)
+        if constexpr (system::distro() == system::LINUX)
         {
             return "#";
         }
@@ -91,12 +91,12 @@ namespace LBM
 
     __host__ void write_hardware_info_line(std::ofstream &outputFile, const name_t &line) noexcept
     {
-        if constexpr (OSName() == WINDOWS)
+        if constexpr (system::distro() == system::WINDOWS)
         {
             outputFile << "set \"" << line << "\"" << std::endl;
         }
 
-        if constexpr (OSName() == LINUX)
+        if constexpr (system::distro() == system::LINUX)
         {
             outputFile << line << std::endl;
         }

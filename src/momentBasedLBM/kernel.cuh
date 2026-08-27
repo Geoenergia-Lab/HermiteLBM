@@ -92,6 +92,8 @@ namespace LBM
          * @param[in] readBuffer Collection of read-only pointers to the block halo faces used during streaming
          * @param[in] writeBuffer Collection of mutable pointers to the block halo faces used after streaming
          * @param[in] sharedBuffer Inline or externally stored shared memory buffer
+         * @param[in] Tx Three-dimensional thread coordinates
+         * @param[in] Bx Three-dimensional block coordinates
          **/
         template <class BoundaryConditions, class VelocitySet, class Collision, class BlockHalo, class SharedBuffer>
         __device__ inline void momentBasedLBM(
@@ -99,14 +101,9 @@ namespace LBM
             const device::ptrCollection<6, const scalar_t> &readBuffer,
             const device::ptrCollection<6, scalar_t> &writeBuffer,
             SharedBuffer &sharedBuffer,
-            const device::label_t bzOffset)
+            const thread::coordinate &Tx,
+            const block::coordinate &Bx) noexcept
         {
-            static_assert(std::is_same_v<BlockHalo, device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>>);
-
-            const thread::coordinate Tx;
-
-            const block::coordinate Bx(blockIdx.x, blockIdx.y, blockIdx.z + bzOffset);
-
             const device::pointCoordinate point(Tx, Bx);
 
             // Index into global arrays
@@ -194,6 +191,46 @@ namespace LBM
                 BlockHalo::save(pop, moments, writeBuffer, Tx, Bx, point);
             }
         }
+
+        /**
+         * @overload Wraps the implementation, calculating an offset block ID for multi-GPU compatibility
+         * @param[in] bzOffset Offset to the block ID in the Z axis
+         **/
+        template <class BoundaryConditions, class VelocitySet, class Collision, class BlockHalo, class SharedBuffer>
+        __device__ inline void momentBasedLBM(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> &devPtrs,
+            const device::ptrCollection<6, const scalar_t> &readBuffer,
+            const device::ptrCollection<6, scalar_t> &writeBuffer,
+            SharedBuffer &sharedBuffer,
+            const device::label_t bzOffset)
+        {
+            static_assert(std::is_same_v<BlockHalo, device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>>);
+
+            const thread::coordinate Tx;
+
+            const block::coordinate Bx(blockIdx.x, blockIdx.y, blockIdx.z + bzOffset);
+
+            momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, sharedBuffer, Tx, Bx);
+        }
+
+        /**
+         * @overload Wraps the implementation for a single GPU system
+         **/
+        template <class BoundaryConditions, class VelocitySet, class Collision, class BlockHalo, class SharedBuffer>
+        __device__ inline void momentBasedLBM(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> &devPtrs,
+            const device::ptrCollection<6, const scalar_t> &readBuffer,
+            const device::ptrCollection<6, scalar_t> &writeBuffer,
+            SharedBuffer &sharedBuffer)
+        {
+            static_assert(std::is_same_v<BlockHalo, device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>>);
+
+            const thread::coordinate Tx;
+
+            const block::coordinate Bx;
+
+            momentBasedLBM<BoundaryConditions, VelocitySet, Collision, BlockHalo>(devPtrs, readBuffer, writeBuffer, sharedBuffer, Tx, Bx);
+        }
     }
 
     namespace kernel
@@ -224,6 +261,16 @@ namespace LBM
             }
         }
 
+        /**
+         * @brief Launches the kernel on a given list of streams
+         * @param[in] mesh Lattice mesh object containing information about the grid and block dimensions
+         * @param[in] programCtrl Program control object containing information about the devices and streams
+         * @param[in] devPtrs Collection of pointers to device arrays on the GPU, used to pass the data to the kernel
+         * @param[in] haloPtrs Collection of pointers to the block halo faces used during streaming
+         * @param[in] timeStep Current time step of the simulation, used to determine which halo buffers to use for reading and writing
+         * @param[in] idxStreams The streams on which to launch the kernel
+         * @param[in] bzOffset Offsets to the block ID in the Z axis
+         **/
         template <const host::label_t N>
         __host__ void launchHelper(
             const host::latticeMesh &mesh,

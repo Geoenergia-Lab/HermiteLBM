@@ -88,39 +88,14 @@ namespace LBM
             // Get current working directory
             const std::filesystem::path launchDirectory = std::filesystem::current_path();
 
-            std::cout << "/*---------------------------------------------------------------------------*\\" << std::endl;
-            std::cout << "|                                                                             |" << std::endl;
-            std::cout << "| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |" << std::endl;
-            std::cout << "| Developed at UDESC - State University of Santa Catarina                     |" << std::endl;
-            std::cout << "| Website: https://www.udesc.br                                               |" << std::endl;
-            std::cout << "| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |" << std::endl;
-            std::cout << "|                                                                             |" << std::endl;
-            std::cout << "\\*---------------------------------------------------------------------------*/" << std::endl;
+            printHeader();
             std::cout << std::endl;
             std::cout << "programControl:" << std::endl;
             std::cout << "{" << std::endl;
             std::cout << "    programName: " << input_.commandLine()[0] << ";" << std::endl;
             std::cout << "    launchTime: " << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S") << ";" << std::endl;
             std::cout << "    launchDirectory: " << launchDirectory.string() << ";" << std::endl;
-            if (deviceList().size() > 0)
-            {
-                std::cout << "    deviceList: [";
-
-                if (deviceList().size() == 1)
-                {
-                    std::cout << deviceList()[0];
-                }
-                else
-                {
-                    for (host::label_t i = 0; i < deviceList().size() - 1; i++)
-                    {
-                        std::cout << deviceList()[i] << ", ";
-                    }
-                    std::cout << deviceList()[deviceList().size() - 1];
-                }
-
-                std::cout << "];" << std::endl;
-            }
+            fileIO::print<true>(deviceList(), "deviceList");
             std::cout << "    caseName: " << caseName_ << ";" << std::endl;
             std::cout << "    Re = " << Re_ << ";" << std::endl;
             std::cout << "    Ma = " << Ma_ << ";" << std::endl;
@@ -183,6 +158,21 @@ namespace LBM
          **/
         __host__ [[nodiscard]] programControl(const programControl &) = delete;
         __host__ [[nodiscard]] programControl &operator=(const programControl &) = delete;
+
+        /**
+         * @brief Print the file header
+         **/
+        __host__ static void printHeader() noexcept
+        {
+            std::cout << "/*---------------------------------------------------------------------------*\\" << std::endl;
+            std::cout << "|                                                                             |" << std::endl;
+            std::cout << "| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |" << std::endl;
+            std::cout << "| Developed at UDESC - State University of Santa Catarina                     |" << std::endl;
+            std::cout << "| Website: https://www.udesc.br                                               |" << std::endl;
+            std::cout << "| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |" << std::endl;
+            std::cout << "|                                                                             |" << std::endl;
+            std::cout << "\\*---------------------------------------------------------------------------*/" << std::endl;
+        }
 
         /**
          * @brief Returns the name of the case

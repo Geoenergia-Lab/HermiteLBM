@@ -109,7 +109,7 @@ namespace LBM
          * @param[in] os Output stream to write to
          **/
         template <const bool LineBreak = false>
-        void print(const name_t &name, std::ostream &os) const noexcept
+        __host__ void print(const name_t &name, std::ostream &os) const noexcept
         {
             os << name << std::endl;
             os << "{" << std::endl;
@@ -127,7 +127,7 @@ namespace LBM
          * @brief Print the structure to std::cout
          * @param[in] name Name to identify the structure in the output
          **/
-        void print(const name_t &name) const noexcept
+        __host__ void print(const name_t &name) const noexcept
         {
             print(name, std::cout);
         }

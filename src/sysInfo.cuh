@@ -37,80 +37,64 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A list of header files necessary for compilation
+    Compile-time information about the hardware and operating system
 
 Namespace
-    LBM
+    LBM, LBM::system
 
 SourceFiles
-    LBMIncludes.cuh
+    sysInfo.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_INCLUDES_CUH
-#define __MBLBM_INCLUDES_CUH
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-#include <algorithm>
-#include <array>
-#include <atomic>
-#include <bit>
-#include <cctype>
-#include <charconv>
-#include <chrono>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <filesystem>
-#include <fstream>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <limits>
-#include <locale>
-#include <memory>
-#include <nvrtc.h>
-// #include <mpi.h>
-#include <source_location>
-#include <sstream>
-#include <stdexcept>
-#include <stdint.h>
-#include <string>
-#include <string_view>
-#include <thread>
-#include <typeinfo>
-#include <type_traits>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#ifndef __MBLBM_SYSINFO_CUH
+#define __MBLBM_SYSINFO_CUH
 
 namespace LBM
 {
-    /**
-     * @brief Multi-GPU related static asserts
-     **/
-    __host__ [[nodiscard]] inline consteval bool MULTI_GPU_ASSERTION() { return true; }
-#define MULTI_GPU_MSG_NOTE(func, note) #func " not implemented for multi GPU yet: " note
-#define MULTI_GPU_MSG(func) #func " not implemented for multi GPU yet"
-
-    /**
-     * @brief Verbose logging
-     **/
-    __device__ __host__ [[nodiscard]] inline consteval bool verbose() noexcept
+    struct system
     {
-#ifdef VERBOSE
-        return true;
-#else
-        return false;
-#endif
-    }
-}
+        /**
+         * @brief Supported operating systems (Linux, Windows)
+         **/
+        typedef enum distroEnum : int64_t
+        {
+            UNDEFINED = -1,
+            LINUX = 0,
+            WINDOWS = 1,
+        } distroEnum;
 
-#include "sysInfo.cuh"
+        /**
+         * @brief Get the name of the operating system
+         **/
+        __host__ [[nodiscard]] static inline constexpr distroEnum distro() noexcept
+        {
+#if defined(_WIN32) && !defined(__linux__)
+            return WINDOWS;
+#elif defined(__linux__) && !defined(_WIN32)
+            return LINUX;
+#else
+            return UNDEFINED;
+#endif
+        }
+
+        /**
+         * @brief Check if the system has more than 1 GPU
+         **/
+        __host__ [[nodiscard]] static inline consteval bool hasMultiGPU() noexcept
+        {
+#ifdef HAS_MULTI_GPU
+            return HAS_MULTI_GPU;
+#else
+            return false;
+#endif
+        }
+    };
+
+    /**
+     * @brief Assert that the operating system is valid
+     **/
+    static_assert(!(system::distro() == system::UNDEFINED), "Operating system must be either LINUX or WINDOWS");
+}
 
 #endif
