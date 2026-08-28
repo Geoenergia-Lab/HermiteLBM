@@ -4,7 +4,6 @@
 :: --------------------------------------------------------------------------- ::
 
 set "NVCXX=nvcc"
-set "CXX=cl"
 
 :: Include hardware info if translated to a batch script
 if exist "%HERMITELBM_INCLUDE_DIR%\hardware.bat" (

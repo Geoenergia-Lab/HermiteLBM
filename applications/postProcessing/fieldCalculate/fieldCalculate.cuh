@@ -54,7 +54,6 @@ SourceFiles
 #include "../../../src/typedefs/typedefs.cuh"
 #include "../../../src/array/array.cuh"
 #include "../../../src/collision/collision.cuh"
-#include "../../../src/blockHalo/blockHalo.cuh"
 #include "../../../src/fileIO/fileIO.cuh"
 #include "../../../src/runTimeIO/runTimeIO.cuh"
 #include "../../../src/postProcess/postProcess.cuh"
