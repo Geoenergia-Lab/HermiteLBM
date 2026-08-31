@@ -140,21 +140,21 @@ namespace LBM
                 for (host::label_t i = 0; i < mesh.dimension<alpha>(); i++)
                 {
                     const host::pointLabel I = axis::to_3d<alpha>(beta, gamma, i);
-                    padded_line[gridPadding(SchemeOrder) + i] = static_cast<ReturnType>(f[global::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())]);
+                    padded_line[gridPadding(SchemeOrder) + i] = static_cast<ReturnType>(f[Cartesian::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())]);
                 }
 
                 // Set front ghost cells
                 for (host::label_t i = 0; i < gridPadding(SchemeOrder); i++)
                 {
                     const host::pointLabel I = axis::to_3d<alpha>(beta, gamma, gridPadding(SchemeOrder) - i);
-                    padded_line[i] = -static_cast<ReturnType>(f[global::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())]);
+                    padded_line[i] = -static_cast<ReturnType>(f[Cartesian::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())]);
                 }
 
                 // Set back ghost cells
                 for (host::label_t i = 0; i < gridPadding(SchemeOrder); i++)
                 {
                     const host::pointLabel I = axis::to_3d<alpha>(beta, gamma, mesh.dimension<alpha>() - static_cast<host::label_t>(2) - i);
-                    padded_line[gridPadding(SchemeOrder) + mesh.dimension<alpha>() + i] = -static_cast<ReturnType>(f[global::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())]);
+                    padded_line[gridPadding(SchemeOrder) + mesh.dimension<alpha>() + i] = -static_cast<ReturnType>(f[Cartesian::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())]);
                 }
             }
 
@@ -188,7 +188,7 @@ namespace LBM
 
                             const host::pointLabel I = axis::to_3d<alpha>(beta, gamma, i);
 
-                            result[global::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())] = finite_difference<SchemeOrder, ReturnType>(padded_line, center);
+                            result[Cartesian::idx(I, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>())] = finite_difference<SchemeOrder, ReturnType>(padded_line, center);
                         }
                     }
                 }

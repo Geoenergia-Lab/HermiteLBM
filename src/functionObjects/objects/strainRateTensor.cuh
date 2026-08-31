@@ -94,9 +94,8 @@ namespace LBM
              * @param[in] idx Spatial index
              * @return The calculated strain rate tensor
              **/
-            template <typename T>
             __device__ [[nodiscard]] static inline constexpr const symmetricTensor calculate(
-                const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), T> &devPtrs,
+                const device::ptrColl_t &devPtrs,
                 const device::label_t idx) noexcept
             {
                 const vector U = read_from_moments<axis::index<axis::X>(), axis::index<axis::Y>(), axis::index<axis::Z>()>(devPtrs, idx);
@@ -156,20 +155,15 @@ namespace LBM
             using BaseType::calculate_;
             using BaseType::componentNames_;
             using BaseType::componentNamesMean_;
-            using BaseType::hostWriteBuffer_;
             using BaseType::mesh_;
             using BaseType::name_;
             using BaseType::nameMean_;
             using BaseType::namePrime_;
             using BaseType::namePrimeSqMean_;
-            using BaseType::Pi_;
             using BaseType::programCtrl_;
-            using BaseType::rho_;
-            using BaseType::U_;
 
             /**
              * @brief Constructs a strain rate tensor object
-             * @param[in] hostWriteBuffer Reference to the host-side write buffer
              * @param[in] mesh The lattice mesh
              * @param[in] rho Device scalar field containing the density values on the GPU
              * @param[in] U Device vector field containing the velocity values on the GPU
@@ -177,13 +171,10 @@ namespace LBM
              * @param[in] programCtrl The program control object
              **/
             __host__ [[nodiscard]] strainRateTensor(
-                host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer,
                 const host::latticeMesh &mesh,
-                const device::scalarField<VelocitySet, time::instantaneous> &rho,
-                const device::vectorField<VelocitySet, time::instantaneous> &U,
-                const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
+                const kernel::ptrCollection &devPtrs,
                 const programControl &programCtrl) noexcept
-                : BaseType(ObjectType::name, hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
+                : BaseType(ObjectType::name, mesh, devPtrs, programCtrl),
                   S_(name_, mesh_, zeros<scalar_t, 6>(), programCtrl, calculate_),
                   SMean_(nameMean_, mesh_, zeros<scalar_t, 6>(), programCtrl, (BaseType::doMean() || BaseType::doPrime() || BaseType::doPrimeSqMean())),
                   SPrime_(namePrime_, mesh_, zeros<scalar_t, 6>(), programCtrl, BaseType::doPrime()),
@@ -242,33 +233,33 @@ namespace LBM
             /**
              * @brief Save the instantaneous strain rate tensor to a file
              **/
-            __host__ void saveInstantaneous(const host::label_t timeStep) noexcept
+            __host__ void saveInstantaneous(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
-                S_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
+                S_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
 
             /**
              * @brief Save the time-averaged strain rate tensor to a file
              **/
-            __host__ void saveMean(const host::label_t timeStep) noexcept
+            __host__ void saveMean(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
-                SMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
+                SMean_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
 
             /**
              * @brief Save the time-averaged strain rate tensor to a file
              **/
-            __host__ void savePrime(const host::label_t timeStep) noexcept
+            __host__ void savePrime(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
-                SPrime_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
+                SPrime_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
 
             /**
              * @brief Save the time average of the square of the perturbation of the strain rate tensor to a file
              **/
-            __host__ void savePrimeSqMean(const host::label_t timeStep) noexcept
+            __host__ void savePrimeSqMean(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
-                SPrimeSqMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
+                SPrimeSqMean_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
 
             /**

@@ -37,30 +37,28 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Aliases and kernel definitions for the thermal D3Q27 moment representation
-    lattice Boltzmann model
+    Includes necessary for all LBM solvers
 
 Namespace
     LBM
 
 SourceFiles
-    momentBasedD3Q27.cuh
+    solverIncludes.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_MOMENTBASEDD3Q27_CUH
-#define __MBLBM_MOMENTBASEDD3Q27_CUH
+#ifndef __MBLBM_SOLVERINCLUDES_CUH
+#define __MBLBM_SOLVERINCLUDES_CUH
 
-#include "../solverIncludes.cuh"
-
-namespace LBM
-{
-    using BoundaryConditions = boundaryConditions::Case;
-    using VelocitySet = D3Q27<Thermal>;
-    using Collision = secondOrder;
-}
-
-#include "../../../src/runTimeIO/runTimeIO.cuh"
-#include "../../../src/momentBasedLBM/kernel.cuh"
+#include "../../../src/LBMIncludes.cuh"
+#include "../../../src/typedefs/typedefs.cuh"
+#include "../../../src/streaming/streaming.cuh"
+#include "../../../src/collision/collision.cuh"
+#include "../../../src/blockHalo/blockHalo.cuh"
+#include "../../../src/fileIO/fileIO.cuh"
+#include "../../../src/functionObjects/objectRegistry.cuh"
+#include "../../../src/array/array.cuh"
+#include "../../../src/boundaryConditions/boundaryConditions.cuh"
+#include "../../../src/postProcess/postProcess.cuh"
 
 #endif

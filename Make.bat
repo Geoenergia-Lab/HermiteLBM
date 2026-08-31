@@ -31,7 +31,7 @@ if "%HERMITELBM_CUDA_DIR%"=="" (
 )
 
 :: 2. Define Subdirectories (using spaces to separate them)
-set "TOOL_SUBDIRS=applications\computeVersion applications\postProcessing\fieldConvert applications\postProcessing\fieldCalculate"
+set "TOOL_SUBDIRS=applications\systemInfo applications\postProcessing\fieldConvert applications\postProcessing\fieldCalculate"
 set "GPU_SUBDIRS=applications\solvers\momentBasedD3Q19 applications\solvers\momentBasedD3Q27 applications\solvers\isothermalD3Q19 applications\solvers\isothermalD3Q27"
 
 :: 3. Target Routing
@@ -59,13 +59,13 @@ exit /b 0
 
 :hardware_info
 call :directories
-echo Make: Entering directory 'applications\computeVersion'
-pushd "applications\computeVersion"
+echo Make: Entering directory 'applications\systemInfo'
+pushd "applications\systemInfo"
 call make.bat install
-echo Make: Leaving directory 'applications\computeVersion'
+echo Make: Leaving directory 'applications\systemInfo'
 popd
-:: Run computeVersion.exe to generate hardware.info
-computeVersion
+:: Run systemInfo.exe to generate hardware.info
+systemInfo
 exit /b %errorlevel%
 
 :all

@@ -9,8 +9,8 @@
 
 include $(HERMITELBM_PROJECT_DIR)/common.mk
 
-EXECUTABLE = computeVersion
-SOURCE = computeVersion.cu
+EXECUTABLE = systemInfo
+SOURCE = systemInfo.cu
 
 include $(HERMITELBM_PROJECT_DIR)/applications/common.mk
 

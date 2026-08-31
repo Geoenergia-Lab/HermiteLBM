@@ -56,7 +56,7 @@ SourceFiles
 #include "../programControl/programControl.cuh"
 
 #include "hostLatticeMesh.cuh"
-#include "deviceLatticeMesh.cuh"
+// #include "deviceLatticeMesh.cuh"
 
 namespace LBM
 {

@@ -37,18 +37,18 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Function definitions and includes specific to the computeVersion executable
+    Function definitions and includes specific to the systemInfo executable
 
 Namespace
     LBM
 
 SourceFiles
-    computeVersion.cu
+    systemInfo.cu
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_COMPUTEVERSION_CUH
-#define __MBLBM_COMPUTEVERSION_CUH
+#ifndef __MBLBM_SYSTEMINFO_CUH
+#define __MBLBM_SYSTEMINFO_CUH
 
 #include "../../src/LBMIncludes.cuh"
 #include "../../src/typedefs/typedefs.cuh"
@@ -109,45 +109,18 @@ namespace LBM
      * @tparam throws If true, the function may throw. If not, the function returns 0 on error.
      * @throws std::runtime_error If CUDA device query fails or returns an invalid count.
      **/
-    template <const bool throws>
     __host__ [[nodiscard]] deviceIndex_t countDevices()
     {
         deviceIndex_t deviceCount = 0;
 
         if (cudaGetDeviceCount(&deviceCount) != cudaSuccess)
         {
-            if constexpr (throws)
-            {
-                throw std::runtime_error("Error querying CUDA devices. Is the driver installed correctly?");
-            }
-            else
-            {
-                return 0;
-            }
+            return 0;
         }
 
-        if (deviceCount < 0)
+        if (deviceCount <= 0)
         {
-            if constexpr (throws)
-            {
-                throw std::runtime_error("Error querying CUDA devices. Device count is negative.");
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        if (deviceCount == 0)
-        {
-            if constexpr (throws)
-            {
-                throw std::runtime_error("No CUDA devices found on the system.");
-            }
-            else
-            {
-                return 0;
-            }
+            return 0;
         }
 
         return deviceCount;

@@ -53,9 +53,19 @@ SourceFiles
 
 #include "LBMIncludes.cuh"
 #include "typedefs/typedefs.cuh"
+#include "sysInfo.cuh"
 
 namespace LBM
 {
+    namespace global
+    {
+        template <typename T, const T b_nx, const T b_ny, const T b_nz>
+        __device__ __host__ [[nodiscard]] inline constexpr T idx(const T tx, const T ty, const T tz, const T bx, const T by, const T bz, const T nxBlocks, const T nyBlocks) noexcept
+        {
+            return (tx + b_nx * (ty + b_ny * (tz + b_nz * (bx + nxBlocks * (by + nyBlocks * bz)))));
+        }
+    }
+
     /**
      * @brief Compile-time recursive loop unroller
      * @tparam Start Starting index (inclusive)
@@ -207,7 +217,7 @@ namespace LBM
         {
             int result = 0;
 
-            errorHandler::check(cudaGetDevice(&result));
+            errorHandler::handle(cudaGetDevice(&result));
 
             return result;
         }
@@ -338,7 +348,7 @@ namespace LBM
             const label_t bx, const label_t by, const label_t bz,
             const label_t nxBlocks, const label_t nyBlocks) noexcept
         {
-            return (tx + block::nx<label_t>() * (ty + block::ny<label_t>() * (tz + block::nz<label_t>() * (bx + nxBlocks * (by + nyBlocks * bz)))));
+            return global::idx<host::label_t, block::nx<host::label_t>(), block::ny<host::label_t>(), block::nz<host::label_t>()>(tx, ty, tz, bx, by, bz, nxBlocks, nyBlocks);
         }
 
         /**
@@ -350,7 +360,7 @@ namespace LBM
         }
     }
 
-    namespace global
+    namespace Cartesian
     {
         /**
          * @brief Global scalar field index (collapsed 3D)
@@ -400,7 +410,7 @@ namespace LBM
             const device::label_t tx, const device::label_t ty, const device::label_t tz,
             const device::label_t bx, const device::label_t by, const device::label_t bz) noexcept
         {
-            return (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * bz)))));
+            return global::idx<device::label_t, block::nx<device::label_t>(), block::ny<device::label_t>(), block::nz<device::label_t>()>(tx, ty, tz, bx, by, bz, NUM_BLOCK_X, NUM_BLOCK_Y);
         }
 
         /**
@@ -431,7 +441,7 @@ namespace LBM
          **/
         __device__ [[nodiscard]] inline device::label_t idx(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
         {
-            return tx + block::nx() * (ty + block::ny() * tz);
+            return tx + block::nx<device::label_t>() * (ty + block::ny<device::label_t>() * tz);
         }
 
         /**
@@ -464,7 +474,7 @@ namespace LBM
             const host::label_t dx, const host::label_t dy, const host::label_t dz,
             const host::label_t ndx, const host::label_t ndy) noexcept
         {
-            return global::idx(dx, dy, dz, ndx, ndy);
+            return Cartesian::idx(dx, dy, dz, ndx, ndy);
         }
 
         /**
@@ -476,7 +486,7 @@ namespace LBM
         {
             cudaDeviceProp props;
 
-            errorHandler::check(cudaGetDeviceProperties(&props, deviceID));
+            errorHandler::handle(cudaGetDeviceProperties(&props, deviceID));
 
             return props;
         }

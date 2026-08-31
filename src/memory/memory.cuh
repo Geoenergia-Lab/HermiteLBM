@@ -56,12 +56,43 @@ SourceFiles
 
 namespace LBM
 {
+    /**
+     * @brief Executes the given callable only if the allocation status is GOOD.
+     * @tparam F Callable type.
+     * @tparam Args Argument types.
+     * @param[in] f The callable to execute conditionally.
+     * @param[in] args Arguments to forward to the callable.
+     **/
+    template <typename F, typename... Args>
+    __host__ void ifAllocationAllowed(F &&f, Args &&...args) noexcept
+    {
+        if (program_status.load() == GOOD)
+        {
+            std::forward<F>(f)(std::forward<Args>(args)...);
+        }
+    }
+
+    /**
+     * @brief Prints an allocation message if verbose output is enabled.
+     * @tparam T Data type of the allocated memory.
+     * @param[in] functionName Name of the calling function.
+     * @param[in] nPoints Number of elements allocated.
+     * @param[in] ptr Pointer to the allocated memory.
+     **/
     template <typename T>
     __host__ void allocateMessage(const name_t &functionName, const host::label_t nPoints, const T *ptr) noexcept
     {
         std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in " << functionName << " to address " << ptr << " (current device: " << GPU::current_ordinal() << ")" << std::endl;
     }
 
+    /**
+     * @brief Prints a copy message if verbose output is enabled.
+     * @tparam T Data type of the copied memory.
+     * @param[in] functionName Name of the calling function.
+     * @param[in] nPoints Number of elements copied.
+     * @param[in] srcPtr Source pointer.
+     * @param[in] destPtr Destination pointer.
+     **/
     template <typename T>
     __host__ void copyMessage(const name_t &functionName, const host::label_t nPoints, const T *srcPtr, const T *destPtr) noexcept
     {
@@ -79,7 +110,12 @@ namespace LBM
         template <typename T>
         __host__ void allocateMemory(T **ptr, const host::label_t nPoints) noexcept
         {
-            errorHandler::check(cudaMallocHost(ptr, sizeof(T) * nPoints));
+            *ptr = nullptr;
+            ifAllocationAllowed(
+                [&]()
+                {
+                    errorHandler::handle(cudaMallocHost(ptr, sizeof(T) * nPoints));
+                });
         }
 
         /**
@@ -101,29 +137,164 @@ namespace LBM
                 allocateMessage("host::allocate", nPoints, ptr);
             }
 
-            std::uninitialized_fill_n(ptr, nPoints, val);
+            ifAllocationAllowed(
+                [&]()
+                {
+                    std::uninitialized_fill_n(ptr, nPoints, val);
+                });
 
             return ptr;
+        }
+
+        /**
+         * @brief Frees pinned host memory previously allocated with host::allocateMemory.
+         * @tparam T Data type of the memory.
+         * @param[in] ptr Pointer to the memory to free. May be nullptr.
+         **/
+        template <typename T>
+        __host__ void free(T *const ptrRestrict ptr) noexcept
+        {
+            if (ptr != nullptr)
+            {
+                errorHandler::handle(cudaFreeHost(ptr));
+            }
+        }
+
+        /**
+         * @brief Frees pinned host memory (const overload).
+         * @tparam T Data type of the memory.
+         * @param[in] ptr Pointer to the memory to free. May be nullptr.
+         **/
+        template <typename T>
+        __host__ void free(const T *const ptrRestrict ptr) noexcept
+        {
+            free(const_cast<T *>(ptr));
         }
     }
 
     namespace device
     {
         /**
+         * @brief Sets the current CUDA device.
+         * @param[in] deviceID The device index to set as current.
+         **/
+        __host__ void setDevice(const deviceIndex_t deviceID) noexcept
+        {
+            ifAllocationAllowed(
+                [&]()
+                {
+                    errorHandler::handle(cudaSetDevice(deviceID));
+                });
+        }
+
+        /**
+         * @brief Synchronizes the current CUDA device.
+         **/
+        __host__ void syncDevice() noexcept
+        {
+            ifAllocationAllowed(
+                [&]()
+                {
+                    errorHandler::handle(cudaDeviceSynchronize());
+                });
+        }
+
+        /**
+         * @brief Allocates a symbol of type T to the device
+         * @param[in] symbol The symbol to which the value is to be copied
+         * @param[in] value The value to copy to the symbol
+         **/
+        template <typename T>
+        void copyToSymbol(const T &symbol, const T value) noexcept
+        {
+            syncDevice();
+            const T valueTemp = value;
+
+            ifAllocationAllowed(
+                [&]()
+                {
+                    errorHandler::handle(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), 0, cudaMemcpyHostToDevice));
+                });
+
+            syncDevice();
+        }
+
+        /**
+         * @brief Allocates an array of type T and size N to the device
+         * @param[in] symbol The symbol to which the value is to be copied
+         * @param[in] value The value to copy to the symbol
+         **/
+        template <typename T, const host::label_t N>
+        void copyToSymbol(const T (&symbol)[N], const T (&value)[N]) noexcept
+        {
+            syncDevice();
+
+            ifAllocationAllowed(
+                [&]()
+                {
+                    errorHandler::handle(cudaMemcpyToSymbol(symbol, value, N * sizeof(T), 0, cudaMemcpyHostToDevice));
+                });
+
+            syncDevice();
+        }
+
+        /**
+         * @brief Allocates a symbol of type T to an array on the device
+         * @param[in] symbol The array to which the value is to be copied
+         * @param[in] value The value to copy to the symbol
+         * @param[in] index The index in the array to copy the value to
+         **/
+        template <typename T, const host::label_t N, typename SizeType>
+        void copyToSymbol(const T (&symbol)[N], const T value, const SizeType index) noexcept
+        {
+            if (static_cast<host::label_t>(index) >= N)
+            {
+                errorHandler::handle(cudaErrorMemoryAllocation);
+            }
+            syncDevice();
+            const T valueTemp = value;
+
+            ifAllocationAllowed(
+                [&]()
+                {
+                    errorHandler::handle(cudaMemcpyToSymbol(symbol, &valueTemp, static_cast<host::label_t>(sizeof(T)), static_cast<host::label_t>(index) * static_cast<host::label_t>(sizeof(T)), cudaMemcpyHostToDevice));
+                });
+
+            syncDevice();
+        }
+
+        /**
          * @brief Allocates memory on the device
          * @tparam T Data type to allocate
          * @param[out] ptr Pointer to be allocated
          * @param[in] nPoints Number of elements to allocate
-         * @throws std::runtime_error if CUDA allocation fails
          **/
         template <typename T>
         __host__ void allocateMemory(T **ptr, const host::label_t nPoints) noexcept
         {
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
-            errorHandler::check(cudaMalloc(ptr, sizeof(T) * nPoints));
+            *ptr = nullptr;
 
-            errorHandler::check(cudaDeviceSynchronize());
+            const host::label_t nBytes = sizeof(T) * nPoints;
+
+            ifAllocationAllowed(
+                [&]()
+                {
+                    host::label_t free_bytes = 0;
+                    host::label_t total_bytes = 0;
+                    errorHandler::handle(cudaMemGetInfo(&free_bytes, &total_bytes));
+                    if ((nBytes < free_bytes) && (nBytes < total_bytes))
+                    {
+                        errorHandler::handle(cudaMalloc(ptr, nBytes));
+                    }
+                    else
+                    {
+                        errorHandler::handle(cudaErrorMemoryAllocation);
+                    }
+                });
+
+            syncDevice();
         }
 
         /**
@@ -131,7 +302,6 @@ namespace LBM
          * @tparam T Data type to allocate
          * @param[in] nPoints Number of elements to allocate
          * @return Pointer to allocated device memory
-         * @throws std::runtime_error if CUDA allocation fails
          * @note Verbose mode prints allocation details
          **/
         template <typename T>
@@ -139,11 +309,7 @@ namespace LBM
         {
             T *ptr;
 
-            errorHandler::check(cudaDeviceSynchronize());
-
             allocateMemory(&ptr, nPoints);
-
-            errorHandler::check(cudaDeviceSynchronize());
 
             if constexpr (verbose())
             {
@@ -161,37 +327,48 @@ namespace LBM
         template <typename T>
         __host__ [[nodiscard]] T *allocate(const host::label_t nPoints, const deviceIndex_t deviceID) noexcept
         {
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
-            errorHandler::check(cudaSetDevice(deviceID));
+            setDevice(deviceID);
 
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
             return allocate<T>(nPoints);
         }
 
+        /**
+         * @brief Frees device memory allocated with device::allocate.
+         * @tparam T Data type of the memory.
+         * @param[in] ptr Pointer to the device memory to free. May be nullptr.
+         **/
         template <typename T>
-        __host__ void free(const T *ptr, const deviceIndex_t deviceID)
+        __host__ void free(T *const ptrRestrict ptr) noexcept
         {
-            errorHandler::check(cudaDeviceSynchronize());
-
-            errorHandler::check(cudaSetDevice(deviceID));
-
-            errorHandler::check(cudaDeviceSynchronize());
-
-            errorHandler::check(cudaFree(const_cast<T *>(ptr)));
+            cudaPointerAttributes attrs;
+            errorHandler::handle(cudaPointerGetAttributes(&attrs, ptr));
+            if (ptr == nullptr)
+            {
+                return;
+            }
+            else if (attrs.type == cudaMemoryTypeDevice)
+            {
+                syncDevice();
+                setDevice(attrs.device);
+                syncDevice();
+                errorHandler::handle(cudaFree(ptr));
+                syncDevice();
+            }
         }
 
+        /**
+         * @brief Frees device memory (const overload).
+         * @tparam T Data type of the memory.
+         * @param[in] ptr Pointer to the device memory to free. May be nullptr.
+         **/
         template <typename T>
-        __host__ void free(T *ptr, const deviceIndex_t deviceID)
+        __host__ void free(const T *const ptrRestrict ptr) noexcept
         {
-            errorHandler::check(cudaDeviceSynchronize());
-
-            errorHandler::check(cudaSetDevice(deviceID));
-
-            errorHandler::check(cudaDeviceSynchronize());
-
-            errorHandler::check(cudaFree(ptr));
+            free(const_cast<T *>(ptr));
         }
 
         /**
@@ -200,17 +377,30 @@ namespace LBM
          * @param[out] devPtr Destination device pointer
          * @param[in] hostPtr Source host pointer
          * @param[in] nPoints The number of points of T to copy to the device
-         * @throws std::runtime_error if CUDA memory copy fails
          * @note Verbose mode prints copy details
          **/
         template <typename T>
         __host__ void copy(T *const devPtr, const T *const ptrRestrict hostPtr, const host::label_t nPoints) noexcept
         {
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
-            errorHandler::check(cudaMemcpy(devPtr, hostPtr, nPoints * sizeof(T), cudaMemcpyHostToDevice));
+            if (devPtr == nullptr)
+            {
+                errorHandler::handle(cudaErrorMemoryAllocation);
+            }
 
-            errorHandler::check(cudaDeviceSynchronize());
+            if (hostPtr == nullptr)
+            {
+                errorHandler::handle(cudaErrorMemoryAllocation);
+            }
+
+            ifAllocationAllowed(
+                [&]()
+                {
+                    errorHandler::handle(cudaMemcpy(devPtr, hostPtr, nPoints * sizeof(T), cudaMemcpyHostToDevice));
+                });
+
+            syncDevice();
 
             if constexpr (verbose())
             {
@@ -218,18 +408,26 @@ namespace LBM
             }
         }
 
+        /**
+         * @brief Copies data from host to device memory on a specified device.
+         * @tparam T Data type of the elements.
+         * @param[out] devPtr Destination device pointer.
+         * @param[in] hostPtr Source host pointer.
+         * @param[in] nPoints Number of elements to copy.
+         * @param[in] deviceID The device on which to perform the copy.
+         **/
         template <typename T>
         __host__ void copy(T *const devPtr, const T *const ptrRestrict hostPtr, const host::label_t nPoints, const deviceIndex_t deviceID) noexcept
         {
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
-            errorHandler::check(cudaSetDevice(deviceID));
+            setDevice(deviceID);
 
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
             copy(devPtr, hostPtr, nPoints);
 
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
         }
 
         /**
@@ -237,7 +435,6 @@ namespace LBM
          * @tparam T Data type of the elements
          * @param[out] ptr Destination device pointer
          * @param[in] f Source host vector
-         * @throws std::runtime_error if CUDA memory copy fails
          * @note Verbose mode prints copy details
          **/
         template <typename T>
@@ -263,20 +460,19 @@ namespace LBM
          * @tparam T Data type of the elements
          * @param[in] f Host vector to copy to device
          * @return Pointer to allocated device memory containing copied data
-         * @throws std::runtime_error if CUDA operations fail
          **/
         template <typename T>
         __host__ [[nodiscard]] T *allocateArray(const std::vector<T> &f) noexcept
         {
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
             T *ptr = allocate<T>(f.size());
 
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
             copy(ptr, f);
 
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
             return ptr;
         }
@@ -289,7 +485,7 @@ namespace LBM
         template <typename T>
         __host__ [[nodiscard]] T *allocateArray(const std::vector<T> &f, const deviceIndex_t deviceID) noexcept
         {
-            errorHandler::check(cudaSetDevice(deviceID));
+            setDevice(deviceID);
 
             return allocateArray(f);
         }
@@ -305,15 +501,15 @@ namespace LBM
         template <typename T>
         __host__ [[nodiscard]] T *allocateArray(const device::label_t nPoints, const T val) noexcept
         {
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
             T *ptr = allocate<T>(nPoints);
 
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
             copy(ptr, std::vector<T>(nPoints, val));
 
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
             return ptr;
         }
@@ -327,13 +523,41 @@ namespace LBM
         template <typename T>
         __host__ [[nodiscard]] T *allocateArray(const device::label_t nPoints, const T val, const deviceIndex_t deviceID) noexcept
         {
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
-            errorHandler::check(cudaSetDevice(deviceID));
+            setDevice(deviceID);
 
-            errorHandler::check(cudaDeviceSynchronize());
+            syncDevice();
 
             return allocateArray(nPoints, val);
+        }
+
+        /**
+         * @brief Wrapper for calls to cudaMemcpyAsync copying device to host
+         * @tparam T The type of the pointer
+         * @param[in] hostPtr Pointer on the host to copy to
+         * @param[in] devPtr Pointer on the device to copy from
+         * @param[in] nPoints Number of points of the size of T to copy
+         * @param[in] stream Stream on which to execute the copy
+         **/
+        template <typename T>
+        __host__ inline void memcpyAsyncDeviceToHost(T *const ptrRestrict hostPtr, const T *const ptrRestrict devPtr, const host::label_t nPoints, const cudaStream_t &stream) noexcept
+        {
+            errorHandler::handle(cudaMemcpyAsync(hostPtr, devPtr, nPoints * sizeof(T), cudaMemcpyDeviceToHost, stream));
+        }
+
+        /**
+         * @brief Wrapper for calls to cudaMemcpyAsync copying device to host
+         * @tparam T The type of the pointer
+         * @param[in] hostPtr Pointer on the host to copy to
+         * @param[in] devPtr Pointer on the device to copy from
+         * @param[in] nPoints Number of points of the size of T to copy
+         * @param[in] stream Stream on which to execute the copy
+         **/
+        template <typename T>
+        __host__ inline void memcpyPeerAsync(T *const ptrRestrict destPtr, const deviceIndex_t destDevice, const T *const ptrRestrict srcPtr, const deviceIndex_t srcDevice, const host::label_t nPoints, const cudaStream_t &stream) noexcept
+        {
+            errorHandler::handleInline(cudaMemcpyPeerAsync(destPtr, destDevice, srcPtr, srcDevice, nPoints * sizeof(T), stream));
         }
     }
 }

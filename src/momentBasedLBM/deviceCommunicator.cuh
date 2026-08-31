@@ -181,14 +181,6 @@ namespace LBM
 
             constexpr const host::threadLabel threadStart(static_cast<device::label_t>(0), static_cast<device::label_t>(0), static_cast<device::label_t>(0));
 
-            const host::label_t Size =
-                static_cast<host::label_t>(sizeof(scalar_t)) *
-                VelocitySet::template QF<host::label_t>() *
-                block::n<axis::orthogonal<alpha, 0>(), host::label_t>() *
-                block::n<axis::orthogonal<alpha, 1>(), host::label_t>() *
-                mesh_.blocksPerDevice<axis::orthogonal<alpha, 0>()>() *
-                mesh_.blocksPerDevice<axis::orthogonal<alpha, 1>()>();
-
             // Hard-coded for now
             const host::label_t idxDevL = idxExchange;
             const host::label_t idxDevR = idxExchange + 1;
@@ -206,8 +198,10 @@ namespace LBM
             const host::label_t idxSrcL = host::idxPop<alpha, VelocitySet::template QF<host::label_t>()>(0, threadStart, LDeviceSourceBlock, nab, nbb);
 
             // Call the exchange functions
-            This::exchange<alpha, -1>(idxDevR, idxDevL, idxSrcR, idxDestL, haloPtrs_, programCtrl_, Size, timeStep); // Copy to the Left GPU
-            This::exchange<alpha, +1>(idxDevL, idxDevR, idxSrcL, idxDestR, haloPtrs_, programCtrl_, Size, timeStep); // Copy to the Right GPU
+            const host::label_t area = VelocitySet::template QF<host::label_t>() * block::n<axis::orthogonal<alpha, 0>(), host::label_t>() * block::n<axis::orthogonal<alpha, 1>(), host::label_t>() * mesh_.blocksPerDevice<axis::orthogonal<alpha, 0>()>() * mesh_.blocksPerDevice<axis::orthogonal<alpha, 1>()>();
+
+            This::exchange<alpha, -1>(idxDevR, idxDevL, idxSrcR, idxDestL, haloPtrs_, programCtrl_, area, timeStep); // Copy to the Left GPU
+            This::exchange<alpha, +1>(idxDevL, idxDevR, idxSrcL, idxDestR, haloPtrs_, programCtrl_, area, timeStep); // Copy to the Right GPU
         }
 
         /**
@@ -224,19 +218,19 @@ namespace LBM
             const host::label_t idxDst,
             const haloBuffer<VelocitySet> &haloPtrs,
             const programControl &programCtrl,
-            const host::label_t size,
+            const host::label_t nPoints,
             const host::label_t timeStep)
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
             velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
-            errorHandler::check(cudaMemcpyPeerAsync(
+            device::memcpyPeerAsync(
                 &(haloPtrs.writeBuffer(idxDevDst, timeStep).template ptr<device::pointerIndex<alpha, coeff>()>()[idxDst]),
                 programCtrl.deviceList()[idxDevDst],
                 &(haloPtrs.writeBuffer(idxDevSrc, timeStep).template ptr<device::pointerIndex<alpha, coeff>()>()[idxSrc]),
                 programCtrl.deviceList()[idxDevSrc],
-                size,
-                programCtrl.streams()[device::idxStream<coeff>(idxDevDst)]));
+                nPoints,
+                programCtrl.streams()[device::idxStream<coeff>(idxDevDst)]);
         }
     };
 }

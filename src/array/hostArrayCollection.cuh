@@ -271,7 +271,7 @@ namespace LBM
                     const host::label_t x = (GPU_x * nxBlocksPerDevice + bx) * block::nx<host::label_t>() + tx;
                     const host::label_t y = (GPU_y * nyBlocksPerDevice + by) * block::ny<host::label_t>() + ty;
                     const host::label_t z = (GPU_z * nzBlocksPerDevice + bz) * block::nz<host::label_t>() + tz;
-                    return global::idx(x, y, z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
+                    return Cartesian::idx(x, y, z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
                 }
                 else
                 {

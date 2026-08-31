@@ -43,11 +43,11 @@ Namespace
     LBM
 
 SourceFiles
-    computeVersion.cu
+    systemInfo.cu
 
 \*---------------------------------------------------------------------------*/
 
-#include "computeVersion.cuh"
+#include "systemInfo.cuh"
 
 using namespace LBM;
 
@@ -58,15 +58,14 @@ int main(const int argc, const char *const argv[])
     // If we supply the -countDevices argument, just do the device count
     if (input.isArgPresent("-countDevices"))
     {
-        const deviceIndex_t deviceCount = countDevices<false>();
+        const deviceIndex_t deviceCount = countDevices();
 
         if (!input.isArgPresent("-quiet"))
         {
-            programControl::printHeader();
-            std::cout << std::endl;
+            programControl::printHeader<true>();
         }
 
-        fileIO::print(0, deviceCount - 1, "devList");
+        IO::print_container(std::cout, std::pair<int, int>(0, deviceCount), "devList");
 
         return 0;
     }
@@ -103,7 +102,7 @@ int main(const int argc, const char *const argv[])
     outputFile << comment_string() << " Executed on: " << std::put_time(std::localtime(&time_now), "%Y-%m-%d %H:%M:%S") << std::endl;
     outputFile << std::endl;
 
-    const deviceIndex_t deviceCount = (HERMITELBM_ARCHITECTURE_DETECTION == "Manual" ? std::atoi(HERMITELBM_NUM_DEVICES.c_str()) : countDevices<false>());
+    const deviceIndex_t deviceCount = (HERMITELBM_ARCHITECTURE_DETECTION == "Manual" ? std::atoi(HERMITELBM_NUM_DEVICES.c_str()) : countDevices());
 
     if (HERMITELBM_ARCHITECTURE_DETECTION == "Manual")
     {

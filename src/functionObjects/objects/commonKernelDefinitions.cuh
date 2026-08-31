@@ -58,7 +58,7 @@ SourceFiles
  * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
  **/
 __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ static void meanKernel(
-    const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
+    const device::ptrColl_t devPtrs,
     const device::ptrCollection<This::N, scalar_t> resultMeanPtrs,
     const scalar_t invNewCount)
 {
@@ -73,7 +73,7 @@ __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ stati
  * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
  **/
 __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ static void instantaneousAndMeanKernel(
-    const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
+    const device::ptrColl_t devPtrs,
     const device::ptrCollection<This::N, scalar_t> resultPtrs,
     const device::ptrCollection<This::N, scalar_t> resultMeanPtrs,
     const scalar_t invNewCount)
@@ -87,7 +87,7 @@ __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ stati
  * @param[out] resultPtrs Device pointer collection for the instantaneous quantity
  **/
 __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ static void instantaneousKernel(
-    const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
+    const device::ptrColl_t devPtrs,
     const device::ptrCollection<This::N, scalar_t> resultPtrs)
 {
     functionObjects::instantaneous<This>(devPtrs, resultPtrs);
@@ -99,7 +99,7 @@ __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ stati
  * @param[out] resultPtrs Device pointer collection for the instantaneous quantity
  **/
 __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ static void primeKernel(
-    const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
+    const device::ptrColl_t devPtrs,
     const device::ptrCollection<This::N, scalar_t> resultMeanPtrs,
     const device::ptrCollection<This::N, scalar_t> resultPtrs)
 {
@@ -114,7 +114,7 @@ __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ stati
  * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
  **/
 __launch_bounds__(block::maxThreads(), This::MIN_BLOCKS_PER_MP) __global__ static void primeSqMeanKernel(
-    const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
+    const device::ptrColl_t devPtrs,
     const device::ptrCollection<This::N, scalar_t> resultMeanPtrs,
     const device::ptrCollection<This::N, scalar_t> resultPrimeMeanSqPtrs,
     const scalar_t invNewCount)

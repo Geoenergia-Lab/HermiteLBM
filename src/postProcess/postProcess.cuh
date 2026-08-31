@@ -78,7 +78,7 @@ namespace LBM
                 host::blockLabel(0, 0, 0),
                 [&](const host::label_t x, const host::label_t y, const host::label_t z)
                 {
-                    const host::label_t idx = global::idx(x, y, z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
+                    const host::label_t idx = Cartesian::idx(x, y, z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
                     // Do the conversion in double, then cast to the desired type
                     coords[3 * idx + 0] = static_cast<T>((static_cast<double>(mesh.L().x) * static_cast<double>(x * static_cast<host::label_t>(mesh.dimension<axis::X>() > 1))) / static_cast<double>(mesh.dimension<axis::X>() - static_cast<host::label_t>(mesh.dimension<axis::X>() > 1)));
                     coords[3 * idx + 1] = static_cast<T>((static_cast<double>(mesh.L().y) * static_cast<double>(y * static_cast<host::label_t>(mesh.dimension<axis::Y>() > 1))) / static_cast<double>(mesh.dimension<axis::Y>() - static_cast<host::label_t>(mesh.dimension<axis::Y>() > 1)));
@@ -110,8 +110,8 @@ namespace LBM
                 host::blockLabel(0, 0, 0),
                 [&](const host::label_t x, const host::label_t y, const host::label_t z)
                 {
-                    const host::label_t base = global::idx(x, y, z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
-                    const host::label_t cell_idx = global::idx(x, y, z, mesh.dimension<axis::X>() - 1, mesh.dimension<axis::Y>() - 1);
+                    const host::label_t base = Cartesian::idx(x, y, z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
+                    const host::label_t cell_idx = Cartesian::idx(x, y, z, mesh.dimension<axis::X>() - 1, mesh.dimension<axis::Y>() - 1);
                     const host::label_t stride_y = mesh.dimension<axis::X>();
                     const host::label_t stride_z = mesh.dimension<axis::X>() * mesh.dimension<axis::Y>();
 
@@ -174,7 +174,7 @@ namespace LBM
 
         __host__ static inline void printStatus(const name_t &key, const bool value) noexcept
         {
-            std::cout << "    " << key << ": " << (value ? "OK;" : "Fail;") << std::endl;
+            std::cout << IO::whitespace<4>{} << key << ": " << (value ? "OK;" : "Fail;") << std::endl;
         }
 
         /**
@@ -212,13 +212,13 @@ namespace LBM
 
             std::cout << Writer::name << std::endl;
             std::cout << "{" << std::endl;
-            std::cout << "    fileName: " << trueFileName << ";" << std::endl;
+            std::cout << IO::whitespace<4>{} << "fileName: " << trueFileName << ";" << std::endl;
 
             const bool directoryStatus = fileSystem::makeDirectory(directoryPrefix);
 
             printStatus("directory", directoryStatus);
 
-            std::cout << "    fileSize: " << fileSystem::to_MiB<double>(fileSystem::expectedDiskUsage<Writer::file_format, Writer::has_fields, Writer::has_points, Writer::has_elements, Writer::has_offsets>(mesh, solutionVars.size())) << " MiB;" << std::endl;
+            std::cout << IO::whitespace<4>{} << "fileSize: " << fileSystem::to_MiB<double>(fileSystem::expectedDiskUsage<Writer::file_format, Writer::has_fields, Writer::has_points, Writer::has_elements, Writer::has_offsets>(mesh, solutionVars.size())) << " MiB;" << std::endl;
 
             // Check if there is enough disk space to store the file
             writer::diskSpaceAssertion<Writer>(mesh, varNames, fileName);

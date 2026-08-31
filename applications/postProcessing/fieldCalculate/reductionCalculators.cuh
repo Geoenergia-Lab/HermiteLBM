@@ -155,7 +155,7 @@ namespace LBM
          * @param[in] timeStep Current time step.
          * @param[in] compute The reduction function. Must have signature scalar_t(const std::vector<scalar_t>&) or be a template that can accept a single argument.
          * @param[in] label A string printed before the value (used as-is).
-         */
+         **/
         template <const bool Deinterleave, const bool Sort, typename Reducer>
         __host__ void printFieldReduction(
             const host::arrayCollection<scalar_t> &variables,
@@ -169,7 +169,7 @@ namespace LBM
             std::cout << "{" << std::endl;
             for (host::label_t field = 0; field < fields.size(); field++)
             {
-                std::cout << std::setprecision(15) << "    " << label << "(" << variables.varNames()[field] << "): " << compute(fields[field]) << ";" << std::endl;
+                std::cout << std::setprecision(15) << IO::whitespace<4>{} << label << "(" << variables.varNames()[field] << "): " << compute(fields[field]) << ";" << std::endl;
             }
             std::cout << "};" << std::endl;
         }
@@ -182,7 +182,7 @@ namespace LBM
          * @param[in] timeStep Current time step.
          * @param[in] comp Comparator (e.g., std::greater for max)
          * @param[in] label A string printed before the value (used as-is).
-         */
+         **/
         template <const numericalSchemes::absMode Sign, typename Compare>
         __host__ void fieldExtrema(
             const host::arrayCollection<scalar_t> &variables,

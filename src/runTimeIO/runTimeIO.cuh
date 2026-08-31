@@ -63,6 +63,7 @@ namespace LBM
      * and output formatting. It tracks simulation duration and calculates
      * performance metrics like MLUPS (Million Lattice Updates Per Second).
      **/
+    template <class VelocitySet>
     class runTimeIO
     {
     public:
@@ -73,10 +74,21 @@ namespace LBM
          **/
         __host__ [[nodiscard]] runTimeIO(
             const host::latticeMesh &mesh,
-            const programControl &programCtrl)
+            const programControl &programCtrl,
+            const device::scalarField<VelocitySet, time::instantaneous> &rho,
+            const device::vectorField<VelocitySet, time::instantaneous> &U,
+            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
+            objectRegistry<VelocitySet> &runTimeObjects,
+            turbulenceStatistics<VelocitySet> &turbulenceStats)
             : mesh_(mesh),
               programCtrl_(programCtrl),
-              start_(std::chrono::high_resolution_clock::now())
+              start_(std::chrono::high_resolution_clock::now()),
+              rho_(rho),
+              U_(U),
+              Pi_(Pi),
+              runTimeObjects_(runTimeObjects),
+              turbulenceStats_(turbulenceStats),
+              hostWriteBuffer_(mesh.size() * 6, mesh)
         {
             std::cout << "Time loop start" << std::endl;
             std::cout << std::endl;
@@ -89,7 +101,7 @@ namespace LBM
          * - Total elapsed time in HH:MM:SS format
          * - MLUPS (Million Lattice Updates Per Second) performance metric
          **/
-        inline ~runTimeIO() noexcept
+        __host__ inline ~runTimeIO() noexcept
         {
             const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
             std::cout << std::endl;
@@ -159,13 +171,27 @@ namespace LBM
 
             const host::label_t nPoints = mesh.dimension<axis::X>() * mesh.dimension<axis::Y>() * mesh.dimension<axis::Z>();
 
-            const host::label_t nTime = programCtrl.nt() - programCtrl.latestTime() - 1;
+            const host::label_t nTime = programCtrl.timeStep() - programCtrl.latestTime() - static_cast<host::label_t>(1);
 
             const host::label_t numerator = nPoints * nTime;
 
             const host::label_t denominator = static_cast<host::label_t>(1000000) * static_cast<host::label_t>(std::chrono::duration_cast<std::chrono::seconds>(end - start).count());
 
             return static_cast<T>(numerator) / static_cast<T>(denominator);
+        }
+
+        template <class Writer>
+        __host__ void save()
+        {
+            rho_.template save<Writer>(hostWriteBuffer_, programCtrl_.timeStep());
+
+            U_.template save<Writer>(hostWriteBuffer_, programCtrl_.timeStep());
+
+            Pi_.template save<Writer>(hostWriteBuffer_, programCtrl_.timeStep());
+
+            turbulenceStats_.save(hostWriteBuffer_, programCtrl_.timeStep());
+
+            runTimeObjects_.save(hostWriteBuffer_, programCtrl_.timeStep());
         }
 
     private:
@@ -183,6 +209,18 @@ namespace LBM
          * @brief Start point
          **/
         const std::chrono::high_resolution_clock::time_point start_;
+
+        const device::scalarField<VelocitySet, time::instantaneous> &rho_;
+        const device::vectorField<VelocitySet, time::instantaneous> &U_;
+        const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi_;
+
+        objectRegistry<VelocitySet> &runTimeObjects_;
+        turbulenceStatistics<VelocitySet> &turbulenceStats_;
+
+        /**
+         * @brief Host-side pinned buffer for writing
+         **/
+        host::array<host::PINNED, scalar_t, VelocitySet> hostWriteBuffer_;
     };
 }
 

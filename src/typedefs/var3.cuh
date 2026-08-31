@@ -111,12 +111,8 @@ namespace LBM
         template <const bool LineBreak = false>
         __host__ void print(const name_t &name, std::ostream &os) const noexcept
         {
-            os << name << std::endl;
-            os << "{" << std::endl;
-            os << "    x = " << x << ";" << std::endl;
-            os << "    y = " << y << ";" << std::endl;
-            os << "    z = " << z << ";" << std::endl;
-            os << "};" << std::endl;
+            IO::printBlock(os, name.c_str(), "x", x, "y", y, "z", z);
+
             if constexpr (LineBreak)
             {
                 os << std::endl;
@@ -127,9 +123,10 @@ namespace LBM
          * @brief Print the structure to std::cout
          * @param[in] name Name to identify the structure in the output
          **/
+        template <const bool LineBreak = false>
         __host__ void print(const name_t &name) const noexcept
         {
-            print(name, std::cout);
+            print<LineBreak>(name, std::cout);
         }
     };
 

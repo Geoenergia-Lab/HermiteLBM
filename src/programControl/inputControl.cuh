@@ -209,7 +209,7 @@ namespace LBM
             {
                 const std::vector<deviceIndex_t> parsedList = string::parseValue<deviceIndex_t>(commandLine_, "-GPU");
 
-                if (parsedList.size() > static_cast<device::label_t>(nAvailableDevices()) || nAvailableDevices() < 1)
+                if (parsedList.size() > system::deviceCount<host::label_t>() || system::deviceCount<deviceIndex_t>() < 1)
                 {
                     throw std::runtime_error("Number of GPUs requested is greater than the number available");
                 }
@@ -217,7 +217,7 @@ namespace LBM
             }
             else
             {
-                if ((executableName() == "fieldConvert") | (executableName() == "fieldCalculate") | (executableName() == "computeVersion"))
+                if ((executableName() == "fieldConvert") | (executableName() == "fieldCalculate") | (executableName() == "systemInfo"))
                 {
                     return {};
                 }
@@ -226,17 +226,6 @@ namespace LBM
                     throw std::runtime_error("Error: The -GPU argument is mandatory for the " + executableName() + " executable.");
                 }
             }
-        }
-
-        /**
-         * @brief Queries the number of available CUDA devices
-         * @return deviceIndex_t Count of available CUDA devices
-         **/
-        __host__ [[nodiscard]] deviceIndex_t nAvailableDevices() const noexcept
-        {
-            deviceIndex_t deviceCount = -1;
-            errorHandler::check(cudaGetDeviceCount(&deviceCount));
-            return deviceCount;
         }
     };
 }

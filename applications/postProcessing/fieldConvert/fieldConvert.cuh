@@ -56,10 +56,8 @@ SourceFiles
 #include "../../../src/array/array.cuh"
 #include "../../../src/collision/collision.cuh"
 #include "../../../src/fileIO/fileIO.cuh"
-#include "../../../src/runTimeIO/runTimeIO.cuh"
 #include "../../../src/postProcess/postProcess.cuh"
 #include "../../../src/programControl/programControl.cuh"
-#include "../../../src/functionObjects/functionObjects.cuh"
 #include "../../../src/numericalSchemes/numericalSchemes.cuh"
 
 namespace LBM
@@ -157,7 +155,7 @@ namespace LBM
                     {
                         const host::pointLabel Tx = axis::to_3d<alpha>(i, j, index_0);
 
-                        const host::label_t idx = global::idx(Tx.x, Tx.y, Tx.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
+                        const host::label_t idx = Cartesian::idx(Tx.x, Tx.y, Tx.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
 
                         const host::label_t id = i + (j * mesh.dimension<axis::orthogonal<alpha, 0>()>());
 
@@ -177,8 +175,8 @@ namespace LBM
                         const host::pointLabel Tx_0 = axis::to_3d<alpha>(i, j, index_0);
                         const host::pointLabel Tx_1 = axis::to_3d<alpha>(i, j, index_1);
 
-                        const host::label_t idx_0 = global::idx(Tx_0.x, Tx_0.y, Tx_0.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
-                        const host::label_t idx_1 = global::idx(Tx_1.x, Tx_1.y, Tx_1.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
+                        const host::label_t idx_0 = Cartesian::idx(Tx_0.x, Tx_0.y, Tx_0.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
+                        const host::label_t idx_1 = Cartesian::idx(Tx_1.x, Tx_1.y, Tx_1.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
 
                         const scalar_t f0 = fields[field][idx_0];
                         const scalar_t f1 = fields[field][idx_1];

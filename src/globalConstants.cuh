@@ -50,8 +50,6 @@ SourceFiles
 #ifndef __MBLBM_GLOBALCONSTANTS_CUH
 #define __MBLBM_GLOBALCONSTANTS_CUH
 
-#include "errorHandler.cuh"
-
 namespace LBM
 {
     /**
@@ -63,6 +61,11 @@ namespace LBM
         return 10;
     }
 
+    namespace device
+    {
+        using ptrColl_t = device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t>;
+    }
+
     /**
      * @brief Reference density 1.0
      **/
@@ -71,43 +74,6 @@ namespace LBM
     {
         return static_cast<T>(1);
     }
-
-    struct systemInfo
-    {
-    public:
-        __host__ [[nodiscard]] static inline consteval host::label_t scalarSize() noexcept
-        {
-            return static_cast<host::label_t>(sizeof(scalar_t)) * static_cast<host::label_t>(8);
-        }
-
-        __host__ [[nodiscard]] static inline consteval host::label_t labelSize() noexcept
-        {
-            return static_cast<host::label_t>(sizeof(device::label_t)) * static_cast<host::label_t>(8);
-        }
-
-        __host__ [[nodiscard]] static inline consteval const char *binaryType() noexcept
-        {
-            return endian::nameString();
-        }
-
-        __host__ static void print(std::ostream &out)
-        {
-            out << "systemInformation" << std::endl;
-            out << "{" << std::endl;
-            out << "    binaryType\t" << binaryType() << ";" << std::endl;
-            out << std::endl;
-            out << "    scalarSize\t" << scalarSize() << ";" << std::endl;
-            out << std::endl;
-            out << "    labelSize\t" << labelSize() << ";" << std::endl;
-            out << "};" << std::endl;
-            out << std::endl;
-        }
-
-        __host__ static void print()
-        {
-            print(std::cout);
-        }
-    };
 
     namespace device
     {
@@ -144,41 +110,6 @@ namespace LBM
         __device__ __constant__ device::label_t BLOCK_OFFSET_X;
         __device__ __constant__ device::label_t BLOCK_OFFSET_Y;
         __device__ __constant__ device::label_t BLOCK_OFFSET_Z;
-
-        /**
-         * @brief Allocates a symbol of type T to the device
-         * @param[in] symbol The symbol to which the value is to be copied
-         * @param[in] value The value to copy to the symbol
-         **/
-        template <typename T>
-        void copyToSymbol(const T &symbol, const T value)
-        {
-            errorHandler::check(cudaDeviceSynchronize());
-            const T valueTemp = value;
-            errorHandler::check(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), 0, cudaMemcpyHostToDevice));
-            errorHandler::check(cudaDeviceSynchronize());
-        }
-
-        template <typename T, const host::label_t N>
-        void copyToSymbol(const T (&symbol)[N], const T (&value)[N])
-        {
-            errorHandler::check(cudaDeviceSynchronize());
-            errorHandler::check(cudaMemcpyToSymbol(symbol, value, N * sizeof(T), 0, cudaMemcpyHostToDevice));
-            errorHandler::check(cudaDeviceSynchronize());
-        }
-
-        template <typename T, const host::label_t N, typename SizeType>
-        void copyToSymbol(const T (&symbol)[N], const T value, const SizeType index)
-        {
-            if (static_cast<host::label_t>(index) >= N)
-            {
-                throw std::runtime_error("Error setting device symbol index" + std::to_string(index) + " out of bounds for array of size " + std::to_string(N) + ".");
-            }
-            errorHandler::check(cudaDeviceSynchronize());
-            const T valueTemp = value;
-            errorHandler::check(cudaMemcpyToSymbol(symbol, &valueTemp, static_cast<host::label_t>(sizeof(T)), static_cast<host::label_t>(index) * static_cast<host::label_t>(sizeof(T)), cudaMemcpyHostToDevice));
-            errorHandler::check(cudaDeviceSynchronize());
-        }
     }
 }
 

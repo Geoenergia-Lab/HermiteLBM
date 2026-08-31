@@ -117,13 +117,13 @@ namespace LBM
      * @param[in] invNewCount Inverse of the new count for time averaging
      **/
     __launch_bounds__(block::maxThreads(), 1) __global__ void turbulenceStatisticsCalculate(
-        const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs, // Pointers to the moments
-        const device::ptrCollection<6, scalar_t> RPtrs,                                 // Reynolds stress tensor
-        const device::ptrCollection<1, scalar_t> PPtrs,                                 // Production term
-        const device::ptrCollection<1, scalar_t> epsilonPtrs,                           // Dissipation term
-        const device::ptrCollection<1, scalar_t> kPtrs,                                 // Turbulent kinetic energy
-        const device::ptrCollection<3, scalar_t> UMeanPtrs,                             // Mean velocity field
-        const device::ptrCollection<6, scalar_t> SMeanPtrs,                             // Mean strain rate tensor
+        const device::ptrColl_t devPtrs,                      // Pointers to the moments
+        const device::ptrCollection<6, scalar_t> RPtrs,       // Reynolds stress tensor
+        const device::ptrCollection<1, scalar_t> PPtrs,       // Production term
+        const device::ptrCollection<1, scalar_t> epsilonPtrs, // Dissipation term
+        const device::ptrCollection<1, scalar_t> kPtrs,       // Turbulent kinetic energy
+        const device::ptrCollection<3, scalar_t> UMeanPtrs,   // Mean velocity field
+        const device::ptrCollection<6, scalar_t> SMeanPtrs,   // Mean strain rate tensor
         const scalar_t invNewCount)
     {
         // Get the index
@@ -178,13 +178,11 @@ namespace LBM
          * @param[in] devPtrs Pointers to the moments
          * @param[in] mesh The lattice mesh
          * @param[in] programCtrl The program control object
-         * @param[in] hostWriteBuffer The host write buffer for saving the turbulence statistics
          **/
         __host__ [[nodiscard]] turbulenceStatistics(
-            const kernel::ptrCollection &devPtrs,
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
-            host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer)
+            const kernel::ptrCollection &devPtrs)
             : devPtrs_(devPtrs),
               calculate_(functionObjects::initialiserSwitch("turbulenceStatistics")),
               programCtrl_(programCtrl),
@@ -194,8 +192,7 @@ namespace LBM
               R_("R", mesh, zeros<scalar_t, 6>(), programCtrl, calculate_),
               P_("P", mesh, zeros<scalar_t, 1>(), programCtrl, calculate_),
               epsilon_("epsilon", mesh, zeros<scalar_t, 1>(), programCtrl, calculate_),
-              k_("k", mesh, zeros<scalar_t, 1>(), programCtrl, calculate_),
-              hostWriteBuffer_(hostWriteBuffer) {}
+              k_("k", mesh, zeros<scalar_t, 1>(), programCtrl, calculate_) {}
 
         /**
          * @brief Destructor for the turbulenceStatistics class
@@ -237,17 +234,17 @@ namespace LBM
          * @brief Saves the turbulence statistics: Reynolds stress tensor R, production term P, dissipation term epsilon, and turbulent kinetic energy k to the host write buffer
          * @param[in] timeStep The current time step for saving the turbulence statistics
          **/
-        __host__ inline void save(const host::label_t timeStep) noexcept
+        __host__ inline void save(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
         {
             if (calculate_)
             {
-                UMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
-                SMean_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
+                UMean_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
+                SMean_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
 
-                R_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
-                P_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
-                epsilon_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
-                k_.template save<postProcess::LBMBin>(hostWriteBuffer_, timeStep);
+                R_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
+                P_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
+                epsilon_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
+                k_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
         }
 
@@ -301,11 +298,6 @@ namespace LBM
          * @brief Mean turbulent kinetic energy k
          **/
         device::scalarField<VelocitySet, time::timeAverage> k_;
-
-        /**
-         * @brief Reference to the host write buffer for saving the turbulence statistics
-         **/
-        host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer_;
     };
 }
 

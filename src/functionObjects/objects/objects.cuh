@@ -10,7 +10,7 @@
 /*---------------------------------------------------------------------------*\
 
 Copyright (C) 2023 UDESC Geoenergia Lab
-Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+Authors: Gustavo Choiare (Geoenergia Lab, UDESC)
 
 This implementation is derived from concepts and algorithms developed in:
   MR-LBM: Moment Representation Lattice Boltzmann Method
@@ -37,30 +37,28 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Aliases and kernel definitions for the thermal D3Q27 moment representation
-    lattice Boltzmann model
+    File containing kernels and class definitions for the kinetic energy
 
 Namespace
-    LBM
+    LBM::functionObjects
 
 SourceFiles
-    momentBasedD3Q27.cuh
+    objects.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_MOMENTBASEDD3Q27_CUH
-#define __MBLBM_MOMENTBASEDD3Q27_CUH
+#ifndef __MBLBM_OBJECTS_CUH
+#define __MBLBM_OBJECTS_CUH
 
-#include "../solverIncludes.cuh"
+#include "kineticEnergy.cuh"
+#include "PiMean.cuh"
+#include "rhoMean.cuh"
+#include "strainRateTensor.cuh"
+#include "UMean.cuh"
 
 namespace LBM
 {
-    using BoundaryConditions = boundaryConditions::Case;
-    using VelocitySet = D3Q27<Thermal>;
-    using Collision = secondOrder;
-}
 
-#include "../../../src/runTimeIO/runTimeIO.cuh"
-#include "../../../src/momentBasedLBM/kernel.cuh"
+}
 
 #endif

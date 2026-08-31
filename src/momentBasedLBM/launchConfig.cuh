@@ -113,11 +113,6 @@ namespace LBM
         return false;
 #endif
     }
-
-    /**
-     * @brief Alias for the block halo
-     **/
-    using BlockHalo = device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>;
 }
 
 #endif

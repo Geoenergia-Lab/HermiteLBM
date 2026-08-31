@@ -60,14 +60,14 @@ int main(const int argc, const char *const argv[])
     // If the calculation type argument is not present, we cannot proceed, so we should print an error message and return
     if (!programCtrl.input().isArgPresent("-calculationType"))
     {
-        errorHandler::check<throws::NO_THROW>(-1, "Unspecified calculation type. Please provide an argument using the -calculationType argument.");
+        errorHandler::handle(error::UNSPECIFIED_CALCULATIONTYPE);
         return 0;
     }
 
     // If the field name argument is not present, we cannot proceed, so we should print an error message and return
     if (!programCtrl.input().isArgPresent("-fieldName"))
     {
-        errorHandler::check<throws::NO_THROW>(-1, "Unspecified field name. Please provide an argument using the -fieldName argument.");
+        errorHandler::handle(error::UNSPECIFIED_FIELDNAME);
         return 0;
     }
 
@@ -117,7 +117,7 @@ int main(const int argc, const char *const argv[])
 
             if (!foundField)
             {
-                errorHandler::check<throws::NO_THROW>(-1, "Specified field name not found in any time step directory.");
+                errorHandler::handle(error::FIELDNAME_NOT_FOUND);
             }
             else
             {
@@ -127,12 +127,12 @@ int main(const int argc, const char *const argv[])
         else
         {
             // We don't actually need to throw, we can just print the error message
-            errorHandler::check<throws::NO_THROW>(-1, "Empty timeStep directory.");
+            errorHandler::handle(error::EMPTY_TIMESTEP_DIRECTORY);
         }
     }
     else
     {
-        errorHandler::check<throws::NO_THROW>(-1, "Invalid calculation function for calculation type: " + calculationType);
+        errorHandler::handle(error::INVALID_CALCULATION_FUNCTION);
     }
 
     return 0;

@@ -55,7 +55,8 @@ namespace LBM
     namespace functionObjects
     {
         using calculateFunction = std::function<void()>;
-        using saveFunction = std::function<void(const host::label_t)>;
+        template <class VelocitySet>
+        using saveFunction = std::function<void(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t)>;
 
         /**
          * @brief Reads an arbitrary list of pointers from devPtrs
@@ -65,13 +66,7 @@ namespace LBM
          * @return The values at location idx
          **/
         template <const host::label_t... ptrIndices>
-        __device__ [[nodiscard]] inline constexpr const thread::array<scalar_t, sizeof...(ptrIndices)> read_from_moments(const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs, const device::label_t idx) noexcept
-        {
-            return {devPtrs.ptr<ptrIndices>()[idx]...};
-        }
-
-        template <const host::label_t... ptrIndices>
-        __device__ [[nodiscard]] inline constexpr const thread::array<scalar_t, sizeof...(ptrIndices)> read_from_moments(const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> &devPtrs, const device::label_t idx) noexcept
+        __device__ [[nodiscard]] inline constexpr const thread::array<scalar_t, sizeof...(ptrIndices)> read_from_moments(const device::ptrColl_t &devPtrs, const device::label_t idx) noexcept
         {
             return {devPtrs.ptr<ptrIndices>()[idx]...};
         }
@@ -114,7 +109,7 @@ namespace LBM
          * @param[in] f Current instantaneous value.
          * @param[in] invNewCount Reciprocal of (timeSteps + 1).
          * @return The updated time average.
-         */
+         **/
         template <typename T>
         __device__ [[nodiscard]] inline constexpr T time_average(const T fMean, const T f, const T invNewCount) noexcept
         {
@@ -131,7 +126,7 @@ namespace LBM
          * @param[in] invNewCount Reciprocal of (timeSteps + 1).
          * @param[in] std::index_sequence<Is...> Compile‑time index pack for expansion.
          * @return Array where each element is the updated time average of the corresponding elements.
-         */
+         **/
         template <typename T, const host::label_t N, const host::label_t... Is>
         __device__ [[nodiscard]] inline constexpr const thread::array<T, N> time_average(const thread::array<T, N> &fMean, const thread::array<T, N> &f, const T invNewCount, const std::index_sequence<Is...>) noexcept
         {
@@ -144,7 +139,7 @@ namespace LBM
          * @param[in] f Current instantaneous array.
          * @param[in] invNewCount Reciprocal of (timeSteps + 1).
          * @return The updated time average array.
-         */
+         **/
         template <typename T, const host::label_t N>
         __device__ [[nodiscard]] inline constexpr const thread::array<T, N> time_average(const thread::array<T, N> &fMean, const thread::array<T, N> &f, const T invNewCount) noexcept
         {
@@ -156,7 +151,7 @@ namespace LBM
          * @param[in] a First value.
          * @param[in] b Second value.
          * @return (a - b) * (a - b).
-         */
+         **/
         template <typename T>
         __device__ [[nodiscard]] inline constexpr T squared_difference(const T a, const T b) noexcept
         {
@@ -172,7 +167,7 @@ namespace LBM
          * @param[in] b Second array.
          * @param[in] std::index_sequence<Is...> Compile‑time index pack for expansion.
          * @return Array where each element is (a[i] - b[i]) ^ 2.
-         */
+         **/
         template <typename T, const host::label_t N, const host::label_t... Is>
         __device__ [[nodiscard]] inline constexpr const thread::array<T, N> squared_difference(const thread::array<T, N> &a, const thread::array<T, N> &b, const std::index_sequence<Is...>) noexcept
         {
@@ -184,7 +179,7 @@ namespace LBM
          * @param[in] a First array.
          * @param[in] b Second array.
          * @return Array of squared differences.
-         */
+         **/
         template <typename T, const host::label_t N>
         __device__ [[nodiscard]] inline constexpr const thread::array<T, N> squared_difference(const thread::array<T, N> &a, const thread::array<T, N> &b) noexcept
         {
@@ -200,7 +195,7 @@ namespace LBM
          **/
         template <class FunctionObject>
         __device__ inline void mean(
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
+            const device::ptrColl_t &devPtrs,
             const device::ptrCollection<FunctionObject::N, scalar_t> &resultMeanPtrs,
             const scalar_t invNewCount) noexcept
         {
@@ -229,7 +224,7 @@ namespace LBM
          **/
         template <class FunctionObject>
         __device__ inline void instantaneousAndMean(
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
+            const device::ptrColl_t &devPtrs,
             const device::ptrCollection<FunctionObject::N, scalar_t> &resultPtrs,
             const device::ptrCollection<FunctionObject::N, scalar_t> &resultMeanPtrs,
             const scalar_t invNewCount) noexcept
@@ -261,7 +256,7 @@ namespace LBM
          **/
         template <class FunctionObject>
         __device__ inline void instantaneous(
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
+            const device::ptrColl_t &devPtrs,
             const device::ptrCollection<FunctionObject::N, scalar_t> &resultPtrs) noexcept
         {
             // Calculate the index
@@ -283,7 +278,7 @@ namespace LBM
          **/
         template <class FunctionObject>
         __device__ inline void prime(
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
+            const device::ptrColl_t &devPtrs,
             const device::ptrCollection<FunctionObject::N, scalar_t> &resultMeanPtrs,
             const device::ptrCollection<FunctionObject::N, scalar_t> &resultPrimePtrs) noexcept
         {
@@ -313,7 +308,7 @@ namespace LBM
          **/
         template <class FunctionObject>
         __device__ inline void primeSqMean(
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
+            const device::ptrColl_t &devPtrs,
             const device::ptrCollection<FunctionObject::N, scalar_t> &resultMeanPtrs,
             const device::ptrCollection<FunctionObject::N, scalar_t> &resultPrimeSqMeanPtrs,
             const scalar_t invNewCount) noexcept

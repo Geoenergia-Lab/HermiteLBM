@@ -61,7 +61,7 @@ namespace LBM
          * @param[in] mesh Reference to the lattice mesh
          * @param[in] timeStep Current simulation time step (for logging).
          * @param[in] fileName Base name for the output file.
-         */
+         **/
         template <const numericalSchemes::sqMode Squared>
         __host__ void magnitudeImpl(
             const host::arrayCollection<scalar_t> &variables,
@@ -79,7 +79,7 @@ namespace LBM
             const std::string outputName = fileName + suffix;
 
             postProcess::LBMBin::write(outputName, mesh, {fileName}, result.data(), timeStep);
-            std::cout << "    Written " << (Squared ? "squared " : "") << "magnitude to " << outputName << std::endl;
+            std::cout << IO::whitespace<4>{} << "Written " << (Squared ? "squared " : "") << "magnitude to " << outputName << std::endl;
 
             std::cout << "};" << std::endl;
         }
@@ -181,7 +181,7 @@ namespace LBM
 
             postProcess::LBMBin::write(outputName, mesh, string::catenate("d", string::catenate(variables.varNames(), "_dx")), result, timeStep);
 
-            std::cout << "    Written d" << fileName << "/dx to " << outputName << std::endl;
+            std::cout << IO::whitespace<4>{} << "Written d" << fileName << "/dx to " << outputName << std::endl;
 
             std::cout << "};" << std::endl;
         }

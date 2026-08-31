@@ -60,7 +60,7 @@ namespace LBM
             /**
              * @brief Alias for the collection of pointers to device arrays on the GPU, used to pass the data to the kernel
              **/
-            using CollectionType = device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t>;
+            using CollectionType = device::ptrColl_t;
             using Type = std::vector<CollectionType>;
 
             /**
@@ -115,11 +115,11 @@ namespace LBM
 
                 for (host::label_t stream = 0; stream < programCtrl.deviceList().size(); stream++)
                 {
-                    errorHandler::checkInline(cudaSetDevice(programCtrl.deviceList()[stream]));
-                    errorHandler::checkInline(cudaDeviceSynchronize());
+                    errorHandler::handleInline(cudaSetDevice(programCtrl.deviceList()[stream]));
+                    errorHandler::handleInline(cudaDeviceSynchronize());
 
                     ptrs.emplace_back(
-                        device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t>(
+                        device::ptrColl_t(
                             rho.self().mutPtr(stream),
                             U.x().mutPtr(stream),
                             U.y().mutPtr(stream),

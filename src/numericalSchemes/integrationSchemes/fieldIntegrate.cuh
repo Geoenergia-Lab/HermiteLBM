@@ -82,13 +82,13 @@ namespace LBM
                 for (host::label_t y = 0; y < ny; ++y)
                 {
                     // Initial condition for integration along this x-line
-                    integral_f[global::idx(0, y, z, nx, ny)] = 0;
+                    integral_f[Cartesian::idx(0, y, z, nx, ny)] = 0;
 
                     // Cumulative integration using the trapezoidal rule
                     for (host::label_t x = 1; x < nx; ++x)
                     {
-                        const host::label_t current_idx = global::idx(x, y, z, nx, ny);
-                        const host::label_t prev_idx = global::idx(x - 1, y, z, nx, ny);
+                        const host::label_t current_idx = Cartesian::idx(x, y, z, nx, ny);
+                        const host::label_t prev_idx = Cartesian::idx(x - 1, y, z, nx, ny);
 
                         integral_f[current_idx] = integral_f[prev_idx] + static_cast<TReturn>(0.5 * dx * (static_cast<double>(f[prev_idx]) + static_cast<double>(f[current_idx])));
                     }
@@ -119,13 +119,13 @@ namespace LBM
                 for (host::label_t x = 0; x < nx; ++x)
                 {
                     // Initial condition for integration along this y-line
-                    integral_f[global::idx(x, 0, z, nx, ny)] = 0;
+                    integral_f[Cartesian::idx(x, 0, z, nx, ny)] = 0;
 
                     // Cumulative integration using the trapezoidal rule
                     for (host::label_t y = 1; y < ny; ++y)
                     {
-                        const host::label_t current_idx = global::idx(x, y, z, nx, ny);
-                        const host::label_t prev_idx = global::idx(x, y - 1, z, nx, ny);
+                        const host::label_t current_idx = Cartesian::idx(x, y, z, nx, ny);
+                        const host::label_t prev_idx = Cartesian::idx(x, y - 1, z, nx, ny);
 
                         integral_f[current_idx] = integral_f[prev_idx] + static_cast<TReturn>(0.5 * dy * (static_cast<double>(f[prev_idx]) + static_cast<double>(f[current_idx])));
                     }
@@ -156,13 +156,13 @@ namespace LBM
                 for (host::label_t x = 0; x < nx; ++x)
                 {
                     // Initial condition for integration along this z-line
-                    integral_f[global::idx(x, y, 0, nx, ny)] = 0;
+                    integral_f[Cartesian::idx(x, y, 0, nx, ny)] = 0;
 
                     // Cumulative integration using the trapezoidal rule
                     for (host::label_t z = 1; z < nz; ++z)
                     {
-                        const host::label_t current_idx = global::idx(x, y, z, nx, ny);
-                        const host::label_t prev_idx = global::idx(x, y, z - 1, nx, ny);
+                        const host::label_t current_idx = Cartesian::idx(x, y, z, nx, ny);
+                        const host::label_t prev_idx = Cartesian::idx(x, y, z - 1, nx, ny);
 
                         integral_f[current_idx] = integral_f[prev_idx] + static_cast<TReturn>(0.5 * dz * (static_cast<double>(f[prev_idx]) + static_cast<double>(f[current_idx])));
                     }

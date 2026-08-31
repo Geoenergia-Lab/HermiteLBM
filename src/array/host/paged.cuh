@@ -181,24 +181,31 @@ namespace LBM
                 const name_t &componentName,
                 const programControl &programCtrl)
             {
-                if (!std::filesystem::is_directory("timeStep/" + std::to_string(programCtrl.latestTime())))
+                if (program_status.load() == GOOD)
                 {
-                    if constexpr (verbose())
+                    if (!std::filesystem::is_directory("timeStep/" + std::to_string(programCtrl.latestTime())))
                     {
-                        std::cout << "Did not find directory timeStep/" << std::to_string(programCtrl.latestTime()) << std::endl;
+                        if constexpr (verbose())
+                        {
+                            std::cout << "Did not find directory timeStep/" << std::to_string(programCtrl.latestTime()) << std::endl;
+                        }
+                        return initialConditions(mesh, componentName, programCtrl);
                     }
-                    return initialConditions(mesh, componentName, programCtrl);
+                    else
+                    {
+                        if constexpr (verbose())
+                        {
+                            std::cout << "Reading field " << componentName << " from file " << fieldName << " for time step " << programCtrl.latestTime() << std::endl;
+                        }
+
+                        const name_t resolvedFileName = "timeStep/" + std::to_string(programCtrl.latestTime()) + "/" + fieldName + ".LBMBin";
+
+                        return fileIO::readFieldByName<T>(resolvedFileName, componentName);
+                    }
                 }
                 else
                 {
-                    if constexpr (verbose())
-                    {
-                        std::cout << "Reading field " << componentName << " from file " << fieldName << " for time step " << programCtrl.latestTime() << std::endl;
-                    }
-
-                    const name_t resolvedFileName = "timeStep/" + std::to_string(programCtrl.latestTime()) + "/" + fieldName + ".LBMBin";
-
-                    return fileIO::readFieldByName<T>(resolvedFileName, componentName);
+                    return {};
                 }
             }
 

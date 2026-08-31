@@ -95,9 +95,7 @@ namespace LBM
             {
                 for (host::label_t i = 0; i < 12; ++i)
                 {
-                    errorHandler::check(cudaDeviceSynchronize());
-                    errorHandler::check(cudaFree(collection.ptr(i)));
-                    errorHandler::check(cudaDeviceSynchronize());
+                    device::free(collection.ptr(i));
                 }
             }
         }
@@ -182,9 +180,9 @@ namespace LBM
             const programControl &programCtrl,
             const host::label_t deviceIdx) const
         {
-            errorHandler::check(cudaDeviceSynchronize());
-            errorHandler::check(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
-            errorHandler::check(cudaDeviceSynchronize());
+            errorHandler::handle(cudaDeviceSynchronize());
+            errorHandler::handle(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
+            errorHandler::handle(cudaDeviceSynchronize());
 
             scalar_t *haloPtrs[12];
 
@@ -229,15 +227,18 @@ namespace LBM
                 Pi.yz().constPtr(deviceIdx),
                 Pi.zz().constPtr(deviceIdx));
 
-            kernel::launch<kernel::momentBasedLBMInitialisation>(
-                mesh,
-                programCtrl.streams()[GPU::internalStreamID(deviceIdx)],
-                devPtrs,
-                haloBuffers,
-                VelocitySet::Q(),
-                VelocitySet::modelType());
+            if (program_status.load() == GOOD)
+            {
+                kernel::launch<kernel::momentBasedLBMInitialisation>(
+                    mesh,
+                    programCtrl.streams()[GPU::internalStreamID(deviceIdx)],
+                    devPtrs,
+                    haloBuffers,
+                    VelocitySet::Q(),
+                    VelocitySet::modelType());
+            }
 
-            errorHandler::check(cudaDeviceSynchronize());
+            errorHandler::handle(cudaDeviceSynchronize());
 
             return haloBuffers;
         }
@@ -262,12 +263,16 @@ namespace LBM
 
             std::vector<doubleBuffer<scalar_t>> vec;
 
-            vec.reserve(numDevices);
+            ifAllocationAllowed(
+                [&]()
+                {
+                    vec.reserve(numDevices);
 
-            for (host::label_t devIdx = 0; devIdx < numDevices; ++devIdx)
-            {
-                vec.emplace_back(initialise_ptrs(rho, U, Pi, mesh, programCtrl, devIdx));
-            }
+                    for (host::label_t devIdx = 0; devIdx < numDevices; ++devIdx)
+                    {
+                        vec.emplace_back(initialise_ptrs(rho, U, Pi, mesh, programCtrl, devIdx));
+                    }
+                });
 
             return vec;
         }

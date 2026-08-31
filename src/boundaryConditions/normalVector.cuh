@@ -90,27 +90,27 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval nodeType_t WEST() noexcept
         {
             return 0x01;
-        } // 1 << 0
+        }
         __device__ __host__ [[nodiscard]] static inline consteval nodeType_t EAST() noexcept
         {
             return 0x02;
-        } // 1 << 1
+        }
         __device__ __host__ [[nodiscard]] static inline consteval nodeType_t SOUTH() noexcept
         {
             return 0x04;
-        } // 1 << 2
+        }
         __device__ __host__ [[nodiscard]] static inline consteval nodeType_t NORTH() noexcept
         {
             return 0x08;
-        } // 1 << 3
+        }
         __device__ __host__ [[nodiscard]] static inline consteval nodeType_t BACK() noexcept
         {
             return 0x10;
-        } // 1 << 4
+        }
         __device__ __host__ [[nodiscard]] static inline consteval nodeType_t FRONT() noexcept
         {
             return 0x20;
-        } // 1 << 5
+        }
 
         /**
          * @name Corner Boundary Types

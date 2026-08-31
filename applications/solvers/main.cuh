@@ -52,21 +52,37 @@ SourceFiles
 
 using namespace LBM;
 
+void sigint_handler([[maybe_unused]] const int code)
+{
+    std::cout << "Abort signal received" << std::endl;
+    program_status.store(BAD, std::memory_order_relaxed);
+}
+
 int main(const int argc, const char *const argv[])
 {
-    const programControl programCtrl(argc, argv);
+    struct sigaction sa;
+    std::memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = sigint_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    if (sigaction(SIGINT, &sa, nullptr) != 0)
+    {
+        return 1;
+    }
+
+    programControl programCtrl(argc, argv);
 
     const host::latticeMesh mesh(programCtrl);
 
     if (!((mesh.nDevices<axis::X>() * mesh.nDevices<axis::Y>() * mesh.nDevices<axis::Z>()) == programCtrl.deviceList().size()))
     {
-        errorHandler::check<throws::NO_THROW>(-1, "Number of GPUs must match the number of devices in the mesh decomposition");
+        errorHandler::handle(error::INCORRECT_NUMBER_OF_GPUS);
         return 0;
     }
 
     if ((mesh.nDevices<axis::X>() > 1) || (mesh.nDevices<axis::Y>() > 1))
     {
-        errorHandler::check<throws::NO_THROW>(-1, "HermiteLBM currently only supports decomposition in the z axis");
+        errorHandler::handle(error::INVALID_DEVICE_DECOMPOSITION);
         return 0;
     }
 
@@ -77,89 +93,48 @@ int main(const int argc, const char *const argv[])
     const device::vectorField<VelocitySet, time::instantaneous> U("U", mesh, programCtrl);
     const device::symmetricTensorField<VelocitySet, time::instantaneous> Pi("Pi", mesh, programCtrl);
 
-    const haloBuffer<VelocitySet> haloPtrs(rho, U, Pi, mesh, programCtrl);
-
-    host::array<host::PINNED, scalar_t, VelocitySet> hostWriteBuffer(mesh.size() * 6, mesh);
-
     programCtrl.configure<VelocitySet::smem_alloc_size()>(kernel::momentBasedLBM);
 
-    objectRegistry<VelocitySet> runTimeObjects(hostWriteBuffer, mesh, rho, U, Pi, programCtrl);
+    const KernelLauncher momentBasedLBM(mesh, programCtrl, rho, U, Pi);
 
-    const runTimeIO IO(mesh, programCtrl);
-
-    const kernel::ptrCollection devPtrs(rho, U, Pi, programCtrl);
-
-    turbulenceStatistics<VelocitySet> turbulenceStats(devPtrs, mesh, programCtrl, hostWriteBuffer);
+    objectRegistry<VelocitySet> runTimeObjects(mesh, programCtrl, momentBasedLBM.devPtrs());
+    turbulenceStatistics<VelocitySet> turbulenceStats(mesh, programCtrl, momentBasedLBM.devPtrs());
 
     programCtrl.allsync();
 
-    const deviceCommunicator<VelocitySet> devComm(mesh, programCtrl, haloPtrs);
-
-    for (host::label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
+    if (program_status.load() == GOOD)
     {
-        // Do the run-time IO
-        if (programCtrl.print(timeStep))
-        {
-            std::cout << "Time: " << timeStep << std::endl;
-        }
+        runTimeIO<VelocitySet> IO(mesh, programCtrl, rho, U, Pi, runTimeObjects, turbulenceStats);
 
-        // Checkpoint
-        if constexpr (boundaryConditions::save())
+        for (programCtrl.timeStep() = programCtrl.latestTime(); programCtrl.end(); programCtrl.timeStep()++)
         {
-            if (programCtrl.save(timeStep))
+            // Do the run-time IO
+            if (programCtrl.print(programCtrl.timeStep()))
             {
-                rho.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
+                std::cout << "Time: " << programCtrl.timeStep() << std::endl;
+            }
 
-                U.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
+            // Checkpoint
+            if constexpr (boundaryConditions::save())
+            {
+                if (programCtrl.save(programCtrl.timeStep()))
+                {
+                    IO.save<postProcess::LBMBin>();
+                }
+            }
 
-                Pi.save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
+            // Main kernel launch
+            momentBasedLBM.launch();
 
-                turbulenceStats.save(timeStep);
-
-                runTimeObjects.save(timeStep);
+            // Evaluate the run-time function objects
+            if constexpr (boundaryConditions::save())
+            {
+                runTimeObjects.calculate();
+                turbulenceStats.calculate();
             }
         }
 
-        // Main kernel launches
-        if constexpr (system::hasMultiGPU())
-        {
-            std::thread boundaryThread(
-                std::addressof(kernel::launchBoundary),
-                std::cref(mesh),
-                std::cref(programCtrl),
-                std::cref(devPtrs),
-                std::cref(haloPtrs),
-                std::cref(devComm),
-                timeStep);
-            std::thread internalThread(
-                std::addressof(kernel::launchInternal),
-                std::cref(mesh),
-                std::cref(programCtrl),
-                std::cref(devPtrs),
-                std::cref(haloPtrs),
-                timeStep);
-
-            // Synchronize computation and communication
-            boundaryThread.join();
-            internalThread.join();
-        }
-        else
-        {
-            kernel::launch<kernel::momentBasedLBM, VelocitySet::smem_alloc_size()>(
-                mesh,
-                programCtrl.streams()[GPU::internalStreamID(0)],
-                devPtrs[0],
-                haloPtrs.readBuffer(0, timeStep),
-                haloPtrs.writeBuffer(0, timeStep),
-                static_cast<device::label_t>(0));
-        }
-
-        // Evaluate the run-time function objects
-        if constexpr (boundaryConditions::save())
-        {
-            runTimeObjects.calculate();
-            turbulenceStats.calculate();
-        }
+        programCtrl.allsync();
     }
 
     return 0;

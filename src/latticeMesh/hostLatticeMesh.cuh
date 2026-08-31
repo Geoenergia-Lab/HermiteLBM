@@ -368,9 +368,9 @@ namespace LBM
              * @param[in] nDevices The number of devices in each direction for multi-GPU decomposition
              **/
             __host__ static void validate_allocation_size(
-                const programControl &programCtrl,
+                [[maybe_unused]] const programControl &programCtrl,
                 const host::blockLabel &dimensions,
-                const host::blockLabel &nDevices)
+                [[maybe_unused]] const host::blockLabel &nDevices)
             {
                 const host::label_t nxTemp = static_cast<host::label_t>(dimensions.value<axis::X>());
                 const host::label_t nyTemp = static_cast<host::label_t>(dimensions.value<axis::Y>());
@@ -381,36 +381,7 @@ namespace LBM
                 // Check that the mesh dimensions won't overflow the type limit for host::label_t
                 if (nPointsTemp >= typeLimit)
                 {
-                    throw std::runtime_error(
-                        "\nMesh size exceeds maximum allowed value:\n"
-                        "Number of mesh points: " +
-                        std::to_string(nPointsTemp) +
-                        "\nLimit of device::label_t: " +
-                        std::to_string(typeLimit));
-                }
-
-                // Check that the mesh dimensions are not too large for GPU memory
-                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < programCtrl.deviceList().size(); virtualDeviceIndex++)
-                {
-                    // Calculate the per-GPU allocation size
-                    const host::label_t nxPointsPerDevice = dimensions.value<axis::X>() / nDevices.value<axis::X>();
-                    const host::label_t nyPointsPerDevice = dimensions.value<axis::Y>() / nDevices.value<axis::Y>();
-                    const host::label_t nzPointsPerDevice = dimensions.value<axis::Z>() / nDevices.value<axis::Z>();
-                    const host::label_t nPointsPerDevice = nxPointsPerDevice * nyPointsPerDevice * nzPointsPerDevice;
-
-                    const cudaDeviceProp props = GPU::properties(programCtrl.deviceList()[virtualDeviceIndex]);
-                    const host::label_t totalMemTemp = props.totalGlobalMem;
-                    const host::label_t allocationSize = nPointsPerDevice * static_cast<host::label_t>(sizeof(scalar_t)) * (NUMBER_MOMENTS<host::label_t>());
-
-                    if (allocationSize >= totalMemTemp)
-                    {
-                        const double gbAllocation = static_cast<double>(allocationSize / (1024 * 1024 * 1024));
-                        const double gbAvailable = static_cast<double>(totalMemTemp / (1024 * 1024 * 1024));
-
-                        const name_t errorString = name_t("Insufficient GPU memory (") + std::to_string(gbAllocation) + name_t(" GiB requested, ") + std::to_string(gbAvailable) + name_t(" GiB available)");
-
-                        errorHandler::check(-1, errorString);
-                    }
+                    errorHandler::handle(error::LABEL_T_CAPACITY_EXCEEDED);
                 }
             }
 
@@ -437,7 +408,7 @@ namespace LBM
                     {
                         const host::label_t virtualDeviceIndex = GPU::idx(dx, dy, dz, nDevices.value<axis::X>(), nDevices.value<axis::Y>());
 
-                        errorHandler::check(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
+                        errorHandler::handle(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
 
                         const device::label_t nx = static_cast<device::label_t>(dimensions.x);
                         const device::label_t ny = static_cast<device::label_t>(dimensions.y);
@@ -474,17 +445,13 @@ namespace LBM
              **/
             __host__ inline void print() const noexcept
             {
-                dimensions_.print("latticeMesh");
-                std::cout << std::endl;
+                dimensions_.print<true>("latticeMesh");
 
-                L_.print("meshSize");
-                std::cout << std::endl;
+                L_.print<true>("meshSize");
 
-                host::blockLabel{block::nx(), block::ny(), block::nz()}.print("blockDimensions");
-                std::cout << std::endl;
+                host::blockLabel{block::nx(), block::ny(), block::nz()}.print<true>("blockDimensions");
 
-                nDevices_.print("deviceDecomposition");
-                std::cout << std::endl;
+                nDevices_.print<true>("deviceDecomposition");
             }
         };
     }

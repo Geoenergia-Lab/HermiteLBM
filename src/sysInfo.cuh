@@ -50,6 +50,8 @@ SourceFiles
 #ifndef __MBLBM_SYSINFO_CUH
 #define __MBLBM_SYSINFO_CUH
 
+#include "errorHandler.cuh"
+
 namespace LBM
 {
     struct system
@@ -88,6 +90,50 @@ namespace LBM
 #else
             return false;
 #endif
+        }
+
+        /**
+         * @brief Queries the number of available CUDA devices
+         * @return Count of available CUDA devices
+         **/
+        template <typename T>
+        __host__ [[nodiscard]] static inline T deviceCount() noexcept
+        {
+            int N = 0;
+            const cudaError_t code = cudaGetDeviceCount(&N);
+
+            if (code != cudaSuccess)
+            {
+                errorHandler::handle(code);
+                return static_cast<T>(0);
+            }
+            return static_cast<T>(N);
+        }
+
+        __host__ [[nodiscard]] static inline consteval host::label_t scalarSize() noexcept
+        {
+            return static_cast<host::label_t>(sizeof(scalar_t)) * static_cast<host::label_t>(8);
+        }
+
+        __host__ [[nodiscard]] static inline consteval host::label_t labelSize() noexcept
+        {
+            return static_cast<host::label_t>(sizeof(device::label_t)) * static_cast<host::label_t>(8);
+        }
+
+        __host__ [[nodiscard]] static inline consteval const char *binaryType() noexcept
+        {
+            return endian::nameString();
+        }
+
+        __host__ static void print(std::ostream &out)
+        {
+            IO::printBlock(out, "systemInformation", "{", "};", "binaryType", binaryType(), "scalarSize", scalarSize(), "labelSize", labelSize());
+            out << std::endl;
+        }
+
+        __host__ static void print()
+        {
+            print(std::cout);
         }
     };
 

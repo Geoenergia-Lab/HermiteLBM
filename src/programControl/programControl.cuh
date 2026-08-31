@@ -77,6 +77,7 @@ namespace LBM
               saveInterval_(string::extractParameter<host::label_t>(string::readFile("programControl"), "saveInterval")),
               infoInterval_(string::extractParameter<host::label_t>(string::readFile("programControl"), "infoInterval")),
               latestTime_(latestSaved()),
+              timeStep_(latestTime_),
               streams_(deviceList())
         {
             types::assertions::validate<scalar_t>();
@@ -88,32 +89,31 @@ namespace LBM
             // Get current working directory
             const std::filesystem::path launchDirectory = std::filesystem::current_path();
 
-            printHeader();
-            std::cout << std::endl;
-            std::cout << "programControl:" << std::endl;
-            std::cout << "{" << std::endl;
-            std::cout << "    programName: " << input_.commandLine()[0] << ";" << std::endl;
-            std::cout << "    launchTime: " << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S") << ";" << std::endl;
-            std::cout << "    launchDirectory: " << launchDirectory.string() << ";" << std::endl;
-            fileIO::print<true>(deviceList(), "deviceList");
-            std::cout << "    caseName: " << caseName_ << ";" << std::endl;
-            std::cout << "    Re = " << Re_ << ";" << std::endl;
-            std::cout << "    Ma = " << Ma_ << ";" << std::endl;
-            std::cout << "    U_inf = " << Ma_ / std::sqrt(static_cast<scalar_t>(3)) << ";" << std::endl;
-            std::cout << "    nTimeSteps = " << nTimeSteps_ << ";" << std::endl;
-            std::cout << "    saveInterval = " << saveInterval_ << ";" << std::endl;
-            std::cout << "    infoInterval = " << infoInterval_ << ";" << std::endl;
-            std::cout << "    latestTime = " << latestTime_ << ";" << std::endl;
-            std::cout << "    scalarSize: " << sizeof(scalar_t) * 8 << ";" << std::endl;
-            std::cout << "    labelType: uint" << sizeof(device::label_t) * 8 << "_t" << ";" << std::endl;
-            std::cout << "};" << std::endl;
-            std::cout << std::endl;
+            printHeader<true>();
+            IO::printBlock(
+                std::cout, "programControl",
+                "{", "}",
+                "programName", input_.commandLine()[0],
+                "launchTime", std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S"),
+                "launchDirectory", launchDirectory.string(),
+                "deviceList", deviceList(),
+                "caseName", caseName_,
+                "Re", Re_,
+                "Ma", Ma_,
+                "U_inf", Ma_ / std::sqrt(static_cast<scalar_t>(3)),
+                "nTimeSteps", nTimeSteps_,
+                "saveInterval", saveInterval_,
+                "infoInterval", infoInterval_,
+                "latestTime", latestTime_,
+                "scalarSize", sizeof(scalar_t) * 8,
+                "labelType", "uint" + std::to_string(sizeof(device::label_t) * 8) + "_t");
 
+            std::cout << std::endl;
             if (deviceList().size() > 0)
             {
                 for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList().size(); virtualDeviceIndex++)
                 {
-                    errorHandler::check(cudaSetDevice(deviceList()[virtualDeviceIndex]));
+                    errorHandler::handle(cudaSetDevice(deviceList()[virtualDeviceIndex]));
 
                     // Allocate symbols on the GPU
                     const scalar_t U = Ma_ / std::sqrt(static_cast<scalar_t>(3));
@@ -137,9 +137,9 @@ namespace LBM
             // Probably unnecessary but nice to do it anyway
             if (deviceList().size() > 0)
             {
-                errorHandler::check(cudaDeviceSynchronize());
-                errorHandler::check(cudaSetDevice(deviceList()[0]));
-                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::handle(cudaDeviceSynchronize());
+                errorHandler::handle(cudaSetDevice(deviceList()[0]));
+                errorHandler::handle(cudaDeviceSynchronize());
             }
         };
 
@@ -162,6 +162,7 @@ namespace LBM
         /**
          * @brief Print the file header
          **/
+        template <const bool LineBreak = false>
         __host__ static void printHeader() noexcept
         {
             std::cout << "/*---------------------------------------------------------------------------*\\" << std::endl;
@@ -172,6 +173,10 @@ namespace LBM
             std::cout << "| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |" << std::endl;
             std::cout << "|                                                                             |" << std::endl;
             std::cout << "\\*---------------------------------------------------------------------------*/" << std::endl;
+            if constexpr (LineBreak)
+            {
+                std::cout << std::endl;
+            }
         }
 
         /**
@@ -256,6 +261,27 @@ namespace LBM
         }
 
         /**
+         * @brief Returns a reference to the current time step
+         * @return The latest time step as a host::label_t
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr const host::label_t &timeStep() const noexcept
+        {
+            return timeStep_;
+        }
+        __device__ __host__ [[nodiscard]] inline constexpr host::label_t &timeStep() noexcept
+        {
+            return timeStep_;
+        }
+
+        /**
+         * @brief Determines whether or not the run time loop should exit
+         **/
+        __host__ [[nodiscard]] inline constexpr bool end() const noexcept
+        {
+            return (timeStep() < nt() && (program_status.load() == GOOD));
+        }
+
+        /**
          * @brief Provides read-only access to the input control
          * @return A const reference to an inputControl object
          **/
@@ -312,20 +338,20 @@ namespace LBM
         {
             for (host::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < deviceList().size(); VirtualDeviceIndex++)
             {
-                errorHandler::check(cudaDeviceSynchronize());
-                errorHandler::check(cudaSetDevice(deviceList()[VirtualDeviceIndex]));
-                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::handle(cudaDeviceSynchronize());
+                errorHandler::handle(cudaSetDevice(deviceList()[VirtualDeviceIndex]));
+                errorHandler::handle(cudaDeviceSynchronize());
                 if constexpr (PreferShared)
                 {
-                    errorHandler::check(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
+                    errorHandler::handle(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
                 }
                 else
                 {
-                    errorHandler::check(cudaFuncSetCacheConfig(func, cudaFuncCachePreferL1));
+                    errorHandler::handle(cudaFuncSetCacheConfig(func, cudaFuncCachePreferL1));
                 }
-                errorHandler::check(cudaDeviceSynchronize());
-                errorHandler::check(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
-                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::handle(cudaDeviceSynchronize());
+                errorHandler::handle(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
+                errorHandler::handle(cudaDeviceSynchronize());
             }
         }
 
@@ -407,6 +433,8 @@ namespace LBM
         const host::label_t saveInterval_;
         const host::label_t infoInterval_;
         const host::label_t latestTime_;
+
+        host::label_t timeStep_;
 
         const streamHandler streams_;
 

@@ -114,20 +114,6 @@ namespace LBM
             return values_[6]();
         }
 
-        /**
-         * @brief Print field values for all regions
-         **/
-        void print() const noexcept
-        {
-            std::cout << fieldName_ << " boundary values:" << std::endl;
-
-            const words_t fieldNames({"North", "South", "East", "West", "Back", "Front", "Internal"});
-            for (host::label_t var = 0; var < fieldNames.size(); var++)
-            {
-                std::cout << fieldNames[var] << ": " << values_[var]() << std::endl;
-            }
-        }
-
     private:
         /**
          * @brief Field values for all regions

@@ -114,8 +114,8 @@ namespace LBM
         {
             for (const cudaStream_t &stream : streams_)
             {
-                errorHandler::check(cudaStreamSynchronize(stream));
-                errorHandler::check(cudaStreamDestroy(stream));
+                errorHandler::handle(cudaStreamSynchronize(stream));
+                errorHandler::handle(cudaStreamDestroy(stream));
             }
         }
 
@@ -131,7 +131,7 @@ namespace LBM
          **/
         inline void synchronize(const host::label_t i) const noexcept
         {
-            errorHandler::checkInline(cudaStreamSynchronize(streams_[i]));
+            errorHandler::handleInline(cudaStreamSynchronize(streams_[i]));
         }
 
         /**
@@ -168,23 +168,23 @@ namespace LBM
 
             for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
             {
-                errorHandler::check(cudaSetDevice(deviceIndices[deviceIdx]));
-                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::handle(cudaSetDevice(deviceIndices[deviceIdx]));
+                errorHandler::handle(cudaDeviceSynchronize());
             }
 
             for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
             {
-                errorHandler::check(cudaSetDevice(deviceIndices[deviceIdx]));
+                errorHandler::handle(cudaSetDevice(deviceIndices[deviceIdx]));
                 for (device::label_t stream = 0; stream < 3; stream++)
                 {
-                    errorHandler::check(cudaStreamCreate(&streams[device::idxStream(deviceIdx, stream)]));
+                    errorHandler::handle(cudaStreamCreate(&streams[device::idxStream(deviceIdx, stream)]));
                 }
             }
 
             for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
             {
-                errorHandler::check(cudaSetDevice(deviceIndices[deviceIdx]));
-                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::handle(cudaSetDevice(deviceIndices[deviceIdx]));
+                errorHandler::handle(cudaDeviceSynchronize());
             }
 
             return streams;

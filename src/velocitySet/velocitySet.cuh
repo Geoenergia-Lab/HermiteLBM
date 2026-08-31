@@ -439,7 +439,7 @@ namespace LBM
                 {
                     constexpr auto idx = q_i<decltype(i)::value>();
                     std::cout
-                        << "    {w, cx, cy, cz}[" << idx << "] = {"
+                        << IO::whitespace<4>{} << "{w, cx, cy, cz}[" << idx << "] = {"
                         << Lattice::template w_q<double>()[idx] << ", "
                         << c_str<Lattice::template c<int, axis::X>()[idx]>() << ", "
                         << c_str<Lattice::template c<int, axis::Y>()[idx]>() << ", "

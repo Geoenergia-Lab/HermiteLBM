@@ -51,16 +51,7 @@ SourceFiles
 #ifndef __MBLBM_ISOTHERMALD3Q27_CUH
 #define __MBLBM_ISOTHERMALD3Q27_CUH
 
-#include "../../../src/LBMIncludes.cuh"
-#include "../../../src/typedefs/typedefs.cuh"
-#include "../../../src/streaming/streaming.cuh"
-#include "../../../src/collision/collision.cuh"
-#include "../../../src/blockHalo/blockHalo.cuh"
-#include "../../../src/fileIO/fileIO.cuh"
-#include "../../../src/runTimeIO/runTimeIO.cuh"
-#include "../../../src/functionObjects/objectRegistry.cuh"
-#include "../../../src/array/array.cuh"
-#include "../../../src/boundaryConditions/boundaryConditions.cuh"
+#include "../solverIncludes.cuh"
 
 namespace LBM
 {
@@ -69,6 +60,7 @@ namespace LBM
     using Collision = secondOrder;
 }
 
+#include "../../../src/runTimeIO/runTimeIO.cuh"
 #include "../../../src/momentBasedLBM/kernel.cuh"
 
 #endif

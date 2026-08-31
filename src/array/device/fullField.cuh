@@ -271,7 +271,7 @@ namespace LBM
 
                     for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList.size(); ++virtualDeviceIndex)
                     {
-                        errorHandler::check(cudaSetDevice(deviceList[virtualDeviceIndex]));
+                        errorHandler::handle(cudaSetDevice(deviceList[virtualDeviceIndex]));
                         device::copyToSymbol(device::U_North, North() * U_inf, i);
                         device::copyToSymbol(device::U_South, South() * U_inf, i);
                         device::copyToSymbol(device::U_East, East() * U_inf, i);

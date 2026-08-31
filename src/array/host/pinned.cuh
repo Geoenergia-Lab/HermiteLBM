@@ -90,25 +90,11 @@ namespace LBM
                   nPoints_(nPoints) {}
 
             /**
-             * @brief Construct a pinned array of given size, uniformly initialised to a value.
-             * @param[in] nPoints Number of elements.
-             * @param[in] val Initial value.
-             * @param[in] mesh The lattice mesh
-             **/
-            __host__ [[nodiscard]] array(
-                const host::label_t nPoints,
-                const T val,
-                const host::latticeMesh &mesh)
-                : arrayBase<T, VelocitySet>("", mesh),
-                  ptr_(host::allocate<T>(nPoints, val)),
-                  nPoints_(nPoints) {}
-
-            /**
              * @brief Destructor - frees the pinned memory.
              **/
             __host__ ~array()
             {
-                errorHandler::check(cudaFreeHost(const_cast<T *>(ptr_)));
+                host::free(ptr_);
             };
 
             /**
@@ -181,13 +167,11 @@ namespace LBM
 
                 for (host::label_t field = 0; field < N; field++)
                 {
-                    errorHandler::check(
-                        cudaMemcpyAsync(
-                            &(ptr_[(field * mesh.size()) + (virtualDeviceIndex * nPointsPerDevice)]),
-                            devPtrs[field],
-                            nPointsPerDevice * sizeof(T),
-                            cudaMemcpyDeviceToHost,
-                            programCtrl.streams()[GPU::internalStreamID(virtualDeviceIndex)]));
+                    device::memcpyAsyncDeviceToHost(
+                        &(ptr_[(field * mesh.size()) + (virtualDeviceIndex * nPointsPerDevice)]),
+                        devPtrs[field],
+                        nPointsPerDevice,
+                        programCtrl.streams()[GPU::internalStreamID(virtualDeviceIndex)]);
                 }
             }
 
