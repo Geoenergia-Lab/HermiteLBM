@@ -54,6 +54,7 @@ SourceFiles
 #include "../typedefs/typedefs.cuh"
 #include "fileSystem.cuh"
 #include "../memory/memory.cuh"
+#include "../strings.cuh"
 
 namespace LBM
 {

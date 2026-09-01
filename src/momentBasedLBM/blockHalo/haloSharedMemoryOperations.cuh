@@ -62,7 +62,7 @@ SourceFiles
  **/
 __device__ __host__ [[nodiscard]] static inline constexpr device::label_t idx_block(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
 {
-    return tx + block::nx() * (ty + block::ny() * tz);
+    return tx + block::nx<device::label_t>() * (ty + block::ny<device::label_t>() * tz);
 }
 
 /**

@@ -54,9 +54,7 @@ SourceFiles
 #include "../typedefs/typedefs.cuh"
 #include "../globalFunctions.cuh"
 #include "../programControl/programControl.cuh"
-
 #include "hostLatticeMesh.cuh"
-// #include "deviceLatticeMesh.cuh"
 
 namespace LBM
 {

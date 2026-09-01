@@ -43,7 +43,7 @@ Namespace
     LBM
 
 SourceFiles
-    deviceField.cuh
+    deviceFields.cuh
 
 \*---------------------------------------------------------------------------*/
 
@@ -174,7 +174,7 @@ namespace LBM
              **/
             template <class Writer>
             __host__ void save(
-                host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer,
+                host::array<host::PINNED, scalar_t> &hostWriteBuffer,
                 const host::label_t timeStep) const
             {
                 programCtrl_.allsync();

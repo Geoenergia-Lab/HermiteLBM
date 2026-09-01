@@ -52,84 +52,6 @@ SourceFiles
 
 namespace LBM
 {
-
-    typedef enum programStatusEnum : int
-    {
-        BAD = -1,
-        GOOD = 0
-    } programStatus;
-
-    namespace error
-    {
-        typedef enum errorCodeEnum : std::size_t
-        {
-            NO_ERROR,
-            INCORRECT_NUMBER_OF_GPUS,
-            INVALID_DEVICE_DECOMPOSITION,
-            LABEL_T_CAPACITY_EXCEEDED,
-            UNSPECIFIED_CALCULATIONTYPE,
-            UNSPECIFIED_FILETYPE,
-            UNSPECIFIED_FIELDNAME,
-            FIELDNAME_NOT_FOUND,
-            EMPTY_TIMESTEP_DIRECTORY,
-            INVALID_CALCULATION_FUNCTION,
-            INVALID_WRITER_FUNCTION
-        } code;
-
-        __host__ [[nodiscard]] inline consteval const std::array<const char *, 11> messages() noexcept
-        {
-            return {
-                "",
-                "Number of GPUs must match the number of devices in the mesh decomposition,",
-                "HermiteLBM currently only supports decomposition in the z axis,",
-                "Mesh size exceeds maximum allowed value of device::label_t,",
-                "Unspecified calculation type. Please provide an argument using the -calculationType argument.",
-                "Unspecified file type. Please provide an argument using the -fileType argument",
-                "Unspecified field name. Please provide an argument using the -fieldName argument.",
-                "Specified field name not found in any time step directory.",
-                "Empty timeStep directory.",
-                "Invalid calculation function."
-                "Invalid writer function"};
-        }
-    }
-
-    // Single std::atomic storing the status of the program (BAD or GOOD)
-    static constinit std::atomic<programStatus> program_status(GOOD);
-    static constinit std::atomic<cudaError_t> first_cuda_error(cudaSuccess);
-    static constinit std::atomic<int> first_reg_error(0);
-
-    /**
-     * @brief Updates the internal allocation status and records the first CUDA error encountered.
-     * @param[in] code The CUDA error code to process.
-     **/
-    __host__ void update_codes(const cudaError_t code) noexcept
-    {
-        // Record the first error (only if no error has been recorded yet).
-        cudaError_t expected_error = cudaSuccess;
-        first_cuda_error.compare_exchange_strong(expected_error, code);
-
-        // Make program_status sticky: once BAD, it stays BAD.
-        if (code != cudaSuccess)
-        {
-            programStatus expected_status = GOOD;
-            program_status.compare_exchange_strong(expected_status, BAD);
-        }
-    }
-
-    __host__ void update_codes(const int code) noexcept
-    {
-        // Record the first error (only if no error has been recorded yet).
-        int expected_error = cudaSuccess;
-        first_reg_error.compare_exchange_strong(expected_error, code);
-
-        // Make program_status sticky: once BAD, it stays BAD.
-        if (code != 0)
-        {
-            programStatus expected_status = GOOD;
-            program_status.compare_exchange_strong(expected_status, BAD);
-        }
-    }
-
     /**
      * @brief Utility class for handling CUDA and general runtime errors.
      *
@@ -181,9 +103,9 @@ namespace LBM
                 }
             }
 
-            if constexpr (std::is_same_v<T, error::code>)
+            if constexpr (std::is_same_v<T, runTime::error::code>)
             {
-                if (err != error::NO_ERROR)
+                if (err != runTime::error::NO_ERROR)
                 {
                     update_codes_and_print(err, loc);
                 }
@@ -198,7 +120,7 @@ namespace LBM
         template <typename T>
         __host__ static inline void update_codes_and_print(const T err, const std::source_location &loc) noexcept
         {
-            update_codes(err);
+            runTime::update_codes(err);
             IO::printError(
                 "runTimeError",
                 "fileName", base_name(loc),
@@ -216,9 +138,9 @@ namespace LBM
                 return cudaGetErrorString(code);
             }
 
-            if constexpr (std::is_same_v<T, error::code>)
+            if constexpr (std::is_same_v<T, runTime::error::code>)
             {
-                return error::messages()[code];
+                return runTime::error::messages()[code];
             }
         }
 

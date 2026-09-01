@@ -37,40 +37,44 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the collision class
+    A class applying boundary conditions to the lid driven cavity case
 
 Namespace
     LBM
 
 SourceFiles
-    collision.cuh
+    cases.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_COLLISION_CUH
-#define __MBLBM_COLLISION_CUH
+#ifndef __MBLBM_CASES_CUH
+#define __MBLBM_CASES_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../typedefs/typedefs.cuh"
-#include "../velocitySet/velocitySet.cuh"
-#include "../globalFunctions.cuh"
+#include "jetFlow/jetFlow.cuh"
+#include "lidDrivenCavity/lidDrivenCavity.cuh"
+#include "benchmark/benchmark.cuh"
 
 namespace LBM
 {
-    class collision
+    namespace boundaryConditions
     {
-    public:
         /**
-         * @brief Constructor for the collision class
-         * @return A collision object
-         * @note This constructor is consteval
+         * @brief Define the boundary condition case
          **/
-        __device__ __host__ [[nodiscard]] inline consteval collision() noexcept {}
+        using Case = lidDrivenCavity;
+        // using Case = jetFlow;
+        // using Case = benchmark;
 
-    private:
-    };
+        /**
+         * @brief Switch determining whether or not the simulation should save to a file
+         **/
+        __device__ __host__ [[nodiscard]] static inline consteval bool save() noexcept { return true; }
+
+        /**
+         * @brief Assert that the boundary condition is valid
+         **/
+        static_assert(std::is_same_v<Case, jetFlow> || std::is_same_v<Case, lidDrivenCavity> || std::is_same_v<Case, benchmark>, "Case must be one of the available boundary condition types.");
+    }
 }
-
-#include "secondOrder.cuh"
 
 #endif

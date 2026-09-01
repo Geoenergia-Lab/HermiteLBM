@@ -50,9 +50,6 @@ SourceFiles
 #ifndef __MBLBM_OBJECTREGISTRY_CUH
 #define __MBLBM_OBJECTREGISTRY_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../typedefs/typedefs.cuh"
-#include "../strings.cuh"
 #include "../postProcess/postProcess.cuh"
 #include "../momentBasedLBM/ptrCollection.cuh"
 #include "functionObjects.cuh"
@@ -118,11 +115,11 @@ namespace LBM
          * @brief Executes all registered function object calculations for given time step
          * @param[in] timeStep The current simulation time step
          **/
-        inline void save(const host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+        inline void save(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
         {
-            for (const functionObjects::saveFunction<VelocitySet> &save : saveVector_)
+            for (const functionObjects::saveFunction &save : saveVector_)
             {
-                save(timeStep); // Call each function with the timeStep
+                save(hostWriteBuffer, timeStep); // Call each function with the timeStep
             }
         }
 
@@ -230,7 +227,7 @@ namespace LBM
         /**
          * @brief Registry of function objects to save
          **/
-        const std::vector<functionObjects::saveFunction<VelocitySet>> saveVector_;
+        const std::vector<functionObjects::saveFunction> saveVector_;
 
         /**
          * @brief Initializes save calls based on strain rate tensor configuration
@@ -238,22 +235,22 @@ namespace LBM
          * @return Vector of function objects to be executed
          **/
         template <typename... Args>
-        __host__ [[nodiscard]] static const std::vector<functionObjects::saveFunction<VelocitySet>> functionObjectSaveInitialiser(Args &...args) noexcept
+        __host__ [[nodiscard]] static const std::vector<functionObjects::saveFunction> functionObjectSaveInitialiser(Args &...args) noexcept
         {
-            std::vector<functionObjects::saveFunction<VelocitySet>> calls;
+            std::vector<functionObjects::saveFunction> calls;
             (addSaveCall(calls, args), ...);
             return calls;
         }
 
         template <class C>
-        __host__ static void addSaveCall(std::vector<functionObjects::saveFunction<VelocitySet>> &calls, C &object) noexcept
+        __host__ static void addSaveCall(std::vector<functionObjects::saveFunction> &calls, C &object) noexcept
         {
             if constexpr (C::ObjectType::canCalculateInstantaneous)
             {
                 if (object.doInstantaneous())
                 {
                     calls.push_back(
-                        [&object](host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep)
+                        [&object](host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep)
                         {
                             object.saveInstantaneous(hostWriteBuffer, timeStep);
                         });
@@ -262,7 +259,7 @@ namespace LBM
             if (object.doMean() || object.doPrime() || object.doPrimeSqMean())
             {
                 calls.push_back(
-                    [&object](host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep)
+                    [&object](host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep)
                     {
                         object.saveMean(hostWriteBuffer, timeStep);
                     });
@@ -270,7 +267,7 @@ namespace LBM
             if (object.doPrime())
             {
                 calls.push_back(
-                    [&object](host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep)
+                    [&object](host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep)
                     {
                         object.savePrime(hostWriteBuffer, timeStep);
                     });
@@ -279,7 +276,7 @@ namespace LBM
             if (object.doPrimeSqMean())
             {
                 calls.push_back(
-                    [&object](host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep)
+                    [&object](host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep)
                     {
                         object.savePrimeSqMean(hostWriteBuffer, timeStep);
                     });

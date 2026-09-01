@@ -234,7 +234,7 @@ namespace LBM
          * @brief Saves the turbulence statistics: Reynolds stress tensor R, production term P, dissipation term epsilon, and turbulent kinetic energy k to the host write buffer
          * @param[in] timeStep The current time step for saving the turbulence statistics
          **/
-        __host__ inline void save(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+        __host__ inline void save(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
         {
             if (calculate_)
             {

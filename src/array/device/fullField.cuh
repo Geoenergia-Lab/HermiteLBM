@@ -223,7 +223,7 @@ namespace LBM
              **/
             template <const host::mallocType MallocType>
             __host__ [[nodiscard]] static inline T **allocate_on_devices(
-                const host::array<MallocType, T, VelocitySet> &hostArrayGlobal,
+                const host::array<MallocType, T> &hostArrayGlobal,
                 const bool allocate,
                 const programControl &programCtrl)
             {
@@ -285,13 +285,13 @@ namespace LBM
             /**
              * @brief Constructs a host array with a given name
              **/
-            __host__ [[nodiscard]] host::array<host::PAGED, T, VelocitySet> from_host(
+            __host__ [[nodiscard]] host::array<host::PAGED, T> from_host(
                 const name_t &name,
                 const name_t &componentName,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
             {
-                return host::array<host::PAGED, T, VelocitySet>(name, componentName, mesh, programCtrl);
+                return host::array<host::PAGED, T>(name, componentName, mesh, programCtrl, boundaryFields<VelocitySet, true>(componentName));
             }
         };
     }

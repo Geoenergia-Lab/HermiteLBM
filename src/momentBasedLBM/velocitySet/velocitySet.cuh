@@ -50,10 +50,6 @@ SourceFiles
 #ifndef __MBLBM_VELOCITYSET_CUH
 #define __MBLBM_VELOCITYSET_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../typedefs/typedefs.cuh"
-#include "../globalFunctions.cuh"
-#include "../array/threadArray.cuh"
 #include "lattice.cuh"
 #include "velocitySetBase.cuh"
 #include "thermalModelBase.cuh"
@@ -220,20 +216,6 @@ namespace LBM
                 {
                     pop[q_i<i>()] = This::rhow<i>(rho_w) * (thermo.pics2() + This::template sum_moments<i>(thermo, moments));
                 });
-        }
-
-        /**
-         * @brief Reconstruct population distribution from moments (return)
-         * @param[in] moments Moment array (rho, U, Pi)
-         * @return Population array with Q components
-         **/
-        __device__ __host__ [[nodiscard]] static inline constexpr thread::array<scalar_t, Lattice::Q()> reconstruct(const momentsArray &moments) noexcept
-        {
-            thread::array<scalar_t, Lattice::Q()> pop;
-
-            reconstruct(pop, moments);
-
-            return pop;
         }
 
     private:

@@ -50,13 +50,6 @@ SourceFiles
 #ifndef __MBLBM_BLOCKHALO_CUH
 #define __MBLBM_BLOCKHALO_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../typedefs/typedefs.cuh"
-#include "../globalFunctions.cuh"
-#include "../velocitySet/velocitySet.cuh"
-#include "../latticeMesh/latticeMesh.cuh"
-#include "../array/array.cuh"
-
 namespace LBM
 {
     namespace host

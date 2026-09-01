@@ -93,20 +93,20 @@ namespace LBM
             IO::printBlock(
                 std::cout, "programControl",
                 "{", "}",
-                "programName", input_.commandLine()[0],
-                "launchTime", std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S"),
+                "programName\t", input_.commandLine()[0],
+                "launchTime\t", std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S"),
                 "launchDirectory", launchDirectory.string(),
-                "deviceList", deviceList(),
-                "caseName", caseName_,
-                "Re", Re_,
-                "Ma", Ma_,
-                "U_inf", Ma_ / std::sqrt(static_cast<scalar_t>(3)),
-                "nTimeSteps", nTimeSteps_,
+                "deviceList\t", deviceList(),
+                "caseName\t", caseName_,
+                "Re\t\t", Re_,
+                "Ma\t\t", Ma_,
+                "U_inf\t", Ma_ / std::sqrt(static_cast<scalar_t>(3)),
+                "nTimeSteps\t", nTimeSteps_,
                 "saveInterval", saveInterval_,
                 "infoInterval", infoInterval_,
-                "latestTime", latestTime_,
-                "scalarSize", sizeof(scalar_t) * 8,
-                "labelType", "uint" + std::to_string(sizeof(device::label_t) * 8) + "_t");
+                "latestTime\t", latestTime_,
+                "scalarSize\t", sizeof(scalar_t) * 8,
+                "labelType\t", "uint" + std::to_string(sizeof(device::label_t) * 8) + "_t");
 
             std::cout << std::endl;
             if (deviceList().size() > 0)
@@ -278,7 +278,7 @@ namespace LBM
          **/
         __host__ [[nodiscard]] inline constexpr bool end() const noexcept
         {
-            return (timeStep() < nt() && (program_status.load() == GOOD));
+            return (timeStep() < nt() && (runTime::program_status.load() == runTime::GOOD));
         }
 
         /**

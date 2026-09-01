@@ -50,10 +50,6 @@ SourceFiles
 #ifndef __MBLBM_MOMENTBASEDLBM_KERNEL_CUH
 #define __MBLBM_MOMENTBASEDLBM_KERNEL_CUH
 
-#include "deviceCommunicator.cuh"
-#include "launchConfig.cuh"
-#include "ptrCollection.cuh"
-
 namespace LBM
 {
     template <class VelocitySet, class BoundaryConditions, class Collision>
@@ -147,7 +143,8 @@ namespace LBM
             block::sync();
 
             // Reconstruct the population from the moments
-            thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
+            thread::array<scalar_t, VelocitySet::Q()> pop;
+            VelocitySet::reconstruct(pop, moments);
 
             // Save populations in shared memory
             Streaming::save(pop, sharedBuffer, tid);
@@ -364,7 +361,5 @@ namespace LBM
         }
     }
 }
-
-#include "kernelLauncher.cuh"
 
 #endif

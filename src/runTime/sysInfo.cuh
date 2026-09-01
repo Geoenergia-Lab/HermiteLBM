@@ -50,8 +50,6 @@ SourceFiles
 #ifndef __MBLBM_SYSINFO_CUH
 #define __MBLBM_SYSINFO_CUH
 
-#include "errorHandler.cuh"
-
 namespace LBM
 {
     struct system

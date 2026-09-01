@@ -37,31 +37,23 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A class applying boundary conditions to the lid driven cavity case
+    Definition of the main GPU kernel
 
 Namespace
-    LBM
+    LBM::host, LBM::device
 
 SourceFiles
-    boundaryConditions.cuh
+    momentBasedLBM.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_BOUNDARYCONDITIONS_CUH
-#define __MBLBM_BOUNDARYCONDITIONS_CUH
+#ifndef __MBLBM_MOMENTBASEDLBM_CUH
+#define __MBLBM_MOMENTBASEDLBM_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../typedefs/typedefs.cuh"
-#include "../array/threadArray.cuh"
-#include "normalVector.cuh"
-#include "boundaryValue.cuh"
-#include "boundaryFields.cuh"
-
-namespace LBM
-{
-
-}
-
-#include "cases/cases.cuh"
+#include "deviceCommunicator.cuh"
+#include "launchConfig.cuh"
+#include "ptrCollection.cuh"
+#include "kernel.cuh"
+#include "kernelLauncher.cuh"
 
 #endif

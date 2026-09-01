@@ -221,7 +221,7 @@ namespace LBM
             }
 
             template <typename ReturnType, const bool LeftBoundary, const bool RightBoundary>
-            __host__ [[nodiscard]] inline const thread::array<const ReturnType, block::nx() * 3> stencil_line(
+            __host__ [[nodiscard]] inline const thread::array<const ReturnType, block::nx<host::label_t>() * 3> stencil_line(
                 const std::vector<scalar_t> &f,
                 const host::label_t ty, const host::label_t tz,
                 const host::label_t bx, const host::label_t by, const host::label_t bz,
@@ -343,7 +343,7 @@ namespace LBM
                                         for (host::label_t ty = 0; ty < block::ny<host::label_t>(); ty++)
                                         {
                                             // Construct a line that spans the width of the stencil across the entire block x dimension
-                                            const thread::array<const double, block::nx() * 3> stencil_array = stencil_line<double, false, false>(f, ty, tz, bx, by, bz, mesh);
+                                            const thread::array<const double, block::nx<host::label_t>() * 3> stencil_array = stencil_line<double, false, false>(f, ty, tz, bx, by, bz, mesh);
 
                                             for (host::label_t tx = 0; tx < block::nx<host::label_t>(); tx++)
                                             {
@@ -370,15 +370,15 @@ namespace LBM
                                     for (host::label_t ty = 0; ty < block::ny<host::label_t>(); ty++)
                                     {
                                         // Construct a line that spans the width of the stencil across the entire block x dimension
-                                        const thread::array<const double, block::nx() * 3> stencil_array = stencil_line<double, true, false>(f, ty, tz, bx, by, bz, mesh);
+                                        const thread::array<const double, block::nx<host::label_t>() * 3> stencil_array = stencil_line<double, true, false>(f, ty, tz, bx, by, bz, mesh);
 
-                                        for (host::label_t tx = 0; tx < block::nx(); tx++)
+                                        for (host::label_t tx = 0; tx < block::nx<host::label_t>(); tx++)
                                         {
                                             const host::threadLabel Tx(tx, ty, tz);
                                             const host::label_t center = host::idx(Tx, Bx, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
 
                                             // Get the finite difference value
-                                            result[center] = finite_difference<2, ReturnType>(stencil_array, tx + block::nx());
+                                            result[center] = finite_difference<2, ReturnType>(stencil_array, tx + block::nx<host::label_t>());
                                         }
                                     }
                                 }
@@ -397,15 +397,15 @@ namespace LBM
                                     for (host::label_t ty = 0; ty < block::ny<host::label_t>(); ty++)
                                     {
                                         // Construct a line that spans the width of the stencil across the entire block x dimension
-                                        const thread::array<const double, block::nx() * 3> stencil_array = stencil_line<double, false, true>(f, ty, tz, bx, by, bz, mesh);
+                                        const thread::array<const double, block::nx<host::label_t>() * 3> stencil_array = stencil_line<double, false, true>(f, ty, tz, bx, by, bz, mesh);
 
-                                        for (host::label_t tx = 0; tx < block::nx(); tx++)
+                                        for (host::label_t tx = 0; tx < block::nx<host::label_t>(); tx++)
                                         {
                                             const host::threadLabel Tx(tx, ty, tz);
                                             const host::label_t center = host::idx(Tx, Bx, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
 
                                             // Get the finite difference value
-                                            result[center] = finite_difference<2, ReturnType>(stencil_array, tx + block::nx());
+                                            result[center] = finite_difference<2, ReturnType>(stencil_array, tx + block::nx<host::label_t>());
                                         }
                                     }
                                 }

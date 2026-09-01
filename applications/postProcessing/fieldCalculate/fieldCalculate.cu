@@ -60,14 +60,14 @@ int main(const int argc, const char *const argv[])
     // If the calculation type argument is not present, we cannot proceed, so we should print an error message and return
     if (!programCtrl.input().isArgPresent("-calculationType"))
     {
-        errorHandler::handle(error::UNSPECIFIED_CALCULATIONTYPE);
+        errorHandler::handle(runTime::error::UNSPECIFIED_CALCULATIONTYPE);
         return 0;
     }
 
     // If the field name argument is not present, we cannot proceed, so we should print an error message and return
     if (!programCtrl.input().isArgPresent("-fieldName"))
     {
-        errorHandler::handle(error::UNSPECIFIED_FIELDNAME);
+        errorHandler::handle(runTime::error::UNSPECIFIED_FIELDNAME);
         return 0;
     }
 
@@ -117,7 +117,7 @@ int main(const int argc, const char *const argv[])
 
             if (!foundField)
             {
-                errorHandler::handle(error::FIELDNAME_NOT_FOUND);
+                errorHandler::handle(runTime::error::FIELDNAME_NOT_FOUND);
             }
             else
             {
@@ -127,12 +127,12 @@ int main(const int argc, const char *const argv[])
         else
         {
             // We don't actually need to throw, we can just print the error message
-            errorHandler::handle(error::EMPTY_TIMESTEP_DIRECTORY);
+            errorHandler::handle(runTime::error::EMPTY_TIMESTEP_DIRECTORY);
         }
     }
     else
     {
-        errorHandler::handle(error::INVALID_CALCULATION_FUNCTION);
+        errorHandler::handle(runTime::error::INVALID_CALCULATION_FUNCTION);
     }
 
     return 0;

@@ -68,7 +68,7 @@ namespace LBM
         __host__ [[nodiscard]] deviceCommunicator(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
-            const haloBuffer<VelocitySet> &haloPtrs)
+            const haloBuffer<VelocitySet> &haloPtrs) noexcept
             : mesh_(mesh),
               programCtrl_(programCtrl),
               haloPtrs_(haloPtrs),
@@ -77,7 +77,7 @@ namespace LBM
         /**
          * @brief Destructor
          **/
-        __host__ ~deviceCommunicator() {}
+        __host__ ~deviceCommunicator() noexcept {}
 
         /**
          * @brief Disable copying
@@ -89,7 +89,7 @@ namespace LBM
          * @brief Perform the inter-device exchange for the given time step
          * @param[in] timeStep The current time step
          **/
-        __host__ inline void exchange(const host::label_t timeStep) const
+        __host__ inline void exchange(const host::label_t timeStep) const noexcept
         {
             for (host::label_t idxPair = 0; idxPair < commList_.size(); idxPair++)
             {
@@ -123,7 +123,7 @@ namespace LBM
          * @param[in] programCtrl The program control object
          * @return A std::vector of exchange functions to be called at run time
          **/
-        __host__ [[nodiscard]] const std::vector<exchangeFunction> assembleCommList(const programControl &programCtrl) const
+        __host__ [[nodiscard]] const std::vector<exchangeFunction> assembleCommList(const programControl &programCtrl) const noexcept
         {
             std::vector<exchangeFunction> commList;
 
@@ -172,7 +172,7 @@ namespace LBM
          * @param[in] timeStep The current time step
          **/
         template <const axis::type alpha>
-        __host__ inline void exchangeImpl(const host::label_t idxExchange, const host::label_t timeStep) const
+        __host__ inline void exchangeImpl(const host::label_t idxExchange, const host::label_t timeStep) const noexcept
         {
             static_assert(alpha == axis::Z, "HermiteLBM currently only supports decomposition in the z axis");
 
@@ -219,7 +219,7 @@ namespace LBM
             const haloBuffer<VelocitySet> &haloPtrs,
             const programControl &programCtrl,
             const host::label_t nPoints,
-            const host::label_t timeStep)
+            const host::label_t timeStep) noexcept
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
             velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();

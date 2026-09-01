@@ -50,11 +50,6 @@ SourceFiles
 #ifndef __MBLBM_STREAMING_CUH
 #define __MBLBM_STREAMING_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../typedefs/typedefs.cuh"
-#include "../globalFunctions.cuh"
-#include "../array/array.cuh"
-
 namespace LBM
 {
     /**
@@ -86,9 +81,10 @@ namespace LBM
          * shared memory for efficient access during the streaming step.
          * It uses compile-time loop unrolling for optimal performance.
          **/
+        template <class SharedBuffer>
         __device__ static inline void save(
             const thread::array<scalar_t, VelocitySet::template Q()> &pop,
-            scalar_t *const ptrRestrict s_pop,
+            SharedBuffer &s_pop,
             const device::label_t tid) noexcept
         {
             device::constexpr_for<0, (VelocitySet::template Q() - 1)>(
@@ -96,18 +92,6 @@ namespace LBM
                 {
                     s_pop[q_i<i * block::stride()>() + tid] = pop[q_i<i + 1>()];
                 });
-        }
-
-        /**
-         * @overload Accepts a thread::array for shared memory storage
-         **/
-        template <const host::label_t N>
-        __device__ static inline void save(
-            const thread::array<scalar_t, VelocitySet::template Q()> &pop,
-            thread::array<scalar_t, N> &s_pop,
-            const device::label_t tid) noexcept
-        {
-            save(pop, s_pop.data(), tid);
         }
 
         /**
@@ -120,31 +104,20 @@ namespace LBM
          * periodic boundary conditions to handle data exchange between threads
          * at block boundaries. It implements the D3Q19 streaming pattern.
          **/
+        template <class SharedBuffer>
         __device__ static inline void pull(
             thread::array<scalar_t, VelocitySet::template Q()> &pop,
-            const scalar_t *const ptrRestrict s_pop,
+            const SharedBuffer &s_pop,
             const thread::coordinate &Tx) noexcept
         {
             device::constexpr_for<0, (VelocitySet::template Q() - 1)>(
                 [&](const auto i)
                 {
-                    const device::label_t x = periodic_index<-VelocitySet::template c<int, axis::X>(q_i<i + 1>()), block::nx()>(Tx.value<axis::X>());
-                    const device::label_t y = periodic_index<-VelocitySet::template c<int, axis::Y>(q_i<i + 1>()), block::ny()>(Tx.value<axis::Y>());
-                    const device::label_t z = periodic_index<-VelocitySet::template c<int, axis::Z>(q_i<i + 1>()), block::nz()>(Tx.value<axis::Z>());
+                    const device::label_t x = periodic_index<-VelocitySet::template c<int, axis::X>(q_i<i + 1>()), block::nx<device::label_t>()>(Tx.value<axis::X>());
+                    const device::label_t y = periodic_index<-VelocitySet::template c<int, axis::Y>(q_i<i + 1>()), block::ny<device::label_t>()>(Tx.value<axis::Y>());
+                    const device::label_t z = periodic_index<-VelocitySet::template c<int, axis::Z>(q_i<i + 1>()), block::nz<device::label_t>()>(Tx.value<axis::Z>());
                     pop[q_i<i + 1>()] = s_pop[q_i<i * block::stride()>() + block::idx(x, y, z)];
                 });
-        }
-
-        /**
-         * @overload Accepts a thread::array for shared memory storage
-         **/
-        template <const host::label_t N>
-        __device__ static inline void pull(
-            thread::array<scalar_t, VelocitySet::template Q()> &pop,
-            const thread::array<scalar_t, N> &s_pop,
-            const thread::coordinate &Tx) noexcept
-        {
-            pull(pop, s_pop.data(), Tx);
         }
 
     private:

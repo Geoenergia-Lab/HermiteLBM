@@ -57,7 +57,7 @@ if (!(boundaryNormal.isBack() || boundaryNormal.isFront()))
 
 const scalar_t rho_I = VelocitySet::template calculate_moment<axis::NO_DIRECTION, axis::NO_DIRECTION>(pop, boundaryNormal);
 const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
-const device::label_t tid = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), block::nz() - 2);
+const device::label_t tid = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), block::nz<device::label_t>() - 2);
 
 const scalar_t is_jet = static_cast<scalar_t>(boundaryNormal.isBack() && rms_sq(point.value<axis::X, scalar_t>() - center_x(), point.value<axis::Y, scalar_t>() - center_y()) <= r2());
 

@@ -37,50 +37,22 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Function definitions and includes specific to the fieldCalculate executable
+    A class applying boundary conditions to the lid driven cavity case
 
 Namespace
     LBM
 
 SourceFiles
-    fieldCalculate.cuh
+    boundaryConditions.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_FIELDCALCULATE_CUH
-#define __MBLBM_FIELDCALCULATE_CUH
+#ifndef __MBLBM_BOUNDARYCONDITIONS_CUH
+#define __MBLBM_BOUNDARYCONDITIONS_CUH
 
-#include "../../../src/LBMIncludes.cuh"
-#include "../../../src/typedefs/typedefs.cuh"
-#include "../../../src/array/array.cuh"
-#include "../../../src/postProcess/postProcess.cuh"
-#include "../../../src/programControl/programControl.cuh"
-#include "../../../src/numericalSchemes/numericalSchemes.cuh"
-#include "../fieldConvert/fieldConvert.cuh"
-#include "calculators.cuh"
-#include "reductionCalculators.cuh"
-#include "pointwiseCalculators.cuh"
-
-namespace LBM
-{
-    /**
-     * @brief Unordered map of the writer types to the appropriate functions
-     **/
-    const std::unordered_map<name_t, calculator::functionType> calculators = {
-        {"containsNaN", calculator::containsNaN},
-        {"mean", calculator::spatialMean},
-        {"sum", calculator::spatialSum},
-        {"max", calculator::fieldMax},
-        {"min", calculator::fieldMin},
-        {"absMax", calculator::fieldAbsMax},
-        {"absMin", calculator::fieldAbsMin},
-        {"magnitude", calculator::magnitude},
-        {"magnitudeSquared", calculator::magnitudeSquared},
-        {"dfdx", calculator::diff<axis::X>},
-        {"dfdx_v2", calculator::dfdx_v2},
-        {"dfdy", calculator::diff<axis::Y>},
-        {"dfdz", calculator::diff<axis::Z>},
-        {"div", calculator::div}};
-}
+#include "normalVector.cuh"
+#include "boundaryValue.cuh"
+#include "boundaryFields.cuh"
+#include "cases/cases.cuh"
 
 #endif

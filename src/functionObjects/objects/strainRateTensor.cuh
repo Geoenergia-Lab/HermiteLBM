@@ -139,14 +139,14 @@ namespace LBM
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          **/
         template <class VelocitySet>
-        class strainRateTensor : public FunctionObjectBase<VelocitySet, S::N>
+        class strainRateTensor : public FunctionObjectBase<S::N>
         {
         public:
             /**
              * @brief Alias for the base type and required namespace
              **/
             using ObjectType = S;
-            using BaseType = FunctionObjectBase<VelocitySet, ObjectType::N>;
+            using BaseType = FunctionObjectBase<ObjectType::N>;
             using Kernel = strainRateTensorDetail::kernel;
 
             /**
@@ -233,7 +233,7 @@ namespace LBM
             /**
              * @brief Save the instantaneous strain rate tensor to a file
              **/
-            __host__ void saveInstantaneous(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void saveInstantaneous(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 S_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
@@ -241,7 +241,7 @@ namespace LBM
             /**
              * @brief Save the time-averaged strain rate tensor to a file
              **/
-            __host__ void saveMean(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void saveMean(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 SMean_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
@@ -249,7 +249,7 @@ namespace LBM
             /**
              * @brief Save the time-averaged strain rate tensor to a file
              **/
-            __host__ void savePrime(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void savePrime(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 SPrime_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
@@ -257,7 +257,7 @@ namespace LBM
             /**
              * @brief Save the time average of the square of the perturbation of the strain rate tensor to a file
              **/
-            __host__ void savePrimeSqMean(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void savePrimeSqMean(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 SPrimeSqMean_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }

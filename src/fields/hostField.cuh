@@ -57,10 +57,10 @@ namespace LBM
         /**
          * @brief Class representing a scalar field on the host, derived from fieldBase with N=1 component.
          **/
-        template <const host::mallocType AllocationType, class VelocitySet, const time::type TimeType>
+        template <const host::mallocType AllocationType, const time::type TimeType>
         class scalarField : public fieldType<1>, timeType<TimeType>
         {
-            using ComponentType = host::array<AllocationType, scalar_t, VelocitySet>;
+            using ComponentType = host::array<AllocationType, scalar_t>;
             using FieldType = fieldType<1>;
 
         public:
@@ -86,10 +86,10 @@ namespace LBM
         /**
          * @brief Class representing a vector field on the host, derived from fieldBase with N=3 components.
          **/
-        template <const host::mallocType AllocationType, class VelocitySet, const time::type TimeType>
+        template <const host::mallocType AllocationType, const time::type TimeType>
         class vectorField : public fieldType<3>, timeType<TimeType>
         {
-            using ComponentType = host::array<AllocationType, scalar_t, VelocitySet>;
+            using ComponentType = host::array<AllocationType, scalar_t>;
             using FieldType = fieldType<3>;
 
         public:
@@ -124,10 +124,10 @@ namespace LBM
         /**
          * @brief Class representing a symmetric tensor field on the host, derived from fieldBase with N=6 components.
          **/
-        template <const host::mallocType AllocationType, class VelocitySet, const time::type TimeType>
+        template <const host::mallocType AllocationType, const time::type TimeType>
         class symmetricTensorField : public fieldType<6>, timeType<TimeType>
         {
-            using ComponentType = host::array<AllocationType, scalar_t, VelocitySet>;
+            using ComponentType = host::array<AllocationType, scalar_t>;
             using FieldType = fieldType<6>;
 
         public:

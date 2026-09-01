@@ -44,7 +44,7 @@ namespace LBM
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam N The number of spatial components of the function object
          **/
-        template <class VelocitySet, const host::label_t N>
+        template <const host::label_t N>
         class FunctionObjectBase
         {
         protected:

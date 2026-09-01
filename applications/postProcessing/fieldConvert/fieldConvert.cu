@@ -59,14 +59,14 @@ int main(const int argc, const char *const argv[])
     // If the field name argument is not present, we cannot proceed, so we should print an error message and return
     if (!programCtrl.input().isArgPresent("-fieldName"))
     {
-        errorHandler::handle(error::UNSPECIFIED_FIELDNAME);
+        errorHandler::handle(runTime::error::UNSPECIFIED_FIELDNAME);
         return 0;
     }
 
     // If the file type argument is not present, we cannot proceed, so we should print an error message and return
     if (!programCtrl.input().isArgPresent("-fileType"))
     {
-        errorHandler::handle(error::UNSPECIFIED_FILETYPE);
+        errorHandler::handle(runTime::error::UNSPECIFIED_FILETYPE);
         return 0;
     }
 
@@ -82,7 +82,7 @@ int main(const int argc, const char *const argv[])
     const bool doCutPlane = programCtrl.input().isArgPresent("-cutPlane");
 
     // Get the mesh for processing
-    const host::latticeMesh newMesh = processMesh(mesh, programCtrl, doCutPlane);
+    // const host::latticeMesh newMesh = processMesh(mesh, programCtrl, doCutPlane);
 
     // Get the conversion type
     const name_t conversion = programCtrl.getArgument("-fileType");
@@ -119,7 +119,7 @@ int main(const int argc, const char *const argv[])
                     const name_t fileNameOut = processName(programCtrl, fieldName, timeStep, doCutPlane);
 
                     // Write the output file
-                    writer(fields, fileNameOut, newMesh, fieldNames);
+                    writer(fields, fileNameOut, mesh, fieldNames);
 
                     if (!(timeStep == fileNameIndices.back()))
                     {
@@ -130,18 +130,18 @@ int main(const int argc, const char *const argv[])
 
             if (!foundField)
             {
-                errorHandler::handle(error::FIELDNAME_NOT_FOUND);
+                errorHandler::handle(runTime::error::FIELDNAME_NOT_FOUND);
             }
         }
         else
         {
-            errorHandler::handle(error::EMPTY_TIMESTEP_DIRECTORY);
+            errorHandler::handle(runTime::error::EMPTY_TIMESTEP_DIRECTORY);
         }
     }
     else
     {
         // We don't actually need to throw, we can just print the error message
-        errorHandler::handle(error::INVALID_CALCULATION_FUNCTION);
+        errorHandler::handle(runTime::error::INVALID_CALCULATION_FUNCTION);
     }
 
     return 0;

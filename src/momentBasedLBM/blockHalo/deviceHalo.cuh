@@ -166,7 +166,7 @@ namespace LBM
 
         /**
          * @brief Initialises the block halo buffers by launching the initialisation kernel
-         * @param[in] rho Device scalar field containing the density values on the GPU
+         ** @param[in] rho Device scalar field containing the density values on the GPU
          * @param[in] U Device vector field containing the velocity values on the GPU
          * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
          * @param[in] mesh Host lattice mesh containing the mesh information on the CPU
@@ -227,15 +227,13 @@ namespace LBM
                 Pi.yz().constPtr(deviceIdx),
                 Pi.zz().constPtr(deviceIdx));
 
-            if (program_status.load() == GOOD)
+            if (runTime::program_status.load() == runTime::GOOD)
             {
-                kernel::launch<kernel::momentBasedLBMInitialisation>(
+                kernel::launch<kernel::momentBasedLBMInitialisation<VelocitySet>()>(
                     mesh,
                     programCtrl.streams()[GPU::internalStreamID(deviceIdx)],
                     devPtrs,
-                    haloBuffers,
-                    VelocitySet::Q(),
-                    VelocitySet::modelType());
+                    haloBuffers);
             }
 
             errorHandler::handle(cudaDeviceSynchronize());
@@ -252,7 +250,7 @@ namespace LBM
          * @param[in] programCtrl Host program control containing the program information on the CPU
          * @return A vector of double buffers containing the block halo buffers for each device
          **/
-        __host__ [[nodiscard]] inline std::vector<doubleBuffer<scalar_t>> initialise(
+        __host__ [[nodiscard]] const std::vector<doubleBuffer<scalar_t>> initialise(
             const device::scalarField<VelocitySet, time::instantaneous> &rho,
             const device::vectorField<VelocitySet, time::instantaneous> &U,
             const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,

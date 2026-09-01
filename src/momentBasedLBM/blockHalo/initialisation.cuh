@@ -55,22 +55,29 @@ SourceFiles
 
 namespace LBM
 {
-    namespace detail
+    template <class VelocitySet>
+    struct blockHaloInitialisationKernel
     {
         /**
-         * @brief Saves the halo for the given velocity set and moments
-         * @param[in] moments The moments of the distribution function at the current point
+         * @brief Saves the halo populations to both the read and write buffers
+         * @param[in] moments The array of 10 moments
+         * @param[in] readBuffer Collection of mutable pointers to the block halo faces used during streaming
+         * @param[in] writeBuffer Collection of mutable pointers to the block halo faces used after streaming
+         * @param[in] Tx Three-dimensional thread coordinates
+         * @param[in] Bx Three-dimensional block coordinates
+         * @param[in] point The global point coordinate
          **/
-        template <typename VelocitySet>
-        __device__ inline void saveHalo(
+        __device__ static inline void saveHalo(
             const momentsArray &moments,
             const device::ptrCollection<6, scalar_t> &readBuffer,
             const device::ptrCollection<6, scalar_t> &writeBuffer,
             const thread::coordinate &Tx,
             const block::coordinate &Bx,
-            const device::pointCoordinate &point)
+            const device::pointCoordinate &point) noexcept
         {
-            thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
+            // thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
+            thread::array<scalar_t, VelocitySet::Q()> pop;
+            VelocitySet::reconstruct(pop, moments);
             device::halo<VelocitySet, true, true, true>::save(pop, moments, readBuffer, Tx, Bx, point);
             device::halo<VelocitySet, true, true, true>::save(pop, moments, writeBuffer, Tx, Bx, point);
         }
@@ -78,18 +85,20 @@ namespace LBM
         /**
          * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
          * @param[in] devPtrs Collection of 10 pointers to device arrays on the GPU
-         * @param[in] readBuffer Collection of 6 pointers to device arrays on the GPU used for the block halo
-         * @param[in] writeBuffer Collection of 6 pointers to device arrays on the GPU used for the block halo
-         * @param[in] Q The number of discrete velocities in the velocity set
-         * @param[in] thermalModel The thermal model used in the simulation (thermal or isothermal)
+         * @param[in] haloBuffer Collection of 12 pointers to device arrays on the GPU used for the block halo
          **/
-        __device__ inline void haloInitialisation(
+        __device__ static inline void haloInitialisation(
             const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
-            const device::ptrCollection<6, scalar_t> &readBuffer,
-            const device::ptrCollection<6, scalar_t> &writeBuffer,
-            const host::label_t Q,
-            const thermalModel_t thermalModel)
+            const device::ptrCollection<12, scalar_t> &haloBuffer) noexcept
         {
+            const device::ptrCollection<6, scalar_t> readBuffer(
+                haloBuffer.ptr<0>(), haloBuffer.ptr<1>(), haloBuffer.ptr<2>(),
+                haloBuffer.ptr<3>(), haloBuffer.ptr<4>(), haloBuffer.ptr<5>());
+
+            const device::ptrCollection<6, scalar_t> writeBuffer(
+                haloBuffer.ptr<6>(), haloBuffer.ptr<7>(), haloBuffer.ptr<8>(),
+                haloBuffer.ptr<9>(), haloBuffer.ptr<10>(), haloBuffer.ptr<11>());
+
             const thread::coordinate Tx;
 
             const block::coordinate Bx;
@@ -123,33 +132,9 @@ namespace LBM
             block::sync();
 
             // Save the halo
-            if (Q == lattice<19>::Q())
-            {
-                if (thermalModel == thermalModel_t::Thermal)
-                {
-                    saveHalo<D3Q19<Thermal>>(moments, readBuffer, writeBuffer, Tx, Bx, point);
-                }
-
-                if (thermalModel == thermalModel_t::Isothermal)
-                {
-                    saveHalo<D3Q19<Isothermal>>(moments, readBuffer, writeBuffer, Tx, Bx, point);
-                }
-            }
-
-            if (Q == lattice<27>::Q())
-            {
-                if (thermalModel == thermalModel_t::Thermal)
-                {
-                    saveHalo<D3Q27<Thermal>>(moments, readBuffer, writeBuffer, Tx, Bx, point);
-                }
-
-                if (thermalModel == thermalModel_t::Isothermal)
-                {
-                    saveHalo<D3Q27<Isothermal>>(moments, readBuffer, writeBuffer, Tx, Bx, point);
-                }
-            }
+            saveHalo(moments, readBuffer, writeBuffer, Tx, Bx, point);
         }
-    }
+    };
 
     namespace kernel
     {
@@ -160,21 +145,56 @@ namespace LBM
          * @param[in] Q The number of discrete velocities in the velocity set
          * @param[in] thermalModel The thermal model used in the simulation (thermal or isothermal)
          **/
-        __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisation(
+        __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisationD3Q19Thermal(
             const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
-            const device::ptrCollection<12, scalar_t> haloBuffer,
-            const host::label_t Q,
-            const thermalModel_t thermalModel)
+            const device::ptrCollection<12, scalar_t> haloBuffer)
         {
-            const device::ptrCollection<6, scalar_t> readBuffer(
-                haloBuffer.ptr<0>(), haloBuffer.ptr<1>(), haloBuffer.ptr<2>(),
-                haloBuffer.ptr<3>(), haloBuffer.ptr<4>(), haloBuffer.ptr<5>());
+            blockHaloInitialisationKernel<D3Q19<Thermal>>::haloInitialisation(devPtrs, haloBuffer);
+        }
 
-            const device::ptrCollection<6, scalar_t> writeBuffer(
-                haloBuffer.ptr<6>(), haloBuffer.ptr<7>(), haloBuffer.ptr<8>(),
-                haloBuffer.ptr<9>(), haloBuffer.ptr<10>(), haloBuffer.ptr<11>());
+        __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisationD3Q19Isothermal(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
+            const device::ptrCollection<12, scalar_t> haloBuffer)
+        {
+            blockHaloInitialisationKernel<D3Q19<Isothermal>>::haloInitialisation(devPtrs, haloBuffer);
+        }
 
-            detail::haloInitialisation(devPtrs, readBuffer, writeBuffer, Q, thermalModel);
+        __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisationD3Q27Thermal(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
+            const device::ptrCollection<12, scalar_t> haloBuffer)
+        {
+            blockHaloInitialisationKernel<D3Q27<Thermal>>::haloInitialisation(devPtrs, haloBuffer);
+        }
+
+        __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisationD3Q27Isothermal(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
+            const device::ptrCollection<12, scalar_t> haloBuffer)
+        {
+            blockHaloInitialisationKernel<D3Q27<Isothermal>>::haloInitialisation(devPtrs, haloBuffer);
+        }
+
+        template <class VelocitySet>
+        __host__ inline consteval auto momentBasedLBMInitialisation() noexcept
+        {
+            if constexpr (std::is_same_v<VelocitySet, D3Q19<Thermal>>)
+            {
+                return momentBasedLBMInitialisationD3Q19Thermal;
+            }
+
+            if constexpr (std::is_same_v<VelocitySet, D3Q19<Isothermal>>)
+            {
+                return momentBasedLBMInitialisationD3Q19Isothermal;
+            }
+
+            if constexpr (std::is_same_v<VelocitySet, D3Q27<Thermal>>)
+            {
+                return momentBasedLBMInitialisationD3Q27Thermal;
+            }
+
+            if constexpr (std::is_same_v<VelocitySet, D3Q27<Isothermal>>)
+            {
+                return momentBasedLBMInitialisationD3Q27Isothermal;
+            }
         }
     }
 }

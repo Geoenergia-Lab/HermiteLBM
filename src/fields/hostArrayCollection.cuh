@@ -64,7 +64,9 @@ namespace LBM
         class arrayCollection
         {
         public:
-            __host__ [[nodiscard]] arrayCollection(const name_t &fileName, const words_t &varNames)
+            __host__ [[nodiscard]] arrayCollection(
+                const name_t &fileName,
+                const words_t &varNames)
                 : empty_(!(std::filesystem::exists(fileName))),
                   arr_(initialiseVector(fileName, empty_)),
                   varNames_(varNames) {}

@@ -66,15 +66,14 @@ namespace LBM
          * freed in the destructor.
          *
          * @tparam T Data type of array elements.
-         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          **/
-        template <typename T, class VelocitySet>
-        class array<host::PINNED, T, VelocitySet> : public arrayBase<T, VelocitySet>
+        template <typename T>
+        class array<host::PINNED, T> : public arrayBase<T>
         {
             /**
              * @brief Bring base members into scope
              **/
-            using arrayBase<T, VelocitySet>::mesh_;
+            using arrayBase<T>::mesh_;
 
         public:
             /**
@@ -85,7 +84,7 @@ namespace LBM
             __host__ [[nodiscard]] array(
                 const host::label_t nPoints,
                 const host::latticeMesh &mesh)
-                : arrayBase<T, VelocitySet>("", mesh),
+                : arrayBase<T>("", mesh),
                   ptr_(host::allocate<T>(nPoints, 0)),
                   nPoints_(nPoints) {}
 
@@ -187,12 +186,6 @@ namespace LBM
             const host::label_t nPoints_;
         };
     }
-
-    /**
-     * @brief Shorthand for the type used for file I/O
-     **/
-    // template <class VelocitySet>
-    // using writeBuffer = host::array<host::PINNED, scalar_t, VelocitySet>;
 }
 
 #endif

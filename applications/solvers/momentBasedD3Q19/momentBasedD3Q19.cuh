@@ -60,7 +60,4 @@ namespace LBM
     using Collision = secondOrder;
 }
 
-#include "../../../src/runTimeIO/runTimeIO.cuh"
-#include "../../../src/momentBasedLBM/kernel.cuh"
-
 #endif

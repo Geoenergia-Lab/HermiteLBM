@@ -50,9 +50,6 @@ SourceFiles
 #ifndef __MBLBM_NORMALVECTOR_CUH
 #define __MBLBM_NORMALVECTOR_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../typedefs/typedefs.cuh"
-
 namespace LBM
 {
     /**

@@ -50,8 +50,6 @@ SourceFiles
 #ifndef __MBLBM_COLLISION_SECOND_ORDER_CUH
 #define __MBLBM_COLLISION_SECOND_ORDER_CUH
 
-#include "../array/array.cuh"
-
 namespace LBM
 {
     /**
@@ -90,7 +88,8 @@ namespace LBM
          * @note This implementation assumes zero force terms, so velocity updates are omitted
          * @note Uses device-level relaxation parameters (device::t_omegaVar, device::omegaVar_d2, device::omega)
          **/
-        __device__ static inline void collide(momentsArray &moments) noexcept
+        template <class MomentsArray>
+        __device__ static inline void collide(MomentsArray &moments) noexcept
         {
             // Diagonal moment updates (remove force terms)
             moments[m_i<4>()] = collide(moments[m_i<1>()], moments[m_i<4>()]);

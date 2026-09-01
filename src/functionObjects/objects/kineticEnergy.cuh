@@ -113,14 +113,14 @@ namespace LBM
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          **/
         template <class VelocitySet>
-        class kineticEnergy : public FunctionObjectBase<VelocitySet, k::N>
+        class kineticEnergy : public FunctionObjectBase<k::N>
         {
         public:
             /**
              * @brief Alias for the base type
              **/
             using ObjectType = k;
-            using BaseType = FunctionObjectBase<VelocitySet, ObjectType::N>;
+            using BaseType = FunctionObjectBase<ObjectType::N>;
             using Kernel = kineticEnergyDetail::kernel;
 
             /**
@@ -207,7 +207,7 @@ namespace LBM
             /**
              * @brief Save the instantaneous kinetic energy to a file
              **/
-            __host__ void saveInstantaneous(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void saveInstantaneous(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 k_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
@@ -215,7 +215,7 @@ namespace LBM
             /**
              * @brief Save the time-averaged kinetic energy to a file
              **/
-            __host__ void saveMean(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void saveMean(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 kMean_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
@@ -223,7 +223,7 @@ namespace LBM
             /**
              * @brief Save the time-averaged kinetic energy to a file
              **/
-            __host__ void savePrime(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void savePrime(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 kPrime_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
@@ -231,7 +231,7 @@ namespace LBM
             /**
              * @brief Save the time average of the square of the perturbation of the kinetic energy to a file
              **/
-            __host__ void savePrimeSqMean(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void savePrimeSqMean(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 kPrimeSqMean_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }

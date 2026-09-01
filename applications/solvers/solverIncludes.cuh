@@ -52,13 +52,22 @@ SourceFiles
 
 #include "../../../src/LBMIncludes.cuh"
 #include "../../../src/typedefs/typedefs.cuh"
-#include "../../../src/streaming/streaming.cuh"
-#include "../../../src/collision/collision.cuh"
-#include "../../../src/blockHalo/blockHalo.cuh"
 #include "../../../src/fileIO/fileIO.cuh"
-#include "../../../src/functionObjects/objectRegistry.cuh"
 #include "../../../src/array/array.cuh"
-#include "../../../src/boundaryConditions/boundaryConditions.cuh"
+
+#include "../../../src/fields/fields.cuh"
+
 #include "../../../src/postProcess/postProcess.cuh"
+
+// LBM includes
+#include "../../../src/momentBasedLBM/velocitySet/velocitySet.cuh"
+#include "../../../src/momentBasedLBM/blockHalo/blockHalo.cuh"
+#include "../../../src/momentBasedLBM/boundaryConditions/boundaryConditions.cuh"
+#include "../../../src/momentBasedLBM/collision/collision.cuh"
+#include "../../../src/momentBasedLBM/streaming/streaming.cuh"
+
+#include "../../../src/functionObjects/objectRegistry.cuh"
+
+#include "../../../src/runTimeIO/runTimeIO.cuh"
 
 #endif

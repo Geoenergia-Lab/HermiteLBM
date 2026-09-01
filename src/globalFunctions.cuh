@@ -53,7 +53,7 @@ SourceFiles
 
 #include "LBMIncludes.cuh"
 #include "typedefs/typedefs.cuh"
-#include "sysInfo.cuh"
+#include "runTime/runTime.cuh"
 
 namespace LBM
 {

@@ -55,8 +55,8 @@ namespace LBM
     namespace functionObjects
     {
         using calculateFunction = std::function<void()>;
-        template <class VelocitySet>
-        using saveFunction = std::function<void(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t)>;
+
+        using saveFunction = std::function<void(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t)>;
 
         /**
          * @brief Reads an arbitrary list of pointers from devPtrs

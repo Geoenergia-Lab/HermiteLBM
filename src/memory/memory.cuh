@@ -66,7 +66,7 @@ namespace LBM
     template <typename F, typename... Args>
     __host__ void ifAllocationAllowed(F &&f, Args &&...args) noexcept
     {
-        if (program_status.load() == GOOD)
+        if (runTime::program_status.load() == runTime::GOOD)
         {
             std::forward<F>(f)(std::forward<Args>(args)...);
         }

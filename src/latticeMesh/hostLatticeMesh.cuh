@@ -108,10 +108,7 @@ namespace LBM
                 : dimensions_({meshDimensions.x, meshDimensions.y, meshDimensions.z}),
                   L_(mesh.L()),
                   nDevices_(string::extractParameter<host::blockLabel>("deviceDecomposition", "n")),
-                  gridBlock_(initialiseGridBlock())
-            {
-                print();
-            }
+                  gridBlock_(initialiseGridBlock()) {}
 
             /**
              * @brief Default destructor
@@ -381,7 +378,7 @@ namespace LBM
                 // Check that the mesh dimensions won't overflow the type limit for host::label_t
                 if (nPointsTemp >= typeLimit)
                 {
-                    errorHandler::handle(error::LABEL_T_CAPACITY_EXCEEDED);
+                    errorHandler::handle(runTime::error::LABEL_T_CAPACITY_EXCEEDED);
                 }
             }
 
@@ -449,7 +446,7 @@ namespace LBM
 
                 L_.print<true>("meshSize");
 
-                host::blockLabel{block::nx(), block::ny(), block::nz()}.print<true>("blockDimensions");
+                host::blockLabel{block::nx<host::label_t>(), block::ny<host::label_t>(), block::nz<host::label_t>()}.print<true>("blockDimensions");
 
                 nDevices_.print<true>("deviceDecomposition");
             }

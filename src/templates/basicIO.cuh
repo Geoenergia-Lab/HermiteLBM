@@ -175,14 +175,7 @@ namespace LBM
         template <const std::size_t BraceIndent = 4, class Value, class... Rest>
         __host__ void printFields(std::ostream &os, const char *title, const Value &value, const Rest &...rest) noexcept
         {
-            if constexpr (std::is_floating_point_v<std::decay_t<decltype(value)>> || std::is_integral_v<std::decay_t<decltype(value)>>)
-            {
-                os << whitespace<BraceIndent>{} << title << " = " << value << ";" << std::endl;
-            }
-            else
-            {
-                os << whitespace<BraceIndent>{} << title << ": " << value << ";" << std::endl;
-            }
+            os << whitespace<BraceIndent>{} << title << "\t" << value << ";" << std::endl;
             if constexpr (sizeof...(Rest) > 0)
             {
                 printFields(os, rest...);

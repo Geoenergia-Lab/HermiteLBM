@@ -43,7 +43,7 @@ Namespace
     LBM::host, LBM::device
 
 SourceFiles
-    kernel.cuh
+    kernelLauncher.cuh
 
 \*---------------------------------------------------------------------------*/
 
@@ -52,6 +52,18 @@ SourceFiles
 
 namespace LBM
 {
+    /**
+     * @brief Launches the boundary and internal computation threads for multi‑GPU execution.
+     *
+     * Creates two std::thread objects: one for the boundary kernel and one for the internal
+     * kernel, then joins them to synchronize computation and communication.
+     *
+     * @param mesh        Host-side lattice mesh description.
+     * @param programCtrl Program control parameters (time step, streams, etc.).
+     * @param devPtrs     Collection of device pointers for the LBM fields.
+     * @param haloPtrs    Halo buffers for inter‑GPU communication.
+     * @param devComm     Device communicator managing multi‑GPU transfers.
+     **/
     __host__ inline void launch_multi_GPU(
         const host::latticeMesh &mesh,
         const programControl &programCtrl,
@@ -80,6 +92,16 @@ namespace LBM
         internalThread.join();
     }
 
+    /**
+     * @brief Launches the LBM kernel on a single GPU.
+     *
+     * Calls the moment‑based LBM kernel using the internal stream for the first device.
+     *
+     * @param mesh        Host-side lattice mesh description.
+     * @param programCtrl Program control parameters (streams, time step, etc.).
+     * @param devPtrs     Collection of device pointers for the LBM fields.
+     * @param haloPtrs    Halo buffers for boundary handling (single GPU case).
+     **/
     __host__ inline void launch_single_GPU(
         const host::latticeMesh &mesh,
         const programControl &programCtrl,
@@ -95,94 +117,186 @@ namespace LBM
             static_cast<device::label_t>(0));
     }
 
+    /**
+     * @brief Concrete launcher for multi‑GPU configurations.
+     *
+     * Owns the device pointer collection, halo buffers, and device communicator,
+     * and provides a launch() method to start the boundary and internal kernels.
+     **/
     class MultiGPULauncher
     {
     public:
+        /**
+         * @brief Constructs a MultiGPULauncher with all required components.
+         *
+         * @param mesh        Host lattice mesh.
+         * @param programCtrl Program control parameters.
+         * @param rho         Device scalar field for density.
+         * @param U           Device vector field for velocity.
+         * @param Pi          Device symmetric tensor field for pressure tensor.
+         **/
         MultiGPULauncher(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const device::scalarField<VelocitySet, time::instantaneous> &rho,
             const device::vectorField<VelocitySet, time::instantaneous> &U,
-            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi)
+            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi) noexcept
             : mesh_(mesh),
               programCtrl_(programCtrl),
               devPtrs_(rho, U, Pi, programCtrl),
               haloPtrs_(rho, U, Pi, mesh, programCtrl),
-              devComm_(mesh, programCtrl, haloPtrs_)
-        {
-        }
+              devComm_(mesh, programCtrl, haloPtrs_) {}
 
+        /**
+         * @brief Launches the multi‑GPU kernels.
+         **/
         inline void launch() const noexcept
         {
             launch_multi_GPU(mesh_, programCtrl_, devPtrs_, haloPtrs_, devComm_);
         }
 
+        /**
+         * @brief Returns a constant reference to the device pointer collection.
+         * @return const reference to kernel::ptrCollection.
+         **/
         __host__ [[nodiscard]] inline constexpr const kernel::ptrCollection &devPtrs() const noexcept { return devPtrs_; }
 
     private:
+        /**
+         * @briefReference to host mesh
+         **/
         const host::latticeMesh &mesh_;
+
+        /**
+         * @brief Reference to program control.
+         **/
         const programControl &programCtrl_;
 
-        // Construct devPtrs, haloPtrs and devComm
+        /**
+         * @brief Device pointer collection.
+         **/
         const kernel::ptrCollection devPtrs_;
+
+        /**
+         * @brief Halo buffers for communication.
+         **/
         const haloBuffer<VelocitySet> haloPtrs_;
+
+        /**
+         * @brief Device communicator.
+         **/
         const deviceCommunicator<VelocitySet> devComm_;
     };
 
+    /**
+     * @brief Concrete launcher for single‑GPU configurations.
+     *
+     * Owns the device pointer collection and halo buffers, and provides a launch()
+     * method to start the LBM kernel on one GPU.
+     **/
     class SingleGPULauncher
     {
     public:
+        /**
+         * @brief Constructs a SingleGPULauncher with all required components.
+         *
+         * @param mesh        Host lattice mesh.
+         * @param programCtrl Program control parameters.
+         * @param rho         Device scalar field for density.
+         * @param U           Device vector field for velocity.
+         * @param Pi          Device symmetric tensor field for pressure tensor.
+         **/
         SingleGPULauncher(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const device::scalarField<VelocitySet, time::instantaneous> &rho,
             const device::vectorField<VelocitySet, time::instantaneous> &U,
-            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi)
+            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi) noexcept
             : mesh_(mesh),
               programCtrl_(programCtrl),
               devPtrs_(rho, U, Pi, programCtrl),
-              haloPtrs_(rho, U, Pi, mesh, programCtrl)
-        {
-        }
+              haloPtrs_(rho, U, Pi, mesh, programCtrl) {}
 
+        /**
+         * @brief Launches the single‑GPU kernel.
+         **/
         inline void launch() const noexcept
         {
             launch_single_GPU(mesh_, programCtrl_, devPtrs_, haloPtrs_);
         }
 
+        /**
+         * @brief Returns a constant reference to the device pointer collection.
+         * @return const reference to kernel::ptrCollection.
+         **/
         __host__ [[nodiscard]] inline constexpr const kernel::ptrCollection &devPtrs() const noexcept { return devPtrs_; }
 
     private:
+        /**
+         * @briefReference to host mesh
+         **/
         const host::latticeMesh &mesh_;
+
+        /**
+         * @brief Reference to program control.
+         **/
         const programControl &programCtrl_;
 
-        // Construct devPtrs and haloPtrs
+        /**
+         * @brief Device pointer collection.
+         **/
         const kernel::ptrCollection devPtrs_;
+
+        /**
+         * @brief Halo buffers for communication.
+         **/
         const haloBuffer<VelocitySet> haloPtrs_;
     };
 
-    // -----------------------------------------------------------------------------
-    // Wrapper class using std::variant to hold the appropriate concrete launcher
-    // -----------------------------------------------------------------------------
+    /**
+     * @brief Wrapper launcher that selects either MultiGPULauncher or SingleGPULauncher
+     *        based on the number of available GPUs and the system configuration.
+     *
+     * Uses a std::variant to hold the concrete launcher chosen at construction time.
+     * Provides a unified launch() interface and access to the device pointers.
+     **/
     class KernelLauncher
     {
     public:
+        /**
+         * @brief Constructs a KernelLauncher and selects the appropriate concrete launcher.
+         *
+         * If the system supports multi‑GPU and the device list contains more than one
+         * device, a MultiGPULauncher is created; otherwise a SingleGPULauncher is used.
+         *
+         * @param mesh        Host lattice mesh.
+         * @param programCtrl Program control parameters.
+         * @param rho         Device scalar field for density.
+         * @param U           Device vector field for velocity.
+         * @param Pi          Device symmetric tensor field for pressure tensor.
+         **/
         KernelLauncher(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const device::scalarField<VelocitySet, time::instantaneous> &rho,
             const device::vectorField<VelocitySet, time::instantaneous> &U,
-            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi)
-            : variant_(makeVariant(mesh, programCtrl, rho, U, Pi))
+            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi) noexcept
+            : variant_(makeVariant(mesh, programCtrl, rho, U, Pi)) {}
+
+        /**
+         * @brief Launches the underlying concrete launcher.
+         **/
+        inline constexpr void launch() const noexcept
         {
+            std::visit(
+                [](const auto &launcher)
+                { launcher.launch(); }, variant_);
         }
 
-        inline void launch() const noexcept
-        {
-            std::visit([](const auto &launcher)
-                       { launcher.launch(); }, variant_);
-        }
-
+        /**
+         * @brief Returns a constant reference to the device pointer collection of the active launcher.
+         * @return const reference to kernel::ptrCollection.
+         **/
         __host__ [[nodiscard]] inline const kernel::ptrCollection &devPtrs() const noexcept
         {
             return std::visit(
@@ -194,6 +308,15 @@ namespace LBM
         }
 
     private:
+        /**
+         * @brief Factory function that creates the appropriate variant type.
+         * @param[in] mesh Host lattice mesh.
+         * @param[in] programCtrl Program control parameters.
+         * @param[in] rho Device scalar field containing the density values on the GPU
+         * @param[in] U Device vector field containing the velocity values on the GPU
+         * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
+         * @return A std::variant holding either a MultiGPULauncher or SingleGPULauncher.
+         **/
         static const std::variant<MultiGPULauncher, SingleGPULauncher> makeVariant(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
@@ -211,6 +334,9 @@ namespace LBM
             return std::variant<MultiGPULauncher, SingleGPULauncher>(std::in_place_type<SingleGPULauncher>, mesh, programCtrl, rho, U, Pi);
         }
 
+        /**
+         * @brief Holds the active launcher
+         **/
         const std::variant<MultiGPULauncher, SingleGPULauncher> variant_;
     };
 }

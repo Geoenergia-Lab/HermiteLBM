@@ -278,12 +278,8 @@ namespace LBM
 
             if constexpr (alpha == axis::NO_DIRECTION)
             {
-                thread::array<T, 27> result;
-                for (host::label_t i = 0; i < 27; i++)
-                {
-                    result[i] = 1;
-                }
-                return result;
+                constexpr const std::integral_constant<T, static_cast<T>(1)> val;
+                return thread::array<T, 27>(val);
             }
             if constexpr (alpha == axis::X)
             {

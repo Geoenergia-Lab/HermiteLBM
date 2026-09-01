@@ -102,14 +102,14 @@ namespace LBM
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          **/
         template <class VelocitySet>
-        class velocityVector : public FunctionObjectBase<VelocitySet, U::N>
+        class velocityVector : public FunctionObjectBase<U::N>
         {
         public:
             /**
              * @brief Alias for the base type
              **/
             using ObjectType = U;
-            using BaseType = FunctionObjectBase<VelocitySet, ObjectType::N>;
+            using BaseType = FunctionObjectBase<ObjectType::N>;
             using Kernel = UDetail::kernel;
 
             /**
@@ -179,7 +179,7 @@ namespace LBM
             /**
              * @brief Save the time-averaged velocity to a file
              **/
-            __host__ void saveMean(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void saveMean(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 UMean_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
@@ -187,7 +187,7 @@ namespace LBM
             /**
              * @brief Save the time-averaged velocity to a file
              **/
-            __host__ void savePrime(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void savePrime(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 UPrime_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
@@ -195,7 +195,7 @@ namespace LBM
             /**
              * @brief Save the time average of the square of the perturbation of the velocity to a file
              **/
-            __host__ void savePrimeSqMean(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void savePrimeSqMean(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 UPrimeSqMean_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }

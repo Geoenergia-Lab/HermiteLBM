@@ -65,9 +65,9 @@ namespace LBM
 
             /**
              * @brief Constructor for the collection of pointers to device arrays on the GPU, used to pass the data to the kernel
-             * @param[in] rho Device scalar field for density
-             * @param[in] U Device vector field for velocity
-             * @param[in] Pi Device symmetric tensor field for the second-order moments
+             * @param[in] rho Device scalar field containing the density values on the GPU
+             * @param[in] U Device vector field containing the velocity values on the GPU
+             * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
              * @param[in] programCtrl Program control object containing information about the devices and streams
              **/
             template <class VelocitySet>
@@ -96,9 +96,9 @@ namespace LBM
 
             /**
              * @brief Initializes the collection of pointers to device arrays on the GPU, used to pass the data to the kernel
-             * @param[in] rho Device scalar field for density
-             * @param[in] U Device vector field for velocity
-             * @param[in] Pi Device symmetric tensor field for the second-order moments
+             * @param[in] rho Device scalar field containing the density values on the GPU
+             * @param[in] U Device vector field containing the velocity values on the GPU
+             * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
              * @param[in] programCtrl Program control object containing information about the devices and streams
              * @return Collection of pointers to device arrays for all devices/streams
              **/
@@ -107,7 +107,7 @@ namespace LBM
                 const device::scalarField<VelocitySet, time::instantaneous> &rho,
                 const device::vectorField<VelocitySet, time::instantaneous> &U,
                 const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
-                const programControl &programCtrl)
+                const programControl &programCtrl) noexcept
             {
                 Type ptrs;
 

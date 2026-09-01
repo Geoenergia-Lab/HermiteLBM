@@ -100,6 +100,11 @@ namespace LBM
             return static_cast<T>(9);
         }
 
+        /**
+         * @brief Get scaling factor for potentially diagonal or off-diagonal second-order moments
+         * @param[in] is_diagonal Boolean indicating whether the moment is diagonal (true) or off-diagonal (false)
+         * @return Scaling factor for the second-order moment
+         **/
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline constexpr T scale(const bool is_diagonal) noexcept
         {

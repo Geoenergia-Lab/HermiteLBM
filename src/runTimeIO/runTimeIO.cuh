@@ -50,9 +50,6 @@ SourceFiles
 #ifndef __MBLBM_RUNTIMEIO_CUH
 #define __MBLBM_RUNTIMEIO_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../typedefs/typedefs.cuh"
-
 namespace LBM
 {
     /**
@@ -220,7 +217,7 @@ namespace LBM
         /**
          * @brief Host-side pinned buffer for writing
          **/
-        host::array<host::PINNED, scalar_t, VelocitySet> hostWriteBuffer_;
+        host::array<host::PINNED, scalar_t> hostWriteBuffer_;
     };
 }
 

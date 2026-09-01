@@ -102,14 +102,14 @@ namespace LBM
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          **/
         template <class VelocitySet>
-        class density : public FunctionObjectBase<VelocitySet, rho::N>
+        class density : public FunctionObjectBase<rho::N>
         {
         public:
             /**
              * @brief Alias for the base type
              **/
             using ObjectType = rho;
-            using BaseType = FunctionObjectBase<VelocitySet, ObjectType::N>;
+            using BaseType = FunctionObjectBase<ObjectType::N>;
             using Kernel = rhoDetail::kernel;
 
             /**
@@ -179,7 +179,7 @@ namespace LBM
             /**
              * @brief Save the time-averaged density to a file
              **/
-            __host__ void saveMean(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void saveMean(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 rhoMean_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
@@ -187,7 +187,7 @@ namespace LBM
             /**
              * @brief Save the time-averaged density to a file
              **/
-            __host__ void savePrime(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void savePrime(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 rhoPrime_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }
@@ -195,7 +195,7 @@ namespace LBM
             /**
              * @brief Save the time average of the square of the perturbation of the density to a file
              **/
-            __host__ void savePrimeSqMean(host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer, const host::label_t timeStep) noexcept
+            __host__ void savePrimeSqMean(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
             {
                 rhoPrimeSqMean_.template save<postProcess::LBMBin>(hostWriteBuffer, timeStep);
             }

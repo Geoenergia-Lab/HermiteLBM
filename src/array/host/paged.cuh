@@ -65,21 +65,20 @@ namespace LBM
          * for fields loaded from disk (checkpoints or initial fields).
          *
          * @tparam T Data type of array elements.
-         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          **/
-        template <typename T, class VelocitySet>
-        class array<host::PAGED, T, VelocitySet> : public arrayBase<T, VelocitySet>
+        template <typename T>
+        class array<host::PAGED, T> : public arrayBase<T>
         {
             /**
              * @brief Bring base members into scope
              **/
-            using arrayBase<T, VelocitySet>::mesh_;
+            using arrayBase<T>::mesh_;
 
         private:
             /**
              * @brief Alias for the current specialization
              **/
-            using This = array<host::PAGED, T, VelocitySet>;
+            using This = array<host::PAGED, T>;
 
         public:
             /**
@@ -88,12 +87,14 @@ namespace LBM
              * @param[in] mesh The lattice mesh
              * @param[in] programCtrl The program control object
              **/
+            template <class BoundaryField>
             __host__ [[nodiscard]] array(
                 const name_t &name,
                 const host::latticeMesh &mesh,
-                const programControl &programCtrl)
-                : arrayBase<T, VelocitySet>(name, mesh),
-                  arr_(initialise_array(mesh, name, name, programCtrl)),
+                const programControl &programCtrl,
+                const BoundaryField &bField)
+                : arrayBase<T>(name, mesh),
+                  arr_(initialise_array(mesh, name, name, programCtrl, bField)),
                   meanCount_(initialiseMeanCount(name, programCtrl)) {}
 
             /**
@@ -103,24 +104,21 @@ namespace LBM
              * @param[in] mesh The lattice mesh
              * @param[in] programCtrl The program control object
              **/
+            template <class BoundaryField>
             __host__ [[nodiscard]] array(
                 const name_t &name,
                 const name_t &componentName,
                 const host::latticeMesh &mesh,
-                const programControl &programCtrl)
-                : arrayBase<T, VelocitySet>(name, mesh),
-                  arr_(initialise_array(mesh, name, componentName, programCtrl)),
+                const programControl &programCtrl,
+                const BoundaryField &bField)
+                : arrayBase<T>(name, mesh),
+                  arr_(initialise_array(mesh, name, componentName, programCtrl, bField)),
                   meanCount_(initialiseMeanCount(name, programCtrl)) {}
 
             /**
              * @brief Destructor
              **/
             __host__ ~array() {}
-
-            /**
-             * @brief Get const reference to the underlying vector.
-             **/
-            __host__ [[nodiscard]] inline constexpr const std::vector<T> &arr() const noexcept { return arr_; }
 
             /**
              * @brief Get raw pointer to the data (read‑only).
@@ -175,13 +173,15 @@ namespace LBM
              * @param[in] programCtrl The program control object
              * @return Vector containing the initial field.
              **/
+            template <class BoundaryField>
             __host__ [[nodiscard]] static const std::vector<T> initialise_array(
                 const host::latticeMesh &mesh,
                 const name_t &fieldName,
                 const name_t &componentName,
-                const programControl &programCtrl)
+                const programControl &programCtrl,
+                const BoundaryField &bField)
             {
-                if (program_status.load() == GOOD)
+                if (runTime::program_status.load() == runTime::GOOD)
                 {
                     if (!std::filesystem::is_directory("timeStep/" + std::to_string(programCtrl.latestTime())))
                     {
@@ -189,7 +189,7 @@ namespace LBM
                         {
                             std::cout << "Did not find directory timeStep/" << std::to_string(programCtrl.latestTime()) << std::endl;
                         }
-                        return initialConditions(mesh, componentName, programCtrl);
+                        return initialConditions(mesh, componentName, programCtrl, bField);
                     }
                     else
                     {
@@ -216,16 +216,14 @@ namespace LBM
              * @param[in] programCtrl The program control object
              * @return Vector containing the initial field.
              **/
+            template <class BoundaryField>
             __host__ [[nodiscard]] static const std::vector<T> initialConditions(
                 const host::latticeMesh &mesh,
                 const name_t &fieldName,
-                const programControl &programCtrl)
+                const programControl &programCtrl,
+                const BoundaryField &bField)
             {
-                const boundaryFields<VelocitySet, true> bField(fieldName);
 
-                // const host::label_t nxGPUs = mesh.nDevices<axis::X>();
-                // const host::label_t nyGPUs = mesh.nDevices<axis::Y>();
-                // const host::label_t nzGPUs = mesh.nDevices<axis::Z>();
                 const host::label_t nPointsPerDevice = mesh.sizePerDevice();
 
                 std::vector<T> field(mesh.size(), 0);
@@ -244,9 +242,9 @@ namespace LBM
                                 const host::label_t tx, const host::label_t ty, const host::label_t tz)
                             {
                                 // Global coordinates (for boundary detection)
-                                const host::label_t x = tx + block::nx() * (bx + (GPU_x * nBlocksPerDevice.value<axis::X>()));
-                                const host::label_t y = ty + block::ny() * (by + (GPU_y * nBlocksPerDevice.value<axis::Y>()));
-                                const host::label_t z = tz + block::nz() * (bz + (GPU_z * nBlocksPerDevice.value<axis::Z>()));
+                                const host::label_t x = tx + block::nx<host::label_t>() * (bx + (GPU_x * nBlocksPerDevice.value<axis::X>()));
+                                const host::label_t y = ty + block::ny<host::label_t>() * (by + (GPU_y * nBlocksPerDevice.value<axis::Y>()));
+                                const host::label_t z = tz + block::nz<host::label_t>() * (bz + (GPU_z * nBlocksPerDevice.value<axis::Z>()));
 
                                 // Local index within this GPU's segment
                                 const host::label_t localIdx = host::idx(tx, ty, tz, bx, by, bz, nBlocksPerDevice.value<axis::X>(), nBlocksPerDevice.value<axis::Y>());

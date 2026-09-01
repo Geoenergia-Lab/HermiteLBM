@@ -51,6 +51,8 @@ SourceFiles
 #ifndef __MBLBM_BOUNDARYVALUE_CUH
 #define __MBLBM_BOUNDARYVALUE_CUH
 
+#include "../../momentBasedLBM/velocitySet/velocitySetBase.cuh"
+
 namespace LBM
 {
     /**

@@ -61,7 +61,7 @@ namespace LBM
         /**
          * @brief Threads per block in x-dimension (compile-time constant)
          **/
-        template <typename T = device::label_t>
+        template <typename T>
         __device__ __host__ [[nodiscard]] inline consteval T nx() noexcept
         {
 #ifdef SCALAR_PRECISION
@@ -76,7 +76,7 @@ namespace LBM
         /**
          * @brief Threads per block in y-dimension (compile-time constant)
          **/
-        template <typename T = device::label_t>
+        template <typename T>
         __device__ __host__ [[nodiscard]] inline consteval T ny() noexcept
         {
 #ifdef SCALAR_PRECISION
@@ -91,7 +91,7 @@ namespace LBM
         /**
          * @brief Threads per block in z-dimension (compile-time constant)
          **/
-        template <typename T = device::label_t>
+        template <typename T>
         __device__ __host__ [[nodiscard]] inline consteval T nz() noexcept
         {
 #ifdef SCALAR_PRECISION
@@ -174,7 +174,7 @@ namespace LBM
          **/
         __host__ [[nodiscard]] inline consteval device::label_t maxThreads() noexcept
         {
-            return block::nx() * block::ny() * block::nz();
+            return block::nx<device::label_t>() * block::ny<device::label_t>() * block::nz<device::label_t>();
         }
     }
 }

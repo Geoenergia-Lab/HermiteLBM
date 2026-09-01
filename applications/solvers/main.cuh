@@ -50,25 +50,26 @@ SourceFiles
 #ifndef __MBLBM_MAIN_CUH
 #define __MBLBM_MAIN_CUH
 
-using namespace LBM;
+#include "../../../src/momentBasedLBM/momentBasedLBM.cuh"
 
-void sigint_handler([[maybe_unused]] const int code)
+namespace LBM
 {
-    std::cout << "Abort signal received" << std::endl;
-    program_status.store(BAD, std::memory_order_relaxed);
+    /**
+     * @brief Make some templated types concrete
+     **/
+    using ScalarField = device::scalarField<VelocitySet, time::instantaneous>;
+    using VectorField = device::vectorField<VelocitySet, time::instantaneous>;
+    using SymmericTensorField = device::symmetricTensorField<VelocitySet, time::instantaneous>;
+    using ObjectRegistry = objectRegistry<VelocitySet>;
+    using TurbulenceStatistics = turbulenceStatistics<VelocitySet>;
+    using RunTimeIO = runTimeIO<VelocitySet>;
 }
+
+using namespace LBM;
 
 int main(const int argc, const char *const argv[])
 {
-    struct sigaction sa;
-    std::memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = sigint_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    if (sigaction(SIGINT, &sa, nullptr) != 0)
-    {
-        return 1;
-    }
+    const signalHandler sigint_manager;
 
     programControl programCtrl(argc, argv);
 
@@ -76,35 +77,35 @@ int main(const int argc, const char *const argv[])
 
     if (!((mesh.nDevices<axis::X>() * mesh.nDevices<axis::Y>() * mesh.nDevices<axis::Z>()) == programCtrl.deviceList().size()))
     {
-        errorHandler::handle(error::INCORRECT_NUMBER_OF_GPUS);
+        errorHandler::handle(runTime::error::INCORRECT_NUMBER_OF_GPUS);
         return 0;
     }
 
     if ((mesh.nDevices<axis::X>() > 1) || (mesh.nDevices<axis::Y>() > 1))
     {
-        errorHandler::handle(error::INVALID_DEVICE_DECOMPOSITION);
+        errorHandler::handle(runTime::error::INVALID_DEVICE_DECOMPOSITION);
         return 0;
     }
 
     VelocitySet::print();
 
     // Allocate the arrays on the device
-    const device::scalarField<VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
-    const device::vectorField<VelocitySet, time::instantaneous> U("U", mesh, programCtrl);
-    const device::symmetricTensorField<VelocitySet, time::instantaneous> Pi("Pi", mesh, programCtrl);
+    const ScalarField rho("rho", mesh, programCtrl);
+    const VectorField U("U", mesh, programCtrl);
+    const SymmericTensorField Pi("Pi", mesh, programCtrl);
 
     programCtrl.configure<VelocitySet::smem_alloc_size()>(kernel::momentBasedLBM);
 
     const KernelLauncher momentBasedLBM(mesh, programCtrl, rho, U, Pi);
 
-    objectRegistry<VelocitySet> runTimeObjects(mesh, programCtrl, momentBasedLBM.devPtrs());
-    turbulenceStatistics<VelocitySet> turbulenceStats(mesh, programCtrl, momentBasedLBM.devPtrs());
+    ObjectRegistry runTimeObjects(mesh, programCtrl, momentBasedLBM.devPtrs());
+    TurbulenceStatistics turbulenceStats(mesh, programCtrl, momentBasedLBM.devPtrs());
 
     programCtrl.allsync();
 
-    if (program_status.load() == GOOD)
+    if (runTime::program_status.load() == runTime::GOOD)
     {
-        runTimeIO<VelocitySet> IO(mesh, programCtrl, rho, U, Pi, runTimeObjects, turbulenceStats);
+        RunTimeIO IO(mesh, programCtrl, rho, U, Pi, runTimeObjects, turbulenceStats);
 
         for (programCtrl.timeStep() = programCtrl.latestTime(); programCtrl.end(); programCtrl.timeStep()++)
         {
