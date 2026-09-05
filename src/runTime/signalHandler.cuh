@@ -97,7 +97,7 @@ namespace LBM
     private:
         /**
          * @brief Common implementation of storing the program status for Linux and Windows systems
-         */
+         **/
         static void handleSignalImpl([[maybe_unused]] int signal)
         {
             std::cout << "Abort signal received" << std::endl;
@@ -110,7 +110,7 @@ namespace LBM
          *
          * @param dwCtrlType The type of control event.
          * @return TRUE if the event was handled, FALSE to pass to the next handler.
-         */
+         **/
         __host__ [[nodiscard]] static BOOL WINAPI handleSignal(const DWORD dwCtrlType)
         {
             if (dwCtrlType == CTRL_C_EVENT || dwCtrlType == CTRL_BREAK_EVENT)
@@ -126,76 +126,19 @@ namespace LBM
         }
 #else
         /**
-         * @brief POSIX signal handler.
-         */
+         * @brief POSIX signal handler
+         **/
         static void handleSignal([[maybe_unused]] int signal)
         {
             handleSignalImpl(signal);
         }
 
-        struct sigaction old_action_; // Only used on POSIX
+        /**
+         * @brief Only used on POSIX
+         **/
+        struct sigaction old_action_;
 #endif
     };
-
-    // /**
-    //  * @brief RAII manager for installing and restoring a SIGINT handler.
-    //  *
-    //  * Installs a custom signal handler for SIGINT upon construction and
-    //  * automatically restores the previous handler upon destruction.
-    //  * Copy and move operations are deleted to prevent multiple restorations.
-    //  **/
-    // class signalHandler
-    // {
-    // public:
-    //     /**
-    //      * @brief Installs the SIGINT handler and saves the previous action.
-    //      *
-    //      * @throws std::runtime_error if sigaction fails.
-    //      **/
-    //     signalHandler() : old_action_{}
-    //     {
-    //         struct sigaction sa{};
-    //         sa.sa_handler = &signalHandler::handleSignal;
-    //         sigemptyset(&sa.sa_mask);
-    //         sa.sa_flags = 0; // no SA_RESTART
-
-    //         if (sigaction(SIGINT, &sa, &old_action_) != 0)
-    //         {
-    //             throw std::runtime_error("Failed to install SIGINT handler");
-    //         }
-    //     }
-
-    //     /**
-    //      * @brief Restores the previous SIGINT handler.
-    //      **/
-    //     ~signalHandler()
-    //     {
-    //         sigaction(SIGINT, &old_action_, nullptr);
-    //     }
-
-    //     // Prevent copying and moving to avoid double restoration.
-    //     signalHandler(const signalHandler &) = delete;
-    //     signalHandler &operator=(const signalHandler &) = delete;
-
-    // private:
-    //     /**
-    //      * @brief Static signal handler invoked on SIGINT.
-    //      *
-    //      * @param signal The signal number (unused).
-    //      *
-    //      * @note The function is not fully async‑signal‑safe: it uses std::cout
-    //      *       and std::atomic::store, which are not guaranteed to be safe in
-    //      *       signal context. For production use, prefer write() and
-    //      *       volatile sig_atomic_t.
-    //      **/
-    //     static void handleSignal([[maybe_unused]] int signal)
-    //     {
-    //         std::cout << "Abort signal received" << std::endl;
-    //         runTime::program_status.store(runTime::programStatus::BAD, std::memory_order_relaxed);
-    //     }
-
-    //     struct sigaction old_action_;
-    // };
 }
 
 #endif

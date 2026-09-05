@@ -54,15 +54,30 @@ namespace LBM
 {
     namespace IO
     {
+        /**
+         * @brief Compile-time generator of whitespace strings with a fixed size.
+         * @tparam N Number of spaces to generate.
+         **/
         template <const std::size_t N>
         struct whitespace
         {
         public:
             using ValueType = std::array<char, N + 1>;
 
-            __host__ [[nodiscard]] static inline constexpr const char *c_str() noexcept { return data_.data(); }
+            /**
+             * @brief Returns a C-string containing N spaces followed by a null terminator.
+             * @return const char* pointer to the whitespace string.
+             **/
+            __host__ [[nodiscard]] static inline constexpr const char *c_str() noexcept
+            {
+                return data_.data();
+            }
 
         private:
+            /**
+             * @brief Initializes the static whitespace array with spaces.
+             * @return ValueType array filled with spaces and null terminator.
+             **/
             __host__ [[nodiscard]] static inline constexpr const ValueType initialise_spaces() noexcept
             {
                 ValueType result;
@@ -80,6 +95,13 @@ namespace LBM
             static constexpr const ValueType data_ = initialise_spaces();
         };
 
+        /**
+         * @brief Stream insertion operator for whitespace objects.
+         * @tparam N Number of spaces.
+         * @param[in] os Output stream.
+         * @param[in] s Whitespace object to insert.
+         * @return Reference to the output stream.
+         **/
         template <const std::size_t N>
         __host__ [[nodiscard]] std::ostream inline constexpr &operator<<(std::ostream &os, const whitespace<N> &s) noexcept
         {
@@ -87,6 +109,12 @@ namespace LBM
             return os;
         }
 
+        /**
+         * @brief Prints a container's elements in braces, separated by commas.
+         * @tparam Container Type of the container (must have size() and operator[]).
+         * @param[in] os Output stream.
+         * @param[in] c Container to print.
+         **/
         template <typename Container>
         __host__ void print_container(std::ostream &os, const Container &c) noexcept
         {
@@ -102,6 +130,12 @@ namespace LBM
             os << "}";
         }
 
+        /**
+         * @brief Prints a pair as a range [first, second).
+         * @tparam T Type of the pair elements.
+         * @param[in] os Output stream.
+         * @param[in] c Pair to print.
+         **/
         template <typename T>
         __host__ void print_container(std::ostream &os, const std::pair<T, T> &c) noexcept
         {
@@ -114,6 +148,14 @@ namespace LBM
             os << "};" << std::endl;
         }
 
+        /**
+         * @brief Prints a container's name followed by its elements on a new line.
+         * @tparam Container Type of the container (must have size() and operator[]).
+         * @tparam Name Type of the name (must be streamable).
+         * @param[in] os Output stream.
+         * @param[in] c Container to print.
+         * @param[in] name Name to print before container.
+         **/
         template <class Container, class Name>
         __host__ void print_container(std::ostream &os, const Container &c, const Name &name) noexcept
         {
@@ -133,6 +175,15 @@ namespace LBM
             print_container(os, vec);
             return os;
         }
+
+        /**
+         * @brief Stream insertion operator for std::array objects.
+         * @tparam T Type of array elements.
+         * @tparam N Size of the array.
+         * @param[in] os Output stream.
+         * @param[in] arr Array to insert.
+         * @return Reference to the output stream.
+         **/
         template <typename T, const std::size_t N>
         __host__ [[nodiscard]] inline std::ostream &operator<<(std::ostream &os, const std::array<T, N> &arr) noexcept
         {
@@ -140,6 +191,14 @@ namespace LBM
             return os;
         }
 
+        /**
+         * @brief Prints a container with each element on a new line, indented.
+         * @tparam BraceIndent Number of spaces before opening/closing braces.
+         * @tparam ElementIndent Number of spaces before each element.
+         * @tparam Container Type of the container (must have size() and operator[]).
+         * @param[in] os Output stream.
+         * @param[in] c Container to print.
+         **/
         template <const std::size_t BraceIndent = 0, const std::size_t ElementIndent = 4, typename Container>
         __host__ void print_container_expanded(std::ostream &os, const Container &c) noexcept
         {
@@ -151,6 +210,15 @@ namespace LBM
             os << whitespace<BraceIndent>{} << "};" << std::endl;
         }
 
+        /**
+         * @brief Prints a container's name, size, and elements in expanded form.
+         * @tparam BraceIndent Number of spaces before opening/closing braces.
+         * @tparam ElementIndent Number of spaces before each element.
+         * @tparam Container Type of the container (must have size() and operator[]).
+         * @param[in] os Output stream.
+         * @param[in] c Container to print.
+         * @param[in] name Name of the container.
+         **/
         template <const std::size_t BraceIndent = 0, const std::size_t ElementIndent = 4, typename Container>
         __host__ void print_container_expanded(std::ostream &os, const Container &c, const char *name) noexcept
         {
