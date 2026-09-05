@@ -58,7 +58,7 @@ namespace LBM
         /**
          * @brief Alias for the block halo
          **/
-        using BlockHalo = device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>;
+        using BlockHalo = device::halo<VelocitySet, BoundaryConditions>;
         using Streaming = streaming<VelocitySet>;
 
         /**
@@ -205,7 +205,7 @@ namespace LBM
             SharedBuffer &sharedBuffer,
             const device::label_t bzOffset) noexcept
         {
-            static_assert(std::is_same_v<BlockHalo, device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>>);
+            static_assert(std::is_same_v<BlockHalo, device::halo<VelocitySet, BoundaryConditions>>);
 
             const thread::coordinate Tx;
 
@@ -224,7 +224,7 @@ namespace LBM
             const device::ptrCollection<6, scalar_t> &writeBuffer,
             SharedBuffer &sharedBuffer) noexcept
         {
-            static_assert(std::is_same_v<BlockHalo, device::halo<VelocitySet, BoundaryConditions::periodicX(), BoundaryConditions::periodicY(), BoundaryConditions::periodicZ()>>);
+            static_assert(std::is_same_v<BlockHalo, device::halo<VelocitySet, BoundaryConditions>>);
 
             const thread::coordinate Tx;
 

@@ -48,7 +48,7 @@ SourceFiles
 \*---------------------------------------------------------------------------*/
 
 // Static corners
-case normalVector::SOUTH_WEST_BACK():
+case NormalVectorType::SOUTH_WEST_BACK():
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -70,7 +70,7 @@ case normalVector::SOUTH_WEST_BACK():
 
     return;
 }
-case normalVector::SOUTH_EAST_BACK():
+case NormalVectorType::SOUTH_EAST_BACK():
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -92,7 +92,7 @@ case normalVector::SOUTH_EAST_BACK():
 
     return;
 }
-case normalVector::NORTH_WEST_BACK():
+case NormalVectorType::NORTH_WEST_BACK():
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -114,7 +114,7 @@ case normalVector::NORTH_WEST_BACK():
 
     return;
 }
-case normalVector::NORTH_EAST_BACK():
+case NormalVectorType::NORTH_EAST_BACK():
 {
     if constexpr (VelocitySet::Q() == 19)
     {
@@ -138,7 +138,7 @@ case normalVector::NORTH_EAST_BACK():
 }
 
 // Static edges
-case normalVector::WEST_BACK():
+case NormalVectorType::WEST_BACK():
 {
     const scalar_t mxz_I = VelocitySet::template calculate_moment<axis::X, axis::Z>(pop, boundaryNormal) * inv_rho_I;
 
@@ -158,7 +158,7 @@ case normalVector::WEST_BACK():
 
     return;
 }
-case normalVector::EAST_BACK():
+case NormalVectorType::EAST_BACK():
 {
     const scalar_t mxz_I = VelocitySet::template calculate_moment<axis::X, axis::Z>(pop, boundaryNormal) * inv_rho_I;
 
@@ -178,7 +178,7 @@ case normalVector::EAST_BACK():
 
     return;
 }
-case normalVector::SOUTH_BACK():
+case NormalVectorType::SOUTH_BACK():
 {
     const scalar_t myz_I = VelocitySet::template calculate_moment<axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
 
@@ -198,7 +198,7 @@ case normalVector::SOUTH_BACK():
 
     return;
 }
-case normalVector::NORTH_BACK():
+case NormalVectorType::NORTH_BACK():
 {
     const scalar_t myz_I = VelocitySet::template calculate_moment<axis::Y, axis::Z>(pop, boundaryNormal) * inv_rho_I;
 

@@ -37,44 +37,55 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A class applying boundary conditions to a purely periodic cube
+    Base type for the boundary condition class
 
 Namespace
     LBM
 
 SourceFiles
-    benchmark.cuh
+    boundaryConditionType.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_BENCHMARK_CUH
-#define __MBLBM_BENCHMARK_CUH
+#ifndef __MBLBM_BOUNDARYCONDITIONTYPE_CUH
+#define __MBLBM_BOUNDARYCONDITIONTYPE_CUH
 
 namespace LBM
 {
     /**
-     * @class benchmark
-     * @brief Applies boundary conditions for lid-driven cavity simulations using moment representation
-     *
-     * This class implements the boundary condition treatment for the D3Q19 lattice model
-     * in lid-driven cavity flow simulations. It handles both static wall boundaries and
-     * moving lid boundaries using moment-based boundary conditions derived from the
-     * regularized LBM approach.
+     * @class boundaryConditionType
+     * @brief Base class to determine periodicity of a particular boundary condition setup
      **/
-    class benchmark : public boundaryConditionType<true, true, true>
+    template <const bool periodicX, const bool periodicY, const bool periodicZ>
+    class boundaryConditionType
     {
     public:
         /**
-         * @brief Default constructor (constexpr)
+         * @brief Define the normal vector type
          **/
-        __device__ __host__ [[nodiscard]] inline consteval benchmark() {}
+        using NormalVectorType = normalVector<periodicX, periodicY, periodicZ>;
 
         /**
-         * @brief Switch determining whether or not the boundary condition actually applies a condition
+         * @brief Determine whether or not the boundary conditions are periodc along a particular axis
          **/
-        __device__ __host__ [[nodiscard]] static inline consteval bool appliesCondition() noexcept { return false; }
+        template <const axis::type alpha>
+        __device__ __host__ [[nodiscard]] static inline consteval bool periodic() noexcept
+        {
+            if constexpr (alpha == axis::X)
+            {
+                return periodicX;
+            }
 
-    private:
+            if constexpr (alpha == axis::Y)
+            {
+                return periodicY;
+            }
+
+            if constexpr (alpha == axis::Z)
+            {
+                return periodicZ;
+            }
+        }
     };
 }
 

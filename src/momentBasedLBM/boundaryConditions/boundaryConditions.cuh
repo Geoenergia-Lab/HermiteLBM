@@ -51,6 +51,7 @@ SourceFiles
 #define __MBLBM_BOUNDARYCONDITIONS_CUH
 
 #include "normalVector.cuh"
+#include "cases/boundaryConditionType.cuh"
 #include "boundaryValue.cuh"
 #include "boundaryFields.cuh"
 #include "cases/cases.cuh"

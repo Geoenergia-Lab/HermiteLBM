@@ -78,8 +78,8 @@ namespace LBM
             // thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
             thread::array<scalar_t, VelocitySet::Q()> pop;
             VelocitySet::reconstruct(pop, moments);
-            device::halo<VelocitySet, true, true, true>::save(pop, moments, readBuffer, Tx, Bx, point);
-            device::halo<VelocitySet, true, true, true>::save(pop, moments, writeBuffer, Tx, Bx, point);
+            device::halo<VelocitySet, boundaryConditionType<true, true, true>>::save(pop, moments, readBuffer, Tx, Bx, point);
+            device::halo<VelocitySet, boundaryConditionType<true, true, true>>::save(pop, moments, writeBuffer, Tx, Bx, point);
         }
 
         /**

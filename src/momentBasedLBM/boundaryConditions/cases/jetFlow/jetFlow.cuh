@@ -67,20 +67,13 @@ namespace LBM
      * outflow boundaries using moment-based boundary conditions derived from the
      * regularized LBM approach.
      **/
-    class jetFlow
+    class jetFlow : public boundaryConditionType<true, true, false>
     {
     public:
         /**
          * @brief Default constructor (constexpr)
          **/
         __device__ __host__ [[nodiscard]] inline consteval jetFlow() {}
-
-        /**
-         * @brief Periodic boundary definitions
-         **/
-        __device__ __host__ [[nodiscard]] static inline consteval bool periodicX() noexcept { return true; }
-        __device__ __host__ [[nodiscard]] static inline consteval bool periodicY() noexcept { return true; }
-        __device__ __host__ [[nodiscard]] static inline consteval bool periodicZ() noexcept { return false; }
 
         /**
          * @brief Switch determining whether or not the boundary condition actually applies a condition
@@ -114,7 +107,7 @@ namespace LBM
 
             // Calculate the moments at the boundary
 
-            const normalVector boundaryNormal(point);
+            const NormalVectorType boundaryNormal(point);
 
             if (boundaryNormal.isBoundary())
             {
@@ -149,7 +142,7 @@ namespace LBM
         __device__ static inline constexpr void calculate_moments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             momentsArray &moments,
-            const normalVector &boundaryNormal,
+            const NormalVectorType &boundaryNormal,
             const SharedBuffer &sharedBuffer,
             const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept

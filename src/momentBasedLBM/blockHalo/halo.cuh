@@ -64,7 +64,7 @@ namespace LBM
          * CUDA blocks during LBM simulations. It maintains double-buffered halo regions
          * to support efficient ping-pong swapping between computation steps.
          **/
-        template <class VelocitySet, const bool x_periodic, const bool y_periodic, const bool z_periodic>
+        template <class VelocitySet, class BoundaryConditions>
         class halo
         {
             using blockStencil = thread::array<const device::label_t, 2>;
@@ -124,29 +124,6 @@ namespace LBM
 #include "haloSharedMemoryOperations.cuh"
 
         private:
-            /**
-             * @brief Determines whether the boundary halo is periodic along a particular axis
-             * @tparam alpha
-             **/
-            template <const axis::type alpha>
-            __device__ __host__ [[nodiscard]] static inline consteval bool is_periodic() noexcept
-            {
-                if constexpr (alpha == axis::X)
-                {
-                    return x_periodic;
-                }
-
-                if constexpr (alpha == axis::Y)
-                {
-                    return y_periodic;
-                }
-
-                if constexpr (alpha == axis::Z)
-                {
-                    return z_periodic;
-                }
-            }
-
             /**
              * @brief Returns the streaming index for a given axis and velocity
              * @tparam alpha The axis direction (X, Y or Z)
@@ -343,11 +320,11 @@ namespace LBM
                 const block::coordinate &Bx,
                 const device::pointCoordinate &point) noexcept
             {
-                if (boundaryCheck<alpha, -1, is_periodic<alpha>()>(point.value<alpha>(), Tx))
+                if (boundaryCheck<alpha, -1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
                 {
                     pull_face<alpha, +1>(pop, readBuffer, Tx, Bx);
                 }
-                else if (boundaryCheck<alpha, +1, is_periodic<alpha>()>(point.value<alpha>(), Tx))
+                else if (boundaryCheck<alpha, +1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
                 {
                     pull_face<alpha, -1>(pop, readBuffer, Tx, Bx);
                 }
@@ -403,11 +380,11 @@ namespace LBM
                 const block::coordinate &Bx,
                 const device::pointCoordinate &point) noexcept
             {
-                if (boundaryCheck<alpha, -1, is_periodic<alpha>()>(point.value<alpha>(), Tx))
+                if (boundaryCheck<alpha, -1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
                 {
                     save_face<alpha, -1>(pop, writeBuffer, Tx, Bx);
                 }
-                else if (boundaryCheck<alpha, +1, is_periodic<alpha>()>(point.value<alpha>(), Tx))
+                else if (boundaryCheck<alpha, +1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
                 {
                     save_face<alpha, +1>(pop, writeBuffer, Tx, Bx);
                 }

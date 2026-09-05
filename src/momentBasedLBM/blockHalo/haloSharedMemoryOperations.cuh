@@ -214,11 +214,11 @@ __device__ static inline constexpr void transpose_direction(
 {
     axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-    if (boundaryCheck<alpha, -1, is_periodic<alpha>()>(point.value<alpha>(), Tx))
+    if (boundaryCheck<alpha, -1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
     {
         transpose<alpha, -1, smemOffset<alpha, -1>()>(Tx, pop, sharedBuffer);
     }
-    else if (boundaryCheck<alpha, +1, is_periodic<alpha>()>(point.value<alpha>(), Tx))
+    else if (boundaryCheck<alpha, +1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
     {
         transpose<alpha, +1, smemOffset<alpha, +1>()>(Tx, pop, sharedBuffer);
     }

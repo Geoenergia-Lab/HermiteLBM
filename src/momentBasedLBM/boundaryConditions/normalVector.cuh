@@ -67,6 +67,7 @@ namespace LBM
      * - Bits 0-5: Individual boundary flags
      * - Bit 6: General boundary indicator (any boundary)
      **/
+    template <const bool periodicX, const bool periodicY, const bool periodicZ>
     class normalVector
     {
     public:
@@ -309,17 +310,36 @@ namespace LBM
          **/
         __device__ [[nodiscard]] static inline constexpr nodeType_t computeBitmask(const device::label_t x, const device::label_t y, const device::label_t z) noexcept
         {
-            return static_cast<nodeType_t>(
-                (x == 0) << 0 |                                // West (bit0)
-                (x == device::n<axis::X>() - 1) << 1 |         // East (bit1)
-                (y == 0) << 2 |                                // South (bit2)
-                (y == device::n<axis::Y>() - 1) << 3 |         // North (bit3)
-                (z == 0) << 4 |                                // Back (bit4)
-                (z == device::n<axis::Z>() - 1) << 5 |         // Front (bit5)
-                (!!(x == 0 || x == device::n<axis::X>() - 1 || //
-                    y == 0 || y == device::n<axis::Y>() - 1 || //
-                    z == 0 || z == device::n<axis::Z>() - 1))  //
-                    << 6);                                     // Any boundary (bit6)
+            const bool west = isBoundary<axis::X, -1, periodicX>(x);
+            const bool east = isBoundary<axis::X, +1, periodicX>(x);
+            const bool south = isBoundary<axis::Y, -1, periodicY>(y);
+            const bool north = isBoundary<axis::Y, +1, periodicY>(y);
+            const bool back = isBoundary<axis::Z, -1, periodicZ>(z);
+            const bool front = isBoundary<axis::Z, +1, periodicZ>(z);
+            const bool anyBoundary = west || east || south || north || back || front;
+
+            return static_cast<nodeType_t>((west << 0) | (east << 1) | (south << 2) | (north << 3) | (back << 4) | (front << 5) | (anyBoundary << 6));
+        }
+
+        template <const axis::type alpha, const int coeff, const bool periodic>
+        __device__ [[nodiscard]] static inline constexpr bool isBoundary(const device::label_t i) noexcept
+        {
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
+            if constexpr (periodic)
+            {
+                return false;
+            }
+            else
+            {
+                if constexpr (coeff == -1)
+                {
+                    return (i == static_cast<device::label_t>(0));
+                }
+                else if constexpr (coeff == 1)
+                {
+                    return (i == device::n<alpha>() - static_cast<device::label_t>(1));
+                }
+            }
         }
     };
 }
