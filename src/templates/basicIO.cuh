@@ -60,10 +60,10 @@ namespace LBM
         public:
             using ValueType = std::array<char, N + 1>;
 
-            __host__ [[nodiscard]] static inline consteval const char *c_str() noexcept { return data_.data(); }
+            __host__ [[nodiscard]] static inline constexpr const char *c_str() noexcept { return data_.data(); }
 
         private:
-            __host__ [[nodiscard]] static inline consteval const ValueType initialise_spaces() noexcept
+            __host__ [[nodiscard]] static inline constexpr const ValueType initialise_spaces() noexcept
             {
                 ValueType result;
                 if constexpr (N > 0)

@@ -62,7 +62,7 @@ namespace LBM
 
         namespace error
         {
-            typedef enum errorCodeEnum : std::size_t
+            typedef enum errorCodeEnum : int
             {
                 NO_ERROR,
                 INCORRECT_NUMBER_OF_GPUS,
