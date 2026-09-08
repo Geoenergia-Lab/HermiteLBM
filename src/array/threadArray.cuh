@@ -95,7 +95,7 @@ namespace LBM
              * @param[in] value Initial value for all array elements
              **/
             template <const T v>
-            __device__ __host__ [[nodiscard]] inline consteval array(const std::integral_constant<T, v> &value) noexcept
+            __device__ __host__ [[nodiscard]] inline consteval array(const integralConstant<T, v> &value) noexcept
             {
                 for (host::label_t i = 0; i < N; i++)
                 {
@@ -506,7 +506,7 @@ namespace LBM
     template <typename T, const host::label_t N>
     __device__ __host__ [[nodiscard]] inline consteval const thread::array<T, N> zeros() noexcept
     {
-        constexpr const std::integral_constant<T, static_cast<T>(0)> value;
+        constexpr const integralConstant<T, static_cast<T>(0)> value;
         return thread::array<T, N>(value);
     }
 

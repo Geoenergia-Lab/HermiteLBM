@@ -637,19 +637,25 @@ namespace LBM
                         return static_cast<T>(std::stol(parameterValueString));
                     }
                 }
+                else
+                {
+                    return static_cast<T>(0);
+                }
             }
-            // Is it supposed a floating point value?
+            // Is it supposed to be a floating point value?
             else if constexpr (std::is_floating_point_v<T>)
             {
                 return static_cast<T>(std::stold(parameterValueString));
             }
-            // Is it supposed a string?
+            // Is it supposed to be a string?
             else if constexpr (std::is_same_v<T, name_t>)
             {
                 return parameterValueString;
             }
-
-            return 0;
+            else
+            {
+                return 0;
+            }
         }
 
         /**

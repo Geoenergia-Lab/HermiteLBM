@@ -287,7 +287,7 @@ namespace LBM
 
             if constexpr (alpha == axis::NO_DIRECTION)
             {
-                constexpr const std::integral_constant<T, static_cast<T>(1)> val;
+                constexpr const integralConstant<T, static_cast<T>(1)> val;
                 return thread::array<T, 27>(val);
             }
             if constexpr (alpha == axis::X)
