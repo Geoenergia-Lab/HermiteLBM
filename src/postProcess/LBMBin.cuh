@@ -37,7 +37,7 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    VTU binary file writer
+    LBMBin binary file writer
 
 Namespace
     LBM::postProcess
@@ -54,6 +54,14 @@ namespace LBM
 {
     namespace postProcess
     {
+        /**
+         * @brief Writer class for LBMBin binary files.
+         *
+         * This class handles writing lattice Boltzmann field data to a custom binary
+         * format with a .LBMBin extension. It supports both raw pointer and
+         * vector-of-vectors field containers, and can write both instantaneous and
+         * time-averaged data
+         **/
         class LBMBin : public writer
         {
         public:
@@ -71,91 +79,124 @@ namespace LBM
             using This = LBMBin;
 
             /**
-             * @brief Auxiliary template function that performs the VTU file writing.
-             * @tparam indexType The data type for the mesh indices (uint32_t or host::label_t).
+             * @brief Write field data to an LBMBin file.
+             *
+             * This method writes the provided field data (stored either as a raw
+             * pointer or as a vector of vectors) along with mesh and system
+             * information to a binary file. The data is always written in
+             * time-averaged mode (time::timeAverage) regardless of the value of
+             * meanCount.
+             *
+             * @tparam Fields Type of the field container. Can be a raw pointer (e.g.,
+             *                const T*) or a std::vector<std::vector<T>>.
+             * @param fileName   Base name of the output file (without directory).
+             * @param mesh       The host-side lattice mesh.
+             * @param varNames   Names of the field variables.
+             * @param fields     Container holding the field data.
+             * @param timeStep   Current time step (used for directory naming).
+             * @param meanCount  Number of samples used in the time average
+             *                   (unused in the current implementation).
              **/
-            template <typename T>
+            template <typename Fields>
             __host__ static void write(
                 const name_t &fileName,
                 const host::latticeMesh &mesh,
                 const words_t &varNames,
-                const T *const ptrRestrict fields,
+                const Fields &fields,
                 const host::label_t timeStep,
                 const host::label_t meanCount)
             {
                 common_write<time::timeAverage>(fileName, mesh, varNames, fields, timeStep, meanCount);
             }
 
-            template <typename T>
+            template <typename Fields>
             __host__ static void write(
                 const name_t &fileName,
                 const host::latticeMesh &mesh,
                 const words_t &varNames,
-                const T *const ptrRestrict fields,
+                const Fields &fields,
                 const host::label_t timeStep)
             {
                 common_write<time::instantaneous>(fileName, mesh, varNames, fields, timeStep, 0);
             }
 
-            template <typename T>
-            __host__ static void write(
-                const name_t &fileName,
-                const host::latticeMesh &mesh,
-                const words_t &varNames,
-                const std::vector<std::vector<T>> &fields,
-                const host::label_t timeStep,
-                const host::label_t meanCount)
-            {
-                common_write<time::timeAverage>(fileName, mesh, varNames, fields, timeStep, meanCount);
-            }
-
-            template <typename T>
-            __host__ static void write(
-                const name_t &fileName,
-                const host::latticeMesh &mesh,
-                const words_t &varNames,
-                const std::vector<std::vector<T>> &fields,
-                const host::label_t timeStep)
-            {
-                common_write<time::instantaneous>(fileName, mesh, varNames, fields, timeStep, 0);
-            }
-
+            /**
+             * @brief Construct a full output filename from a directory name and a field name.
+             *
+             * @param dirName    Directory portion (e.g., the time step as a string).
+             * @param fieldName  Base name of the field/file.
+             * @return A string of the form "timeStep/<dirName>/<fieldName>.LBMBin".
+             **/
             __host__ static inline const name_t make_filename(const name_t &dirName, const name_t &fieldName)
             {
                 return "timeStep/" + dirName + "/" + fieldName + fileExtension;
             }
 
+            /**
+             * @brief Construct a full output filename from a time step and a field name.
+             *
+             * @param timeStep   Numeric time step (converted to string).
+             * @param fieldName  Base name of the field/file.
+             * @return A string of the form "timeStep/<timeStep>/<fieldName>.LBMBin".
+             **/
             __host__ static inline const name_t make_filename(const host::label_t timeStep, const name_t &fieldName)
             {
                 return make_filename(std::to_string(timeStep), fieldName);
             }
 
         private:
-            template <const time::type TimeType, typename T>
-            __host__ static void common_write(
-                const name_t &fileName,
-                const host::latticeMesh &mesh,
-                const words_t &varNames,
-                const std::vector<std::vector<T>> &fields,
-                const host::label_t timeStep,
-                const host::label_t meanCount)
+            /**
+             * @brief Create the directory structure for a given time step.
+             *
+             * Ensures that the "timeStep" directory and its subdirectory for the
+             * current time step exist. Throws std::runtime_error on failure.
+             *
+             * @param timeStep Current time step used to name the subdirectory.
+             **/
+            __host__ static void createTimeStepDirectories(const host::label_t timeStep)
             {
-                const name_t resolvedName = make_filename(timeStep, fileName);
-
                 if (!fileSystem::makeDirectory("timeStep"))
                 {
                     throw std::runtime_error("Error: unable to create timeStep directory");
                 }
-
                 if (!fileSystem::makeDirectory("timeStep/" + std::to_string(timeStep)))
                 {
                     throw std::runtime_error("Error: unable to create directory for time step " + std::to_string(timeStep));
                 }
+            }
 
-                types::assertions::validate<T>();
+            /**
+             * @brief Core writing routine shared by all public write methods.
+             *
+             * Performs validation, opens the output file, writes system/mesh
+             * information, field information, and the actual binary field data.
+             *
+             * @tparam TimeType  Time type (time::instantaneous or time::timeAverage).
+             * @tparam Fields    Type of the field container (raw pointer or vector of vectors).
+             * @param fileName   Base name of the output file (without directory).
+             * @param mesh       The host-side lattice mesh.
+             * @param varNames   Names of the field variables.
+             * @param fields     Container holding the field data.
+             * @param timeStep   Current time step.
+             * @param meanCount  Number of samples for time averaging (only used when
+             *                   TimeType is time::timeAverage).
+             **/
+            template <const time::type TimeType, typename Fields>
+            __host__ static void common_write(
+                const name_t &fileName,
+                const host::latticeMesh &mesh,
+                const words_t &varNames,
+                const Fields &fields,
+                const host::label_t timeStep,
+                const host::label_t meanCount)
+            {
+                const name_t resolvedName = make_filename(timeStep, fileName);
+                createTimeStepDirectories(timeStep);
+
+                //  types::assertions::validate<typename std::remove_pointer_t<Fields>>();
                 endian::assertions::validate();
 
-                // Check if there is enough disk space to store the file
+                // Check disk space
                 writer::diskSpaceAssertion<This>(mesh, varNames, resolvedName);
 
                 std::ofstream out(resolvedName, std::ios::binary);
@@ -164,117 +205,76 @@ namespace LBM
                     throw std::runtime_error("Cannot open file: " + resolvedName);
                 }
 
-                // Write the system information
-                systemInfo::print(out);
-
-                // Write the mesh information: number of points, number of devices
+                // Write system and mesh information
+                system::print(out);
                 mesh.dimensions().print<true>("latticeMesh", out);
                 mesh.nDevices().print<true>("deviceDecomposition", out);
 
-                // Write the field information: instantaneous or time-averaged, field names
+                // Write field information
                 writeFieldInformation<TimeType>(timeStep, varNames, meanCount, out);
 
-                // Write binary data with safe size conversion
+                // Write the actual field data (handles both pointer and vector cases)
                 writeFieldData(mesh, fields, varNames, out);
             }
 
-            template <const time::type TimeType, typename T>
-            __host__ static void common_write(
-                const name_t &fileName,
-                const host::latticeMesh &mesh,
-                const words_t &varNames,
-                const T *const ptrRestrict fields,
-                const host::label_t timeStep,
-                const host::label_t meanCount)
-            {
-                const name_t resolvedName = make_filename(timeStep, fileName);
-
-                if (!fileSystem::makeDirectory("timeStep"))
-                {
-                    throw std::runtime_error("Error: unable to create timeStep directory");
-                }
-
-                if (!fileSystem::makeDirectory("timeStep/" + std::to_string(timeStep)))
-                {
-                    throw std::runtime_error("Error: unable to create directory for time step " + std::to_string(timeStep));
-                }
-
-                types::assertions::validate<T>();
-                endian::assertions::validate();
-
-                // Check if there is enough disk space to store the file
-                writer::diskSpaceAssertion<This>(mesh, varNames, resolvedName);
-
-                std::ofstream out(resolvedName, std::ios::binary);
-                if (!out)
-                {
-                    throw std::runtime_error("Cannot open file: " + resolvedName);
-                }
-
-                // Write the system information
-                systemInfo::print(out);
-
-                // Write the mesh information: number of points, number of devices
-                mesh.dimensions().print<true>("latticeMesh", out);
-                mesh.nDevices().print<true>("deviceDecomposition", out);
-
-                // Write the field information: instantaneous or time-averaged, field names
-                writeFieldInformation<TimeType>(timeStep, varNames, meanCount, out);
-
-                // Write binary data with safe size conversion
-                writeFieldData(mesh, fields, varNames, out);
-            }
-
-            template <typename T>
+            /**
+             * @brief Write the field data block to the output stream.
+             *
+             * Handles both raw pointer and vector-of-vectors field containers.
+             * For raw pointers, the byte size is computed and written as a contiguous
+             * block. For vectors, the overload of fileIO::writeBinaryBlock that
+             * accepts a vector of vectors is used.
+             *
+             * @tparam Fields Type of the field container.
+             * @param mesh     The host-side lattice mesh (used to determine dimensions).
+             * @param fields   The field data to write.
+             * @param varNames Names of the variables (used to compute expected size).
+             * @param out      Output stream (already opened in binary mode).
+             **/
+            template <typename Fields>
             __host__ static void writeFieldData(
                 const host::latticeMesh &mesh,
-                const T *const ptrRestrict fields,
+                const Fields &fields,
                 const words_t &varNames,
                 std::ofstream &out)
             {
                 const host::label_t nPoints = mesh.size();
                 const host::label_t expectedSize = nPoints * varNames.size();
-                const host::label_t byteSize = expectedSize * sizeof(T);
 
                 out << "fieldData" << std::endl;
                 out << "{" << std::endl;
-                out << "    fieldType\tnonUniform;" << std::endl;
-                out << std::endl;
-                out << "    field[" << expectedSize << "][" << varNames.size() << "][" << mesh.template dimension<axis::Z>() << "][" << mesh.template dimension<axis::Y>() << "][" << mesh.template dimension<axis::X>() << "]" << std::endl;
-                out << "    {" << std::endl;
+                IO::printFields(out, "fieldType", "nonUniform");
+                out << IO::whitespace<4>{} << "field[" << expectedSize << "][" << varNames.size() << "][" << mesh.template dimension<axis::Z>() << "][" << mesh.template dimension<axis::Y>() << "][" << mesh.template dimension<axis::X>() << "]" << std::endl;
+                out << IO::whitespace<4>{} << "{" << std::endl;
 
-                fileIO::writeBinaryBlock(fields, byteSize, out);
+                if constexpr (std::is_pointer_v<Fields>)
+                {
+                    // Raw pointer: compute byte size and write directly.
+                    using T = std::remove_cv_t<std::remove_pointer_t<Fields>>;
+                    const host::label_t byteSize = expectedSize * sizeof(T);
+                    fileIO::writeBinaryBlock(fields, byteSize, out);
+                }
+                else
+                {
+                    // Vector-of-vectors: let the overload handle the writing.
+                    fileIO::writeBinaryBlock(fields, out);
+                }
 
                 out << std::endl;
-                out << "    };" << std::endl;
+                out << IO::whitespace<4>{} << "};" << std::endl;
                 out << "};" << std::endl;
             }
 
-            template <typename T>
-            __host__ static void writeFieldData(
-                const host::latticeMesh &mesh,
-                const std::vector<std::vector<T>> &fields,
-                const words_t &varNames,
-                std::ofstream &out)
-            {
-                const host::label_t nPoints = mesh.size();
-                const host::label_t expectedSize = nPoints * varNames.size();
-                // const host::label_t byteSize = expectedSize * sizeof(T);
-
-                out << "fieldData" << std::endl;
-                out << "{" << std::endl;
-                out << "    fieldType\tnonUniform;" << std::endl;
-                out << std::endl;
-                out << "    field[" << expectedSize << "][" << varNames.size() << "][" << mesh.template dimension<axis::Z>() << "][" << mesh.template dimension<axis::Y>() << "][" << mesh.template dimension<axis::X>() << "]" << std::endl;
-                out << "    {" << std::endl;
-
-                fileIO::writeBinaryBlock(fields, out);
-
-                out << std::endl;
-                out << "    };" << std::endl;
-                out << "};" << std::endl;
-            }
-
+            /**
+             * @brief Write field metadata (time step, time type, field names, etc.).
+             *
+             * @tparam TimeType  Time type (instantaneous or time-averaged).
+             * @param timeStep   Current time step.
+             * @param varNames   Names of the fields.
+             * @param meanCount  Number of samples used in averaging (only written when
+             *                   TimeType is time::timeAverage).
+             * @param out        Output stream.
+             **/
             template <const time::type TimeType>
             __host__ static void writeFieldInformation(
                 const host::label_t timeStep,
@@ -284,27 +284,17 @@ namespace LBM
             {
                 out << "fieldInformation" << std::endl;
                 out << "{" << std::endl;
-                out << "    timeStep\t" << timeStep << ";" << std::endl;
-                out << std::endl;
-                // For now, only writing instantaneous fields
-                out << "    timeType\t" << time::nameString<TimeType>() << ";" << std::endl;
-                out << std::endl;
+
+                IO::printFields(out, "timeStep", timeStep);
+                IO::printFields(out, "timeType", time::nameString<TimeType>());
 
                 if constexpr (TimeType == time::timeAverage)
                 {
-                    out << "    meanCount\t" << meanCount << ";" << std::endl;
-                    out << std::endl;
+                    IO::printFields(out, "meanCount", meanCount);
                 }
 
-                out << "    nFields\t" << varNames.size() << ";" << std::endl;
-                out << std::endl;
-                out << "    fieldNames[" << varNames.size() << "]" << std::endl;
-                out << "    {" << std::endl;
-                for (const name_t &varName : varNames)
-                {
-                    out << "    \t" << varName << ";" << std::endl;
-                }
-                out << "    };" << std::endl;
+                IO::printFields(out, "nFields", varNames.size());
+                IO::print_container_expanded<4, 8>(out, varNames, "fieldNames");
                 out << "};" << std::endl;
                 out << std::endl;
             }

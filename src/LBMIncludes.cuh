@@ -59,6 +59,7 @@ SourceFiles
 #include <cctype>
 #include <charconv>
 #include <chrono>
+#include <csignal>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -87,6 +88,7 @@ SourceFiles
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 #include <vector>
 
 namespace LBM
@@ -110,7 +112,5 @@ namespace LBM
 #endif
     }
 }
-
-#include "sysInfo.cuh"
 
 #endif

@@ -18,8 +18,13 @@ export HERMITELBM_CUDA_VERSION_MINOR="0"
 # Architecture detection mode: "Automatic" or "Manual"
 export HERMITELBM_ARCHITECTURE_DETECTION="Automatic"
 
-# Manual architecture version (used only if HERMITELBM_ARCHITECTURE_DETECTION="Manual")
+# Manual architecture version 
+# Used only if HERMITELBM_ARCHITECTURE_DETECTION="Manual"
 export HERMITELBM_ARCHITECTURE_VERSION="89"
+
+# Manual specification of the number of devices 
+# Used only if HERMITELBM_ARCHITECTURE_DETECTION="Manual"
+export HERMITELBM_NUM_DEVICES="1"
 
 # --------------------------------------------------------------------------- #
 #  Utility Functions                                                          #

@@ -28,7 +28,7 @@ ifeq ($(HERMITELBM_CUDA_DIR),)
 $(error HERMITELBM_CUDA_DIR is not set. Please run "source bashrc" in the project directory first)
 endif
 
-TOOL_SUBDIRS = applications/computeVersion applications/postProcessing/fieldConvert applications/postProcessing/fieldCalculate
+TOOL_SUBDIRS = applications/systemInfo applications/postProcessing/fieldConvert applications/postProcessing/fieldCalculate
 GPU_SUBDIRS = applications/solvers/momentBasedD3Q19 applications/solvers/momentBasedD3Q27 applications/solvers/isothermalD3Q19 applications/solvers/isothermalD3Q27
 SUBDIRS = $(TOOL_SUBDIRS) $(GPU_SUBDIRS)
 
@@ -42,12 +42,12 @@ directories:
 	@ mkdir -p $(HERMITELBM_BIN_DIR)
 	@ mkdir -p $(HERMITELBM_INCLUDE_DIR)
 
-# Compile and run computeVersion to generate hardware.info
+# Compile and run systemInfo to generate hardware.info
 $(HERMITELBM_INCLUDE_DIR)/hardware.info: directories
-	@ $(MAKE) -C applications/computeVersion install
-	@ computeVersion
+	@ $(MAKE) -C applications/systemInfo install
+	@ systemInfo
 
-# Compile computeVersion (tool subdirectories)
+# Compile systemInfo (tool subdirectories)
 $(TOOL_SUBDIRS): directories
 	$(MAKE) -C $@
 

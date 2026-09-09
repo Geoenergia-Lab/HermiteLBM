@@ -59,14 +59,14 @@ int main(const int argc, const char *const argv[])
     // If the field name argument is not present, we cannot proceed, so we should print an error message and return
     if (!programCtrl.input().isArgPresent("-fieldName"))
     {
-        errorHandler::check<throws::NO_THROW>(-1, "Unspecified field name. Please provide an argument using the -fieldName argument.");
+        errorHandler::handle(runTime::error::UNSPECIFIED_FIELDNAME);
         return 0;
     }
 
     // If the file type argument is not present, we cannot proceed, so we should print an error message and return
     if (!programCtrl.input().isArgPresent("-fileType"))
     {
-        errorHandler::check<throws::NO_THROW>(-1, "Unspecified file type. Please provide an argument using the -fileType argument.");
+        errorHandler::handle(runTime::error::UNSPECIFIED_FILETYPE);
         return 0;
     }
 
@@ -82,7 +82,7 @@ int main(const int argc, const char *const argv[])
     const bool doCutPlane = programCtrl.input().isArgPresent("-cutPlane");
 
     // Get the mesh for processing
-    const host::latticeMesh newMesh = processMesh(mesh, programCtrl, doCutPlane);
+    // const host::latticeMesh newMesh = processMesh(mesh, programCtrl, doCutPlane);
 
     // Get the conversion type
     const name_t conversion = programCtrl.getArgument("-fileType");
@@ -119,7 +119,7 @@ int main(const int argc, const char *const argv[])
                     const name_t fileNameOut = processName(programCtrl, fieldName, timeStep, doCutPlane);
 
                     // Write the output file
-                    writer(fields, fileNameOut, newMesh, fieldNames);
+                    writer(fields, fileNameOut, mesh, fieldNames);
 
                     if (!(timeStep == fileNameIndices.back()))
                     {
@@ -130,18 +130,18 @@ int main(const int argc, const char *const argv[])
 
             if (!foundField)
             {
-                errorHandler::check<throws::NO_THROW>(-1, "Specified field name not found in any time step directory.");
+                errorHandler::handle(runTime::error::FIELDNAME_NOT_FOUND);
             }
         }
         else
         {
-            errorHandler::check<throws::NO_THROW>(-1, "Empty timeStep directory.");
+            errorHandler::handle(runTime::error::EMPTY_TIMESTEP_DIRECTORY);
         }
     }
     else
     {
         // We don't actually need to throw, we can just print the error message
-        errorHandler::check<throws::NO_THROW>(-1, "Invalid writer function for conversion type: " + conversion);
+        errorHandler::handle(runTime::error::INVALID_CALCULATION_FUNCTION);
     }
 
     return 0;

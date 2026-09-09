@@ -50,18 +50,7 @@ SourceFiles
 #ifndef __MBLBM_FIELDCONVERT_CUH
 #define __MBLBM_FIELDCONVERT_CUH
 
-#include "../../../src/LBMIncludes.cuh"
-#include "../../../src/typedefs/typedefs.cuh"
-#include "../../../src/strings.cuh"
-#include "../../../src/array/array.cuh"
-#include "../../../src/collision/collision.cuh"
-#include "../../../src/blockHalo/blockHalo.cuh"
-#include "../../../src/fileIO/fileIO.cuh"
-#include "../../../src/runTimeIO/runTimeIO.cuh"
-#include "../../../src/postProcess/postProcess.cuh"
-#include "../../../src/programControl/programControl.cuh"
-#include "../../../src/functionObjects/functionObjects.cuh"
-#include "../../../src/numericalSchemes/numericalSchemes.cuh"
+#include "../postProcessingIncludes.cuh"
 
 namespace LBM
 {
@@ -70,7 +59,7 @@ namespace LBM
         const name_t cutPlanePrefix = programCtrl.getArgument("-cutPlane");
 
         // Need to check that j = 1 because the first character before the = symbol should be x, y or z and nothing else
-        if (!(string::findCharPosition(cutPlanePrefix, "=") == 1))
+        if (!(string::findCharPosition<"="[0]>(cutPlanePrefix) == 1))
         {
             return axis::NO_DIRECTION;
         }
@@ -158,7 +147,7 @@ namespace LBM
                     {
                         const host::pointLabel Tx = axis::to_3d<alpha>(i, j, index_0);
 
-                        const host::label_t idx = global::idx(Tx.x, Tx.y, Tx.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
+                        const host::label_t idx = Cartesian::idx(Tx.x, Tx.y, Tx.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
 
                         const host::label_t id = i + (j * mesh.dimension<axis::orthogonal<alpha, 0>()>());
 
@@ -178,8 +167,8 @@ namespace LBM
                         const host::pointLabel Tx_0 = axis::to_3d<alpha>(i, j, index_0);
                         const host::pointLabel Tx_1 = axis::to_3d<alpha>(i, j, index_1);
 
-                        const host::label_t idx_0 = global::idx(Tx_0.x, Tx_0.y, Tx_0.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
-                        const host::label_t idx_1 = global::idx(Tx_1.x, Tx_1.y, Tx_1.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
+                        const host::label_t idx_0 = Cartesian::idx(Tx_0.x, Tx_0.y, Tx_0.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
+                        const host::label_t idx_1 = Cartesian::idx(Tx_1.x, Tx_1.y, Tx_1.z, mesh.dimension<axis::X>(), mesh.dimension<axis::Y>());
 
                         const scalar_t f0 = fields[field][idx_0];
                         const scalar_t f1 = fields[field][idx_1];
@@ -245,23 +234,6 @@ namespace LBM
         else
         {
             return hostMoments.deinterleaveAoS(mesh);
-        }
-    }
-
-    __host__ [[nodiscard]] const host::latticeMesh processMesh(
-        const host::latticeMesh &mesh,
-        const programControl &programCtrl,
-        const bool cutPlane)
-    {
-        if (cutPlane)
-        {
-            const axis::type alpha = cutPlaneDirection(programCtrl);
-
-            return meshSlice(mesh, alpha);
-        }
-        else
-        {
-            return host::latticeMesh(programCtrl);
         }
     }
 

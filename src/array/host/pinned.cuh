@@ -66,15 +66,14 @@ namespace LBM
          * freed in the destructor.
          *
          * @tparam T Data type of array elements.
-         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          **/
-        template <typename T, class VelocitySet>
-        class array<host::PINNED, T, VelocitySet> : public arrayBase<T, VelocitySet>
+        template <typename T>
+        class array<host::PINNED, T> : public arrayBase<T>
         {
             /**
              * @brief Bring base members into scope
              **/
-            using arrayBase<T, VelocitySet>::mesh_;
+            using arrayBase<T>::mesh_;
 
         public:
             /**
@@ -85,22 +84,8 @@ namespace LBM
             __host__ [[nodiscard]] array(
                 const host::label_t nPoints,
                 const host::latticeMesh &mesh)
-                : arrayBase<T, VelocitySet>("", mesh),
+                : arrayBase<T>("", mesh),
                   ptr_(host::allocate<T>(nPoints, 0)),
-                  nPoints_(nPoints) {}
-
-            /**
-             * @brief Construct a pinned array of given size, uniformly initialised to a value.
-             * @param[in] nPoints Number of elements.
-             * @param[in] val Initial value.
-             * @param[in] mesh The lattice mesh
-             **/
-            __host__ [[nodiscard]] array(
-                const host::label_t nPoints,
-                const T val,
-                const host::latticeMesh &mesh)
-                : arrayBase<T, VelocitySet>("", mesh),
-                  ptr_(host::allocate<T>(nPoints, val)),
                   nPoints_(nPoints) {}
 
             /**
@@ -108,7 +93,7 @@ namespace LBM
              **/
             __host__ ~array()
             {
-                errorHandler::check(cudaFreeHost(const_cast<T *>(ptr_)));
+                host::free(ptr_);
             };
 
             /**
@@ -181,13 +166,11 @@ namespace LBM
 
                 for (host::label_t field = 0; field < N; field++)
                 {
-                    errorHandler::check(
-                        cudaMemcpyAsync(
-                            &(ptr_[(field * mesh.size()) + (virtualDeviceIndex * nPointsPerDevice)]),
-                            devPtrs[field],
-                            nPointsPerDevice * sizeof(T),
-                            cudaMemcpyDeviceToHost,
-                            programCtrl.streams()[GPU::internalStreamID(virtualDeviceIndex)]));
+                    device::memcpyAsyncDeviceToHost(
+                        &(ptr_[(field * mesh.size()) + (virtualDeviceIndex * nPointsPerDevice)]),
+                        devPtrs[field],
+                        nPointsPerDevice,
+                        programCtrl.streams()[device::internalStreamID(virtualDeviceIndex)]);
                 }
             }
 
@@ -203,12 +186,6 @@ namespace LBM
             const host::label_t nPoints_;
         };
     }
-
-    /**
-     * @brief Shorthand for the type used for file I/O
-     **/
-    // template <class VelocitySet>
-    // using writeBuffer = host::array<host::PINNED, scalar_t, VelocitySet>;
 }
 
 #endif

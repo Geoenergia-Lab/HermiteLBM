@@ -44,7 +44,7 @@ namespace LBM
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @tparam N The number of spatial components of the function object
          **/
-        template <class VelocitySet, const host::label_t N>
+        template <const host::label_t N>
         class FunctionObjectBase
         {
         protected:
@@ -73,11 +73,6 @@ namespace LBM
             const bool calculatePrimeSqMean_;
 
             /**
-             * @brief Reference to the write buffer
-             **/
-            host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer_;
-
-            /**
              * @brief Reference to lattice mesh
              **/
             const host::latticeMesh &mesh_;
@@ -85,9 +80,7 @@ namespace LBM
             /**
              * @brief Device pointer collection
              **/
-            const device::scalarField<VelocitySet, time::instantaneous> &rho_;
-            const device::vectorField<VelocitySet, time::instantaneous> &U_;
-            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi_;
+            const kernel::ptrCollection &devPtrs_;
 
             /**
              * @brief Stream handler for CUDA operations
@@ -106,6 +99,7 @@ namespace LBM
 
             /**
              * @brief Configures the kernels to allocate no dynamic shared memory and prefer L1 cache
+             * @tparam Kernel Kernel function to configure
              * @param[in] programCtrl The program control object
              **/
             template <class Kernel>
@@ -116,19 +110,6 @@ namespace LBM
                 programCtrl.configure<0, false>(Kernel::mean());
                 programCtrl.configure<0, false>(Kernel::prime());
                 programCtrl.configure<0, false>(Kernel::primeSqMean());
-            }
-
-            /**
-             * @brief Return the pointers that correspond to a particular device partition
-             * @param[in] idx The device index
-             * @return Pointers to the 10 solution variables allocated on device idx
-             **/
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs(const host::label_t idx) const noexcept
-            {
-                return {rho_.self().constPtr(idx),
-                        U_.x().constPtr(idx), U_.y().constPtr(idx), U_.z().constPtr(idx),
-                        Pi_.xx().constPtr(idx), Pi_.xy().constPtr(idx), Pi_.xz().constPtr(idx),
-                        Pi_.yy().constPtr(idx), Pi_.yz().constPtr(idx), Pi_.zz().constPtr(idx)};
             }
 
             /**
@@ -148,8 +129,8 @@ namespace LBM
                 {
                     kernel::launch<FunctionObject::Kernel::mean()>(
                         mesh_,
-                        programCtrl_.streams()[GPU::internalStreamID(deviceIdx)],
-                        devPtrs(deviceIdx),
+                        programCtrl_.streams()[device::internalStreamID(deviceIdx)],
+                        devPtrs_[deviceIdx],
                         object.meanPtrs(deviceIdx),
                         invCount);
                 }
@@ -170,8 +151,8 @@ namespace LBM
                 {
                     kernel::launch<FunctionObject::Kernel::instantaneous()>(
                         mesh_,
-                        programCtrl_.streams()[GPU::internalStreamID(deviceIdx)],
-                        devPtrs(deviceIdx),
+                        programCtrl_.streams()[device::internalStreamID(deviceIdx)],
+                        devPtrs_[deviceIdx],
                         object.meanPtrs(deviceIdx));
                 }
             }
@@ -193,8 +174,8 @@ namespace LBM
                 {
                     kernel::launch<FunctionObject::Kernel::instantaneousAndMean()>(
                         mesh_,
-                        programCtrl_.streams()[GPU::internalStreamID(deviceIdx)],
-                        devPtrs(deviceIdx),
+                        programCtrl_.streams()[device::internalStreamID(deviceIdx)],
+                        devPtrs_[deviceIdx],
                         object.instantaneousPtrs(deviceIdx),
                         object.meanPtrs(deviceIdx),
                         invCount);
@@ -216,8 +197,8 @@ namespace LBM
                 {
                     kernel::launch<FunctionObject::Kernel::prime()>(
                         mesh_,
-                        programCtrl_.streams()[GPU::internalStreamID(deviceIdx)],
-                        devPtrs(deviceIdx),
+                        programCtrl_.streams()[device::internalStreamID(deviceIdx)],
+                        devPtrs_[deviceIdx],
                         object.meanPtrs(deviceIdx),
                         object.primePtrs(deviceIdx));
                 }
@@ -240,8 +221,8 @@ namespace LBM
                 {
                     kernel::launch<FunctionObject::Kernel::primeSqMean()>(
                         mesh_,
-                        programCtrl_.streams()[GPU::internalStreamID(deviceIdx)],
-                        devPtrs(deviceIdx),
+                        programCtrl_.streams()[device::internalStreamID(deviceIdx)],
+                        devPtrs_[deviceIdx],
                         object.meanPtrs(deviceIdx),
                         object.primeSqMeanPtrs(deviceIdx),
                         invCount);
@@ -253,7 +234,6 @@ namespace LBM
         public:
             /**
              * @brief Constructs a function object base with common input data.
-             * @param[in] hostWriteBuffer Host buffer for writing output data.
              * @param[in] mesh Lattice mesh.
              * @param[in] rho Device scalar field containing the density values on the GPU
              * @param[in] U Device vector field containing the velocity values on the GPU
@@ -262,11 +242,8 @@ namespace LBM
              **/
             __host__ [[nodiscard]] FunctionObjectBase(
                 const name_t &name,
-                host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer,
                 const host::latticeMesh &mesh,
-                const device::scalarField<VelocitySet, time::instantaneous> &rho,
-                const device::vectorField<VelocitySet, time::instantaneous> &U,
-                const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
+                const kernel::ptrCollection &devPtrs,
                 const programControl &programCtrl) noexcept
                 : name_(name),
                   nameMean_(name + "Mean"),
@@ -280,11 +257,8 @@ namespace LBM
                   calculateMean_(initialiserSwitch(nameMean_)),
                   calculatePrime_(initialiserSwitch(namePrime_)),
                   calculatePrimeSqMean_(initialiserSwitch(namePrimeSqMean_)),
-                  hostWriteBuffer_(hostWriteBuffer),
                   mesh_(mesh),
-                  rho_(rho),
-                  U_(U),
-                  Pi_(Pi),
+                  devPtrs_(devPtrs),
                   programCtrl_(programCtrl) {}
 
             /**

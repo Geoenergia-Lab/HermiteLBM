@@ -53,30 +53,58 @@ SourceFiles
 
 #include "LBMIncludes.cuh"
 #include "typedefs/typedefs.cuh"
+#include "runTime/runTime.cuh"
 
 namespace LBM
 {
-    /**
-     * @brief Compile-time recursive loop unroller
-     * @tparam Start Starting index (inclusive)
-     * @tparam End Ending index (exclusive)
-     * @tparam F Callable type accepting integral_constant<host::label_t>
-     * @param[in] f Function object to execute per iteration
-     *
-     * @note Equivalent to runtime loop: `for(host::label_t i=Start; i<End; ++i)`
-     * @note Enables `if constexpr` usage in loop bodies
-     * @warning Recursion depth limited by compiler constraints
-     *
-     * Example usage:
-     * @code
-     * constexpr_for<0, 5>([](auto i) {
-     *     // i is integral_constant<host::label_t, N>
-     *     if constexpr (i.value % 2 == 0) { ... }
-     * });
-     * @endcode
-     **/
+    namespace global
+    {
+        /**
+         * @brief Memory index (generic version)
+         * @tparam T The return type
+         * @tparam nx Block dimensions in the X axis
+         * @tparam ny Block dimensions in the Y axis
+         * @tparam nz Block dimensions in the Z axis
+         * @param[in] tx Thread x-coordinate within block
+         * @param[in] ty Thread y-coordinate within block
+         * @param[in] tz Thread z-coordinate within block
+         * @param[in] bx Block index in the x-direction
+         * @param[in] by Block index in the y-direction
+         * @param[in] bz Block index in the z-direction
+         * @param[in] nxBlocks Number of blocks in x-direction
+         * @param[in] nyBlocks Number of blocks in y-direction
+         * @return Linearized index using mesh constants
+         *
+         * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)
+         **/
+        template <typename T, const T nx, const T ny, const T nz>
+        __device__ __host__ [[nodiscard]] inline constexpr T idx(const T tx, const T ty, const T tz, const T bx, const T by, const T bz, const T nxBlocks, const T nyBlocks) noexcept
+        {
+            return (tx + nx * (ty + ny * (tz + nz * (bx + nxBlocks * (by + nyBlocks * bz)))));
+        }
+    }
+
     namespace host
     {
+        /**
+         * @brief Compile-time recursive loop unroller
+         * @tparam Start Starting index (inclusive)
+         * @tparam End Ending index (exclusive)
+         * @tparam F Callable type accepting integral_constant<host::label_t>
+         * @param[in] f Function object to execute per iteration
+         *
+         * @note Equivalent to runtime loop: `for(host::label_t i=Start; i<End; ++i)`
+         * @note Enables `if constexpr` usage in loop bodies
+         * @warning Recursion depth limited by compiler constraints
+         *
+         * Example usage:
+         * @code
+         * constexpr_for<0, 5>([](auto i) {
+         *     // i is integral_constant<host::label_t, N>
+         *     if constexpr (i.value % 2 == 0) { ... }
+         * });
+         * @endcode
+         **/
         template <const host::label_t Start, const host::label_t End, typename F>
         __host__ inline constexpr void constexpr_for(F &&f) noexcept
         {
@@ -93,6 +121,25 @@ namespace LBM
 
     namespace device
     {
+        /**
+         * @brief Compile-time recursive loop unroller
+         * @tparam Start Starting index (inclusive)
+         * @tparam End Ending index (exclusive)
+         * @tparam F Callable type accepting integral_constant<device::label_t>
+         * @param[in] f Function object to execute per iteration
+         *
+         * @note Equivalent to runtime loop: `for(device::label_t i=Start; i<End; ++i)`
+         * @note Enables `if constexpr` usage in loop bodies
+         * @warning Recursion depth limited by compiler constraints
+         *
+         * Example usage:
+         * @code
+         * constexpr_for<0, 5>([](auto i) {
+         *     // i is integral_constant<device::label_t, N>
+         *     if constexpr (i.value % 2 == 0) { ... }
+         * });
+         * @endcode
+         **/
         template <const device::label_t Start, const device::label_t End, typename F>
         __device__ inline constexpr void constexpr_for(F &&f) noexcept
         {
@@ -111,6 +158,8 @@ namespace LBM
     {
         /**
          * @brief Assert that no arguments are passed by reference
+         * @tparam T Return type of the function to check
+         * @tparam Args Type of the function arguments
          **/
         template <typename T, typename... Args>
         __device__ __host__ [[nodiscard]] inline consteval bool has_reference_parameters(T (*)(Args...))
@@ -124,6 +173,7 @@ namespace LBM
          * @tparam KernelFunc The kernel function to launch
          * @tparam sharedMem The amount of dynamic shared memory in bytes
          * @tparam threadBlock The size of the block as a dim3
+         * @tparam Args Type of arguments to pass to the kernel
          * @param[in] grid The number of blocks to launch
          * @param[in] stream The execution stream on which to launch the kernel
          * @param[in] args Arguments to pass to the kernel
@@ -141,9 +191,9 @@ namespace LBM
 
     /**
      * @brief Raise a variable to a compile-time constant integer power
-     * @tparam N The power
+     * @tparam Pow The power
      * @tparam T The arithmetic type
-     * @param[in] var The variable to exponent
+     * @param[in] val The variable to exponent
      **/
     template <const host::label_t Pow, typename T>
     __device__ __host__ [[nodiscard]] inline constexpr T pow(const T &val) noexcept
@@ -198,35 +248,13 @@ namespace LBM
                 }
             }
         }
-
-        /**
-         * @brief Get the current GPU device index
-         * @return The index of the currently active GPU device
-         **/
-        __host__ [[nodiscard]] int current_ordinal() noexcept
-        {
-            int result = 0;
-
-            errorHandler::check(cudaGetDevice(&result));
-
-            return result;
-        }
-
-        /**
-         * @brief Compute a unique stream ID for a given device index
-         * @param[in] deviceIdx The index of the device (GPU)
-         * @return A unique stream ID for the device
-         **/
-        __host__ [[nodiscard]] inline constexpr host::label_t internalStreamID(const host::label_t deviceIdx) noexcept
-        {
-            return (deviceIdx * 3) + 1;
-        }
     }
 
     namespace host
     {
         /**
          * @brief Nested loop over block and thread indices
+         * @tparam F Type of the callable function
          * @param[in] nBlocks Number of blocks in the X, Y and Z directions
          * @param[in] f Function called for each (bx, by, bz, tx, ty, tz)
          *
@@ -269,7 +297,9 @@ namespace LBM
     {
         /**
          * @brief Nested loop over global grid indices
+         * @tparam F Type of the callable function
          * @param[in] dimensions Number of points in the X, Y and Z directions
+         * @param[in] indent Identation to the loop end condition
          * @param[in] f Function called for each (bx, by, bz, tx, ty, tz)
          *
          * Example:
@@ -296,6 +326,8 @@ namespace LBM
 
         /**
          * @brief Nested loop over indices in a plane
+         * @tparam alpha The axis direction (X, Y or Z)
+         * @tparam F Type of the callable function
          * @param[in] dimensions Number of points in the X, Y and Z directions
          * @param[in] f Function called for each (bx, by, bz, tx, ty, tz)
          *
@@ -326,23 +358,29 @@ namespace LBM
     {
         /**
          * @brief Memory index (host version)
-         * @param[in] tx,ty,tz Thread-local coordinates
-         * @param[in] bx,by,bz Block indices
-         * @param[in] nxBlocks,nyBlocks Number of blocks in the x and y directions
+         * @param[in] tx Thread x-coordinate within block
+         * @param[in] ty Thread y-coordinate within block
+         * @param[in] tz Thread z-coordinate within block
+         * @param[in] bx Block index in the x-direction
+         * @param[in] by Block index in the y-direction
+         * @param[in] bz Block index in the z-direction
+         * @param[in] nxBlocks Number of blocks in x-direction
+         * @param[in] nyBlocks Number of blocks in y-direction
          * @return Linearized index using mesh constants
          *
          * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)
          **/
-        __host__ [[nodiscard]] inline constexpr label_t idx(
-            const label_t tx, const label_t ty, const label_t tz,
-            const label_t bx, const label_t by, const label_t bz,
-            const label_t nxBlocks, const label_t nyBlocks) noexcept
+        __host__ [[nodiscard]] inline constexpr label_t idx(const label_t tx, const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz, const label_t nxBlocks, const label_t nyBlocks) noexcept
         {
-            return (tx + block::nx<label_t>() * (ty + block::ny<label_t>() * (tz + block::nz<label_t>() * (bx + nxBlocks * (by + nyBlocks * bz)))));
+            return global::idx<host::label_t, block::nx<host::label_t>(), block::ny<host::label_t>(), block::nz<host::label_t>()>(tx, ty, tz, bx, by, bz, nxBlocks, nyBlocks);
         }
 
         /**
          * @overload Compute the memory index from a thread and block label
+         * @param[in] Tx Three-dimensional thread coordinates
+         * @param[in] Bx Three-dimensional block coordinates
+         * @param[in] nxBlocks Number of blocks in x-direction
+         * @param[in] nyBlocks Number of blocks in y-direction
          **/
         __host__ [[nodiscard]] inline constexpr label_t idx(const host::threadLabel &Tx, const host::blockLabel &Bx, const label_t nxBlocks, const label_t nyBlocks) noexcept
         {
@@ -350,12 +388,15 @@ namespace LBM
         }
     }
 
-    namespace global
+    namespace Cartesian
     {
         /**
          * @brief Global scalar field index (collapsed 3D)
-         * @param[in] x,y,z Global coordinates
-         * @param[in] nx,ny Global dimensions
+         * @param[in] x Global X coordinate
+         * @param[in] y Global Y coordinate
+         * @param[in] z Global Z coordinate
+         * @param[in] nx Global X dimension
+         * @param[in] ny Global Y dimension
          * @return Linearized index: x + nx*(y + ny*z)
          **/
         __device__ __host__ [[nodiscard]] inline constexpr host::label_t idx(const host::label_t x, const host::label_t y, const host::label_t z, const host::label_t nx, const host::label_t ny) noexcept
@@ -365,7 +406,9 @@ namespace LBM
 
         /**
          * @overload
-         * @param[in] point Point coordinates
+         * @param[in] point The global point coordinate
+         * @param[in] nx Global X dimension
+         * @param[in] ny Global Y dimension
          **/
         __device__ __host__ [[nodiscard]] inline constexpr host::label_t idx(const host::pointLabel &point, const host::label_t nx, const host::label_t ny) noexcept
         {
@@ -380,6 +423,7 @@ namespace LBM
     {
         /**
          * @brief Check if current thread exceeds global bounds
+         * @param[in] point The global point coordinate
          * @note Uses device constants device::nx, device::ny, device::nz
          * @return True if thread is outside domain boundaries
          **/
@@ -400,13 +444,13 @@ namespace LBM
             const device::label_t tx, const device::label_t ty, const device::label_t tz,
             const device::label_t bx, const device::label_t by, const device::label_t bz) noexcept
         {
-            return (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * bz)))));
+            return global::idx<device::label_t, block::nx<device::label_t>(), block::ny<device::label_t>(), block::nz<device::label_t>()>(tx, ty, tz, bx, by, bz, NUM_BLOCK_X, NUM_BLOCK_Y);
         }
 
         /**
          * @overload
-         * @param[in] tx Thread coordinates (thread::coordinate)
-         * @param[in] bx Block indices (thread::coordinate)
+         * @param[in] Tx Three-dimensional thread coordinates
+         * @param[in] Bx Three-dimensional block coordinates
          **/
         __device__ [[nodiscard]] inline device::label_t idx(const thread::coordinate &Tx, const block::coordinate &Bx) noexcept
         {
@@ -431,12 +475,12 @@ namespace LBM
          **/
         __device__ [[nodiscard]] inline device::label_t idx(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
         {
-            return tx + block::nx() * (ty + block::ny() * tz);
+            return tx + block::nx<device::label_t>() * (ty + block::ny<device::label_t>() * tz);
         }
 
         /**
          * @overload
-         * @param[in] tx Thread coordinates (thread::coordinate)
+         * @param[in] Tx Three-dimensional thread coordinates
          **/
         __device__ [[nodiscard]] inline device::label_t idx(const thread::coordinate &Tx) noexcept
         {
@@ -464,21 +508,7 @@ namespace LBM
             const host::label_t dx, const host::label_t dy, const host::label_t dz,
             const host::label_t ndx, const host::label_t ndy) noexcept
         {
-            return global::idx(dx, dy, dz, ndx, ndy);
-        }
-
-        /**
-         * @brief Queries a device and gets its properties
-         * @param[in] deviceID The ID of the device to query
-         * @return A cudaDeviceProp struct containing the properties of deviceID
-         **/
-        __host__ [[nodiscard]] const cudaDeviceProp properties(const int deviceID)
-        {
-            cudaDeviceProp props;
-
-            errorHandler::check(cudaGetDeviceProperties(&props, deviceID));
-
-            return props;
+            return Cartesian::idx(dx, dy, dz, ndx, ndy);
         }
     }
 }

@@ -69,7 +69,7 @@ namespace LBM
         /**
          * @brief Forward declaration of the primary template
          **/
-        template <const host::mallocType AllocationType, typename T, class VelocitySet>
+        template <const host::mallocType AllocationType, typename T>
         class array;
 
         /**
@@ -81,9 +81,8 @@ namespace LBM
          * proper cleanup in derived classes.
          *
          * @tparam T Fundamental type of the array elements.
-         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          **/
-        template <typename T, class VelocitySet>
+        template <typename T>
         class arrayBase : public fieldType<1>
         {
             using FieldType = fieldType<1>;
