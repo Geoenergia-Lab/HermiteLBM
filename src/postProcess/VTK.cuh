@@ -123,7 +123,7 @@ namespace LBM
                 std::ofstream &outFile,
                 const host::latticeMesh &mesh)
             {
-                outFile << "  <AppendedData encoding=\"raw\">_";
+                outFile << IO::whitespace<2>{} << "<AppendedData encoding=\"raw\">_";
 
                 if constexpr (Fields == fileSystem::fields::Yes)
                 {
@@ -148,7 +148,7 @@ namespace LBM
                     fileIO::writeBinaryBlock(types, outFile);
                 }
 
-                outFile << "  </AppendedData>" << std::endl;
+                outFile << IO::whitespace<2>{} << "</AppendedData>" << std::endl;
             }
 
             /**
@@ -172,13 +172,13 @@ namespace LBM
                     const host::label_t dimX = mesh.dimension<axis::X>() - 1;
                     const host::label_t dimY = mesh.dimension<axis::Y>() - 1;
                     const host::label_t dimZ = mesh.dimension<axis::Z>() - 1;
-                    outFile << "    <Piece Extent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">" << std::endl;
+                    outFile << IO::whitespace<4>{} << "<Piece Extent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">" << std::endl;
                 }
                 else
                 {
                     const host::label_t numNodes = mesh.dimension<axis::X>() * mesh.dimension<axis::Y>() * mesh.dimension<axis::Z>();
                     const host::label_t numElements = (mesh.dimension<axis::X>() - 1) * (mesh.dimension<axis::Y>() - 1) * (mesh.dimension<axis::Z>() - 1);
-                    outFile << "    <Piece NumberOfPoints=\"" << numNodes << "\" NumberOfCells=\"" << numElements << "\">" << std::endl;
+                    outFile << IO::whitespace<4>{} << "<Piece NumberOfPoints=\"" << numNodes << "\" NumberOfCells=\"" << numElements << "\">" << std::endl;
                 }
 
                 // Point data
@@ -190,7 +190,7 @@ namespace LBM
                 // Cells section
                 writeCells(outFile, mesh, currentOffset);
 
-                outFile << "    </Piece>" << std::endl;
+                outFile << IO::whitespace<4>{} << "</Piece>" << std::endl;
             }
 
             /**
@@ -208,7 +208,7 @@ namespace LBM
 
                     if constexpr (Points == fileSystem::points::Yes)
                     {
-                        outFile << "  <StructuredGrid WholeExtent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">" << std::endl;
+                        outFile << IO::whitespace<2>{} << "<StructuredGrid WholeExtent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">" << std::endl;
                     }
                     else
                     {
@@ -221,12 +221,12 @@ namespace LBM
                         const scalar_t sy = mesh.L().value<axis::Y>() / static_cast<scalar_t>(mesh.dimension<axis::Y>() - 1);
                         const scalar_t sz = mesh.L().value<axis::Z>() / static_cast<scalar_t>(mesh.dimension<axis::Z>() - 1);
 
-                        outFile << "  <ImageData WholeExtent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\" Origin=\"" << ox << " " << oy << " " << oz << "\" Spacing=\"" << sx << " " << sy << " " << sz << "\">" << std::endl;
+                        outFile << IO::whitespace<2>{} << "<ImageData WholeExtent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\" Origin=\"" << ox << " " << oy << " " << oz << "\" Spacing=\"" << sx << " " << sy << " " << sz << "\">" << std::endl;
                     }
                 }
                 else
                 {
-                    outFile << "  <UnstructuredGrid>" << std::endl;
+                    outFile << IO::whitespace<2>{} << "<UnstructuredGrid>" << std::endl;
                 }
             }
 
@@ -246,7 +246,7 @@ namespace LBM
             {
                 openGridSection(outFile, mesh);
                 writePiece(outFile, solutionVars, varNames, mesh);
-                outFile << "  </" << gridName() << ">" << std::endl;
+                outFile << IO::whitespace<2>{} << "</" << gridName() << ">" << std::endl;
             }
 
             /**
@@ -260,13 +260,13 @@ namespace LBM
             {
                 if constexpr (Fields == fileSystem::fields::Yes)
                 {
-                    outFile << "      <PointData Scalars=\"" << (varNames.empty() ? "" : varNames[0]) << "\">" << std::endl;
+                    outFile << IO::whitespace<6>{} << "<PointData Scalars=\"" << (varNames.empty() ? "" : varNames[0]) << "\">" << std::endl;
                     for (host::label_t i = 0; i < solutionVars.size(); ++i)
                     {
-                        outFile << "        <DataArray type=\"" << typeName<scalar_t>() << "\" Name=\"" << varNames[i] << "\" format=\"appended\" offset=\"" << currentOffset << "\"/>" << std::endl;
+                        outFile << IO::whitespace<8>{} << "<DataArray type=\"" << typeName<scalar_t>() << "\" Name=\"" << varNames[i] << "\" format=\"appended\" offset=\"" << currentOffset << "\"/>" << std::endl;
                         currentOffset += sizeof(host::label_t) + solutionVars[i].size() * sizeof(scalar_t);
                     }
-                    outFile << "      </PointData>" << std::endl;
+                    outFile << IO::whitespace<6>{} << "</PointData>" << std::endl;
                 }
             }
 
@@ -285,9 +285,9 @@ namespace LBM
                     const host::label_t nz = mesh.dimension<axis::Z>();
                     const host::label_t nPoints = nx * ny * nz * 3;
 
-                    outFile << "      <Points>" << std::endl;
-                    outFile << "        <DataArray type=\"" << typeName<scalar_t>() << "\" Name=\"Coordinates\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << currentOffset << "\"/>" << std::endl;
-                    outFile << "      </Points>" << std::endl;
+                    outFile << IO::whitespace<6>{} << "<Points>" << std::endl;
+                    outFile << IO::whitespace<8>{} << "<DataArray type=\"" << typeName<scalar_t>() << "\" Name=\"Coordinates\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << currentOffset << "\"/>" << std::endl;
+                    outFile << IO::whitespace<6>{} << "</Points>" << std::endl;
                     currentOffset += sizeof(host::label_t) + nPoints * sizeof(scalar_t);
                 }
             }
@@ -308,13 +308,13 @@ namespace LBM
                     const host::label_t nElements = (nx - 1) * (ny - 1) * (nz - 1);
                     const host::label_t nConnectivity = nElements * 8;
 
-                    outFile << "      <Cells>" << std::endl;
-                    outFile << "        <DataArray type=\"" << typeName<host::label_t>() << "\" Name=\"connectivity\" format=\"appended\" offset=\"" << currentOffset << "\"/>" << std::endl;
+                    outFile << IO::whitespace<6>{} << "<Cells>" << std::endl;
+                    outFile << IO::whitespace<8>{} << "<DataArray type=\"" << typeName<host::label_t>() << "\" Name=\"connectivity\" format=\"appended\" offset=\"" << currentOffset << "\"/>" << std::endl;
                     currentOffset += sizeof(host::label_t) + nConnectivity * sizeof(host::label_t);
-                    outFile << "        <DataArray type=\"" << typeName<host::label_t>() << "\" Name=\"offsets\" format=\"appended\" offset=\"" << currentOffset << "\"/>" << std::endl;
+                    outFile << IO::whitespace<8>{} << "<DataArray type=\"" << typeName<host::label_t>() << "\" Name=\"offsets\" format=\"appended\" offset=\"" << currentOffset << "\"/>" << std::endl;
                     currentOffset += sizeof(host::label_t) + nElements * sizeof(host::label_t);
-                    outFile << "        <DataArray type=\"" << typeName<nodeType_t>() << "\" Name=\"types\" format=\"appended\" offset=\"" << currentOffset << "\"/>" << std::endl;
-                    outFile << "      </Cells>" << std::endl;
+                    outFile << IO::whitespace<8>{} << "<DataArray type=\"" << typeName<nodeType_t>() << "\" Name=\"types\" format=\"appended\" offset=\"" << currentOffset << "\"/>" << std::endl;
+                    outFile << IO::whitespace<6>{} << "</Cells>" << std::endl;
                 }
             }
 

@@ -84,6 +84,16 @@ namespace LBM
                 return idxStream(idxDev, 2); // West stream
             }
         }
+
+        /**
+         * @brief Compute a unique stream ID for a given device index
+         * @param[in] deviceIdx The index of the device (GPU)
+         * @return A unique stream ID for the device
+         **/
+        __host__ [[nodiscard]] inline constexpr host::label_t internalStreamID(const host::label_t deviceIdx) noexcept
+        {
+            return idxStream(deviceIdx, 1);
+        }
     }
 
     /**
@@ -100,6 +110,7 @@ namespace LBM
     public:
         /**
          * @brief Default constructor
+         * @param[in] deviceIndices Ordinals of the devices for which to create the streams
          **/
         __host__ [[nodiscard]] streamHandler(const std::vector<deviceIndex_t> &deviceIndices) noexcept
             : streams_(createCudaStreams(deviceIndices)) {}
@@ -110,12 +121,12 @@ namespace LBM
          * Automatically synchronizes and destroys all CUDA streams upon
          * object destruction. Ensures proper cleanup of GPU resources.
          **/
-        ~streamHandler() noexcept
+        __host__ ~streamHandler() noexcept
         {
             for (const cudaStream_t &stream : streams_)
             {
-                errorHandler::check(cudaStreamSynchronize(stream));
-                errorHandler::check(cudaStreamDestroy(stream));
+                errorHandler::handle(cudaStreamSynchronize(stream));
+                errorHandler::handle(cudaStreamDestroy(stream));
             }
         }
 
@@ -129,9 +140,9 @@ namespace LBM
          * @brief Synchronizes a specific CUDA stream
          * @param[in] i Integral constant representing the stream index
          **/
-        inline void synchronize(const host::label_t i) const noexcept
+        __host__ inline void synchronize(const host::label_t i) const noexcept
         {
-            errorHandler::checkInline(cudaStreamSynchronize(streams_[i]));
+            errorHandler::handleInline(cudaStreamSynchronize(streams_[i]));
         }
 
         /**
@@ -158,7 +169,7 @@ namespace LBM
         /**
          * @brief Creates and initializes CUDA streams
          * @return std::array of N initialized CUDA streams
-         *
+         * @param[in] deviceIndices Ordinals of the devices for which to create the streams
          * Private helper function that handles actual stream creation
          * with proper error checking and device synchronization.
          **/
@@ -168,23 +179,23 @@ namespace LBM
 
             for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
             {
-                errorHandler::check(cudaSetDevice(deviceIndices[deviceIdx]));
-                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::handle(cudaSetDevice(deviceIndices[deviceIdx]));
+                errorHandler::handle(cudaDeviceSynchronize());
             }
 
             for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
             {
-                errorHandler::check(cudaSetDevice(deviceIndices[deviceIdx]));
+                errorHandler::handle(cudaSetDevice(deviceIndices[deviceIdx]));
                 for (device::label_t stream = 0; stream < 3; stream++)
                 {
-                    errorHandler::check(cudaStreamCreate(&streams[device::idxStream(deviceIdx, stream)]));
+                    errorHandler::handle(cudaStreamCreate(&streams[device::idxStream(deviceIdx, stream)]));
                 }
             }
 
             for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
             {
-                errorHandler::check(cudaSetDevice(deviceIndices[deviceIdx]));
-                errorHandler::check(cudaDeviceSynchronize());
+                errorHandler::handle(cudaSetDevice(deviceIndices[deviceIdx]));
+                errorHandler::handle(cudaDeviceSynchronize());
             }
 
             return streams;

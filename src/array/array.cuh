@@ -56,18 +56,9 @@ SourceFiles
 #ifndef __MBLBM_ARRAY_CUH
 #define __MBLBM_ARRAY_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../typedefs/typedefs.cuh"
-
-#include "threadArray.cuh"
-
 #include "../latticeMesh/latticeMesh.cuh"
-#include "../fileIO/fileIO.cuh"
-#include "../velocitySet/velocitySet.cuh"
-
-#include "../boundaryConditions/normalVector.cuh"
-#include "../boundaryConditions/boundaryValue.cuh"
-#include "../boundaryConditions/boundaryFields.cuh"
+#include "threadArray.cuh"
+#include "../momentBasedLBM/boundaryConditions/boundaryConditions.cuh"
 
 namespace LBM
 {
@@ -137,11 +128,7 @@ namespace LBM
     }
 }
 
-#include "fieldType.cuh"
 #include "host/array.cuh"
 #include "device/array.cuh"
-#include "hostArrayCollection.cuh"
-#include "deviceField.cuh"
-#include "hostField.cuh"
 
 #endif

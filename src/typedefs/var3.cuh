@@ -71,7 +71,9 @@ namespace LBM
 
         /**
          * @brief Constructor
-         * @param[in] X, Y, Z Initialiser values
+         * @param[in] X Initialiser value
+         * @param[in] Y Initialiser value
+         * @param[in] Z Initialiser value
          **/
         __device__ __host__ [[nodiscard]] inline constexpr var3(const T X, const T Y, const T Z) noexcept
             : x(X),
@@ -81,8 +83,9 @@ namespace LBM
         /**
          * @brief Access the data by axis
          * @tparam alpha The axis direction (X, Y or Z)
+         * @tparam ValueType The return type
          **/
-        template <axis::type alpha, typename ValueType = value_type>
+        template <const axis::type alpha, typename ValueType = value_type>
         __device__ __host__ [[nodiscard]] constexpr ValueType value() const noexcept
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
@@ -105,18 +108,15 @@ namespace LBM
 
         /**
          * @brief Print the structure to an output stream
+         * @tparam LineBreak Add a line break
          * @param[in] name Name to identify the structure in the output
          * @param[in] os Output stream to write to
          **/
         template <const bool LineBreak = false>
         __host__ void print(const name_t &name, std::ostream &os) const noexcept
         {
-            os << name << std::endl;
-            os << "{" << std::endl;
-            os << "    x = " << x << ";" << std::endl;
-            os << "    y = " << y << ";" << std::endl;
-            os << "    z = " << z << ";" << std::endl;
-            os << "};" << std::endl;
+            IO::printBlock(os, name.c_str(), "x", x, "y", y, "z", z);
+
             if constexpr (LineBreak)
             {
                 os << std::endl;
@@ -125,11 +125,13 @@ namespace LBM
 
         /**
          * @brief Print the structure to std::cout
+         * @tparam LineBreak Add a line break
          * @param[in] name Name to identify the structure in the output
          **/
+        template <const bool LineBreak = false>
         __host__ void print(const name_t &name) const noexcept
         {
-            print(name, std::cout);
+            print<LineBreak>(name, std::cout);
         }
     };
 
@@ -148,6 +150,7 @@ namespace LBM
 
             /**
              * @brief Total size
+             * @tparam ValueType The return type
              **/
             template <typename ValueType = value_type>
             __device__ __host__ [[nodiscard]] inline constexpr ValueType size() const noexcept

@@ -133,7 +133,7 @@ namespace LBM
             /**
              * @brief Default destructor
              **/
-            ~array() {}
+            __host__ ~array() {}
 
             /**
              * @brief Get read-only pointer to device memory for a given GPU.
@@ -223,7 +223,7 @@ namespace LBM
              **/
             template <const host::mallocType MallocType>
             __host__ [[nodiscard]] static inline T **allocate_on_devices(
-                const host::array<MallocType, T, VelocitySet> &hostArrayGlobal,
+                const host::array<MallocType, T> &hostArrayGlobal,
                 const bool allocate,
                 const programControl &programCtrl)
             {
@@ -271,7 +271,7 @@ namespace LBM
 
                     for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList.size(); ++virtualDeviceIndex)
                     {
-                        errorHandler::check(cudaSetDevice(deviceList[virtualDeviceIndex]));
+                        errorHandler::handle(cudaSetDevice(deviceList[virtualDeviceIndex]));
                         device::copyToSymbol(device::U_North, North() * U_inf, i);
                         device::copyToSymbol(device::U_South, South() * U_inf, i);
                         device::copyToSymbol(device::U_East, East() * U_inf, i);
@@ -285,13 +285,13 @@ namespace LBM
             /**
              * @brief Constructs a host array with a given name
              **/
-            __host__ [[nodiscard]] host::array<host::PAGED, T, VelocitySet> from_host(
+            __host__ [[nodiscard]] host::array<host::PAGED, T> from_host(
                 const name_t &name,
                 const name_t &componentName,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
             {
-                return host::array<host::PAGED, T, VelocitySet>(name, componentName, mesh, programCtrl);
+                return host::array<host::PAGED, T>(name, componentName, mesh, programCtrl, boundaryFields<VelocitySet, true>(componentName));
             }
         };
     }

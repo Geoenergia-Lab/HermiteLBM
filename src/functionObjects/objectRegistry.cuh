@@ -50,17 +50,11 @@ SourceFiles
 #ifndef __MBLBM_OBJECTREGISTRY_CUH
 #define __MBLBM_OBJECTREGISTRY_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../typedefs/typedefs.cuh"
-#include "../strings.cuh"
 #include "../postProcess/postProcess.cuh"
+#include "../momentBasedLBM/ptrCollection.cuh"
 #include "functionObjects.cuh"
 #include "functionObjectBase.cuh"
-#include "strainRateTensor.cuh"
-#include "kineticEnergy.cuh"
-#include "rhoMean.cuh"
-#include "UMean.cuh"
-#include "PiMean.cuh"
+#include "objects/objects.cuh"
 #include "turbulenceStatistics.cuh"
 
 namespace LBM
@@ -75,7 +69,6 @@ namespace LBM
     public:
         /**
          * @brief Constructs an objectRegistry with mesh, device pointers and streams
-         * @param[in] hostWriteBuffer Reference to the host-side write buffer
          * @param[in] mesh The lattice mesh
          * @param[in] rho Device scalar field containing the density values on the GPU
          * @param[in] U Device vector field containing the velocity values on the GPU
@@ -83,26 +76,22 @@ namespace LBM
          * @param[in] programCtrl The program control object
          **/
         __host__ [[nodiscard]] objectRegistry(
-            host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer,
             const host::latticeMesh &mesh,
-            const device::scalarField<VelocitySet, time::instantaneous> &rho,
-            const device::vectorField<VelocitySet, time::instantaneous> &U,
-            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
-            const programControl &programCtrl)
-            : hostWriteBuffer_(hostWriteBuffer),
-              mesh_(mesh),
-              rho_(hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
-              U_(hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
-              Pi_(hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
-              S_(hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
-              k_(hostWriteBuffer, mesh, rho, U, Pi, programCtrl),
+            const programControl &programCtrl,
+            const kernel::ptrCollection &devPtrs)
+            : mesh_(mesh),
+              rho_(mesh, devPtrs, programCtrl),
+              U_(mesh, devPtrs, programCtrl),
+              Pi_(mesh, devPtrs, programCtrl),
+              S_(mesh, devPtrs, programCtrl),
+              k_(mesh, devPtrs, programCtrl),
               functionVector_(functionObjectCallInitialiser(rho_, U_, Pi_, S_, k_)),
               saveVector_(functionObjectSaveInitialiser(rho_, U_, Pi_, S_, k_)) {}
 
         /**
          * @brief Default destructor
          **/
-        ~objectRegistry() {}
+        __host__ ~objectRegistry() {}
 
         /**
          * @brief Disable copying
@@ -112,9 +101,8 @@ namespace LBM
 
         /**
          * @brief Executes all registered function object calculations for given time step
-         * @param[in] timeStep The current simulation time step
          **/
-        inline void calculate() noexcept
+        __host__ inline void calculate() noexcept
         {
             for (const functionObjects::calculateFunction &func : functionVector_)
             {
@@ -124,19 +112,18 @@ namespace LBM
 
         /**
          * @brief Executes all registered function object calculations for given time step
+         * @param[in] hostWriteBuffer Host buffer used for copying data from the device before writing.
          * @param[in] timeStep The current simulation time step
          **/
-        inline void save(const host::label_t timeStep) noexcept
+        __host__ inline void save(host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep) noexcept
         {
             for (const functionObjects::saveFunction &save : saveVector_)
             {
-                save(timeStep); // Call each function with the timeStep
+                save(hostWriteBuffer, timeStep); // Call each function with the timeStep
             }
         }
 
     private:
-        host::array<host::PINNED, scalar_t, VelocitySet> &hostWriteBuffer_;
-
         /**
          * @brief Reference to lattice mesh
          **/
@@ -166,6 +153,7 @@ namespace LBM
 
         /**
          * @brief Initializes function calls based on strain rate tensor configuration
+         * @tparam Args Types of the objects contained in the registry
          * @param[in] args References to the objects contained in the registry
          * @return Vector of function objects to be executed
          **/
@@ -177,6 +165,12 @@ namespace LBM
             return calls;
         }
 
+        /**
+         * @brief Adds a call to a calculate function to the list of functions to call
+         * @tparam C Type of the object
+         * @param[out] calls The list of functions to be called
+         * @param[in] object The object whose calculate function to add
+         **/
         template <class C>
         __host__ static void addObjectCall(std::vector<functionObjects::calculateFunction> &calls, C &object) noexcept
         {
@@ -244,6 +238,7 @@ namespace LBM
 
         /**
          * @brief Initializes save calls based on strain rate tensor configuration
+         * @tparam Args Types of the objects contained in the registry
          * @param[in] args References to the objects contained in the registry
          * @return Vector of function objects to be executed
          **/
@@ -255,6 +250,12 @@ namespace LBM
             return calls;
         }
 
+        /**
+         * @brief Adds a call to a save function to the list of functions to call
+         * @tparam C Type of the object
+         * @param[out] calls The list of functions to be called
+         * @param[in] object The object whose save function to add
+         **/
         template <class C>
         __host__ static void addSaveCall(std::vector<functionObjects::saveFunction> &calls, C &object) noexcept
         {
@@ -263,35 +264,35 @@ namespace LBM
                 if (object.doInstantaneous())
                 {
                     calls.push_back(
-                        [&object](const host::label_t label)
+                        [&object](host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep)
                         {
-                            object.saveInstantaneous(label);
+                            object.saveInstantaneous(hostWriteBuffer, timeStep);
                         });
                 }
             }
             if (object.doMean() || object.doPrime() || object.doPrimeSqMean())
             {
                 calls.push_back(
-                    [&object](const host::label_t label)
+                    [&object](host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep)
                     {
-                        object.saveMean(label);
+                        object.saveMean(hostWriteBuffer, timeStep);
                     });
             }
             if (object.doPrime())
             {
                 calls.push_back(
-                    [&object](const host::label_t label)
+                    [&object](host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep)
                     {
-                        object.savePrime(label);
+                        object.savePrime(hostWriteBuffer, timeStep);
                     });
             }
 
             if (object.doPrimeSqMean())
             {
                 calls.push_back(
-                    [&object](const host::label_t label)
+                    [&object](host::array<host::PINNED, scalar_t> &hostWriteBuffer, const host::label_t timeStep)
                     {
-                        object.savePrimeSqMean(label);
+                        object.savePrimeSqMean(hostWriteBuffer, timeStep);
                     });
             }
         }

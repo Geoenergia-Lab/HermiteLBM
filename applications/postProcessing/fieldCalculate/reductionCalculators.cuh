@@ -102,6 +102,8 @@ namespace LBM
 
         /**
          * @brief Calculates the spatial mean of a field
+         * @tparam ReturnType The return type
+         * @tparam T Type of the variable to sum
          * @param[in] field The field to calculate the mean of
          * @return The spatial mean of the field
          **/
@@ -118,6 +120,7 @@ namespace LBM
 
         /**
          * @brief Calculates the spatial mean of a field
+         * @tparam T Type of the variable to sum
          * @param[in] field The field to calculate the mean of
          * @return The spatial mean of the field
          **/
@@ -129,7 +132,9 @@ namespace LBM
 
         /**
          * @brief Checks if a field contains any NaN values
+         * @tparam T Type of the field to check
          * @param[in] field The field to check
+         * @param[out] status Status of the calculation (1 if field contains NaN)
          * @return True if the field contains NaN values, false otherwise
          **/
         template <typename T>
@@ -155,7 +160,7 @@ namespace LBM
          * @param[in] timeStep Current time step.
          * @param[in] compute The reduction function. Must have signature scalar_t(const std::vector<scalar_t>&) or be a template that can accept a single argument.
          * @param[in] label A string printed before the value (used as-is).
-         */
+         **/
         template <const bool Deinterleave, const bool Sort, typename Reducer>
         __host__ void printFieldReduction(
             const host::arrayCollection<scalar_t> &variables,
@@ -169,7 +174,7 @@ namespace LBM
             std::cout << "{" << std::endl;
             for (host::label_t field = 0; field < fields.size(); field++)
             {
-                std::cout << std::setprecision(15) << "    " << label << "(" << variables.varNames()[field] << "): " << compute(fields[field]) << ";" << std::endl;
+                std::cout << std::setprecision(15) << IO::whitespace<4>{} << label << "(" << variables.varNames()[field] << "): " << compute(fields[field]) << ";" << std::endl;
             }
             std::cout << "};" << std::endl;
         }
@@ -182,7 +187,7 @@ namespace LBM
          * @param[in] timeStep Current time step.
          * @param[in] comp Comparator (e.g., std::greater for max)
          * @param[in] label A string printed before the value (used as-is).
-         */
+         **/
         template <const numericalSchemes::absMode Sign, typename Compare>
         __host__ void fieldExtrema(
             const host::arrayCollection<scalar_t> &variables,
