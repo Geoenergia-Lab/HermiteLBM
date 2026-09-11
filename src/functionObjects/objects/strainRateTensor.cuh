@@ -311,22 +311,22 @@ namespace LBM
             /**
              * @brief Instantaneous strain rate tensor
              **/
-            device::symmetricTensorField<VelocitySet, time::instantaneous> S_;
+            device::symmetricTensorField<VelocitySet, time::instantaneous, derivedField> S_;
 
             /**
              * @brief Time-averaged strain rate tensor
              **/
-            device::symmetricTensorField<VelocitySet, time::timeAverage> SMean_;
+            device::symmetricTensorField<VelocitySet, time::timeAverage, derivedField> SMean_;
 
             /**
              * @brief Perturbation of the strain rate tensor
              **/
-            device::symmetricTensorField<VelocitySet, time::instantaneous> SPrime_;
+            device::symmetricTensorField<VelocitySet, time::instantaneous, derivedField> SPrime_;
 
             /**
              * @brief Time average of the square of the perturbation of the strain rate tensor
              **/
-            device::symmetricTensorField<VelocitySet, time::timeAverage> SPrimeSqMean_;
+            device::symmetricTensorField<VelocitySet, time::timeAverage, derivedField> SPrimeSqMean_;
         };
     }
 }

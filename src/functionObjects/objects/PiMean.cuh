@@ -237,17 +237,17 @@ namespace LBM
             /**
              * @brief Time-averaged second order moments
              **/
-            device::symmetricTensorField<VelocitySet, time::timeAverage> PiMean_;
+            device::symmetricTensorField<VelocitySet, time::timeAverage, derivedField> PiMean_;
 
             /**
              * @brief Time-averaged second order moments
              **/
-            device::symmetricTensorField<VelocitySet, time::instantaneous> PiPrime_;
+            device::symmetricTensorField<VelocitySet, time::instantaneous, derivedField> PiPrime_;
 
             /**
              * @brief Time average of the square of the perturbation of the second order moments
              **/
-            device::symmetricTensorField<VelocitySet, time::timeAverage> PiPrimeSqMean_;
+            device::symmetricTensorField<VelocitySet, time::timeAverage, derivedField> PiPrimeSqMean_;
         };
     }
 }

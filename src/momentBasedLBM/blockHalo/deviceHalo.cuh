@@ -79,9 +79,9 @@ namespace LBM
          * @param[in] programCtrl Host program control containing the program information on the CPU
          **/
         __host__ [[nodiscard]] haloBuffer(
-            const device::scalarField<VelocitySet, time::instantaneous> &rho,
-            const device::vectorField<VelocitySet, time::instantaneous> &U,
-            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
+            const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
+            const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
+            const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi,
             const host::latticeMesh &mesh,
             const programControl &programCtrl)
             : ptrs_(initialise(rho, U, Pi, mesh, programCtrl)) {}
@@ -173,9 +173,9 @@ namespace LBM
          * @param[in] programCtrl Host program control containing the program information on the CPU
          **/
         __host__ [[nodiscard]] const doubleBuffer<scalar_t> initialise_ptrs(
-            const device::scalarField<VelocitySet, time::instantaneous> &rho,
-            const device::vectorField<VelocitySet, time::instantaneous> &U,
-            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
+            const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
+            const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
+            const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi,
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const host::label_t deviceIdx) const
@@ -251,9 +251,9 @@ namespace LBM
          * @return A vector of double buffers containing the block halo buffers for each device
          **/
         __host__ [[nodiscard]] const std::vector<doubleBuffer<scalar_t>> initialise(
-            const device::scalarField<VelocitySet, time::instantaneous> &rho,
-            const device::vectorField<VelocitySet, time::instantaneous> &U,
-            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
+            const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
+            const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
+            const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi,
             const host::latticeMesh &mesh,
             const programControl &programCtrl) const noexcept
         {

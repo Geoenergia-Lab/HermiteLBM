@@ -80,6 +80,17 @@ namespace LBM
                   boundaryValue<VelocitySet, Scaled>(fieldName, "internalField")},
               fieldName_(fieldName) {}
 
+        __host__ [[nodiscard]] boundaryFields()
+            : values_{
+                  boundaryValue<VelocitySet, Scaled>(),
+                  boundaryValue<VelocitySet, Scaled>(),
+                  boundaryValue<VelocitySet, Scaled>(),
+                  boundaryValue<VelocitySet, Scaled>(),
+                  boundaryValue<VelocitySet, Scaled>(),
+                  boundaryValue<VelocitySet, Scaled>(),
+                  boundaryValue<VelocitySet, Scaled>()},
+              fieldName_("") {}
+
         /**
          * @name Region Accessors
          * @brief Provide access to field values for specific boundary regions

@@ -117,6 +117,12 @@ namespace LBM
             return TimeType;
         }
     };
+
+    typedef enum fieldKindEnum : bool
+    {
+        derivedField = 0,
+        solutionField = 1
+    } fieldKind;
 }
 
 #endif

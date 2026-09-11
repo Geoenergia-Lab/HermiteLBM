@@ -240,7 +240,8 @@ namespace LBM
          **/
         __device__ __host__ [[nodiscard]] inline constexpr bool save(const host::label_t timeStep) const noexcept
         {
-            return (timeStep % saveInterval_) == 0;
+            return (static_cast<long long int>(timeStep) % static_cast<long long int>(saveInterval_) == 0) || ((static_cast<long long int>(timeStep) + 1) % static_cast<long long int>(saveInterval_) == 0) || ((static_cast<long long int>(timeStep) - 1) % static_cast<long long int>(saveInterval_) == 0);
+            // return (timeStep % saveInterval_) == 0;
         }
 
         /**

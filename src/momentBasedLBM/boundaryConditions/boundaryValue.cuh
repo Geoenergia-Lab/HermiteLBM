@@ -77,6 +77,9 @@ namespace LBM
         __host__ [[nodiscard]] boundaryValue(const name_t &fieldName, const name_t &regionName)
             : value(initialiseValue(fieldName, regionName)) {}
 
+        __host__ [[nodiscard]] boundaryValue()
+            : value(static_cast<scalar_t>(0)) {}
+
         /**
          * @brief Access the stored boundary value
          * @return The boundary value with appropriate scaling applied
