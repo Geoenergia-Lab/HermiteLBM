@@ -274,32 +274,32 @@ namespace LBM
         /**
          * @brief Mean velocity field UMean
          **/
-        const device::vectorField<VelocitySet, time::timeAverage> UMean_;
+        const device::vectorField<VelocitySet, time::timeAverage, derivedField> UMean_;
 
         /**
          * @brief Mean strain rate tensor SMean
          **/
-        const device::symmetricTensorField<VelocitySet, time::timeAverage> SMean_;
+        const device::symmetricTensorField<VelocitySet, time::timeAverage, derivedField> SMean_;
 
         /**
          * @brief Mean Reynolds stress tensor R
          **/
-        device::symmetricTensorField<VelocitySet, time::timeAverage> R_;
+        device::symmetricTensorField<VelocitySet, time::timeAverage, derivedField> R_;
 
         /**
          * @brief Mean production term P
          **/
-        device::scalarField<VelocitySet, time::timeAverage> P_;
+        device::scalarField<VelocitySet, time::timeAverage, derivedField> P_;
 
         /**
          * @brief Mean dissipation term epsilon
          **/
-        device::scalarField<VelocitySet, time::timeAverage> epsilon_;
+        device::scalarField<VelocitySet, time::timeAverage, derivedField> epsilon_;
 
         /**
          * @brief Mean turbulent kinetic energy k
          **/
-        device::scalarField<VelocitySet, time::timeAverage> k_;
+        device::scalarField<VelocitySet, time::timeAverage, derivedField> k_;
     };
 }
 

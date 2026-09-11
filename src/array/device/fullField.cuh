@@ -71,7 +71,7 @@ namespace LBM
          * @tparam T Fundamental type of the array.
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          **/
-        template <typename T, class VelocitySet>
+        template <typename T, class VelocitySet, const fieldKind FieldKind>
         class array : public fieldType<1>, arrayBase<T>
         {
         private:
@@ -84,7 +84,7 @@ namespace LBM
             /**
              * @brief Alias for the current specialization
              **/
-            using This = array<T, VelocitySet>;
+            using This = array<T, VelocitySet, FieldKind>;
             using FieldType = fieldType<1>;
 
         public:
@@ -171,12 +171,6 @@ namespace LBM
                 return ptr_[idx];
             }
 
-            // /**
-            //  * @brief Get the field name.
-            //  * @return Const reference to the name string.
-            //  **/
-            // __host__ [[nodiscard]] inline const name_t &name() const noexcept { return FieldType::name_; }
-
         private:
             /**
              * @brief Allocate all GPU segments for a full field from a raw host pointer.
@@ -258,26 +252,29 @@ namespace LBM
                 const std::vector<deviceIndex_t> &deviceList,
                 const scalar_t U_inf) noexcept
             {
-                if ((name == "U_x") || (name == "U_y") || (name == "U_z"))
+                if constexpr (FieldKind == solutionField)
                 {
-                    const device::label_t i = (name == "U_x") ? 0 : ((name == "U_y") ? 1 : 2);
-
-                    const boundaryValue<VelocitySet, false> North(name, "North");
-                    const boundaryValue<VelocitySet, false> South(name, "South");
-                    const boundaryValue<VelocitySet, false> East(name, "East");
-                    const boundaryValue<VelocitySet, false> West(name, "West");
-                    const boundaryValue<VelocitySet, false> Back(name, "Back");
-                    const boundaryValue<VelocitySet, false> Front(name, "Front");
-
-                    for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList.size(); ++virtualDeviceIndex)
+                    if ((name == "U_x") || (name == "U_y") || (name == "U_z"))
                     {
-                        errorHandler::handle(cudaSetDevice(deviceList[virtualDeviceIndex]));
-                        device::copyToSymbol(device::U_North, North() * U_inf, i);
-                        device::copyToSymbol(device::U_South, South() * U_inf, i);
-                        device::copyToSymbol(device::U_East, East() * U_inf, i);
-                        device::copyToSymbol(device::U_West, West() * U_inf, i);
-                        device::copyToSymbol(device::U_Back, Back() * U_inf, i);
-                        device::copyToSymbol(device::U_Front, Front() * U_inf, i);
+                        const device::label_t i = (name == "U_x") ? 0 : ((name == "U_y") ? 1 : 2);
+
+                        const boundaryValue<VelocitySet, false> North(name, "North");
+                        const boundaryValue<VelocitySet, false> South(name, "South");
+                        const boundaryValue<VelocitySet, false> East(name, "East");
+                        const boundaryValue<VelocitySet, false> West(name, "West");
+                        const boundaryValue<VelocitySet, false> Back(name, "Back");
+                        const boundaryValue<VelocitySet, false> Front(name, "Front");
+
+                        for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList.size(); ++virtualDeviceIndex)
+                        {
+                            errorHandler::handle(cudaSetDevice(deviceList[virtualDeviceIndex]));
+                            device::copyToSymbol(device::U_North, North() * U_inf, i);
+                            device::copyToSymbol(device::U_South, South() * U_inf, i);
+                            device::copyToSymbol(device::U_East, East() * U_inf, i);
+                            device::copyToSymbol(device::U_West, West() * U_inf, i);
+                            device::copyToSymbol(device::U_Back, Back() * U_inf, i);
+                            device::copyToSymbol(device::U_Front, Front() * U_inf, i);
+                        }
                     }
                 }
             }
@@ -291,7 +288,14 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
             {
-                return host::array<host::PAGED, T>(name, componentName, mesh, programCtrl, boundaryFields<VelocitySet, true>(componentName));
+                if constexpr (FieldKind == solutionField)
+                {
+                    return host::array<host::PAGED, T>(name, componentName, mesh, programCtrl, boundaryFields<VelocitySet, true>(componentName));
+                }
+                else
+                {
+                    return host::array<host::PAGED, T>(name, componentName, mesh, programCtrl, boundaryFields<VelocitySet, true>());
+                }
             }
         };
     }

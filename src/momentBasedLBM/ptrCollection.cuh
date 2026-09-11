@@ -72,9 +72,9 @@ namespace LBM
              **/
             template <class VelocitySet>
             __host__ [[nodiscard]] ptrCollection(
-                const device::scalarField<VelocitySet, time::instantaneous> &rho,
-                const device::vectorField<VelocitySet, time::instantaneous> &U,
-                const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
+                const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
+                const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
+                const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi,
                 const programControl &programCtrl) noexcept
                 : devPtrs_(initialisePtrs(rho, U, Pi, programCtrl)) {}
 
@@ -104,9 +104,9 @@ namespace LBM
              **/
             template <class VelocitySet>
             __host__ [[nodiscard]] static const Type initialisePtrs(
-                const device::scalarField<VelocitySet, time::instantaneous> &rho,
-                const device::vectorField<VelocitySet, time::instantaneous> &U,
-                const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
+                const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
+                const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
+                const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi,
                 const programControl &programCtrl) noexcept
             {
                 Type ptrs;
