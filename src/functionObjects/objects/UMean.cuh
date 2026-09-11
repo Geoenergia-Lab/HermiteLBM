@@ -237,17 +237,17 @@ namespace LBM
             /**
              * @brief Time-averaged velocity vector field
              **/
-            device::vectorField<VelocitySet, time::timeAverage> UMean_;
+            device::vectorField<VelocitySet, time::timeAverage, derivedField> UMean_;
 
             /**
              * @brief Perturbation of the velocity vector field
              **/
-            device::vectorField<VelocitySet, time::instantaneous> UPrime_;
+            device::vectorField<VelocitySet, time::instantaneous, derivedField> UPrime_;
 
             /**
              * @brief Time average of the square of the perturbation of the velocity vector field
              **/
-            device::vectorField<VelocitySet, time::timeAverage> UPrimeSqMean_;
+            device::vectorField<VelocitySet, time::timeAverage, derivedField> UPrimeSqMean_;
         };
     }
 }

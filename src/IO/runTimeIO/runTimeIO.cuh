@@ -72,9 +72,9 @@ namespace LBM
         __host__ [[nodiscard]] runTimeIO(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
-            const device::scalarField<VelocitySet, time::instantaneous> &rho,
-            const device::vectorField<VelocitySet, time::instantaneous> &U,
-            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi,
+            const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
+            const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
+            const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi,
             objectRegistry<VelocitySet> &runTimeObjects,
             turbulenceStatistics<VelocitySet> &turbulenceStats)
             : mesh_(mesh),
@@ -211,9 +211,9 @@ namespace LBM
          **/
         const std::chrono::high_resolution_clock::time_point start_;
 
-        const device::scalarField<VelocitySet, time::instantaneous> &rho_;
-        const device::vectorField<VelocitySet, time::instantaneous> &U_;
-        const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi_;
+        const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho_;
+        const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U_;
+        const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi_;
 
         objectRegistry<VelocitySet> &runTimeObjects_;
         turbulenceStatistics<VelocitySet> &turbulenceStats_;

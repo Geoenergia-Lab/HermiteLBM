@@ -54,14 +54,14 @@ namespace LBM
 {
     namespace device
     {
-        template <class VelocitySet, const time::type TimeType, const host::label_t N>
+        template <class VelocitySet, const time::type TimeType, const host::label_t N, const fieldKind FieldKind>
         class fieldBase : public fieldType<N>, timeType<TimeType>
         {
         protected:
             /**
              * @brief Type alias for the components of a field
              **/
-            using ComponentType = device::array<scalar_t, VelocitySet>;
+            using ComponentType = device::array<scalar_t, VelocitySet, FieldKind>;
             using FieldType = fieldType<N>;
 
             /**
@@ -354,10 +354,10 @@ namespace LBM
         /**
          * @brief Class representing a scalar field on the device, derived from fieldBase with N=1 component.
          **/
-        template <class VelocitySet, const time::type TimeType>
-        class scalarField : public fieldBase<VelocitySet, TimeType, 1>
+        template <class VelocitySet, const time::type TimeType, const fieldKind FieldKind>
+        class scalarField : public fieldBase<VelocitySet, TimeType, 1, FieldKind>
         {
-            using Base = fieldBase<VelocitySet, TimeType, 1>;
+            using Base = fieldBase<VelocitySet, TimeType, 1, FieldKind>;
 
         public:
             using Base::Base; // Inherit all constructors from fieldBase
@@ -376,10 +376,10 @@ namespace LBM
         /**
          * @brief Class representing a vector field on the device, derived from fieldBase with N=3 components.
          **/
-        template <class VelocitySet, const time::type TimeType>
-        class vectorField : public fieldBase<VelocitySet, TimeType, 3>
+        template <class VelocitySet, const time::type TimeType, const fieldKind FieldKind>
+        class vectorField : public fieldBase<VelocitySet, TimeType, 3, FieldKind>
         {
-            using Base = fieldBase<VelocitySet, TimeType, 3>;
+            using Base = fieldBase<VelocitySet, TimeType, 3, FieldKind>;
 
         public:
             using Base::Base;
@@ -402,10 +402,10 @@ namespace LBM
         /**
          * @brief Class representing a symmetric tensor field on the device, derived from fieldBase with N=6 components.
          **/
-        template <class VelocitySet, const time::type TimeType>
-        class symmetricTensorField : public fieldBase<VelocitySet, TimeType, 6>
+        template <class VelocitySet, const time::type TimeType, const fieldKind FieldKind>
+        class symmetricTensorField : public fieldBase<VelocitySet, TimeType, 6, FieldKind>
         {
-            using Base = fieldBase<VelocitySet, TimeType, 6>;
+            using Base = fieldBase<VelocitySet, TimeType, 6, FieldKind>;
 
         public:
             using Base::Base;

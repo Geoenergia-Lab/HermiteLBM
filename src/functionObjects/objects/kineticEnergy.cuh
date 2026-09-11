@@ -281,22 +281,22 @@ namespace LBM
             /**
              * @brief Instantaneous kinetic energy
              **/
-            device::scalarField<VelocitySet, time::instantaneous> k_;
+            device::scalarField<VelocitySet, time::instantaneous, derivedField> k_;
 
             /**
              * @brief Time-averaged kinetic energy
              **/
-            device::scalarField<VelocitySet, time::timeAverage> kMean_;
+            device::scalarField<VelocitySet, time::timeAverage, derivedField> kMean_;
 
             /**
              * @brief Perturbation of the kinetic energy
              **/
-            device::scalarField<VelocitySet, time::instantaneous> kPrime_;
+            device::scalarField<VelocitySet, time::instantaneous, derivedField> kPrime_;
 
             /**
              * @brief Time average of the square of the perturbation of the kinetic energy
              **/
-            device::scalarField<VelocitySet, time::timeAverage> kPrimeSqMean_;
+            device::scalarField<VelocitySet, time::timeAverage, derivedField> kPrimeSqMean_;
         };
     }
 }

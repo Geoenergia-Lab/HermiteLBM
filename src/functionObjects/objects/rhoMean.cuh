@@ -228,17 +228,17 @@ namespace LBM
             /**
              * @brief Time-averaged density field
              **/
-            device::scalarField<VelocitySet, time::timeAverage> rhoMean_;
+            device::scalarField<VelocitySet, time::timeAverage, derivedField> rhoMean_;
 
             /**
              * @brief Perturbation of the density field
              **/
-            device::scalarField<VelocitySet, time::instantaneous> rhoPrime_;
+            device::scalarField<VelocitySet, time::instantaneous, derivedField> rhoPrime_;
 
             /**
              * @brief Time average of the square of the perturbation of the density field
              **/
-            device::scalarField<VelocitySet, time::timeAverage> rhoPrimeSqMean_;
+            device::scalarField<VelocitySet, time::timeAverage, derivedField> rhoPrimeSqMean_;
         };
     }
 }

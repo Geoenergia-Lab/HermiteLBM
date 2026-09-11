@@ -138,9 +138,9 @@ namespace LBM
         MultiGPULauncher(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
-            const device::scalarField<VelocitySet, time::instantaneous> &rho,
-            const device::vectorField<VelocitySet, time::instantaneous> &U,
-            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi) noexcept
+            const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
+            const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
+            const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi) noexcept
             : mesh_(mesh),
               programCtrl_(programCtrl),
               devPtrs_(rho, U, Pi, programCtrl),
@@ -209,9 +209,9 @@ namespace LBM
         SingleGPULauncher(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
-            const device::scalarField<VelocitySet, time::instantaneous> &rho,
-            const device::vectorField<VelocitySet, time::instantaneous> &U,
-            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi) noexcept
+            const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
+            const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
+            const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi) noexcept
             : mesh_(mesh),
               programCtrl_(programCtrl),
               devPtrs_(rho, U, Pi, programCtrl),
@@ -269,18 +269,18 @@ namespace LBM
          * If the system supports multi‑GPU and the device list contains more than one
          * device, a MultiGPULauncher is created; otherwise a SingleGPULauncher is used.
          *
-         * @param mesh        Host lattice mesh.
-         * @param programCtrl Program control parameters.
-         * @param rho         Device scalar field for density.
-         * @param U           Device vector field for velocity.
-         * @param Pi          Device symmetric tensor field for pressure tensor.
+         * @param[in] mesh Host lattice mesh.
+         * @param[in] programCtrl Program control parameters.
+         * @param[in] rho Device scalar field for density.
+         * @param[in] U Device vector field for velocity.
+         * @param[in] Pi Device symmetric tensor field for pressure tensor.
          **/
         KernelLauncher(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
-            const device::scalarField<VelocitySet, time::instantaneous> &rho,
-            const device::vectorField<VelocitySet, time::instantaneous> &U,
-            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi) noexcept
+            const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
+            const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
+            const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi) noexcept
             : variant_(makeVariant(mesh, programCtrl, rho, U, Pi)) {}
 
         /**
@@ -320,9 +320,9 @@ namespace LBM
         static const std::variant<MultiGPULauncher, SingleGPULauncher> makeVariant(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
-            const device::scalarField<VelocitySet, time::instantaneous> &rho,
-            const device::vectorField<VelocitySet, time::instantaneous> &U,
-            const device::symmetricTensorField<VelocitySet, time::instantaneous> &Pi) noexcept
+            const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
+            const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
+            const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi) noexcept
         {
             if constexpr (system::hasMultiGPU())
             {
