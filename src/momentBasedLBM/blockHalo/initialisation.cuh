@@ -80,7 +80,6 @@ namespace LBM
             const block::coordinate &Bx,
             const device::pointCoordinate &point) noexcept
         {
-            // thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
             thread::array<scalar_t, VelocitySet::Q()> pop;
             VelocitySet::reconstruct(pop, moments);
             device::halo<VelocitySet, boundaryConditionType<true, true, true>>::save(pop, moments, readBuffer, Tx, Bx, point);

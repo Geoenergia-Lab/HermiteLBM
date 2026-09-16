@@ -67,7 +67,7 @@ namespace LBM
      * - Bits 0-5: Individual boundary flags
      * - Bit 6: General boundary indicator (any boundary)
      **/
-    template <const bool periodicX, const bool periodicY, const bool periodicZ>
+    template <const var3<bool> Periodic>
     class normalVector
     {
     public:
@@ -358,22 +358,22 @@ namespace LBM
          **/
         __device__ [[nodiscard]] static inline constexpr nodeType_t computeBitmask(const device::label_t x, const device::label_t y, const device::label_t z) noexcept
         {
-            const bool west = isBoundary<axis::X, -1, periodicX>(x);
-            const bool east = isBoundary<axis::X, +1, periodicX>(x);
-            const bool south = isBoundary<axis::Y, -1, periodicY>(y);
-            const bool north = isBoundary<axis::Y, +1, periodicY>(y);
-            const bool back = isBoundary<axis::Z, -1, periodicZ>(z);
-            const bool front = isBoundary<axis::Z, +1, periodicZ>(z);
+            const bool west = isBoundary<axis::X, -1>(x);
+            const bool east = isBoundary<axis::X, +1>(x);
+            const bool south = isBoundary<axis::Y, -1>(y);
+            const bool north = isBoundary<axis::Y, +1>(y);
+            const bool back = isBoundary<axis::Z, -1>(z);
+            const bool front = isBoundary<axis::Z, +1>(z);
             const bool anyBoundary = west || east || south || north || back || front;
 
             return static_cast<nodeType_t>((west << 0) | (east << 1) | (south << 2) | (north << 3) | (back << 4) | (front << 5) | (anyBoundary << 6));
         }
 
-        template <const axis::type alpha, const int coeff, const bool periodic>
+        template <const axis::type alpha, const int coeff>
         __device__ [[nodiscard]] static inline constexpr bool isBoundary(const device::label_t i) noexcept
         {
             velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
-            if constexpr (periodic)
+            if constexpr (Periodic.value<alpha>())
             {
                 return false;
             }

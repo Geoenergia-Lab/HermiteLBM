@@ -107,7 +107,7 @@ namespace LBM
 
             // Calculate the moments at the boundary
 
-            const NormalVectorType boundaryNormal(point);
+            const NormalVector boundaryNormal(point);
 
             if (boundaryNormal.isBoundary())
             {
@@ -142,7 +142,7 @@ namespace LBM
         __device__ static inline constexpr void calculate_moments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             momentsArray &moments,
-            const NormalVectorType &boundaryNormal,
+            const NormalVector &boundaryNormal,
             const SharedBuffer &sharedBuffer,
             const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept

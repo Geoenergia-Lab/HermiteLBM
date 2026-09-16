@@ -64,22 +64,23 @@ const scalar_t is_jet = static_cast<scalar_t>(boundaryNormal.isBack() && rms_sq(
 const scalar_t is_outlet = static_cast<scalar_t>(boundaryNormal.isFront());
 
 moments[m_i<0>()] = (is_outlet * sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()]);
+const scalar_t inv_rho = static_cast<scalar_t>(1) / moments[m_i<0>()];
 moments[m_i<1>()] = (is_outlet * sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()]) + (is_jet * device::U_Back[0]);
 moments[m_i<2>()] = (is_outlet * sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()]) + (is_jet * device::U_Back[1]);
 moments[m_i<3>()] = (is_outlet * sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()]) + (is_jet * device::U_Back[2]);
 
 // Set equilibrium velocities
-moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];
-moments[m_i<5>()] = moments[m_i<1>()] * moments[m_i<2>()];
-moments[m_i<6>()] = moments[m_i<1>()] * moments[m_i<3>()];
-moments[m_i<7>()] = moments[m_i<2>()] * moments[m_i<2>()];
-moments[m_i<8>()] = moments[m_i<2>()] * moments[m_i<3>()];
-moments[m_i<9>()] = moments[m_i<3>()] * moments[m_i<3>()];
+moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()] * inv_rho;
+moments[m_i<5>()] = moments[m_i<1>()] * moments[m_i<2>()] * inv_rho;
+moments[m_i<6>()] = moments[m_i<1>()] * moments[m_i<3>()] * inv_rho;
+moments[m_i<7>()] = moments[m_i<2>()] * moments[m_i<2>()] * inv_rho;
+moments[m_i<8>()] = moments[m_i<2>()] * moments[m_i<3>()] * inv_rho;
+moments[m_i<9>()] = moments[m_i<3>()] * moments[m_i<3>()] * inv_rho;
 
 switch (boundaryNormal.nodeType())
 {
 // Round inflow + no-slip
-case NormalVectorType::BACK():
+case NormalVector::BACK():
 {
     if constexpr (new_inlet())
     {

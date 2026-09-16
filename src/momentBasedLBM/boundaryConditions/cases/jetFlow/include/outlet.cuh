@@ -49,7 +49,7 @@ Notes
 \*---------------------------------------------------------------------------*/
 
 // Faces
-case NormalVectorType::FRONT():
+case NormalVector::FRONT():
 {
     // Classic Neumann
     // const scalar_t moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
@@ -95,7 +95,7 @@ case NormalVectorType::FRONT():
 }
 
 // Edges
-case NormalVectorType::WEST_FRONT():
+case NormalVector::WEST_FRONT():
 {
     // Classic Neumann
     // const scalar_t moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
@@ -133,7 +133,7 @@ case NormalVectorType::WEST_FRONT():
 
     return;
 }
-case NormalVectorType::EAST_FRONT():
+case NormalVector::EAST_FRONT():
 {
     // Classic Neumann
     // const scalar_t moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
@@ -171,7 +171,7 @@ case NormalVectorType::EAST_FRONT():
 
     return;
 }
-case NormalVectorType::SOUTH_FRONT():
+case NormalVector::SOUTH_FRONT():
 {
     // Classic Neumann
     // const scalar_t moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
@@ -209,7 +209,7 @@ case NormalVectorType::SOUTH_FRONT():
 
     return;
 }
-case NormalVectorType::NORTH_FRONT():
+case NormalVector::NORTH_FRONT():
 {
     // Classic Neumann
     // const scalar_t moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
@@ -249,7 +249,7 @@ case NormalVectorType::NORTH_FRONT():
 }
 
 // Edges
-case NormalVectorType::SOUTH_WEST_FRONT():
+case NormalVector::SOUTH_WEST_FRONT():
 {
     // Classic Neumann
     // moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
@@ -268,7 +268,7 @@ case NormalVectorType::SOUTH_WEST_FRONT():
 
     return;
 }
-case NormalVectorType::NORTH_WEST_FRONT():
+case NormalVector::NORTH_WEST_FRONT():
 {
     // Classic Neumann
     // moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
@@ -287,7 +287,7 @@ case NormalVectorType::NORTH_WEST_FRONT():
 
     return;
 }
-case NormalVectorType::SOUTH_EAST_FRONT():
+case NormalVector::SOUTH_EAST_FRONT():
 {
     // Classic Neumann
     // moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
@@ -306,7 +306,7 @@ case NormalVectorType::SOUTH_EAST_FRONT():
 
     return;
 }
-case NormalVectorType::NORTH_EAST_FRONT():
+case NormalVector::NORTH_EAST_FRONT():
 {
     // Classic Neumann
     // moments[m_i<0>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];

@@ -86,7 +86,7 @@ namespace LBM
             [[maybe_unused]] const device::pointCoordinate &point,
             const device::label_t tid) noexcept
         {
-            const NormalVectorType boundaryNormal(point);
+            const NormalVector boundaryNormal(point);
 
             VelocitySet::template calculate_moments(moments, pop, boundaryNormal);
 
@@ -118,7 +118,7 @@ namespace LBM
         __device__ static inline constexpr void calculate_moments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             momentsArray &moments,
-            const NormalVectorType &boundaryNormal,
+            const NormalVector &boundaryNormal,
             [[maybe_unused]] const SharedBuffer &sharedBuffer,
             [[maybe_unused]] const thread::coordinate &Tx,
             [[maybe_unused]] const device::pointCoordinate &point) noexcept
@@ -163,7 +163,7 @@ namespace LBM
             switch (boundaryNormal.nodeType())
             {
             // Static boundaries
-            case NormalVectorType::SOUTH_WEST_BACK():
+            case NormalVector::SOUTH_WEST_BACK():
             {
                 if constexpr (VelocitySet::Q() == 19)
                 {
@@ -179,7 +179,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::SOUTH_WEST_FRONT():
+            case NormalVector::SOUTH_WEST_FRONT():
             {
                 if constexpr (VelocitySet::Q() == 19)
                 {
@@ -195,7 +195,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::SOUTH_EAST_BACK():
+            case NormalVector::SOUTH_EAST_BACK():
             {
                 if constexpr (VelocitySet::Q() == 19)
                 {
@@ -211,7 +211,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::SOUTH_EAST_FRONT():
+            case NormalVector::SOUTH_EAST_FRONT():
             {
                 if constexpr (VelocitySet::Q() == 19)
                 {
@@ -227,7 +227,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::SOUTH_WEST():
+            case NormalVector::SOUTH_WEST():
             {
                 moments[m_i<0>()] = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega); // mxx
                 moments[m_i<5>()] = (static_cast<scalar_t>(36) * mxy_I * rho_I - moments[m_i<0>()]) / (static_cast<scalar_t>(9) * moments[m_i<0>()]);
@@ -236,7 +236,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::SOUTH_EAST():
+            case NormalVector::SOUTH_EAST():
             {
                 moments[m_i<0>()] = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
                 moments[m_i<5>()] = (static_cast<scalar_t>(36) * mxy_I * rho_I + moments[m_i<0>()]) / (static_cast<scalar_t>(9) * moments[m_i<0>()]);
@@ -245,7 +245,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::WEST_BACK():
+            case NormalVector::WEST_BACK():
             {
                 const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
                 const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
@@ -257,7 +257,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::WEST_FRONT():
+            case NormalVector::WEST_FRONT():
             {
                 const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
                 const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
@@ -269,7 +269,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::EAST_BACK():
+            case NormalVector::EAST_BACK():
             {
                 const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
                 const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
@@ -281,7 +281,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::EAST_FRONT():
+            case NormalVector::EAST_FRONT():
             {
                 const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
                 const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
@@ -293,7 +293,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::SOUTH_BACK():
+            case NormalVector::SOUTH_BACK():
             {
                 const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
                 const scalar_t myz = (static_cast<scalar_t>(36) * myz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
@@ -305,7 +305,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::SOUTH_FRONT():
+            case NormalVector::SOUTH_FRONT():
             {
                 const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
                 const scalar_t myz = (static_cast<scalar_t>(36) * myz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
@@ -317,7 +317,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::WEST():
+            case NormalVector::WEST():
             {
                 const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
                 const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
@@ -330,7 +330,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::EAST():
+            case NormalVector::EAST():
             {
                 const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
                 const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
@@ -343,7 +343,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::SOUTH():
+            case NormalVector::SOUTH():
             {
                 const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
                 const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
@@ -356,7 +356,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::BACK():
+            case NormalVector::BACK():
             {
                 const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
                 const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
@@ -369,7 +369,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::FRONT():
+            case NormalVector::FRONT():
             {
                 const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
                 const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
@@ -383,7 +383,7 @@ namespace LBM
                 return;
             }
             // Lid boundaries
-            case NormalVectorType::NORTH():
+            case NormalVector::NORTH():
             {
                 const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
                 const scalar_t mxy = (static_cast<scalar_t>(6) * mxy_I * rho_I - device::U_North[0] * rho) / (static_cast<scalar_t>(3) * rho);
@@ -396,7 +396,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::NORTH_WEST_BACK():
+            case NormalVector::NORTH_WEST_BACK():
             {
                 const scalar_t rho = -static_cast<scalar_t>(24) * rho_I / (-static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * device::U_North[0] + static_cast<scalar_t>(9) * device::U_North[0] * device::U_North[0]);
 
@@ -407,7 +407,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::NORTH_WEST_FRONT():
+            case NormalVector::NORTH_WEST_FRONT():
             {
                 const scalar_t rho = -static_cast<scalar_t>(24) * rho_I / (-static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * device::U_North[0] + static_cast<scalar_t>(9) * device::U_North[0] * device::U_North[0]);
 
@@ -418,7 +418,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::NORTH_EAST_BACK():
+            case NormalVector::NORTH_EAST_BACK():
             {
                 const scalar_t rho = -static_cast<scalar_t>(24) * rho_I / (-static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * device::U_North[0] + static_cast<scalar_t>(9) * device::U_North[0] * device::U_North[0]);
 
@@ -429,7 +429,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::NORTH_EAST_FRONT():
+            case NormalVector::NORTH_EAST_FRONT():
             {
                 const scalar_t rho = -static_cast<scalar_t>(24) * rho_I / (-static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * device::U_North[0] + static_cast<scalar_t>(9) * device::U_North[0] * device::U_North[0]);
 
@@ -440,7 +440,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::NORTH_BACK():
+            case NormalVector::NORTH_BACK():
             {
                 const scalar_t rho = static_cast<scalar_t>(72) * (-rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) / (-static_cast<scalar_t>(48) - static_cast<scalar_t>(2) * device::omega + static_cast<scalar_t>(3) * device::U_North[0] * device::U_North[0] * device::omega);
                 const scalar_t myz = (static_cast<scalar_t>(72) * myz_I * rho_I + static_cast<scalar_t>(2) * rho - static_cast<scalar_t>(3) * device::U_North[0] * device::U_North[0] * rho) / (static_cast<scalar_t>(18) * rho);
@@ -452,7 +452,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::NORTH_FRONT():
+            case NormalVector::NORTH_FRONT():
             {
                 const scalar_t rho = -static_cast<scalar_t>(72) * (rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) / (-static_cast<scalar_t>(48) - static_cast<scalar_t>(2) * device::omega + static_cast<scalar_t>(3) * device::U_North[0] * device::U_North[0] * device::omega);
                 const scalar_t myz = (static_cast<scalar_t>(72) * myz_I * rho_I - static_cast<scalar_t>(2) * rho + static_cast<scalar_t>(3) * device::U_North[0] * device::U_North[0] * rho) / (static_cast<scalar_t>(18) * rho);
@@ -464,7 +464,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::NORTH_EAST():
+            case NormalVector::NORTH_EAST():
             {
                 const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) - static_cast<scalar_t>(18) * device::U_North[0] - static_cast<scalar_t>(18) * device::U_North[0] * device::U_North[0] + device::omega + static_cast<scalar_t>(3) * device::U_North[0] * device::omega + static_cast<scalar_t>(3) * device::U_North[0] * device::U_North[0] * device::omega);
                 const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I - rho - static_cast<scalar_t>(3) * device::U_North[0] * rho - static_cast<scalar_t>(3) * device::U_North[0] * device::U_North[0] * rho) / (static_cast<scalar_t>(9) * rho);
@@ -476,7 +476,7 @@ namespace LBM
 
                 return;
             }
-            case NormalVectorType::NORTH_WEST():
+            case NormalVector::NORTH_WEST():
             {
                 const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + static_cast<scalar_t>(18) * device::U_North[0] - static_cast<scalar_t>(18) * device::U_North[0] * device::U_North[0] + device::omega - static_cast<scalar_t>(3) * device::U_North[0] * device::omega + static_cast<scalar_t>(3) * device::U_North[0] * device::U_North[0] * device::omega);
                 const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I + rho - static_cast<scalar_t>(3) * device::U_North[0] * rho + static_cast<scalar_t>(3) * device::U_North[0] * device::U_North[0] * rho) / (static_cast<scalar_t>(9) * rho);

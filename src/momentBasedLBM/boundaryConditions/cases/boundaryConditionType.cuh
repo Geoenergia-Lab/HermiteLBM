@@ -56,14 +56,14 @@ namespace LBM
      * @class boundaryConditionType
      * @brief Base class to determine periodicity of a particular boundary condition setup
      **/
-    template <const bool periodicX, const bool periodicY, const bool periodicZ>
+    template <const bool PeriodicX, const bool PeriodicY, const bool PeriodicZ>
     class boundaryConditionType
     {
     public:
         /**
          * @brief Define the normal vector type
          **/
-        using NormalVectorType = normalVector<periodicX, periodicY, periodicZ>;
+        using NormalVector = normalVector<var3<bool>(PeriodicX, PeriodicY, PeriodicZ)>;
 
         /**
          * @brief Determine whether or not the boundary conditions are periodc along a particular axis
@@ -72,20 +72,8 @@ namespace LBM
         template <const axis::type alpha>
         __device__ __host__ [[nodiscard]] static inline consteval bool periodic() noexcept
         {
-            if constexpr (alpha == axis::X)
-            {
-                return periodicX;
-            }
-
-            if constexpr (alpha == axis::Y)
-            {
-                return periodicY;
-            }
-
-            if constexpr (alpha == axis::Z)
-            {
-                return periodicZ;
-            }
+            constexpr const var3<bool> result(PeriodicX, PeriodicY, PeriodicZ);
+            return result.value<alpha>();
         }
     };
 }
