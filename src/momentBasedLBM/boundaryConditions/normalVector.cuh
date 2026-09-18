@@ -52,33 +52,9 @@ SourceFiles
 
 namespace LBM
 {
-    /**
-     * @class normalVector
-     * @brief Represents boundary orientation using a bitmask encoding
-     *
-     * This class uses a compact bitmask representation to encode the position
-     * of lattice nodes relative to domain boundaries. It supports detection of:
-     * - Individual boundary faces (West, East, South, North, Back, Front)
-     * - Edge configurations (12 possible combinations)
-     * - Corner configurations (8 possible combinations)
-     * - Interior points (no boundaries)
-     *
-     * The bitmask uses a 7-bit representation where:
-     * - Bits 0-5: Individual boundary flags
-     * - Bit 6: General boundary indicator (any boundary)
-     **/
-    template <const var3<bool> Periodic>
-    class normalVector
+    struct normalVectorBase
     {
     public:
-        /**
-         * @brief Constructs a normalVector from current thread indices
-         * @param[in] point The spatial coordinate of the point
-         * @return normalVector for the current thread's position
-         **/
-        __device__ [[nodiscard]] inline constexpr normalVector(const device::pointCoordinate &point) noexcept
-            : bitmask_(computeBitmask(point)) {}
-
         /**
          * @name Basic Boundary Flags
          * @brief Bitmask values for individual boundary faces
@@ -107,44 +83,6 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval nodeType_t FRONT() noexcept
         {
             return 0x20;
-        }
-
-        /**
-         * @name Corner Boundary Types
-         * @brief Bitmask values for corner configurations (8 types)
-         * @return Bitmask value for the specified corner configuration
-         **/
-        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t SOUTH_WEST_BACK() noexcept
-        {
-            return SOUTH() | WEST() | BACK();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t SOUTH_WEST_FRONT() noexcept
-        {
-            return SOUTH() | WEST() | FRONT();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t SOUTH_EAST_BACK() noexcept
-        {
-            return SOUTH() | EAST() | BACK();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t SOUTH_EAST_FRONT() noexcept
-        {
-            return SOUTH() | EAST() | FRONT();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t NORTH_WEST_BACK() noexcept
-        {
-            return NORTH() | WEST() | BACK();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t NORTH_WEST_FRONT() noexcept
-        {
-            return NORTH() | WEST() | FRONT();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t NORTH_EAST_BACK() noexcept
-        {
-            return NORTH() | EAST() | BACK();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t NORTH_EAST_FRONT() noexcept
-        {
-            return NORTH() | EAST() | FRONT();
         }
 
         /**
@@ -202,6 +140,44 @@ namespace LBM
         }
 
         /**
+         * @name Corner Boundary Types
+         * @brief Bitmask values for corner configurations (8 types)
+         * @return Bitmask value for the specified corner configuration
+         **/
+        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t SOUTH_WEST_BACK() noexcept
+        {
+            return SOUTH() | WEST() | BACK();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t SOUTH_WEST_FRONT() noexcept
+        {
+            return SOUTH() | WEST() | FRONT();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t SOUTH_EAST_BACK() noexcept
+        {
+            return SOUTH() | EAST() | BACK();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t SOUTH_EAST_FRONT() noexcept
+        {
+            return SOUTH() | EAST() | FRONT();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t NORTH_WEST_BACK() noexcept
+        {
+            return NORTH() | WEST() | BACK();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t NORTH_WEST_FRONT() noexcept
+        {
+            return NORTH() | WEST() | FRONT();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t NORTH_EAST_BACK() noexcept
+        {
+            return NORTH() | EAST() | BACK();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval nodeType_t NORTH_EAST_FRONT() noexcept
+        {
+            return NORTH() | EAST() | FRONT();
+        }
+
+        /**
          * @brief Special type for interior points
          * @return Bitmask value for interior points (no boundaries)
          **/
@@ -216,9 +192,153 @@ namespace LBM
          * @return True if the point lies on the specified boundary
          **/
         template <typename T = bool>
+        __device__ __host__ [[nodiscard]] static inline constexpr T isWest(const nodeType_t bitMask) noexcept
+        {
+            return static_cast<T>(static_cast<bool>(bitMask & WEST()));
+        }
+
+        /**
+         * @name Boundary detection
+         * @tparam T The return type
+         * @return True if the point lies on the specified boundary
+         **/
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] static inline constexpr T isEast(const nodeType_t bitMask) noexcept
+        {
+            return static_cast<T>(static_cast<bool>(bitMask & EAST()));
+        }
+
+        /**
+         * @name Boundary detection
+         * @tparam T The return type
+         * @return True if the point lies on the specified boundary
+         **/
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] static inline constexpr T isSouth(const nodeType_t bitMask) noexcept
+        {
+            return static_cast<T>(static_cast<bool>(bitMask & SOUTH()));
+        }
+
+        /**
+         * @name Boundary detection
+         * @tparam T The return type
+         * @return True if the point lies on the specified boundary
+         **/
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] static inline constexpr T isNorth(const nodeType_t bitMask) noexcept
+        {
+            return static_cast<T>(static_cast<bool>(bitMask & NORTH()));
+        }
+
+        /**
+         * @name Boundary detection
+         * @tparam T The return type
+         * @return True if the point lies on the specified boundary
+         **/
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] static inline constexpr T isBack(const nodeType_t bitMask) noexcept
+        {
+            return static_cast<T>(static_cast<bool>(bitMask & BACK()));
+        }
+
+        /**
+         * @name Boundary detection
+         * @tparam T The return type
+         * @return True if the point lies on the specified boundary
+         **/
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] static inline constexpr T isFront(const nodeType_t bitMask) noexcept
+        {
+            return static_cast<T>(static_cast<bool>(bitMask & FRONT()));
+        }
+
+        /**
+         * @name Boundary detection
+         * @tparam T The return type
+         * @return True if the point lies on the specified boundary
+         **/
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] static inline constexpr T isBoundary(const nodeType_t bitMask) noexcept
+        {
+            return static_cast<T>(static_cast<bool>(bitMask & 0x40));
+        }
+
+        /**
+         * @name Boundary detection
+         * @tparam T The return type
+         * @return True if the point lies on the specified boundary
+         **/
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] static inline constexpr T isInterior(const nodeType_t bitMask) noexcept
+        {
+            return static_cast<T>(!isBoundary<bool>(bitMask));
+        }
+
+        /**
+         * @name Count the number of intersecting boundary planes at a point
+         * @tparam T The return type
+         * @return Number of boundary planes that intersect a point
+         **/
+        template <typename T = nodeType_t>
+        __device__ __host__ [[nodiscard]] inline constexpr T countBoundaries(const nodeType_t bitMask) noexcept
+        {
+            // Count set bits in 6-bit value using parallel addition
+            // This is known as the "popcount" algorithm for small integers
+            nodeType_t x = bitMask & 0x3F;
+            x = (x & 0x55) + ((x >> static_cast<nodeType_t>(1)) & 0x55); // Count bits in pairs
+            x = (x & 0x33) + ((x >> static_cast<nodeType_t>(2)) & 0x33); // Count bits in nibbles
+            x = (x & 0x0F) + ((x >> static_cast<nodeType_t>(4)) & 0x0F); // Add the two nibbles
+            return static_cast<T>(x);
+        }
+
+        /**
+         * @brief Get the node type bitmask
+         * @return The bitmask representing the node type (bits 0-5)
+         **/
+        __device__ [[nodiscard]] static inline constexpr nodeType_t nodeType(const nodeType_t bitMask) noexcept
+        {
+            return bitMask & 0x3F;
+        }
+    };
+
+    /**
+     * @class normalVector
+     * @brief Represents boundary orientation using a bitmask encoding
+     *
+     * This class uses a compact bitmask representation to encode the position
+     * of lattice nodes relative to domain boundaries. It supports detection of:
+     * - Individual boundary faces (West, East, South, North, Back, Front)
+     * - Edge configurations (12 possible combinations)
+     * - Corner configurations (8 possible combinations)
+     * - Interior points (no boundaries)
+     *
+     * The bitmask uses a 7-bit representation where:
+     * - Bits 0-5: Individual boundary flags
+     * - Bit 6: General boundary indicator (any boundary)
+     **/
+    template <const var3<bool> Periodic>
+    class normalVector : public normalVectorBase
+    {
+    public:
+        using Base = normalVectorBase;
+
+        /**
+         * @brief Constructs a normalVector from current thread indices
+         * @param[in] point The spatial coordinate of the point
+         * @return normalVector for the current thread's position
+         **/
+        __device__ [[nodiscard]] inline constexpr normalVector(const device::pointCoordinate &point) noexcept
+            : bitmask_(computeBitmask(point)) {}
+
+        /**
+         * @name Boundary detection
+         * @tparam T The return type
+         * @return True if the point lies on the specified boundary
+         **/
+        template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isWest() const noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitmask_ & WEST()));
+            return Base::isWest<T>(bitmask_);
         }
 
         /**
@@ -229,7 +349,7 @@ namespace LBM
         template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isEast() const noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitmask_ & EAST()));
+            return Base::isEast<T>(bitmask_);
         }
 
         /**
@@ -240,7 +360,7 @@ namespace LBM
         template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isSouth() const noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitmask_ & SOUTH()));
+            return Base::isSouth<T>(bitmask_);
         }
 
         /**
@@ -251,7 +371,7 @@ namespace LBM
         template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isNorth() const noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitmask_ & NORTH()));
+            return Base::isNorth<T>(bitmask_);
         }
 
         /**
@@ -262,7 +382,7 @@ namespace LBM
         template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isBack() const noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitmask_ & BACK()));
+            return Base::isBack<T>(bitmask_);
         }
 
         /**
@@ -273,7 +393,7 @@ namespace LBM
         template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isFront() const noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitmask_ & FRONT()));
+            return Base::isFront<T>(bitmask_);
         }
 
         /**
@@ -284,7 +404,7 @@ namespace LBM
         template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isBoundary() const noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitmask_ & 0x40));
+            return Base::isBoundary<T>(bitmask_);
         }
 
         /**
@@ -295,7 +415,7 @@ namespace LBM
         template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isInterior() const noexcept
         {
-            return static_cast<T>(!isBoundary<bool>());
+            return Base::isInterior<T>(bitmask_);
         }
 
         /**
@@ -306,13 +426,7 @@ namespace LBM
         template <typename T = nodeType_t>
         __device__ __host__ [[nodiscard]] inline constexpr T countBoundaries() const noexcept
         {
-            // Count set bits in 6-bit value using parallel addition
-            // This is known as the "popcount" algorithm for small integers
-            nodeType_t x = bitmask_ & 0x3F;
-            x = (x & 0x55) + ((x >> 1) & 0x55); // Count bits in pairs
-            x = (x & 0x33) + ((x >> 2) & 0x33); // Count bits in nibbles
-            x = (x & 0x0F) + ((x >> 4) & 0x0F); // Add the two nibbles
-            return static_cast<T>(x);
+            return Base::countBoundaries<T>(bitmask_);
         }
 
         /**
@@ -321,7 +435,7 @@ namespace LBM
          **/
         __device__ [[nodiscard]] inline constexpr nodeType_t nodeType() const noexcept
         {
-            return bitmask_ & 0x3F;
+            return Base::nodeType(bitmask_);
         }
 
     private:

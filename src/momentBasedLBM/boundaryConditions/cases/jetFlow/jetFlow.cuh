@@ -67,19 +67,9 @@ namespace LBM
      * outflow boundaries using moment-based boundary conditions derived from the
      * regularized LBM approach.
      **/
-    class jetFlow : public boundaryConditionType<true, true, false>
+    class jetFlow : public boundaryConditionType<PERIODIC, PERIODIC, WALL, APPLIES_CONDITION>
     {
     public:
-        /**
-         * @brief Default constructor (constexpr)
-         **/
-        __device__ __host__ [[nodiscard]] inline consteval jetFlow() {}
-
-        /**
-         * @brief Switch determining whether or not the boundary condition actually applies a condition
-         **/
-        __device__ __host__ [[nodiscard]] static inline consteval bool appliesCondition() noexcept { return true; }
-
         /**
          * @brief Public method to calculate the post-streaming methods and update boundary conditions
          **/

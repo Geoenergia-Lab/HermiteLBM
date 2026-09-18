@@ -80,7 +80,7 @@ moments[m_i<9>()] = moments[m_i<3>()] * moments[m_i<3>()] * inv_rho;
 switch (boundaryNormal.nodeType())
 {
 // Round inflow + no-slip
-case NormalVector::BACK():
+case normalVectorBase::BACK():
 {
     if constexpr (new_inlet())
     {

@@ -37,70 +37,25 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Base type for the boundary condition class
+    Top-level header file for the application of boundary velocity profiles
 
 Namespace
     LBM
 
 SourceFiles
-    boundaryConditionType.cuh
+    velocityProfile.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_BOUNDARYCONDITIONTYPE_CUH
-#define __MBLBM_BOUNDARYCONDITIONTYPE_CUH
+#ifndef __MBLBM_VELOCITYPROFILE_CUH
+#define __MBLBM_VELOCITYPROFILE_CUH
 
 namespace LBM
 {
-    /**
-     * @brief Type of boundary: either a wall (Dirichlet or Neumann), or a periodic boundary
-     **/
-    typedef enum boundaryTypeEnum : bool
-    {
-        WALL = 0,
-        PERIODIC = 1
-    } boundaryType;
 
-    /**
-     * @brief Boundary condition set applies a boundary condition or not
-     **/
-    typedef enum hasBoundaryConditionTypeEnum : bool
-    {
-        NO_CONDITION = 0,
-        APPLIES_CONDITION = 1
-    } hasBoundaryConditionType;
-
-    /**
-     * @class boundaryConditionType
-     * @brief Base class to determine periodicity of a particular boundary condition setup
-     **/
-    template <const boundaryType TypeX, const boundaryType TypeY, const boundaryType TypeZ, const hasBoundaryConditionType AppliesCondition = APPLIES_CONDITION>
-    class boundaryConditionType
-    {
-    public:
-        /**
-         * @brief Define the normal vector type
-         **/
-        using NormalVector = normalVector<var3<bool>(TypeX, TypeY, TypeZ)>;
-
-        /**
-         * @brief Determine whether or not the boundary conditions are periodc along a particular axis
-         * @tparam alpha The axis direction (X, Y or Z)
-         **/
-        template <const axis::type alpha>
-        __device__ __host__ [[nodiscard]] static inline consteval bool periodic() noexcept
-        {
-            return var3<boundaryType>(TypeX, TypeY, TypeZ).value<alpha>();
-        }
-
-        /**
-         * @brief Switch determining whether or not the boundary condition actually applies a condition
-         **/
-        __device__ __host__ [[nodiscard]] static inline consteval hasBoundaryConditionType appliesCondition() noexcept
-        {
-            return AppliesCondition;
-        }
-    };
 }
+
+#include "constantVelocityProfile.cuh"
+#include "noSlipVelocityProfile.cuh"
 
 #endif

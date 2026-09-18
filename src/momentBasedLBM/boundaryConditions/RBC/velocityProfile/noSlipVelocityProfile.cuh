@@ -37,68 +37,43 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Base type for the boundary condition class
+    Struct to apply a no-slip velocity profile to the velocity field
 
 Namespace
     LBM
 
 SourceFiles
-    boundaryConditionType.cuh
+    noSlipVelocityProfile.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_BOUNDARYCONDITIONTYPE_CUH
-#define __MBLBM_BOUNDARYCONDITIONTYPE_CUH
+#ifndef __MBLBM_NOSLIPVELOCITYPROFILE_CUH
+#define __MBLBM_NOSLIPVELOCITYPROFILE_CUH
 
 namespace LBM
 {
     /**
-     * @brief Type of boundary: either a wall (Dirichlet or Neumann), or a periodic boundary
+     * @brief Apply the no-slip boundary condition to the velocity field
      **/
-    typedef enum boundaryTypeEnum : bool
+    struct noSlipVelocityProfile
     {
-        WALL = 0,
-        PERIODIC = 1
-    } boundaryType;
-
-    /**
-     * @brief Boundary condition set applies a boundary condition or not
-     **/
-    typedef enum hasBoundaryConditionTypeEnum : bool
-    {
-        NO_CONDITION = 0,
-        APPLIES_CONDITION = 1
-    } hasBoundaryConditionType;
-
-    /**
-     * @class boundaryConditionType
-     * @brief Base class to determine periodicity of a particular boundary condition setup
-     **/
-    template <const boundaryType TypeX, const boundaryType TypeY, const boundaryType TypeZ, const hasBoundaryConditionType AppliesCondition = APPLIES_CONDITION>
-    class boundaryConditionType
-    {
-    public:
         /**
-         * @brief Define the normal vector type
+         * @brief Get the boundary condition value
          **/
-        using NormalVector = normalVector<var3<bool>(TypeX, TypeY, TypeZ)>;
-
-        /**
-         * @brief Determine whether or not the boundary conditions are periodc along a particular axis
-         * @tparam alpha The axis direction (X, Y or Z)
-         **/
-        template <const axis::type alpha>
-        __device__ __host__ [[nodiscard]] static inline consteval bool periodic() noexcept
+        __device__ [[nodiscard]] static inline consteval scalar_t value() noexcept
         {
-            return var3<boundaryType>(TypeX, TypeY, TypeZ).value<alpha>();
+            return static_cast<scalar_t>(0);
         }
 
         /**
-         * @brief Switch determining whether or not the boundary condition actually applies a condition
+         * @brief Apply the boundary condition to the velocity field
+         * @param[out] moments Moment array (rho, U, Pi)
          **/
-        __device__ __host__ [[nodiscard]] static inline consteval hasBoundaryConditionType appliesCondition() noexcept
+        __device__ [[nodiscard]] static inline constexpr void apply(momentsArray &moments) noexcept
         {
-            return AppliesCondition;
+            moments[q_i<1>()] = value();
+            moments[q_i<2>()] = value();
+            moments[q_i<3>()] = value();
         }
     };
 }

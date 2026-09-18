@@ -61,19 +61,9 @@ namespace LBM
      * moving lid boundaries using moment-based boundary conditions derived from the
      * regularized LBM approach.
      **/
-    class benchmark : public boundaryConditionType<true, true, true>
+    class benchmark : public boundaryConditionType<PERIODIC, PERIODIC, PERIODIC, NO_CONDITION>
     {
     public:
-        /**
-         * @brief Default constructor (constexpr)
-         **/
-        __device__ __host__ [[nodiscard]] inline consteval benchmark() {}
-
-        /**
-         * @brief Switch determining whether or not the boundary condition actually applies a condition
-         **/
-        __device__ __host__ [[nodiscard]] static inline consteval bool appliesCondition() noexcept { return false; }
-
     private:
     };
 }
