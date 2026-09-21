@@ -61,6 +61,9 @@ namespace LBM
          * @tparam BoundaryCase The boundary node type (e.g. NORTH_WEST)
          * @param[in] moments Moment array (rho, U, Pi)
          * @param[in] incomings The incoming density and second-order moments
+         * @param[in] U_x Velocity in the X direction
+         * @param[in] U_y Velocity in the Y direction
+         * @param[in] U_z Velocity in the Z direction
          **/
         template <const nodeType_t BoundaryCase>
         __device__ static inline constexpr void apply(

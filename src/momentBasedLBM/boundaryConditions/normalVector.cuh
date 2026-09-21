@@ -191,88 +191,28 @@ namespace LBM
          * @tparam T The return type
          * @return True if the point lies on the specified boundary
          **/
-        template <typename T = bool>
-        __device__ __host__ [[nodiscard]] static inline constexpr T isWest(const nodeType_t bitMask) noexcept
+        template <const nodeType_t BitMask, typename T = bool>
+        __device__ __host__ [[nodiscard]] static inline constexpr T is(const nodeType_t bitMask) noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitMask & WEST()));
+            return static_cast<T>(static_cast<bool>(bitMask & BitMask));
         }
 
-        /**
-         * @name Boundary detection
-         * @tparam T The return type
-         * @return True if the point lies on the specified boundary
-         **/
         template <typename T = bool>
-        __device__ __host__ [[nodiscard]] static inline constexpr T isEast(const nodeType_t bitMask) noexcept
-        {
-            return static_cast<T>(static_cast<bool>(bitMask & EAST()));
-        }
-
-        /**
-         * @name Boundary detection
-         * @tparam T The return type
-         * @return True if the point lies on the specified boundary
-         **/
+        __device__ __host__ [[nodiscard]] static inline constexpr T isWest(const nodeType_t bitMask) noexcept { return is<WEST()>(bitMask); }
         template <typename T = bool>
-        __device__ __host__ [[nodiscard]] static inline constexpr T isSouth(const nodeType_t bitMask) noexcept
-        {
-            return static_cast<T>(static_cast<bool>(bitMask & SOUTH()));
-        }
-
-        /**
-         * @name Boundary detection
-         * @tparam T The return type
-         * @return True if the point lies on the specified boundary
-         **/
+        __device__ __host__ [[nodiscard]] static inline constexpr T isEast(const nodeType_t bitMask) noexcept { return is<EAST()>(bitMask); }
         template <typename T = bool>
-        __device__ __host__ [[nodiscard]] static inline constexpr T isNorth(const nodeType_t bitMask) noexcept
-        {
-            return static_cast<T>(static_cast<bool>(bitMask & NORTH()));
-        }
-
-        /**
-         * @name Boundary detection
-         * @tparam T The return type
-         * @return True if the point lies on the specified boundary
-         **/
+        __device__ __host__ [[nodiscard]] static inline constexpr T isSouth(const nodeType_t bitMask) noexcept { return is<SOUTH()>(bitMask); }
         template <typename T = bool>
-        __device__ __host__ [[nodiscard]] static inline constexpr T isBack(const nodeType_t bitMask) noexcept
-        {
-            return static_cast<T>(static_cast<bool>(bitMask & BACK()));
-        }
-
-        /**
-         * @name Boundary detection
-         * @tparam T The return type
-         * @return True if the point lies on the specified boundary
-         **/
+        __device__ __host__ [[nodiscard]] static inline constexpr T isNorth(const nodeType_t bitMask) noexcept { return is<NORTH()>(bitMask); }
         template <typename T = bool>
-        __device__ __host__ [[nodiscard]] static inline constexpr T isFront(const nodeType_t bitMask) noexcept
-        {
-            return static_cast<T>(static_cast<bool>(bitMask & FRONT()));
-        }
-
-        /**
-         * @name Boundary detection
-         * @tparam T The return type
-         * @return True if the point lies on the specified boundary
-         **/
+        __device__ __host__ [[nodiscard]] static inline constexpr T isBack(const nodeType_t bitMask) noexcept { return is<BACK()>(bitMask); }
         template <typename T = bool>
-        __device__ __host__ [[nodiscard]] static inline constexpr T isBoundary(const nodeType_t bitMask) noexcept
-        {
-            return static_cast<T>(static_cast<bool>(bitMask & 0x40));
-        }
-
-        /**
-         * @name Boundary detection
-         * @tparam T The return type
-         * @return True if the point lies on the specified boundary
-         **/
+        __device__ __host__ [[nodiscard]] static inline constexpr T isFront(const nodeType_t bitMask) noexcept { return is<FRONT()>(bitMask); }
         template <typename T = bool>
-        __device__ __host__ [[nodiscard]] static inline constexpr T isInterior(const nodeType_t bitMask) noexcept
-        {
-            return static_cast<T>(!isBoundary<bool>(bitMask));
-        }
+        __device__ __host__ [[nodiscard]] static inline constexpr T isBoundary(const nodeType_t bitMask) noexcept { return is<0x40>(bitMask); }
+        template <typename T = bool>
+        __device__ __host__ [[nodiscard]] static inline constexpr T isInterior(const nodeType_t bitMask) noexcept { return static_cast<T>(!isBoundary<bool>(bitMask)); }
 
         /**
          * @name Count the number of intersecting boundary planes at a point

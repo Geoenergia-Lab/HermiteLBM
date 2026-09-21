@@ -71,6 +71,11 @@ namespace LBM
             genericDirichlet<VelocitySet>::apply<BoundaryCase>(moments, incomings, sharedBuffer[idxShared<1>(tid)], sharedBuffer[idxShared<2>(tid)], sharedBuffer[idxShared<3>(tid)]);
         }
 
+        /**
+         * @brief Get the index of the moment in the shared memory block
+         * @tparam Moment Index of the moment
+         * @param[in] tid Thread ID within the block
+         **/
         template <const device::label_t Moment>
         __device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxShared(const device::label_t tid) noexcept
         {
