@@ -37,68 +37,79 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Base type for the boundary condition class
+    Struct to apply a constant velocity profile to the velocity field
 
 Namespace
     LBM
 
 SourceFiles
-    boundaryConditionType.cuh
+    constantVelocityProfile.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_BOUNDARYCONDITIONTYPE_CUH
-#define __MBLBM_BOUNDARYCONDITIONTYPE_CUH
+#ifndef __MBLBM_CONSTANTVELOCITYPROFILE_CUH
+#define __MBLBM_CONSTANTVELOCITYPROFILE_CUH
 
 namespace LBM
 {
     /**
-     * @brief Type of boundary: either a wall (Dirichlet or Neumann), or a periodic boundary
+     * @brief Apply a constant velocity profile to the velocity field
      **/
-    typedef enum boundaryTypeEnum : bool
+    struct constantVelocityProfile
     {
-        WALL = 0,
-        PERIODIC = 1
-    } boundaryType;
-
-    /**
-     * @brief Boundary condition set applies a boundary condition or not
-     **/
-    typedef enum hasBoundaryConditionTypeEnum : bool
-    {
-        NO_CONDITION = 0,
-        APPLIES_CONDITION = 1
-    } hasBoundaryConditionType;
-
-    /**
-     * @class boundaryConditionType
-     * @brief Base class to determine periodicity of a particular boundary condition setup
-     **/
-    template <const boundaryType TypeX, const boundaryType TypeY, const boundaryType TypeZ>
-    class boundaryConditionType
-    {
-    public:
         /**
-         * @brief Define the normal vector type
+         * @brief Placeholder WIP
          **/
-        using NormalVector = normalVector<var3<bool>(TypeX, TypeY, TypeZ)>;
-
-        /**
-         * @brief Determine whether or not the boundary conditions are periodc along a particular axis
-         * @tparam alpha The axis direction (X, Y or Z)
-         **/
-        template <const axis::type alpha>
-        __device__ __host__ [[nodiscard]] static inline consteval bool periodic() noexcept
+        template <const nodeType_t NodeType, const axis::type beta>
+        __device__ [[nodiscard]] static inline constexpr scalar_t apply() noexcept
         {
-            return var3<boundaryType>(TypeX, TypeY, TypeZ).value<alpha>();
+            return 0;
         }
 
         /**
-         * @brief Switch determining whether or not the boundary condition actually applies a condition
+         * @brief Get the boundary condition value
          **/
-        __device__ __host__ [[nodiscard]] static inline consteval hasBoundaryConditionType appliesCondition() noexcept
+        template <const axis::type alpha, const int coeff, const axis::type beta>
+        __device__ [[nodiscard]] static inline constexpr scalar_t value() noexcept
         {
-            return static_cast<hasBoundaryConditionType>((TypeX == APPLIES_CONDITION) || (TypeY == APPLIES_CONDITION) || (TypeZ == APPLIES_CONDITION));
+            if constexpr (alpha == axis::X)
+            {
+                if constexpr (coeff == -1)
+                {
+                    return device::U_West[static_cast<device::label_t>(beta)];
+                }
+
+                if constexpr (coeff == +1)
+                {
+                    return device::U_East[static_cast<device::label_t>(beta)];
+                }
+            }
+
+            if constexpr (alpha == axis::Y)
+            {
+                if constexpr (coeff == -1)
+                {
+                    return device::U_South[static_cast<device::label_t>(beta)];
+                }
+
+                if constexpr (coeff == +1)
+                {
+                    return device::U_North[static_cast<device::label_t>(beta)];
+                }
+            }
+
+            if constexpr (alpha == axis::Z)
+            {
+                if constexpr (coeff == -1)
+                {
+                    return device::U_Back[static_cast<device::label_t>(beta)];
+                }
+
+                if constexpr (coeff == +1)
+                {
+                    return device::U_Front[static_cast<device::label_t>(beta)];
+                }
+            }
         }
     };
 }

@@ -53,11 +53,6 @@ SourceFiles
 namespace LBM
 {
     /**
-     * @brief New definition of the inlet plane
-     * **/
-    __device__ __host__ [[nodiscard]] inline consteval bool new_inlet() noexcept { return true; }
-
-    /**
      * @class jetFlow
      *
      * @brief Applies boundary conditions for turbulent jet simulations using moment representation
@@ -67,19 +62,9 @@ namespace LBM
      * outflow boundaries using moment-based boundary conditions derived from the
      * regularized LBM approach.
      **/
-    class jetFlow : public boundaryConditionType<true, true, false>
+    class jetFlow : public boundaryConditionType<PERIODIC, PERIODIC, WALL>
     {
     public:
-        /**
-         * @brief Default constructor (constexpr)
-         **/
-        __device__ __host__ [[nodiscard]] inline consteval jetFlow() {}
-
-        /**
-         * @brief Switch determining whether or not the boundary condition actually applies a condition
-         **/
-        __device__ __host__ [[nodiscard]] static inline consteval bool appliesCondition() noexcept { return true; }
-
         /**
          * @brief Public method to calculate the post-streaming methods and update boundary conditions
          **/
@@ -92,22 +77,18 @@ namespace LBM
             const device::pointCoordinate &point,
             const device::label_t tid) noexcept
         {
-            // Compute post-stream moments
-            VelocitySet::template calculate_moments(moments, pop);
+            const NormalVector boundaryNormal(point);
+
+            VelocitySet::template calculate_moments(moments, pop, boundaryNormal);
 
             // Update the shared buffer with the refreshed moments
-            device::constexpr_for<0, NUMBER_MOMENTS()>(
+            device::constexpr_for<1, 4>(
                 [&](const auto moment)
                 {
-                    const device::label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
-                    sharedBuffer[ID] = moments[moment];
+                    sharedBuffer[idxShared<moment>(tid)] = moments[moment];
                 });
 
             block::sync();
-
-            // Calculate the moments at the boundary
-
-            const NormalVectorType boundaryNormal(point);
 
             if (boundaryNormal.isBoundary())
             {
@@ -116,6 +97,12 @@ namespace LBM
         }
 
     private:
+        template <const device::label_t Moment>
+        __device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxShared(const device::label_t tid) noexcept
+        {
+            return tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<Moment>();
+        }
+
         /**
          * @brief Calculate moment variables at boundary nodes
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
@@ -142,11 +129,20 @@ namespace LBM
         __device__ static inline constexpr void calculate_moments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             momentsArray &moments,
-            const NormalVectorType &boundaryNormal,
+            const NormalVector &boundaryNormal,
             const SharedBuffer &sharedBuffer,
             const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept
         {
+            const thread::array<scalar_t, 7> incomings(
+                moments[m_i<0>()],
+                moments[m_i<4>()],
+                moments[m_i<5>()],
+                moments[m_i<6>()],
+                moments[m_i<7>()],
+                moments[m_i<8>()],
+                moments[m_i<9>()]);
+
 #include "jetBoundaryCondition.cuh"
         }
 
