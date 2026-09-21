@@ -54,14 +54,9 @@ namespace LBM
 {
     /**
      * @class benchmark
-     * @brief Applies boundary conditions for lid-driven cavity simulations using moment representation
-     *
-     * This class implements the boundary condition treatment for the D3Q19 lattice model
-     * in lid-driven cavity flow simulations. It handles both static wall boundaries and
-     * moving lid boundaries using moment-based boundary conditions derived from the
-     * regularized LBM approach.
+     * @brief Applies boundary conditions for a pure streaming-collision benchmark case
      **/
-    class benchmark : public boundaryConditionType<PERIODIC, PERIODIC, PERIODIC, NO_CONDITION>
+    class benchmark : public boundaryConditionType<PERIODIC, PERIODIC, PERIODIC>
     {
     public:
     private:

@@ -61,7 +61,7 @@ namespace LBM
      * moving lid boundaries using moment-based boundary conditions derived from the
      * regularized LBM approach.
      **/
-    class lidDrivenCavity : public boundaryConditionType<WALL, WALL, WALL, APPLIES_CONDITION>
+    class lidDrivenCavity : public boundaryConditionType<WALL, WALL, WALL>
     {
     public:
         /**

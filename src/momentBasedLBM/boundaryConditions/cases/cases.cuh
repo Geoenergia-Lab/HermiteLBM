@@ -62,8 +62,8 @@ namespace LBM
         /**
          * @brief Define the boundary condition case
          **/
-        using Case = lidDrivenCavity;
-        // using Case = jetFlow;
+        // using Case = lidDrivenCavity;
+        using Case = jetFlow;
         // using Case = benchmark;
 
         /**

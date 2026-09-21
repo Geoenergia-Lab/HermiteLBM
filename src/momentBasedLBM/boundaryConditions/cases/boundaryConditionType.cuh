@@ -74,7 +74,7 @@ namespace LBM
      * @class boundaryConditionType
      * @brief Base class to determine periodicity of a particular boundary condition setup
      **/
-    template <const boundaryType TypeX, const boundaryType TypeY, const boundaryType TypeZ, const hasBoundaryConditionType AppliesCondition = APPLIES_CONDITION>
+    template <const boundaryType TypeX, const boundaryType TypeY, const boundaryType TypeZ>
     class boundaryConditionType
     {
     public:
@@ -98,7 +98,7 @@ namespace LBM
          **/
         __device__ __host__ [[nodiscard]] static inline consteval hasBoundaryConditionType appliesCondition() noexcept
         {
-            return AppliesCondition;
+            return static_cast<hasBoundaryConditionType>((TypeX == APPLIES_CONDITION) || (TypeY == APPLIES_CONDITION) || (TypeZ == APPLIES_CONDITION));
         }
     };
 }

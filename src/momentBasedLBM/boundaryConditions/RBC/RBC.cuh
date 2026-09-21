@@ -60,4 +60,8 @@ namespace LBM
 #include "Dirichlet/genericDirichlet.cuh"
 #include "Dirichlet/noSlip.cuh"
 
+#include "Neumann/Neumann.cuh"
+
+#include "periodic/periodic.cuh"
+
 #endif
