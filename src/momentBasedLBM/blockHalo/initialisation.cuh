@@ -61,7 +61,7 @@ namespace LBM
         /**
          * @brief Saves the reconstructed halo populations into both halo buffers.
          *
-         * @param[in] moments Local moment array associated with the current lattice node.
+         * @param[in] moments Moment array (rho, U, Pi)
          * @param[in] readBuffer Halo storage used for reads during the streaming step.
          * @param[in] writeBuffer Halo storage used for writes after the streaming step.
          * @param[in] Tx Thread coordinates within the current block.
@@ -82,8 +82,8 @@ namespace LBM
         {
             thread::array<scalar_t, VelocitySet::Q()> pop;
             VelocitySet::reconstruct(pop, moments);
-            device::halo<VelocitySet, boundaryConditionType<true, true, true>>::save(pop, moments, readBuffer, Tx, Bx, point);
-            device::halo<VelocitySet, boundaryConditionType<true, true, true>>::save(pop, moments, writeBuffer, Tx, Bx, point);
+            device::halo<VelocitySet, boundaryConditionType<PERIODIC, PERIODIC, PERIODIC>>::save(pop, moments, readBuffer, Tx, Bx, point);
+            device::halo<VelocitySet, boundaryConditionType<PERIODIC, PERIODIC, PERIODIC>>::save(pop, moments, writeBuffer, Tx, Bx, point);
         }
 
         /**

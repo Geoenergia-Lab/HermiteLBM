@@ -111,21 +111,21 @@ namespace LBM
         static constexpr const T value = v;
         using value_type = T;
         using type = integralConstant;
-        __device__ __host__ [[nodiscard]] inline consteval operator value_type() const noexcept { return value; }
-        __device__ __host__ [[nodiscard]] inline consteval value_type operator()() const noexcept { return value; }
+        __device__ __host__ [[nodiscard]] inline consteval operator value_type() const noexcept { return v; }
+        __device__ __host__ [[nodiscard]] inline consteval value_type operator()() const noexcept { return v; }
     };
 
     /**
      * @brief Type used for compile-time indices
      **/
     template <const device::label_t label>
-    using label_constant = const integralConstant<device::label_t, label>;
+    using label_constant = const integralConstant<const device::label_t, label>;
     template <const host::label_t label>
-    using size_constant = const integralConstant<host::label_t, label>;
+    using size_constant = const integralConstant<const host::label_t, label>;
     template <const device::label_t label>
-    using q_i = const integralConstant<device::label_t, label>;
+    using q_i = const integralConstant<const device::label_t, label>;
     template <const device::label_t label>
-    using m_i = const integralConstant<device::label_t, label>;
+    using m_i = const integralConstant<const device::label_t, label>;
 }
 
 #endif

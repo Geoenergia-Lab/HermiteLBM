@@ -10,7 +10,7 @@
 /*---------------------------------------------------------------------------*\
 
 Copyright (C) 2023 UDESC Geoenergia Lab
-Authors: Nathan Duggins, Breno Gemelgo (Geoenergia Lab, UDESC)
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
 
 This implementation is derived from concepts and algorithms developed in:
   MR-LBM: Moment Representation Lattice Boltzmann Method
@@ -37,55 +37,51 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Face and edge definitions along the lateral planes of the jet.
-    Periodicity is implemented at halo level.
-    See /src/blockHalo/halo.cuh for more information.
+    A class applying the Neumann boundary condition
+
+Namespace
+    LBM
 
 SourceFiles
-    lateralFacesAndEdges.cuh
-
-    This file is intended to be included directly inside a switch-case block.
-    Do NOT use include guards (#ifndef/#define/#endif).
+    Neumann.cuh
 
 \*---------------------------------------------------------------------------*/
 
-case normalVectorBase::WEST():
+#ifndef __MBLBM_NEUMANN_CUH
+#define __MBLBM_NEUMANN_CUH
+
+namespace LBM
 {
-    periodic::apply();
-    return;
+    struct Neumann
+    {
+        /**
+         * @brief Apply the Neumann boundary condition to a particular boundary node type
+         * @param[in] moments Moment array (rho, U, Pi)
+         * @param[in] incomings The incoming density and second-order moments
+         * @param[in] sharedBuffer Shared memory buffer
+         * @param[in] tid Thread ID within block
+         **/
+        template <class VelocitySet, const nodeType_t BoundaryCase, class SharedBuffer>
+        __device__ [[nodiscard]] static inline void apply(
+            momentsArray &moments,
+            const thread::array<scalar_t, 7> &incomings,
+            const SharedBuffer &sharedBuffer,
+            const device::label_t tid) noexcept
+        {
+            genericDirichlet<VelocitySet>::apply<BoundaryCase>(moments, incomings, sharedBuffer[idxShared<1>(tid)], sharedBuffer[idxShared<2>(tid)], sharedBuffer[idxShared<3>(tid)]);
+        }
+
+        /**
+         * @brief Get the index of the moment in the shared memory block
+         * @tparam Moment Index of the moment
+         * @param[in] tid Thread ID within the block
+         **/
+        template <const device::label_t Moment>
+        __device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxShared(const device::label_t tid) noexcept
+        {
+            return tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<Moment>();
+        }
+    };
 }
-case normalVectorBase::EAST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::SOUTH():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::NORTH():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::SOUTH_WEST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::NORTH_WEST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::SOUTH_EAST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::NORTH_EAST():
-{
-    periodic::apply();
-    return;
-}
+
+#endif

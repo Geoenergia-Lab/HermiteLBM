@@ -135,7 +135,7 @@ namespace LBM
     public:
         /**
          * @brief Constructs a thermal model for the isothermal case, calculating the diagonal correction term and Pics2 value based on the provided moments
-         * @param[in] moments The calculated moments array (rho, U, Pi)
+         * @param[in] moments Moment array (rho, U, Pi)
          **/
         __device__ __host__ [[nodiscard]] thermalModel<Isothermal>(const momentsArray &moments) noexcept
             : Base(Base::pics2(diagonalTerm_[m_i<0>()], diagonalTerm_[m_i<1>()], diagonalTerm_[m_i<2>()])),
@@ -153,7 +153,7 @@ namespace LBM
         /**
          * @brief Selects between the modified diagonal terms and the original diagonal components based on the moment index
          * @tparam i The moment index
-         * @param[in] moments The calculated moments array
+         * @param[in] moments Moment array (rho, U, Pi)
          * @return The selected moment value based on the index
          **/
         template <const host::label_t i>
@@ -204,7 +204,7 @@ namespace LBM
     public:
         /**
          * @brief Constructs a thermal model for the thermal case, calculating the Pics2 value based on the provided moments
-         * @param[in] moments The calculated moments array (rho, U, Pi)
+         * @param[in] moments Moment array (rho, U, Pi)
          **/
         __device__ __host__ [[nodiscard]] thermalModel<Thermal>(const momentsArray &moments) noexcept
             : Base(Base::pics2(moments[q_i<4>()], moments[q_i<7>()], moments[q_i<9>()])) {}
@@ -212,7 +212,7 @@ namespace LBM
         /**
          * @brief Selects between the modified diagonal terms and the original diagonal components based on the moment index
          * @tparam i The moment index
-         * @param[in] moments The calculated moments array
+         * @param[in] moments Moment array (rho, U, Pi)
          * @return The selected moment value based on the index
          **/
         template <const host::label_t i>

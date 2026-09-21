@@ -10,7 +10,7 @@
 /*---------------------------------------------------------------------------*\
 
 Copyright (C) 2023 UDESC Geoenergia Lab
-Authors: Nathan Duggins, Breno Gemelgo (Geoenergia Lab, UDESC)
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
 
 This implementation is derived from concepts and algorithms developed in:
   MR-LBM: Moment Representation Lattice Boltzmann Method
@@ -37,55 +37,45 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Face and edge definitions along the lateral planes of the jet.
-    Periodicity is implemented at halo level.
-    See /src/blockHalo/halo.cuh for more information.
+    Struct to apply a no-slip velocity profile to the velocity field
+
+Namespace
+    LBM
 
 SourceFiles
-    lateralFacesAndEdges.cuh
-
-    This file is intended to be included directly inside a switch-case block.
-    Do NOT use include guards (#ifndef/#define/#endif).
+    noSlipVelocityProfile.cuh
 
 \*---------------------------------------------------------------------------*/
 
-case normalVectorBase::WEST():
+#ifndef __MBLBM_NOSLIPVELOCITYPROFILE_CUH
+#define __MBLBM_NOSLIPVELOCITYPROFILE_CUH
+
+namespace LBM
 {
-    periodic::apply();
-    return;
+    /**
+     * @brief Apply the no-slip boundary condition to the velocity field
+     **/
+    struct noSlipVelocityProfile
+    {
+        /**
+         * @brief Get the boundary condition value
+         **/
+        __device__ [[nodiscard]] static inline consteval scalar_t value() noexcept
+        {
+            return static_cast<scalar_t>(0);
+        }
+
+        /**
+         * @brief Apply the boundary condition to the velocity field
+         * @param[out] moments Moment array (rho, U, Pi)
+         **/
+        __device__ [[nodiscard]] static inline constexpr void apply(momentsArray &moments) noexcept
+        {
+            moments[q_i<1>()] = value();
+            moments[q_i<2>()] = value();
+            moments[q_i<3>()] = value();
+        }
+    };
 }
-case normalVectorBase::EAST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::SOUTH():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::NORTH():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::SOUTH_WEST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::NORTH_WEST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::SOUTH_EAST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::NORTH_EAST():
-{
-    periodic::apply();
-    return;
-}
+
+#endif

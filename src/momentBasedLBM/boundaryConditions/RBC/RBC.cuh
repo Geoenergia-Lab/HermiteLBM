@@ -10,7 +10,7 @@
 /*---------------------------------------------------------------------------*\
 
 Copyright (C) 2023 UDESC Geoenergia Lab
-Authors: Nathan Duggins, Breno Gemelgo (Geoenergia Lab, UDESC)
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
 
 This implementation is derived from concepts and algorithms developed in:
   MR-LBM: Moment Representation Lattice Boltzmann Method
@@ -37,55 +37,31 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Face and edge definitions along the lateral planes of the jet.
-    Periodicity is implemented at halo level.
-    See /src/blockHalo/halo.cuh for more information.
+    Top-level header file for the regularized boundary condition (RBC)
+
+Namespace
+    LBM
 
 SourceFiles
-    lateralFacesAndEdges.cuh
-
-    This file is intended to be included directly inside a switch-case block.
-    Do NOT use include guards (#ifndef/#define/#endif).
+    RBC.cuh
 
 \*---------------------------------------------------------------------------*/
 
-case normalVectorBase::WEST():
+#ifndef __MBLBM_RBC_CUH
+#define __MBLBM_RBC_CUH
+
+namespace LBM
 {
-    periodic::apply();
-    return;
+
 }
-case normalVectorBase::EAST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::SOUTH():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::NORTH():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::SOUTH_WEST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::NORTH_WEST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::SOUTH_EAST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::NORTH_EAST():
-{
-    periodic::apply();
-    return;
-}
+
+#include "velocityProfile/velocityProfile.cuh"
+
+#include "Dirichlet/genericDirichlet.cuh"
+#include "Dirichlet/noSlip.cuh"
+
+#include "Neumann/Neumann.cuh"
+
+#include "periodic/periodic.cuh"
+
+#endif
