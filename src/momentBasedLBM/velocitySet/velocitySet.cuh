@@ -181,7 +181,7 @@ namespace LBM
          * @brief Folded sum of the moments for a given distribution function
          * @tparam i The moment index
          * @param[in] thermo The thermal model
-         * @param[in] moments Moment array (rho, U, Pi)
+         * @param[in] moments The calculated moments array
          **/
         template <const host::label_t i>
         __device__ __host__ [[nodiscard]] static inline constexpr scalar_t sum_moments(const ThermoModel &thermo, const momentsArray &moments) noexcept
@@ -196,7 +196,7 @@ namespace LBM
          * @brief Calculate the regularized distribution function from the moments
          * @tparam CalculateRest Whether to calculate the rest population (f_0) or not
          * @param[out] pop The distribution function array
-         * @param[in] moments Moment array (rho, U, Pi)
+         * @param[in] moments The calculated moments array
          **/
         template <const bool CalculateRest = true>
         __device__ __host__ static inline constexpr void reconstruct(

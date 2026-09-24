@@ -64,7 +64,7 @@ namespace LBM
         /**
          * @brief Saves a momentsArray object to its original pointers
          * @param[out] devPtrs The pointers to save to
-         * @param[in] moments Moment array (rho, U, Pi)
+         * @param[in] moments The array of 10 moments
          * @param[in] idx The index into the global array
          **/
         template <const host::label_t i>
@@ -91,7 +91,7 @@ namespace LBM
          * @param[in] devPtrs Collection of 10 pointers to device arrays on the GPU
          * @param[in] readBuffer Collection of read-only pointers to the block halo faces used during streaming
          * @param[in] writeBuffer Collection of mutable pointers to the block halo faces used after streaming
-         * @param[in] sharedBuffer Shared memory buffer
+         * @param[in] sharedBuffer Inline or externally stored shared memory buffer
          * @param[in] Tx Three-dimensional thread coordinates
          * @param[in] Bx Three-dimensional block coordinates
          **/
