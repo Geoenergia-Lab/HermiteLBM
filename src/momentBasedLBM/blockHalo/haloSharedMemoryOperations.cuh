@@ -152,7 +152,7 @@ __device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxFac
  * @tparam SharedBuffer Type of the shared memory buffer
  * @param[in] Tx Three-dimensional thread coordinates
  * @param[in] pop Array to store loaded population values
- * @param[in] sharedBuffer Shared memory buffer
+ * @param[in] sharedBuffer Inline or externally stored shared memory buffer
  **/
 template <const axis::type alpha, const int coeff, const device::label_t idxOffset, class SharedBuffer>
 __device__ static inline constexpr void transpose(const thread::coordinate &Tx, const thread::array<scalar_t, VelocitySet::Q()> &pop, SharedBuffer &sharedBuffer) noexcept
@@ -342,7 +342,7 @@ __device__ [[nodiscard]] static inline consteval device::label_t padded_stride()
  * @param[in] xz Coordinates on the Y-face
  * @param[in] Bx Three-dimensional block coordinates
  * @param[out] writeBuffer Collection of pointers to the halo faces
- * @param[in] sharedBuffer Shared memory buffer
+ * @param[in] sharedBuffer Shared array containing the packed population halos
  * @param[in] ID Linear index of the thread within the block
  * @param[in] c Shared memory channel (warp group ID)
  **/
@@ -411,7 +411,7 @@ __device__ [[nodiscard]] static inline consteval device::label_t n_cycles() noex
 /**
  * @brief Saves population data to halo regions for neighboring blocks
  * @tparam SharedBuffer Type of the shared memory buffer
- * @param[in] sharedBuffer Shared memory buffer
+ * @param[in] sharedBuffer Shared array containing the packed population halos
  * @param[out] writeBuffer Collection of pointers to the halo faces
  * @param[in] Tx Three-dimensional thread coordinates
  * @param[in] Bx Three-dimensional block coordinates

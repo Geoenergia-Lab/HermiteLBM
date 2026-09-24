@@ -49,43 +49,35 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-case normalVectorBase::WEST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::EAST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::SOUTH():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::NORTH():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::SOUTH_WEST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::NORTH_WEST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::SOUTH_EAST():
-{
-    periodic::apply();
-    return;
-}
-case normalVectorBase::NORTH_EAST():
-{
-    periodic::apply();
-    return;
-}
+// case normalVector::WEST():
+// {
+//     return;
+// }
+// case normalVector::EAST():
+// {
+//     return;
+// }
+// case normalVector::SOUTH():
+// {
+//     return;
+// }
+// case normalVector::NORTH():
+// {
+//     return;
+// }
+// case normalVector::SOUTH_WEST():
+// {
+//     return;
+// }
+// case normalVector::NORTH_WEST():
+// {
+//     return;
+// }
+// case normalVector::SOUTH_EAST():
+// {
+//     return;
+// }
+// case normalVector::NORTH_EAST():
+// {
+//     return;
+// }

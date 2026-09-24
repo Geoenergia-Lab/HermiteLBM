@@ -53,35 +53,17 @@ SourceFiles
 namespace LBM
 {
     /**
-     * @brief Type of boundary: either a wall (Dirichlet or Neumann), or a periodic boundary
-     **/
-    typedef enum boundaryTypeEnum : bool
-    {
-        WALL = 0,
-        PERIODIC = 1
-    } boundaryType;
-
-    /**
-     * @brief Boundary condition set applies a boundary condition or not
-     **/
-    typedef enum hasBoundaryConditionTypeEnum : bool
-    {
-        NO_CONDITION = 0,
-        APPLIES_CONDITION = 1
-    } hasBoundaryConditionType;
-
-    /**
      * @class boundaryConditionType
      * @brief Base class to determine periodicity of a particular boundary condition setup
      **/
-    template <const boundaryType TypeX, const boundaryType TypeY, const boundaryType TypeZ>
+    template <const bool PeriodicX, const bool PeriodicY, const bool PeriodicZ>
     class boundaryConditionType
     {
     public:
         /**
          * @brief Define the normal vector type
          **/
-        using NormalVector = normalVector<var3<bool>(TypeX, TypeY, TypeZ)>;
+        using NormalVector = normalVector<var3<bool>(PeriodicX, PeriodicY, PeriodicZ)>;
 
         /**
          * @brief Determine whether or not the boundary conditions are periodc along a particular axis
@@ -90,15 +72,8 @@ namespace LBM
         template <const axis::type alpha>
         __device__ __host__ [[nodiscard]] static inline consteval bool periodic() noexcept
         {
-            return var3<boundaryType>(TypeX, TypeY, TypeZ).value<alpha>();
-        }
-
-        /**
-         * @brief Switch determining whether or not the boundary condition actually applies a condition
-         **/
-        __device__ __host__ [[nodiscard]] static inline consteval hasBoundaryConditionType appliesCondition() noexcept
-        {
-            return static_cast<hasBoundaryConditionType>((TypeX == APPLIES_CONDITION) || (TypeY == APPLIES_CONDITION) || (TypeZ == APPLIES_CONDITION));
+            constexpr const var3<bool> result(PeriodicX, PeriodicY, PeriodicZ);
+            return result.value<alpha>();
         }
     };
 }
