@@ -52,33 +52,9 @@ SourceFiles
 
 namespace LBM
 {
-    /**
-     * @class normalVector
-     * @brief Represents boundary orientation using a bitmask encoding
-     *
-     * This class uses a compact bitmask representation to encode the position
-     * of lattice nodes relative to domain boundaries. It supports detection of:
-     * - Individual boundary faces (West, East, South, North, Back, Front)
-     * - Edge configurations (12 possible combinations)
-     * - Corner configurations (8 possible combinations)
-     * - Interior points (no boundaries)
-     *
-     * The bitmask uses a 7-bit representation where:
-     * - Bits 0-5: Individual boundary flags
-     * - Bit 6: General boundary indicator (any boundary)
-     **/
-    template <const var3<bool> Periodic>
-    class normalVector
+    class normalVectorBase
     {
     public:
-        /**
-         * @brief Constructs a normalVector from current thread indices
-         * @param[in] point The spatial coordinate of the point
-         * @return normalVector for the current thread's position
-         **/
-        __device__ [[nodiscard]] inline constexpr normalVector(const device::pointCoordinate &point) noexcept
-            : bitmask_(computeBitmask(point)) {}
-
         /**
          * @name Basic Boundary Flags
          * @brief Bitmask values for individual boundary faces
@@ -209,6 +185,34 @@ namespace LBM
         {
             return 0x00;
         }
+    };
+
+    /**
+     * @class normalVector
+     * @brief Represents boundary orientation using a bitmask encoding
+     *
+     * This class uses a compact bitmask representation to encode the position
+     * of lattice nodes relative to domain boundaries. It supports detection of:
+     * - Individual boundary faces (West, East, South, North, Back, Front)
+     * - Edge configurations (12 possible combinations)
+     * - Corner configurations (8 possible combinations)
+     * - Interior points (no boundaries)
+     *
+     * The bitmask uses a 7-bit representation where:
+     * - Bits 0-5: Individual boundary flags
+     * - Bit 6: General boundary indicator (any boundary)
+     **/
+    template <const var3<bool> Periodic>
+    class normalVector : public normalVectorBase
+    {
+    public:
+        /**
+         * @brief Constructs a normalVector from current thread indices
+         * @param[in] point The spatial coordinate of the point
+         * @return normalVector for the current thread's position
+         **/
+        __device__ [[nodiscard]] inline constexpr normalVector(const device::pointCoordinate &point) noexcept
+            : bitmask_(computeBitmask(point)) {}
 
         /**
          * @name Boundary detection
