@@ -116,7 +116,7 @@ int main(const int argc, const char *const argv[])
             }
 
             // Checkpoint
-            if constexpr (boundaryConditions::save())
+            if constexpr (BoundaryConditionCase::save())
             {
                 if (programCtrl.save(programCtrl.timeStep()))
                 {
@@ -128,7 +128,7 @@ int main(const int argc, const char *const argv[])
             momentBasedLBM.launch();
 
             // Evaluate the run-time function objects
-            if constexpr (boundaryConditions::save())
+            if constexpr (BoundaryConditionCase::save())
             {
                 runTimeObjects.calculate();
                 turbulenceStats.calculate();

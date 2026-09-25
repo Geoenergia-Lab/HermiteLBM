@@ -73,7 +73,7 @@ namespace LBM
         /**
          * @brief Saves thread population density to shared memory
          * @tparam N Size of shared memory array
-         * @param[in] pop Population density array for current thread
+         * @param[in] pop Population density array at current lattice node
          * @param[out] s_pop Shared memory array for population storage
          * @param[in] tid Thread ID within block
          *
