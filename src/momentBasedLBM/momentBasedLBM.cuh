@@ -56,4 +56,17 @@ SourceFiles
 #include "kernel.cuh"
 #include "kernelLauncher.cuh"
 
+namespace LBM
+{
+    /**
+     * @brief Make some templated types concrete
+     **/
+    using ScalarField = device::scalarField<VelocitySet, time::instantaneous, solutionField>;
+    using VectorField = device::vectorField<VelocitySet, time::instantaneous, solutionField>;
+    using SymmericTensorField = device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField>;
+    using ObjectRegistry = objectRegistry<VelocitySet>;
+    using TurbulenceStatistics = turbulenceStatistics<VelocitySet>;
+    using RunTimeIO = runTimeIO<VelocitySet>;
+}
+
 #endif

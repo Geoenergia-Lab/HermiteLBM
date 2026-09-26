@@ -50,25 +50,24 @@ SourceFiles
 #ifndef __MBLBM_MAIN_CUH
 #define __MBLBM_MAIN_CUH
 
-#include "../../../src/momentBasedLBM/momentBasedLBM.cuh"
-
 namespace LBM
 {
     /**
-     * @brief Make some templated types concrete
+     * @brief Define the boundary condition case
      **/
-    using ScalarField = device::scalarField<VelocitySet, time::instantaneous, solutionField>;
-    using VectorField = device::vectorField<VelocitySet, time::instantaneous, solutionField>;
-    using SymmericTensorField = device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField>;
-    using ObjectRegistry = objectRegistry<VelocitySet>;
-    using TurbulenceStatistics = turbulenceStatistics<VelocitySet>;
-    using RunTimeIO = runTimeIO<VelocitySet>;
+    // using BoundaryConditionCase = lidDrivenCavity;
+    using BoundaryConditionCase = jetFlow;
+    // using BoundaryConditionCase = benchmark;
 }
+
+#include "../../../src/momentBasedLBM/momentBasedLBM.cuh"
 
 using namespace LBM;
 
 int main(const int argc, const char *const argv[])
 {
+    validateBoundaryConditions<BoundaryConditionCase>();
+
     const signalHandler sigint_manager;
 
     programControl programCtrl(argc, argv);

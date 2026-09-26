@@ -48,8 +48,6 @@ Notes
 
 \*---------------------------------------------------------------------------*/
 
-constexpr const device::label_t FrontInterior = block::nz<device::label_t>() - 2;
-
 const device::label_t tid = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), FrontInterior);
 
 switch (boundaryNormal.nodeType())
@@ -65,12 +63,15 @@ case normalVectorBase::BACK():
     moments[2] = static_cast<scalar_t>(0);
     moments[3] = is_jet * device::U_Back[2];
 
+    const device::label_t tidBack = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), BackInterior);
+
     moments[4] = static_cast<scalar_t>(0);
     moments[5] = static_cast<scalar_t>(0);
-    moments[6] = static_cast<scalar_t>(0);
+    moments[6] = device::tau * velocitySetBase::cs2<scalar_t>() * (sharedBuffer[tidBack * (NUMBER_MOMENTS() + 1) + m_i<1>()]);
     moments[7] = static_cast<scalar_t>(0);
-    moments[8] = static_cast<scalar_t>(0);
-    moments[m_i<9>()] = is_jet * device::U_Back[2] * device::U_Back[2];
+    moments[8] = device::tau * velocitySetBase::cs2<scalar_t>() * (sharedBuffer[tidBack * (NUMBER_MOMENTS() + 1) + m_i<2>()]);
+    const scalar_t U_z = is_jet * device::U_Back[2];
+    moments[9] = (U_z * U_z) - (device::tau * velocitySetBase::cs2<scalar_t>() * (sharedBuffer[tidBack * (NUMBER_MOMENTS() + 1) + m_i<3>()] - U_z));
 
     return;
 }

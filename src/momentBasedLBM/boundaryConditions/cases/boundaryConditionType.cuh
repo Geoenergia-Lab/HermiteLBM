@@ -69,6 +69,16 @@ namespace LBM
         using NormalVector = normalVector<var3<bool>(PeriodicX, PeriodicY, PeriodicZ)>;
 
         /**
+         * @brief Define the block indices of the points on the interior of each boundary
+         **/
+        static constexpr const device::label_t WestInterior = 1;
+        static constexpr const device::label_t EastInterior = block::nx<device::label_t>() - 2;
+        static constexpr const device::label_t SouthInterior = 1;
+        static constexpr const device::label_t NorthInterior = block::ny<device::label_t>() - 2;
+        static constexpr const device::label_t BackInterior = 1;
+        static constexpr const device::label_t FrontInterior = block::nz<device::label_t>() - 2;
+
+        /**
          * @brief Determine whether or not the boundary conditions are periodc along a particular axis
          * @tparam alpha The axis direction (X, Y or Z)
          **/

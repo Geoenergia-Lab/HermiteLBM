@@ -53,19 +53,9 @@ SourceFiles
 namespace LBM
 {
     /**
-     * @brief New definition of the inlet plane
-     * **/
-    __device__ __host__ [[nodiscard]] inline consteval bool new_inlet() noexcept { return true; }
-
-    /**
      * @class jetFlow
      *
      * @brief Applies boundary conditions for turbulent jet simulations using moment representation
-     *
-     * This class implements the boundary condition treatment for the D3Q19 lattice
-     * model in turbulent jet flow simulations. It handles static wall, inflow, and
-     * outflow boundaries using moment-based boundary conditions derived from the
-     * regularized LBM approach.
      **/
     class jetFlow : public boundaryConditionType<true, true, false>
     {
@@ -117,21 +107,6 @@ namespace LBM
          * @param[in] pop Population density array at current lattice node
          * @param[out] moments Moment array (rho, U, Pi)
          * @param[in] boundaryNormal Normal vector information at boundary node
-         *
-         * This method implements the moment-based boundary condition treatment
-         * for the D3Q19 lattice model. Currently, it handles both the inflow
-         * (jet) boundary located at the BACK face of the domain and the outflow
-         * boundary located at the FRONT face.
-         *
-         * This method implements the moment-based boundary condition treatment for
-         * the D3Q19 lattice model. It handles various boundary types including:
-         * - Static wall boundaries (all velocity components zero)
-         * - Moving lid boundaries (prescribed tangential velocity)
-         * - Corner and edge cases with specialized treatment
-         *
-         * The method uses the regularized LBM approach to reconstruct boundary
-         * moments from available population information, ensuring mass conservation
-         * and appropriate stress conditions at boundaries.
          **/
         template <class VelocitySet, class SharedBuffer>
         __device__ static inline constexpr void calculate_moments(

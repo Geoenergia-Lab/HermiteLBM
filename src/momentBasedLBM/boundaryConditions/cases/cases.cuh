@@ -57,16 +57,13 @@ SourceFiles
 namespace LBM
 {
     /**
-     * @brief Define the boundary condition case
-     **/
-    using BoundaryConditionCase = lidDrivenCavity;
-    // using BoundaryConditionCase = jetFlow;
-    // using BoundaryConditionCase = benchmark;
-
-    /**
      * @brief Assert that the boundary condition is valid
      **/
-    static_assert(std::is_same_v<BoundaryConditionCase, jetFlow> || std::is_same_v<BoundaryConditionCase, lidDrivenCavity> || std::is_same_v<BoundaryConditionCase, benchmark>, "BoundaryConditionCase must be one of the available boundary condition types.");
+    template <class BoundaryCondition>
+    __device__ __host__ inline constexpr void validateBoundaryConditions() noexcept
+    {
+        static_assert(std::is_same_v<BoundaryCondition, jetFlow> || std::is_same_v<BoundaryCondition, lidDrivenCavity> || std::is_same_v<BoundaryCondition, benchmark>, "BoundaryConditionCase must be one of the available boundary condition types.");
+    }
 }
 
 #endif
