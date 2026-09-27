@@ -56,24 +56,13 @@ SourceFiles
 
 namespace LBM
 {
-    namespace boundaryConditions
+    /**
+     * @brief Assert that the boundary condition is valid
+     **/
+    template <class BoundaryCondition>
+    __device__ __host__ inline constexpr void validateBoundaryConditions() noexcept
     {
-        /**
-         * @brief Define the boundary condition case
-         **/
-        using Case = lidDrivenCavity;
-        // using Case = jetFlow;
-        // using Case = benchmark;
-
-        /**
-         * @brief Switch determining whether or not the simulation should save to a file
-         **/
-        __device__ __host__ [[nodiscard]] static inline consteval bool save() noexcept { return true; }
-
-        /**
-         * @brief Assert that the boundary condition is valid
-         **/
-        static_assert(std::is_same_v<Case, jetFlow> || std::is_same_v<Case, lidDrivenCavity> || std::is_same_v<Case, benchmark>, "Case must be one of the available boundary condition types.");
+        static_assert(std::is_same_v<BoundaryCondition, jetFlow> || std::is_same_v<BoundaryCondition, lidDrivenCavity> || std::is_same_v<BoundaryCondition, benchmark>, "BoundaryConditionCase must be one of the available boundary condition types.");
     }
 }
 
