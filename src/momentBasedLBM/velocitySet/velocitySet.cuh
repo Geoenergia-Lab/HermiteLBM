@@ -94,7 +94,7 @@ namespace LBM
          * @tparam alpha The first axis direction (X, Y, or Z)
          * @tparam beta The second axis direction (X, Y, or Z)
          * @tparam Args Additional argument types (empty or BoundaryNormal)
-         * @param[in] pop The distribution function array
+         * @param[in] pop Population density array at current lattice node
          * @param[in] args Normal vector information at boundary node (optional)
          * @return The calculated moment value
          **/
@@ -125,7 +125,7 @@ namespace LBM
          * @brief Calculate all moments of the distribution function
          * @tparam Args Additional argument types (empty or BoundaryNormal)
          * @param[out] moments The calculated moments array
-         * @param[in] pop The distribution function array
+         * @param[in] pop Population density array at current lattice node
          * @param[in] args Normal vector information at boundary node (optional)
          **/
         template <typename... Args>
@@ -181,7 +181,7 @@ namespace LBM
          * @brief Folded sum of the moments for a given distribution function
          * @tparam i The moment index
          * @param[in] thermo The thermal model
-         * @param[in] moments The calculated moments array
+         * @param[in] moments Moment array (rho, U, Pi)
          **/
         template <const host::label_t i>
         __device__ __host__ [[nodiscard]] static inline constexpr scalar_t sum_moments(const ThermoModel &thermo, const momentsArray &moments) noexcept
@@ -196,7 +196,7 @@ namespace LBM
          * @brief Calculate the regularized distribution function from the moments
          * @tparam CalculateRest Whether to calculate the rest population (f_0) or not
          * @param[out] pop The distribution function array
-         * @param[in] moments The calculated moments array
+         * @param[in] moments Moment array (rho, U, Pi)
          **/
         template <const bool CalculateRest = true>
         __device__ __host__ static inline constexpr void reconstruct(
@@ -227,7 +227,7 @@ namespace LBM
          * @tparam Args Additional argument types (empty or BoundaryNormal)
          * @param[out] moments The calculated moments array
          * @param[in] inv_rho Inverse of density
-         * @param[in] pop The distribution function array
+         * @param[in] pop Population density array at current lattice node
          * @param[in] args Normal vector information at boundary node (optional)
          **/
         template <const axis::type alpha, const axis::type beta, typename... Args>

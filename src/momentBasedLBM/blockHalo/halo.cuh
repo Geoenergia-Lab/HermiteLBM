@@ -366,7 +366,7 @@ namespace LBM
             /**
              * @brief Saves population data to halo regions for neighboring blocks in a specific direction
              * @tparam alpha The axis direction (X, Y or Z)
-             * @param[in] pop Array containing population values to save
+             * @param[in] pop Population density array at current lattice node
              * @param[out] writeBuffer Collection of pointers to the halo faces
              * @param[in] Tx Three-dimensional thread coordinates
              * @param[in] Bx Three-dimensional block coordinates

@@ -55,6 +55,16 @@ namespace LBM
     class velocitySetBase
     {
     public:
+        __device__ __host__ [[nodiscard]] static inline consteval scalar_t A() noexcept
+        {
+            return static_cast<scalar_t>(static_cast<double>(2) / static_cast<double>(3));
+        }
+
+        __device__ __host__ [[nodiscard]] static inline consteval scalar_t B() noexcept
+        {
+            return static_cast<scalar_t>(static_cast<double>(1) / static_cast<double>(3));
+        }
+
         /**
          * @brief Get the a^2 constant (3.0)
          * @tparam T The return type

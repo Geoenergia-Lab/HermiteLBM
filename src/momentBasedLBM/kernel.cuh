@@ -64,7 +64,7 @@ namespace LBM
         /**
          * @brief Saves a momentsArray object to its original pointers
          * @param[out] devPtrs The pointers to save to
-         * @param[in] moments The array of 10 moments
+         * @param[in] moments Moment array (rho, U, Pi)
          * @param[in] idx The index into the global array
          **/
         template <const host::label_t i>
@@ -252,13 +252,13 @@ namespace LBM
             {
                 __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet::Q(), NUMBER_MOMENTS<host::label_t>()>()> sharedBuffer;
 
-                momentBasedLBMKernel<VelocitySet, BoundaryConditions, Collision>::momentBasedLBM(devPtrs, readBuffer, writeBuffer, sharedBuffer, bzOffset);
+                momentBasedLBMKernel<VelocitySet, BoundaryConditionCase, Collision>::momentBasedLBM(devPtrs, readBuffer, writeBuffer, sharedBuffer, bzOffset);
             }
             else
             {
                 extern __shared__ scalar_t sharedBuffer[];
 
-                momentBasedLBMKernel<VelocitySet, BoundaryConditions, Collision>::momentBasedLBM(devPtrs, readBuffer, writeBuffer, sharedBuffer, bzOffset);
+                momentBasedLBMKernel<VelocitySet, BoundaryConditionCase, Collision>::momentBasedLBM(devPtrs, readBuffer, writeBuffer, sharedBuffer, bzOffset);
             }
         }
 

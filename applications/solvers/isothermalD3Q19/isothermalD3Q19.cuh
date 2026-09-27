@@ -55,7 +55,6 @@ SourceFiles
 
 namespace LBM
 {
-    using BoundaryConditions = boundaryConditions::Case;
     using VelocitySet = D3Q19<Isothermal>;
     using Collision = secondOrder;
 }

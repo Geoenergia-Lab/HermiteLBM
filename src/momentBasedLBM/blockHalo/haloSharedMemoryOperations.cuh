@@ -151,7 +151,7 @@ __device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxFac
  * @tparam idxOffset The constant offset into the shared memory for the particular block configuration
  * @tparam SharedBuffer Type of the shared memory buffer
  * @param[in] Tx Three-dimensional thread coordinates
- * @param[in] pop Array to store loaded population values
+ * @param[in] pop Population density array at current lattice node
  * @param[in] sharedBuffer Inline or externally stored shared memory buffer
  **/
 template <const axis::type alpha, const int coeff, const device::label_t idxOffset, class SharedBuffer>
@@ -202,7 +202,7 @@ __device__ __host__ [[nodiscard]] static inline consteval device::label_t smemOf
 /**
  * @brief Transposes population data in halo regions via the shared memory
  * @tparam alpha The axis direction (X, Y or Z)
- * @param[in] pop Array containing population values to save
+ * @param[in] pop Population density array at current lattice node
  * @param[out] sharedBuffer Inline or externally stored shared memory buffer
  * @param[in] point The global point coordinate
  * @param[in] Tx Three-dimensional thread coordinates
@@ -228,7 +228,7 @@ __device__ static inline constexpr void transpose_direction(
 
 /**
  * @brief Transposes the block halo into the shared memory for X and Y axes, saves the Z halo
- * @param[in] pop Array containing the populations for the particular thread
+ * @param[in] pop Population density array at current lattice node
  * @param[out] writeBuffer Collection of pointers to the halo faces
  * @param[out] sharedBuffer Inline or externally stored shared memory buffer
  * @param[in] Tx Three-dimensional thread coordinates
