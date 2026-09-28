@@ -55,7 +55,7 @@ SourceFiles
 
 namespace LBM
 {
-    template <class VelocitySet>
+    template <class VelocitySet, class BoundaryConditions>
     struct blockHaloInitialisationKernel
     {
         /**
@@ -86,6 +86,73 @@ namespace LBM
             device::halo<VelocitySet, boundaryConditionType<true, true, true>>::save(pop, moments, writeBuffer, Tx, Bx, point);
         }
 
+        template <const host::label_t i>
+        __device__ static inline constexpr void readFromPtr(
+            const device::ptrColl_t &devPtrs,
+            momentsArray &moments,
+            const device::label_t idx) noexcept
+        {
+            if constexpr (i == axis::index<axis::NO_DIRECTION>())
+            {
+                moments[i] = devPtrs.ptr<i>()[idx] + rho0();
+            }
+            else
+            {
+                moments[i] = devPtrs.ptr<i>()[idx];
+            }
+        }
+
+        template <const host::label_t i>
+        __device__ static inline constexpr void saveToPtr(
+            const device::ptrColl_t &devPtrs,
+            const momentsArray &moments,
+            const device::label_t idx) noexcept
+        {
+            if constexpr (i == axis::index<axis::NO_DIRECTION>())
+            {
+                devPtrs.ptr<i>()[idx] = moments[i] - rho0();
+            }
+            else
+            {
+                devPtrs.ptr<i>()[idx] = moments[i];
+            }
+        }
+
+        template <const bool firstTimeStep>
+        __device__ [[nodiscard]] static inline constexpr momentsArray readPtrs(
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> &devPtrs,
+            const device::label_t idx) noexcept
+        {
+            if constexpr (firstTimeStep)
+            {
+                return momentsArray{
+                    devPtrs.ptr<axis::index<axis::NO_DIRECTION>()>()[idx] + rho0(),
+                    devPtrs.ptr<axis::index<axis::X>()>()[idx],
+                    devPtrs.ptr<axis::index<axis::Y>()>()[idx],
+                    devPtrs.ptr<axis::index<axis::Z>()>()[idx],
+                    devPtrs.ptr<axis::index<axis::X, axis::X>()>()[idx],
+                    devPtrs.ptr<axis::index<axis::X, axis::Y>()>()[idx],
+                    devPtrs.ptr<axis::index<axis::X, axis::Z>()>()[idx],
+                    devPtrs.ptr<axis::index<axis::Y, axis::Y>()>()[idx],
+                    devPtrs.ptr<axis::index<axis::Y, axis::Z>()>()[idx],
+                    devPtrs.ptr<axis::index<axis::Z, axis::Z>()>()[idx]};
+            }
+            else
+            {
+                return momentsArray{
+                    rho0(),
+                    static_cast<scalar_t>(0),
+                    static_cast<scalar_t>(0),
+                    static_cast<scalar_t>(0),
+                    static_cast<scalar_t>(0),
+                    static_cast<scalar_t>(0),
+                    static_cast<scalar_t>(0),
+                    static_cast<scalar_t>(0),
+                    static_cast<scalar_t>(0),
+                    static_cast<scalar_t>(0)};
+            }
+        }
+
         /**
          * @brief Initialises the block halo for a single lattice block.
          *
@@ -96,8 +163,9 @@ namespace LBM
          * block, and writes the reconstructed population data to the halo storage.
          **/
         __device__ static inline void haloInitialisation(
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> &devPtrs,
-            const device::ptrCollection<12, scalar_t> &haloBuffer) noexcept
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> &devPtrs,
+            const device::ptrCollection<12, scalar_t> &haloBuffer,
+            const bool firstTimeStep) noexcept
         {
             const device::ptrCollection<6, scalar_t> readBuffer(
                 haloBuffer.ptr<0>(), haloBuffer.ptr<1>(), haloBuffer.ptr<2>(),
@@ -126,21 +194,54 @@ namespace LBM
             }
 
             // Coalesced read from global memory
-            const momentsArray moments{
-                devPtrs.ptr<axis::index<axis::NO_DIRECTION>()>()[idx] + rho0(),
-                devPtrs.ptr<axis::index<axis::X>()>()[idx],
-                devPtrs.ptr<axis::index<axis::Y>()>()[idx],
-                devPtrs.ptr<axis::index<axis::Z>()>()[idx],
-                devPtrs.ptr<axis::index<axis::X, axis::X>()>()[idx],
-                devPtrs.ptr<axis::index<axis::X, axis::Y>()>()[idx],
-                devPtrs.ptr<axis::index<axis::X, axis::Z>()>()[idx],
-                devPtrs.ptr<axis::index<axis::Y, axis::Y>()>()[idx],
-                devPtrs.ptr<axis::index<axis::Y, axis::Z>()>()[idx],
-                devPtrs.ptr<axis::index<axis::Z, axis::Z>()>()[idx]};
+            momentsArray moments{
+                rho0(),
+                static_cast<scalar_t>(0),
+                static_cast<scalar_t>(0),
+                static_cast<scalar_t>(0),
+                static_cast<scalar_t>(0),
+                static_cast<scalar_t>(0),
+                static_cast<scalar_t>(0),
+                static_cast<scalar_t>(0),
+                static_cast<scalar_t>(0),
+                static_cast<scalar_t>(0)};
+
+            if (!firstTimeStep)
+            {
+                device::constexpr_for<0, NUMBER_MOMENTS()>(
+                    [&](const auto moment)
+                    {
+                        readFromPtr<moment>(devPtrs, moments, idx);
+                    });
+            }
+
             block::sync();
+
+            // Reconstruct the population from the moments
+            thread::array<scalar_t, VelocitySet::Q()> pop;
+            VelocitySet::reconstruct(pop, moments);
+
+            __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<0, NUMBER_MOMENTS<host::label_t>()>()> sharedBuffer;
+
+            if constexpr (BoundaryConditions::appliesCondition())
+            {
+                BoundaryConditions::template calculate_moments<VelocitySet>(pop, moments, sharedBuffer, Tx, point, tid);
+            }
+            else
+            {
+                VelocitySet::template calculate_moments(moments, pop);
+            }
+
+            velocitySetBase::scale(moments);
 
             // Save the halo
             saveHalo(moments, readBuffer, writeBuffer, Tx, Bx, point);
+
+            device::constexpr_for<0, NUMBER_MOMENTS()>(
+                [&](const auto moment)
+                {
+                    saveToPtr<moment>(devPtrs, moments, idx);
+                });
         }
     };
 
@@ -153,10 +254,11 @@ namespace LBM
          * @param[in] haloBuffer Pointer collection holding the halo buffers for the block.
          **/
         __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisationD3Q19Thermal(
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
-            const device::ptrCollection<12, scalar_t> haloBuffer)
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
+            const device::ptrCollection<12, scalar_t> haloBuffer,
+            const bool firstTimeStep)
         {
-            blockHaloInitialisationKernel<D3Q19<Thermal>>::haloInitialisation(devPtrs, haloBuffer);
+            blockHaloInitialisationKernel<D3Q19<Thermal>, BoundaryConditionCase>::haloInitialisation(devPtrs, haloBuffer, firstTimeStep);
         }
 
         /**
@@ -166,10 +268,11 @@ namespace LBM
          * @param[in] haloBuffer Pointer collection holding the halo buffers for the block.
          **/
         __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisationD3Q19Isothermal(
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
-            const device::ptrCollection<12, scalar_t> haloBuffer)
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
+            const device::ptrCollection<12, scalar_t> haloBuffer,
+            const bool firstTimeStep)
         {
-            blockHaloInitialisationKernel<D3Q19<Isothermal>>::haloInitialisation(devPtrs, haloBuffer);
+            blockHaloInitialisationKernel<D3Q19<Isothermal>, BoundaryConditionCase>::haloInitialisation(devPtrs, haloBuffer, firstTimeStep);
         }
 
         /**
@@ -179,10 +282,11 @@ namespace LBM
          * @param[in] haloBuffer Pointer collection holding the halo buffers for the block.
          **/
         __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisationD3Q27Thermal(
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
-            const device::ptrCollection<12, scalar_t> haloBuffer)
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
+            const device::ptrCollection<12, scalar_t> haloBuffer,
+            const bool firstTimeStep)
         {
-            blockHaloInitialisationKernel<D3Q27<Thermal>>::haloInitialisation(devPtrs, haloBuffer);
+            blockHaloInitialisationKernel<D3Q27<Thermal>, BoundaryConditionCase>::haloInitialisation(devPtrs, haloBuffer, firstTimeStep);
         }
 
         /**
@@ -192,10 +296,11 @@ namespace LBM
          * @param[in] haloBuffer Pointer collection holding the halo buffers for the block.
          **/
         __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisationD3Q27Isothermal(
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs,
-            const device::ptrCollection<12, scalar_t> haloBuffer)
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
+            const device::ptrCollection<12, scalar_t> haloBuffer,
+            const bool firstTimeStep)
         {
-            blockHaloInitialisationKernel<D3Q27<Isothermal>>::haloInitialisation(devPtrs, haloBuffer);
+            blockHaloInitialisationKernel<D3Q27<Isothermal>, BoundaryConditionCase>::haloInitialisation(devPtrs, haloBuffer, firstTimeStep);
         }
 
         /**
