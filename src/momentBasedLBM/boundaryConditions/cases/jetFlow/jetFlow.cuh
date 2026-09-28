@@ -101,6 +101,28 @@ namespace LBM
         }
 
     private:
+        template <const bool FixDensity, class SharedBuffer>
+        __device__ static inline constexpr void smemNeumann(momentsArray &moments, const device::label_t tidOutlet, const SharedBuffer &sharedBuffer) noexcept
+        {
+            if constexpr (FixDensity)
+            {
+                moments[0] = rho0();
+                device::constexpr_for<1, NUMBER_MOMENTS()>(
+                    [&](const auto moment)
+                    {
+                        moments[m_i<moment>()] = sharedBuffer[tidOutlet * (NUMBER_MOMENTS() + 1) + m_i<moment>()];
+                    });
+            }
+            else
+            {
+                device::constexpr_for<0, NUMBER_MOMENTS()>(
+                    [&](const auto moment)
+                    {
+                        moments[m_i<moment>()] = sharedBuffer[tidOutlet * (NUMBER_MOMENTS() + 1) + m_i<moment>()];
+                    });
+            }
+        }
+
         /**
          * @brief Calculate moment variables at boundary nodes
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
@@ -128,6 +150,20 @@ namespace LBM
         __device__ [[nodiscard]] static inline scalar_t center_y() noexcept
         {
             return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::n<axis::Y>() - 1);
+        }
+
+        static constexpr const scalar_t sigma = static_cast<scalar_t>(8);
+
+        static constexpr const scalar_t pi = static_cast<scalar_t>(std::numbers::pi);
+
+        __device__ [[nodiscard]] static inline scalar_t dudx(const scalar_t x, const scalar_t y) noexcept
+        {
+            return -(x * (std::exp(-pow<2>(device::L_char - static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)) - std::exp(-pow<2>(device::L_char + static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)))) / (std::sqrt(sigma) * std::sqrt(pi) * std::erf(device::L_char / (static_cast<scalar_t>(2) * std::sqrt(sigma))) * std::sqrt(pow<2>(x) + pow<2>(y)));
+        }
+
+        __device__ [[nodiscard]] static inline scalar_t dudy(const scalar_t x, const scalar_t y) noexcept
+        {
+            return -(y * (std::exp(-pow<2>(device::L_char - static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)) - std::exp(-pow<2>(device::L_char + static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)))) / (std::sqrt(sigma) * std::sqrt(pi) * std::erf(device::L_char / (static_cast<scalar_t>(2) * std::sqrt(sigma))) * std::sqrt(pow<2>(x) + pow<2>(y)));
         }
 
         __device__ [[nodiscard]] static inline scalar_t radius() noexcept

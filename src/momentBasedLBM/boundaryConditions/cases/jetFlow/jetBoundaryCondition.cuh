@@ -48,30 +48,36 @@ Notes
 
 \*---------------------------------------------------------------------------*/
 
-const device::label_t tid = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), FrontInterior);
+const device::label_t tidOutlet = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), FrontInterior);
+const device::label_t tidInlet = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), BackInterior);
+
+constexpr const bool lateralNeumann = false;
+constexpr const bool fixOutletDensity = false;
 
 switch (boundaryNormal.nodeType())
 {
 // Round inflow + no-slip
 case normalVectorBase::BACK():
 {
-    const scalar_t is_jet = static_cast<scalar_t>(rms_sq(point.value<axis::X, scalar_t>() - center_x(), point.value<axis::Y, scalar_t>() - center_y()) <= r2());
+    const scalar_t r = std::sqrt(pow<2>(point.value<axis::X, scalar_t>() - center_x()) + pow<2>(point.value<axis::Y, scalar_t>() - center_y()));
 
-    moments[0] = rho0();
+    const scalar_t A = (std::erf((device::L_char - static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * std::sqrt(sigma))) + std::erf((device::L_char + static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * std::sqrt(sigma)))) / (static_cast<scalar_t>(2) * std::erf(device::L_char / (static_cast<scalar_t>(2) * std::sqrt(sigma))));
+    const scalar_t B = static_cast<scalar_t>(1) - pow<2>(A);
+
+    const scalar_t U_z = A * device::U_Back[2];
 
     moments[1] = static_cast<scalar_t>(0);
     moments[2] = static_cast<scalar_t>(0);
-    moments[3] = is_jet * device::U_Back[2];
+    moments[3] = U_z;
 
-    const device::label_t tidBack = block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), BackInterior);
+    moments[0] = rho0();
 
     moments[4] = static_cast<scalar_t>(0);
     moments[5] = static_cast<scalar_t>(0);
-    moments[6] = device::tau * velocitySetBase::cs2<scalar_t>() * (sharedBuffer[tidBack * (NUMBER_MOMENTS() + 1) + m_i<1>()]);
+    moments[6] = -device::tau * velocitySetBase::cs2<scalar_t>() * dudx(point.value<axis::X, scalar_t>() - center_x(), point.value<axis::Y, scalar_t>() - center_y());
     moments[7] = static_cast<scalar_t>(0);
-    moments[8] = device::tau * velocitySetBase::cs2<scalar_t>() * (sharedBuffer[tidBack * (NUMBER_MOMENTS() + 1) + m_i<2>()]);
-    const scalar_t U_z = is_jet * device::U_Back[2];
-    moments[9] = (U_z * U_z) - (device::tau * velocitySetBase::cs2<scalar_t>() * (sharedBuffer[tidBack * (NUMBER_MOMENTS() + 1) + m_i<3>()] - U_z));
+    moments[8] = -device::tau * velocitySetBase::cs2<scalar_t>() * dudy(point.value<axis::X, scalar_t>() - center_x(), point.value<axis::Y, scalar_t>() - center_y());
+    moments[9] = pow<2>(U_z);
 
     return;
 }

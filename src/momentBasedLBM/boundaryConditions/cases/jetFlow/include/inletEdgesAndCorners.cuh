@@ -50,69 +50,81 @@ SourceFiles
 // Static corners
 case normalVectorBase::SOUTH_WEST_BACK():
 {
-    moments[0] = rho0();
+    // moments[1] = static_cast<scalar_t>(0);
+    // moments[2] = static_cast<scalar_t>(0);
+    // moments[3] = static_cast<scalar_t>(0);
 
-    moments[1] = static_cast<scalar_t>(0);
-    moments[2] = static_cast<scalar_t>(0);
-    moments[3] = static_cast<scalar_t>(0);
+    // moments[4] = static_cast<scalar_t>(0);
+    // moments[5] = static_cast<scalar_t>(0);
+    // moments[6] = static_cast<scalar_t>(0);
+    // moments[7] = static_cast<scalar_t>(0);
+    // moments[8] = static_cast<scalar_t>(0);
+    // moments[9] = static_cast<scalar_t>(0);
 
-    moments[4] = static_cast<scalar_t>(0);
-    moments[5] = static_cast<scalar_t>(0);
-    moments[6] = static_cast<scalar_t>(0);
-    moments[7] = static_cast<scalar_t>(0);
-    moments[8] = static_cast<scalar_t>(0);
-    moments[9] = static_cast<scalar_t>(0);
+    // moments[0] = rho0();
+
+    noSlipVelocityBC::apply<normalVectorBase::SOUTH_WEST_BACK()>(moments);
+    noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_WEST_BACK()>(moments, pop);
 
     return;
 }
 case normalVectorBase::SOUTH_EAST_BACK():
 {
-    moments[0] = rho0();
+    // moments[1] = static_cast<scalar_t>(0);
+    // moments[2] = static_cast<scalar_t>(0);
+    // moments[3] = static_cast<scalar_t>(0);
 
-    moments[1] = static_cast<scalar_t>(0);
-    moments[2] = static_cast<scalar_t>(0);
-    moments[3] = static_cast<scalar_t>(0);
+    // moments[4] = static_cast<scalar_t>(0);
+    // moments[5] = static_cast<scalar_t>(0);
+    // moments[6] = static_cast<scalar_t>(0);
+    // moments[7] = static_cast<scalar_t>(0);
+    // moments[8] = static_cast<scalar_t>(0);
+    // moments[9] = static_cast<scalar_t>(0);
 
-    moments[4] = static_cast<scalar_t>(0);
-    moments[5] = static_cast<scalar_t>(0);
-    moments[6] = static_cast<scalar_t>(0);
-    moments[7] = static_cast<scalar_t>(0);
-    moments[8] = static_cast<scalar_t>(0);
-    moments[9] = static_cast<scalar_t>(0);
+    // moments[0] = rho0();
+
+    noSlipVelocityBC::apply<normalVectorBase::SOUTH_EAST_BACK()>(moments);
+    noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_EAST_BACK()>(moments, pop);
 
     return;
 }
 case normalVectorBase::NORTH_WEST_BACK():
 {
-    moments[0] = rho0();
+    // moments[1] = static_cast<scalar_t>(0);
+    // moments[2] = static_cast<scalar_t>(0);
+    // moments[3] = static_cast<scalar_t>(0);
 
-    moments[1] = static_cast<scalar_t>(0);
-    moments[2] = static_cast<scalar_t>(0);
-    moments[3] = static_cast<scalar_t>(0);
+    // moments[4] = static_cast<scalar_t>(0);
+    // moments[5] = static_cast<scalar_t>(0);
+    // moments[6] = static_cast<scalar_t>(0);
+    // moments[7] = static_cast<scalar_t>(0);
+    // moments[8] = static_cast<scalar_t>(0);
+    // moments[9] = static_cast<scalar_t>(0);
 
-    moments[4] = static_cast<scalar_t>(0);
-    moments[5] = static_cast<scalar_t>(0);
-    moments[6] = static_cast<scalar_t>(0);
-    moments[7] = static_cast<scalar_t>(0);
-    moments[8] = static_cast<scalar_t>(0);
-    moments[9] = static_cast<scalar_t>(0);
+    // moments[0] = rho0();
+
+    noSlipVelocityBC::apply<normalVectorBase::NORTH_WEST_BACK()>(moments);
+    noSlipBC::apply<VelocitySet, normalVectorBase::NORTH_WEST_BACK()>(moments, pop);
 
     return;
 }
 case normalVectorBase::NORTH_EAST_BACK():
 {
-    moments[0] = rho0();
+    // moments[1] = static_cast<scalar_t>(0);
+    // moments[2] = static_cast<scalar_t>(0);
+    // moments[3] = static_cast<scalar_t>(0);
 
-    moments[1] = static_cast<scalar_t>(0);
-    moments[2] = static_cast<scalar_t>(0);
-    moments[3] = static_cast<scalar_t>(0);
+    // moments[4] = static_cast<scalar_t>(0);
+    // moments[5] = static_cast<scalar_t>(0);
+    // moments[6] = static_cast<scalar_t>(0);
+    // moments[7] = static_cast<scalar_t>(0);
+    // moments[8] = static_cast<scalar_t>(0);
+    // moments[9] = static_cast<scalar_t>(0);
 
-    moments[4] = static_cast<scalar_t>(0);
-    moments[5] = static_cast<scalar_t>(0);
-    moments[6] = static_cast<scalar_t>(0);
-    moments[7] = static_cast<scalar_t>(0);
-    moments[8] = static_cast<scalar_t>(0);
-    moments[9] = static_cast<scalar_t>(0);
+    // moments[0] = rho0();
+
+    noSlipVelocityBC::apply<normalVectorBase::NORTH_EAST_BACK()>(moments);
+    noSlipBC::apply<VelocitySet, normalVectorBase::NORTH_EAST_BACK()>(moments, pop);
 
     return;
 }
@@ -120,69 +132,81 @@ case normalVectorBase::NORTH_EAST_BACK():
 // Static edges
 case normalVectorBase::WEST_BACK():
 {
-    moments[0] = rho0();
+    // moments[1] = static_cast<scalar_t>(0);
+    // moments[2] = static_cast<scalar_t>(0);
+    // moments[3] = static_cast<scalar_t>(0);
 
-    moments[1] = static_cast<scalar_t>(0);
-    moments[2] = static_cast<scalar_t>(0);
-    moments[3] = static_cast<scalar_t>(0);
+    // moments[4] = static_cast<scalar_t>(0);
+    // moments[5] = static_cast<scalar_t>(0);
+    // moments[6] = static_cast<scalar_t>(0);
+    // moments[7] = static_cast<scalar_t>(0);
+    // moments[8] = static_cast<scalar_t>(0);
+    // moments[9] = static_cast<scalar_t>(0);
 
-    moments[4] = static_cast<scalar_t>(0);
-    moments[5] = static_cast<scalar_t>(0);
-    moments[6] = static_cast<scalar_t>(0);
-    moments[7] = static_cast<scalar_t>(0);
-    moments[8] = static_cast<scalar_t>(0);
-    moments[9] = static_cast<scalar_t>(0);
+    // moments[0] = rho0();
+
+    noSlipVelocityBC::apply<normalVectorBase::WEST_BACK()>(moments);
+    noSlipBC::apply<VelocitySet, normalVectorBase::WEST_BACK()>(moments, pop);
 
     return;
 }
 case normalVectorBase::EAST_BACK():
 {
-    moments[0] = rho0();
+    // moments[1] = static_cast<scalar_t>(0);
+    // moments[2] = static_cast<scalar_t>(0);
+    // moments[3] = static_cast<scalar_t>(0);
 
-    moments[1] = static_cast<scalar_t>(0);
-    moments[2] = static_cast<scalar_t>(0);
-    moments[3] = static_cast<scalar_t>(0);
+    // moments[4] = static_cast<scalar_t>(0);
+    // moments[5] = static_cast<scalar_t>(0);
+    // moments[6] = static_cast<scalar_t>(0);
+    // moments[7] = static_cast<scalar_t>(0);
+    // moments[8] = static_cast<scalar_t>(0);
+    // moments[9] = static_cast<scalar_t>(0);
 
-    moments[4] = static_cast<scalar_t>(0);
-    moments[5] = static_cast<scalar_t>(0);
-    moments[6] = static_cast<scalar_t>(0);
-    moments[7] = static_cast<scalar_t>(0);
-    moments[8] = static_cast<scalar_t>(0);
-    moments[9] = static_cast<scalar_t>(0);
+    // moments[0] = rho0();
+
+    noSlipVelocityBC::apply<normalVectorBase::EAST_BACK()>(moments);
+    noSlipBC::apply<VelocitySet, normalVectorBase::EAST_BACK()>(moments, pop);
 
     return;
 }
 case normalVectorBase::SOUTH_BACK():
 {
-    moments[0] = rho0();
+    // moments[1] = static_cast<scalar_t>(0);
+    // moments[2] = static_cast<scalar_t>(0);
+    // moments[3] = static_cast<scalar_t>(0);
 
-    moments[1] = static_cast<scalar_t>(0);
-    moments[2] = static_cast<scalar_t>(0);
-    moments[3] = static_cast<scalar_t>(0);
+    // moments[4] = static_cast<scalar_t>(0);
+    // moments[5] = static_cast<scalar_t>(0);
+    // moments[6] = static_cast<scalar_t>(0);
+    // moments[7] = static_cast<scalar_t>(0);
+    // moments[8] = static_cast<scalar_t>(0);
+    // moments[9] = static_cast<scalar_t>(0);
 
-    moments[4] = static_cast<scalar_t>(0);
-    moments[5] = static_cast<scalar_t>(0);
-    moments[6] = static_cast<scalar_t>(0);
-    moments[7] = static_cast<scalar_t>(0);
-    moments[8] = static_cast<scalar_t>(0);
-    moments[9] = static_cast<scalar_t>(0);
+    // moments[0] = rho0();
+
+    noSlipVelocityBC::apply<normalVectorBase::SOUTH_BACK()>(moments);
+    noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_BACK()>(moments, pop);
 
     return;
 }
 case normalVectorBase::NORTH_BACK():
 {
-    moments[0] = rho0();
+    // moments[1] = static_cast<scalar_t>(0);
+    // moments[2] = static_cast<scalar_t>(0);
+    // moments[3] = static_cast<scalar_t>(0);
 
-    moments[1] = static_cast<scalar_t>(0);
-    moments[2] = static_cast<scalar_t>(0);
-    moments[3] = static_cast<scalar_t>(0);
+    // moments[4] = static_cast<scalar_t>(0);
+    // moments[5] = static_cast<scalar_t>(0);
+    // moments[6] = static_cast<scalar_t>(0);
+    // moments[7] = static_cast<scalar_t>(0);
+    // moments[8] = static_cast<scalar_t>(0);
+    // moments[9] = static_cast<scalar_t>(0);
 
-    moments[4] = static_cast<scalar_t>(0);
-    moments[5] = static_cast<scalar_t>(0);
-    moments[6] = static_cast<scalar_t>(0);
-    moments[7] = static_cast<scalar_t>(0);
-    moments[8] = static_cast<scalar_t>(0);
-    moments[9] = static_cast<scalar_t>(0);
+    // moments[0] = rho0();
+
+    noSlipVelocityBC::apply<normalVectorBase::NORTH_BACK()>(moments);
+    noSlipBC::apply<VelocitySet, normalVectorBase::NORTH_BACK()>(moments, pop);
 
     return;
 }
