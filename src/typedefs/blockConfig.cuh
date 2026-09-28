@@ -160,6 +160,12 @@ namespace LBM
         {
             constexpr const host::label_t A = (Q - static_cast<host::label_t>(1)) * block::stride<host::label_t>();
             constexpr const host::label_t B = block::size<host::label_t>() * (nVars + static_cast<host::label_t>(1));
+
+            if constexpr (Q == 0)
+            {
+                return B * variableSize;
+            }
+
             return (A > B ? A : B) * variableSize;
         }
 

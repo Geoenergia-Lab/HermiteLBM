@@ -50,15 +50,15 @@ SourceFiles
 #ifndef __MBLBM_MAIN_CUH
 #define __MBLBM_MAIN_CUH
 
-namespace LBM
-{
-    /**
-     * @brief Define the boundary condition case
-     **/
-    // using BoundaryConditionCase = lidDrivenCavity;
-    using BoundaryConditionCase = jetFlow;
-    // using BoundaryConditionCase = benchmark;
-}
+// namespace LBM
+// {
+//     /**
+//      * @brief Define the boundary condition case
+//      **/
+//     // using BoundaryConditionCase = lidDrivenCavity;
+//     using BoundaryConditionCase = jetFlow;
+//     // using BoundaryConditionCase = benchmark;
+// }
 
 #include "../../../src/momentBasedLBM/momentBasedLBM.cuh"
 
