@@ -51,12 +51,7 @@ Notes
 // Faces
 case normalVectorBase::FRONT():
 {
-    // Classic Neumann
-    moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
-
-    Dirichlet::apply<VelocitySet, normalVectorBase::FRONT()>(moments, pop);
+    smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
 
     return;
 }
@@ -64,45 +59,37 @@ case normalVectorBase::FRONT():
 // Edges
 case normalVectorBase::WEST_FRONT():
 {
-    // Classic Neumann
-    moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
-
-    Dirichlet::apply<VelocitySet, normalVectorBase::FRONT()>(moments, pop);
+    if constexpr (lateralNeumann)
+    {
+        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
+    }
 
     return;
 }
 case normalVectorBase::EAST_FRONT():
 {
-    // Classic Neumann
-    moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
-
-    Dirichlet::apply<VelocitySet, normalVectorBase::FRONT()>(moments, pop);
+    if constexpr (lateralNeumann)
+    {
+        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
+    }
 
     return;
 }
 case normalVectorBase::SOUTH_FRONT():
 {
-    // Classic Neumann
-    moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
-
-    Dirichlet::apply<VelocitySet, normalVectorBase::FRONT()>(moments, pop);
+    if constexpr (lateralNeumann)
+    {
+        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
+    }
 
     return;
 }
 case normalVectorBase::NORTH_FRONT():
 {
-    // Classic Neumann
-    moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
-
-    Dirichlet::apply<VelocitySet, normalVectorBase::FRONT()>(moments, pop);
+    if constexpr (lateralNeumann)
+    {
+        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
+    }
 
     return;
 }
@@ -110,45 +97,37 @@ case normalVectorBase::NORTH_FRONT():
 // Edges
 case normalVectorBase::SOUTH_WEST_FRONT():
 {
-    // Classic Neumann
-    moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
-
-    Dirichlet::apply<VelocitySet, normalVectorBase::FRONT()>(moments, pop);
+    if constexpr (lateralNeumann)
+    {
+        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
+    }
 
     return;
 }
 case normalVectorBase::NORTH_WEST_FRONT():
 {
-    // Classic Neumann
-    moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
-
-    Dirichlet::apply<VelocitySet, normalVectorBase::FRONT()>(moments, pop);
+    if constexpr (lateralNeumann)
+    {
+        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
+    }
 
     return;
 }
 case normalVectorBase::SOUTH_EAST_FRONT():
 {
-    // Classic Neumann
-    moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
-
-    Dirichlet::apply<VelocitySet, normalVectorBase::FRONT()>(moments, pop);
+    if constexpr (lateralNeumann)
+    {
+        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
+    }
 
     return;
 }
 case normalVectorBase::NORTH_EAST_FRONT():
 {
-    // Classic Neumann
-    moments[m_i<1>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = sharedBuffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
-
-    Dirichlet::apply<VelocitySet, normalVectorBase::FRONT()>(moments, pop);
+    if constexpr (lateralNeumann)
+    {
+        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
+    }
 
     return;
 }
