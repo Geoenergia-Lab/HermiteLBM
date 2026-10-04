@@ -77,8 +77,9 @@ namespace LBM
             const device::pointCoordinate &point,
             const device::label_t tid) noexcept
         {
-            // Compute post-stream moments
-            VelocitySet::template calculate_moments(moments, pop);
+            // Calculate the moments at the boundary
+            const NormalVector boundaryNormal(point);
+            VelocitySet::template calculate_moments(moments, pop, boundaryNormal);
 
             // Update the shared buffer with the refreshed moments
             device::constexpr_for<0, NUMBER_MOMENTS()>(
@@ -89,10 +90,6 @@ namespace LBM
                 });
 
             block::sync();
-
-            // Calculate the moments at the boundary
-
-            const NormalVector boundaryNormal(point);
 
             if (boundaryNormal.isBoundary())
             {

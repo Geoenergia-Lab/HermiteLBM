@@ -185,6 +185,12 @@ namespace LBM
         {
             return 0x00;
         }
+
+        template <typename T, const nodeType_t Boundary>
+        __device__ __host__ [[nodiscard]] static inline constexpr bool is(const nodeType_t bitMask) noexcept
+        {
+            return static_cast<T>(static_cast<bool>(bitMask & Boundary));
+        }
     };
 
     /**
@@ -206,6 +212,8 @@ namespace LBM
     class normalVector : public normalVectorBase
     {
     public:
+        using Base = normalVectorBase;
+
         /**
          * @brief Constructs a normalVector from current thread indices
          * @param[in] point The spatial coordinate of the point
@@ -222,7 +230,7 @@ namespace LBM
         template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isWest() const noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitmask_ & WEST()));
+            return Base::is<T, Base::WEST()>(bitmask_);
         }
 
         /**
@@ -233,7 +241,7 @@ namespace LBM
         template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isEast() const noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitmask_ & EAST()));
+            return Base::is<T, Base::EAST()>(bitmask_);
         }
 
         /**
@@ -244,7 +252,7 @@ namespace LBM
         template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isSouth() const noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitmask_ & SOUTH()));
+            return Base::is<T, Base::SOUTH()>(bitmask_);
         }
 
         /**
@@ -255,7 +263,7 @@ namespace LBM
         template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isNorth() const noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitmask_ & NORTH()));
+            return Base::is<T, Base::NORTH()>(bitmask_);
         }
 
         /**
@@ -266,7 +274,7 @@ namespace LBM
         template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isBack() const noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitmask_ & BACK()));
+            return Base::is<T, Base::BACK()>(bitmask_);
         }
 
         /**
@@ -277,7 +285,7 @@ namespace LBM
         template <typename T = bool>
         __device__ __host__ [[nodiscard]] inline constexpr T isFront() const noexcept
         {
-            return static_cast<T>(static_cast<bool>(bitmask_ & FRONT()));
+            return Base::is<T, Base::FRONT()>(bitmask_);
         }
 
         /**

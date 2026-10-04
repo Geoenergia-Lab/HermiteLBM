@@ -60,7 +60,7 @@ case normalVectorBase::WEST():
         moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<2>()];
         moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
-        Dirichlet::apply<VelocitySet, normalVectorBase::WEST()>(moments, pop);
+        Dirichlet::apply<VelocitySet, normalVectorBase::WEST()>(moments);
 
         if constexpr (fixOutletDensity)
         {
@@ -81,7 +81,7 @@ case normalVectorBase::EAST():
         moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<2>()];
         moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
-        Dirichlet::apply<VelocitySet, normalVectorBase::EAST()>(moments, pop);
+        Dirichlet::apply<VelocitySet, normalVectorBase::EAST()>(moments);
 
         if constexpr (fixOutletDensity)
         {
@@ -102,7 +102,7 @@ case normalVectorBase::SOUTH():
         moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<2>()];
         moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
-        Dirichlet::apply<VelocitySet, normalVectorBase::SOUTH()>(moments, pop);
+        Dirichlet::apply<VelocitySet, normalVectorBase::SOUTH()>(moments);
 
         if constexpr (fixOutletDensity)
         {
@@ -123,7 +123,7 @@ case normalVectorBase::NORTH():
         moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<2>()];
         moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
-        Dirichlet::apply<VelocitySet, normalVectorBase::NORTH()>(moments, pop);
+        Dirichlet::apply<VelocitySet, normalVectorBase::NORTH()>(moments);
 
         if constexpr (fixOutletDensity)
         {
@@ -144,7 +144,7 @@ case normalVectorBase::SOUTH_WEST():
         moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<2>()];
         moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
-        Dirichlet::apply<VelocitySet, normalVectorBase::SOUTH_WEST()>(moments, pop);
+        Dirichlet::apply<VelocitySet, normalVectorBase::SOUTH_WEST()>(moments);
 
         if constexpr (fixOutletDensity)
         {
@@ -165,7 +165,7 @@ case normalVectorBase::NORTH_WEST():
         moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<2>()];
         moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
-        Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_WEST()>(moments, pop);
+        Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_WEST()>(moments);
 
         if constexpr (fixOutletDensity)
         {
@@ -186,7 +186,7 @@ case normalVectorBase::SOUTH_EAST():
         moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<2>()];
         moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
-        Dirichlet::apply<VelocitySet, normalVectorBase::SOUTH_EAST()>(moments, pop);
+        Dirichlet::apply<VelocitySet, normalVectorBase::SOUTH_EAST()>(moments);
 
         if constexpr (fixOutletDensity)
         {
@@ -207,7 +207,7 @@ case normalVectorBase::NORTH_EAST():
         moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<2>()];
         moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS() + 1) + m_i<3>()];
 
-        Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_EAST()>(moments, pop);
+        Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_EAST()>(moments);
 
         if constexpr (fixOutletDensity)
         {
