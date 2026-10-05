@@ -202,6 +202,17 @@ namespace LBM
         }
 
         /**
+         * @brief Get a specific weight for a given lattice index
+         * @tparam T The underlying data type of the array
+         * @tparam i The lattice index
+         **/
+        template <typename T, const device::label_t i>
+        __device__ __host__ [[nodiscard]] static inline consteval T weight() noexcept
+        {
+            return w_q<T>()[i];
+        }
+
+        /**
          * @brief Get the lattice speeds as a thread::array
          * @tparam T The underlying data type of the array
          * @tparam alpha The axis (X, Y or Z)

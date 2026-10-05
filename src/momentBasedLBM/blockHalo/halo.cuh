@@ -105,13 +105,13 @@ namespace LBM
              * neighboring blocks to read.
              **/
             __device__ static inline constexpr void save(
-                thread::array<scalar_t, VelocitySet::Q()> &pop,
                 const momentsArray &moments,
                 const device::ptrCollection<6, scalar_t> &writeBuffer,
                 const thread::coordinate &Tx,
                 const block::coordinate &Bx,
                 const device::pointCoordinate &point) noexcept
             {
+                thread::array<scalar_t, VelocitySet::Q()> pop;
                 VelocitySet::reconstruct<false>(pop, moments);
 
                 save_direction<axis::X>(pop, writeBuffer, Tx, Bx, point);

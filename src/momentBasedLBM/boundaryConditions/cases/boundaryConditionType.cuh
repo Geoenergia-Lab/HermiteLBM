@@ -103,7 +103,6 @@ namespace LBM
          **/
         template <class VelocitySet>
         __device__ static inline constexpr void apply(
-            const thread::array<scalar_t, VelocitySet::Q()> &pop,
             momentsArray &moments,
             const nodeType_t &nodeType) noexcept
         {
@@ -112,182 +111,182 @@ namespace LBM
             case normalVectorBase::SOUTH_WEST_BACK():
             {
                 noSlipVelocityBC::apply<normalVectorBase::SOUTH_WEST_BACK()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_WEST_BACK()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_WEST_BACK()>(moments);
 
                 return;
             }
             case normalVectorBase::SOUTH_WEST_FRONT():
             {
                 noSlipVelocityBC::apply<normalVectorBase::SOUTH_WEST_FRONT()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_WEST_FRONT()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_WEST_FRONT()>(moments);
 
                 return;
             }
             case normalVectorBase::SOUTH_EAST_BACK():
             {
                 noSlipVelocityBC::apply<normalVectorBase::SOUTH_EAST_BACK()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_EAST_BACK()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_EAST_BACK()>(moments);
 
                 return;
             }
             case normalVectorBase::SOUTH_EAST_FRONT():
             {
                 noSlipVelocityBC::apply<normalVectorBase::SOUTH_EAST_FRONT()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_EAST_FRONT()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_EAST_FRONT()>(moments);
 
                 return;
             }
             case normalVectorBase::SOUTH_WEST():
             {
                 noSlipVelocityBC::apply<normalVectorBase::SOUTH_WEST()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_WEST()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_WEST()>(moments);
 
                 return;
             }
             case normalVectorBase::SOUTH_EAST():
             {
                 noSlipVelocityBC::apply<normalVectorBase::SOUTH_EAST()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_EAST()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_EAST()>(moments);
 
                 return;
             }
             case normalVectorBase::WEST_BACK():
             {
                 noSlipVelocityBC::apply<normalVectorBase::WEST_BACK()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::WEST_BACK()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::WEST_BACK()>(moments);
 
                 return;
             }
             case normalVectorBase::WEST_FRONT():
             {
                 noSlipVelocityBC::apply<normalVectorBase::WEST_FRONT()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::WEST_FRONT()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::WEST_FRONT()>(moments);
 
                 return;
             }
             case normalVectorBase::EAST_BACK():
             {
                 noSlipVelocityBC::apply<normalVectorBase::EAST_BACK()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::EAST_BACK()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::EAST_BACK()>(moments);
 
                 return;
             }
             case normalVectorBase::EAST_FRONT():
             {
                 noSlipVelocityBC::apply<normalVectorBase::EAST_FRONT()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::EAST_FRONT()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::EAST_FRONT()>(moments);
 
                 return;
             }
             case normalVectorBase::SOUTH_BACK():
             {
                 noSlipVelocityBC::apply<normalVectorBase::SOUTH_BACK()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_BACK()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_BACK()>(moments);
 
                 return;
             }
             case normalVectorBase::SOUTH_FRONT():
             {
                 noSlipVelocityBC::apply<normalVectorBase::SOUTH_FRONT()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_FRONT()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_FRONT()>(moments);
 
                 return;
             }
             case normalVectorBase::WEST():
             {
                 noSlipVelocityBC::apply<normalVectorBase::WEST()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::WEST()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::WEST()>(moments);
 
                 return;
             }
             case normalVectorBase::EAST():
             {
                 noSlipVelocityBC::apply<normalVectorBase::EAST()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::EAST()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::EAST()>(moments);
 
                 return;
             }
             case normalVectorBase::SOUTH():
             {
                 noSlipVelocityBC::apply<normalVectorBase::SOUTH()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH()>(moments);
 
                 return;
             }
             case normalVectorBase::BACK():
             {
                 noSlipVelocityBC::apply<normalVectorBase::BACK()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::BACK()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::BACK()>(moments);
 
                 return;
             }
             case normalVectorBase::FRONT():
             {
                 noSlipVelocityBC::apply<normalVectorBase::FRONT()>(moments);
-                noSlipBC::apply<VelocitySet, normalVectorBase::FRONT()>(moments, pop);
+                noSlipBC::apply<VelocitySet, normalVectorBase::FRONT()>(moments);
 
                 return;
             }
             case normalVectorBase::NORTH():
             {
                 constantVelocityBC::apply<normalVectorBase::NORTH()>(moments);
-                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH()>(moments, pop);
+                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH()>(moments);
 
                 return;
             }
             case normalVectorBase::NORTH_WEST_BACK():
             {
                 constantVelocityBC::apply<normalVectorBase::NORTH_WEST_BACK()>(moments);
-                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_WEST_BACK()>(moments, pop);
+                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_WEST_BACK()>(moments);
 
                 return;
             }
             case normalVectorBase::NORTH_WEST_FRONT():
             {
                 constantVelocityBC::apply<normalVectorBase::NORTH_WEST_FRONT()>(moments);
-                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_WEST_FRONT()>(moments, pop);
+                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_WEST_FRONT()>(moments);
 
                 return;
             }
             case normalVectorBase::NORTH_EAST_BACK():
             {
                 constantVelocityBC::apply<normalVectorBase::NORTH_EAST_BACK()>(moments);
-                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_EAST_BACK()>(moments, pop);
+                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_EAST_BACK()>(moments);
 
                 return;
             }
             case normalVectorBase::NORTH_EAST_FRONT():
             {
                 constantVelocityBC::apply<normalVectorBase::NORTH_EAST_FRONT()>(moments);
-                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_EAST_FRONT()>(moments, pop);
+                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_EAST_FRONT()>(moments);
 
                 return;
             }
             case normalVectorBase::NORTH_BACK():
             {
                 constantVelocityBC::apply<normalVectorBase::NORTH_BACK()>(moments);
-                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_BACK()>(moments, pop);
+                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_BACK()>(moments);
 
                 return;
             }
             case normalVectorBase::NORTH_FRONT():
             {
                 constantVelocityBC::apply<normalVectorBase::NORTH_FRONT()>(moments);
-                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_FRONT()>(moments, pop);
+                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_FRONT()>(moments);
 
                 return;
             }
             case normalVectorBase::NORTH_EAST():
             {
                 constantVelocityBC::apply<normalVectorBase::NORTH_EAST()>(moments);
-                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_EAST()>(moments, pop);
+                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_EAST()>(moments);
 
                 return;
             }
             case normalVectorBase::NORTH_WEST():
             {
                 constantVelocityBC::apply<normalVectorBase::NORTH_WEST()>(moments);
-                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_WEST()>(moments, pop);
+                Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_WEST()>(moments);
 
                 return;
             }

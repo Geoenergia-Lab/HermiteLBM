@@ -93,7 +93,7 @@ int main(const int argc, const char *const argv[])
     const VectorField U("U", mesh, programCtrl);
     const SymmericTensorField Pi("Pi", mesh, programCtrl);
 
-    programCtrl.configure<VelocitySet::smem_alloc_size()>(kernel::momentBasedLBM);
+    programCtrl.configure<VelocitySet::smem_alloc_size(), false>(kernel::momentBasedLBM);
 
     const KernelLauncher momentBasedLBM(mesh, programCtrl, rho, U, Pi);
 

@@ -136,6 +136,49 @@ namespace LBM
             }
         };
 
+        /**
+         * @brief Saves a momentsArray object to its original pointers
+         * @param[out] devPtrs The pointers to save to
+         * @param[in] moments Moment array (rho, U, Pi)
+         * @param[in] idx The index into the global array
+         **/
+        template <const host::label_t i>
+        __device__ static inline constexpr void saveToPtr(
+            const device::ptrColl_t &devPtrs,
+            const momentsArray &moments,
+            const device::label_t idx) noexcept
+        {
+            if constexpr (i == axis::index<axis::NO_DIRECTION>())
+            {
+                devPtrs.ptr<i>()[idx] = moments[i] - rho0();
+            }
+            else
+            {
+                devPtrs.ptr<i>()[idx] = moments[i];
+            }
+        }
+
+        /**
+         * @brief Reads a momentsArray object from its original pointers
+         * @param[in] devPtrs The pointers to read from
+         * @param[out] moments Moment array (rho, U, Pi)
+         * @param[in] idx The index into the global array
+         **/
+        template <const host::label_t i>
+        __device__ static inline constexpr void readFromPtr(
+            const device::ptrColl_t &devPtrs,
+            momentsArray &moments,
+            const device::label_t idx) noexcept
+        {
+            if constexpr (i == axis::index<axis::NO_DIRECTION>())
+            {
+                moments[i] = devPtrs.ptr<i>()[idx] + rho0();
+            }
+            else
+            {
+                moments[i] = devPtrs.ptr<i>()[idx];
+            }
+        }
     }
 }
 

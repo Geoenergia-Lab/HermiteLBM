@@ -53,6 +53,8 @@ SourceFiles
 #ifndef __MBLBM_INITIALISATION_CUH
 #define __MBLBM_INITIALISATION_CUH
 
+#include "../ptrCollection.cuh"
+
 namespace LBM
 {
     template <class VelocitySet, class BoundaryConditions>
@@ -80,77 +82,8 @@ namespace LBM
             const block::coordinate &Bx,
             const device::pointCoordinate &point) noexcept
         {
-            thread::array<scalar_t, VelocitySet::Q()> pop;
-            VelocitySet::reconstruct(pop, moments);
-            device::halo<VelocitySet, boundaryConditionType<true, true, true>>::save(pop, moments, readBuffer, Tx, Bx, point);
-            device::halo<VelocitySet, boundaryConditionType<true, true, true>>::save(pop, moments, writeBuffer, Tx, Bx, point);
-        }
-
-        template <const host::label_t i>
-        __device__ static inline constexpr void readFromPtr(
-            const device::ptrColl_t &devPtrs,
-            momentsArray &moments,
-            const device::label_t idx) noexcept
-        {
-            if constexpr (i == axis::index<axis::NO_DIRECTION>())
-            {
-                moments[i] = devPtrs.ptr<i>()[idx] + rho0();
-            }
-            else
-            {
-                moments[i] = devPtrs.ptr<i>()[idx];
-            }
-        }
-
-        template <const host::label_t i>
-        __device__ static inline constexpr void saveToPtr(
-            const device::ptrColl_t &devPtrs,
-            const momentsArray &moments,
-            const device::label_t idx) noexcept
-        {
-            if constexpr (i == axis::index<axis::NO_DIRECTION>())
-            {
-                devPtrs.ptr<i>()[idx] = moments[i] - rho0();
-            }
-            else
-            {
-                devPtrs.ptr<i>()[idx] = moments[i];
-            }
-        }
-
-        template <const bool firstTimeStep>
-        __device__ [[nodiscard]] static inline constexpr momentsArray readPtrs(
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> &devPtrs,
-            const device::label_t idx) noexcept
-        {
-            if constexpr (firstTimeStep)
-            {
-                return momentsArray{
-                    devPtrs.ptr<axis::index<axis::NO_DIRECTION>()>()[idx] + rho0(),
-                    devPtrs.ptr<axis::index<axis::X>()>()[idx],
-                    devPtrs.ptr<axis::index<axis::Y>()>()[idx],
-                    devPtrs.ptr<axis::index<axis::Z>()>()[idx],
-                    devPtrs.ptr<axis::index<axis::X, axis::X>()>()[idx],
-                    devPtrs.ptr<axis::index<axis::X, axis::Y>()>()[idx],
-                    devPtrs.ptr<axis::index<axis::X, axis::Z>()>()[idx],
-                    devPtrs.ptr<axis::index<axis::Y, axis::Y>()>()[idx],
-                    devPtrs.ptr<axis::index<axis::Y, axis::Z>()>()[idx],
-                    devPtrs.ptr<axis::index<axis::Z, axis::Z>()>()[idx]};
-            }
-            else
-            {
-                return momentsArray{
-                    rho0(),
-                    static_cast<scalar_t>(0),
-                    static_cast<scalar_t>(0),
-                    static_cast<scalar_t>(0),
-                    static_cast<scalar_t>(0),
-                    static_cast<scalar_t>(0),
-                    static_cast<scalar_t>(0),
-                    static_cast<scalar_t>(0),
-                    static_cast<scalar_t>(0),
-                    static_cast<scalar_t>(0)};
-            }
+            device::halo<VelocitySet, boundaryConditionType<true, true, true>>::save(moments, readBuffer, Tx, Bx, point);
+            device::halo<VelocitySet, boundaryConditionType<true, true, true>>::save(moments, writeBuffer, Tx, Bx, point);
         }
 
         /**
@@ -211,7 +144,7 @@ namespace LBM
                 device::constexpr_for<0, NUMBER_MOMENTS()>(
                     [&](const auto moment)
                     {
-                        readFromPtr<moment>(devPtrs, moments, idx);
+                        kernel::readFromPtr<moment>(devPtrs, moments, idx);
                     });
             }
 
@@ -221,11 +154,13 @@ namespace LBM
             thread::array<scalar_t, VelocitySet::Q()> pop;
             VelocitySet::reconstruct(pop, moments);
 
-            __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<0, NUMBER_MOMENTS<host::label_t>()>()> sharedBuffer;
+            __shared__ thread::array<scalar_t, block::size() * NUMBER_MOMENTS<host::label_t>()> sharedBuffer;
+
+            const normalVector<var3<bool>(true, true, false)> boundaryNormal(point);
 
             if constexpr (BoundaryConditions::appliesCondition())
             {
-                BoundaryConditions::template calculate_moments<VelocitySet>(pop, moments, sharedBuffer, Tx, point, tid);
+                BoundaryConditions::template calculate_moments<VelocitySet>(moments, sharedBuffer, Tx, point, tid, boundaryNormal);
             }
             else
             {
@@ -240,7 +175,7 @@ namespace LBM
             device::constexpr_for<0, NUMBER_MOMENTS()>(
                 [&](const auto moment)
                 {
-                    saveToPtr<moment>(devPtrs, moments, idx);
+                    kernel::saveToPtr<moment>(devPtrs, moments, idx);
                 });
         }
     };

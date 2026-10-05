@@ -68,7 +68,7 @@ namespace LBM
 #ifdef SCALAR_PRECISION
             types::assertions::validate<scalar_t>();
 
-            return 8 * sizeof(float) / (sizeof(scalar_t));
+            return 16 * sizeof(float) / (sizeof(scalar_t));
 #else
             return 8;
 #endif
