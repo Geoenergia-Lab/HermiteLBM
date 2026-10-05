@@ -66,41 +66,15 @@ namespace LBM
     {
     public:
         /**
-         * @brief Default constructor
-         **/
-        __device__ __host__ [[nodiscard]] inline consteval streaming() {}
-
-        /**
-         * @brief Saves thread population density to shared memory
-         * @tparam N Size of shared memory array
-         * @param[in] pop Population density array at current lattice node
-         * @param[out] s_pop Shared memory array for population storage
-         * @param[in] tid Thread ID within block
-         **/
-        template <class SharedBuffer>
-        __device__ static inline void save(
-            const thread::array<scalar_t, VelocitySet::template Q()> &pop,
-            SharedBuffer &s_pop,
-            const device::label_t tid) noexcept
-        {
-            device::constexpr_for<0, (VelocitySet::template Q() - 1)>(
-                [&](const auto i)
-                {
-                    s_pop[q_i<i * block::stride()>() + tid] = pop[q_i<i + 1>()];
-                });
-        }
-
-        /**
          * @brief Reads global moments into the shared memory array
          * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
          * @param[out] sharedBuffer Shared memory array for population storage
          * @param[in] tid Thread ID within block
          * @param[in] idx Global index of the lattice node
          **/
-        template <class SharedBuffer>
         __device__ static inline void save(
             const device::ptrColl_t &devPtrs,
-            SharedBuffer &sharedBuffer,
+            blockSharedBuffer &sharedBuffer,
             const device::label_t tid,
             const device::label_t idx) noexcept
         {
@@ -119,34 +93,11 @@ namespace LBM
          * @brief Pulls population density from shared memory with periodic boundaries
          * @tparam N Size of shared memory array
          * @param[out] pop Population density array to be populated
-         * @param[in] s_pop Shared memory array containing population data
-         **/
-        template <class SharedBuffer>
-        __device__ static inline void pull(
-            thread::array<scalar_t, VelocitySet::template Q()> &pop,
-            const SharedBuffer &s_pop,
-            const thread::coordinate &Tx) noexcept
-        {
-            device::constexpr_for<0, (VelocitySet::template Q() - 1)>(
-                [&](const auto i)
-                {
-                    const device::label_t x = periodic_index<-VelocitySet::template c<int, axis::X>(q_i<i + 1>()), block::nx<device::label_t>()>(Tx.value<axis::X>());
-                    const device::label_t y = periodic_index<-VelocitySet::template c<int, axis::Y>(q_i<i + 1>()), block::ny<device::label_t>()>(Tx.value<axis::Y>());
-                    const device::label_t z = periodic_index<-VelocitySet::template c<int, axis::Z>(q_i<i + 1>()), block::nz<device::label_t>()>(Tx.value<axis::Z>());
-                    pop[q_i<i + 1>()] = s_pop[q_i<i * block::stride()>() + block::idx(x, y, z)];
-                });
-        }
-
-        /**
-         * @brief Pulls population density from shared memory with periodic boundaries
-         * @tparam N Size of shared memory array
-         * @param[out] pop Population density array to be populated
          * @param[in] sharedBuffer Shared memory array containing moment data
          **/
-        template <class SharedBuffer>
-        __device__ static inline void pullMoments(
+        __device__ static inline void pull(
             thread::array<scalar_t, VelocitySet::template Q()> &pop,
-            const SharedBuffer &sharedBuffer,
+            const blockSharedBuffer &sharedBuffer,
             const thread::coordinate &Tx) noexcept
         {
             device::constexpr_for<0, VelocitySet::template Q()>(
@@ -169,7 +120,7 @@ namespace LBM
                         sharedBuffer[q_i<8 * block::size()>() + idxIncoming],
                         sharedBuffer[q_i<9 * block::size()>() + idxIncoming]};
 
-                    VelocitySet::reconstructPop<i>(pop, incomingMoments);
+                    VelocitySet::reconstruct<i>(pop, incomingMoments);
                 });
         }
 

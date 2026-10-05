@@ -150,26 +150,6 @@ namespace LBM
         }
 
         /**
-         * @brief Total size of the shared memory
-         * @tparam Q Number of velocity coefficients of the lattice
-         * @tparam nVars Number of moment variables
-         * @param[in] variableSize Size of the variable
-         **/
-        template <const host::label_t Q, const host::label_t nVars>
-        __device__ __host__ [[nodiscard]] inline consteval host::label_t sharedMemoryBufferSize(const host::label_t variableSize = 1) noexcept
-        {
-            constexpr const host::label_t A = (Q - static_cast<host::label_t>(1)) * block::stride<host::label_t>();
-            constexpr const host::label_t B = block::size<host::label_t>() * (nVars + static_cast<host::label_t>(1));
-
-            if constexpr (Q == 0)
-            {
-                return B * variableSize;
-            }
-
-            return (A > B ? A : B) * variableSize;
-        }
-
-        /**
          * @brief Size of the warp (32)
          **/
         __device__ __host__ [[nodiscard]] inline consteval device::label_t warp_size() noexcept

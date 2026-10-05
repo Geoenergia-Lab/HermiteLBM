@@ -68,10 +68,10 @@ namespace LBM
         /**
          * @brief Public method to calculate the post-streaming methods and update boundary conditions
          **/
-        template <class VelocitySet, class SharedBuffer>
+        template <class VelocitySet>
         __device__ static inline constexpr void calculate_moments(
             momentsArray &moments,
-            SharedBuffer &sharedBuffer,
+            blockSharedBuffer &sharedBuffer,
             const thread::coordinate &Tx,
             const device::pointCoordinate &point,
             const device::label_t tid,
@@ -94,8 +94,8 @@ namespace LBM
         }
 
     private:
-        template <const bool FixDensity, class SharedBuffer>
-        __device__ static inline constexpr void smemNeumann(momentsArray &moments, const device::label_t tidOutlet, const SharedBuffer &sharedBuffer) noexcept
+        template <const bool FixDensity>
+        __device__ static inline constexpr void smemNeumann(momentsArray &moments, const device::label_t tidOutlet, const blockSharedBuffer &sharedBuffer) noexcept
         {
             if constexpr (FixDensity)
             {
@@ -123,11 +123,11 @@ namespace LBM
          * @param[out] moments Moment array (rho, U, Pi)
          * @param[in] boundaryNormal Normal vector information at boundary node
          **/
-        template <class VelocitySet, class SharedBuffer>
+        template <class VelocitySet>
         __device__ static inline constexpr void calculate_moments(
             momentsArray &moments,
             const NormalVector &boundaryNormal,
-            const SharedBuffer &sharedBuffer,
+            const blockSharedBuffer &sharedBuffer,
             const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept
         {

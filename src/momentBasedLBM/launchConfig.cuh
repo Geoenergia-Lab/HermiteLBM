@@ -92,15 +92,16 @@ namespace LBM
      **/
     __device__ __host__ [[nodiscard]] inline consteval bool use_cooperative_halo() noexcept
     {
-#ifdef USE_SMEM_HALO
-#if USE_SMEM_HALO == true
-        return true;
-#elif USE_SMEM_HALO == false
         return false;
-#endif
-#else
-        return false;
-#endif
+        // #ifdef USE_SMEM_HALO
+        // #if USE_SMEM_HALO == true
+        //         return true;
+        // #elif USE_SMEM_HALO == false
+        //         return false;
+        // #endif
+        // #else
+        //         return false;
+        // #endif
     }
 
     /**
