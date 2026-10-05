@@ -207,7 +207,7 @@ namespace LBM
 
             if constexpr (CalculateRest)
             {
-                pop[q_i<0>()] = moments[m_i<0>()] * Lattice::template w_0<scalar_t>() * thermo.pics2();
+                pop[q_i<0>()] = moments[m_i<0>()] * Lattice::template w_0<const scalar_t>() * thermo.pics2();
             }
             const thread::array<const scalar_t, This::nPerm()> rho_w = This::rhow(moments[m_i<0>()]);
 
@@ -217,6 +217,29 @@ namespace LBM
                 {
                     pop[q_i<i>()] = This::rhow<i>(rho_w) * (thermo.pics2() + This::template sum_moments<i>(thermo, moments));
                 });
+        }
+
+        /**
+         * @brief Reconstruct a specific population from a given set of moments
+         * @tparam i The index of the population to reconstruct
+         * @param[out] pop The distribution function array
+         * @param[in] moments Moment array (rho, U, Pi)
+         **/
+        template <const device::label_t i>
+        __device__ __host__ static inline constexpr void reconstructPop(
+            thread::array<scalar_t, Lattice::Q()> &pop,
+            const momentsArray &moments) noexcept
+        {
+            const ThermoModel thermo(moments);
+
+            if constexpr (i == 0)
+            {
+                pop[q_i<0>()] = moments[m_i<0>()] * Lattice::template w_0<const scalar_t>() * thermo.pics2();
+            }
+            else
+            {
+                pop[q_i<i>()] = moments[m_i<0>()] * Lattice::template weight<const scalar_t, i>() * (thermo.pics2() + This::template sum_moments<i>(thermo, moments));
+            }
         }
 
     private:

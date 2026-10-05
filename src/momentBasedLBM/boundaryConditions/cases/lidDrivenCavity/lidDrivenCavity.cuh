@@ -76,17 +76,13 @@ namespace LBM
          **/
         template <class VelocitySet, class SharedBuffer>
         __device__ static inline constexpr void calculate_moments(
-            const thread::array<scalar_t, VelocitySet::Q()> &pop,
             momentsArray &moments,
             [[maybe_unused]] SharedBuffer &sharedBuffer,
             [[maybe_unused]] const thread::coordinate &Tx,
             const device::pointCoordinate &point,
-            [[maybe_unused]] const device::label_t tid) noexcept
+            [[maybe_unused]] const device::label_t tid,
+            const NormalVector &boundaryNormal) noexcept
         {
-            const NormalVector boundaryNormal(point);
-
-            VelocitySet::template calculate_moments(moments, pop, boundaryNormal);
-
             if (boundaryNormal.isBoundary())
             {
                 Base::apply<VelocitySet>(moments, boundaryNormal.nodeType());

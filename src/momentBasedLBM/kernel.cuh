@@ -62,28 +62,6 @@ namespace LBM
         using Streaming = streaming<VelocitySet>;
 
         /**
-         * @brief Saves a momentsArray object to its original pointers
-         * @param[out] devPtrs The pointers to save to
-         * @param[in] moments Moment array (rho, U, Pi)
-         * @param[in] idx The index into the global array
-         **/
-        template <const host::label_t i>
-        __device__ static inline constexpr void saveToPtr(
-            const device::ptrColl_t &devPtrs,
-            const momentsArray &moments,
-            const device::label_t idx) noexcept
-        {
-            if constexpr (i == axis::index<axis::NO_DIRECTION>())
-            {
-                devPtrs.ptr<i>()[idx] = moments[i] - rho0();
-            }
-            else
-            {
-                devPtrs.ptr<i>()[idx] = moments[i];
-            }
-        }
-
-        /**
          * @brief Implements solution of the lattice Boltzmann method using the moment representation and a chosen velocity set
          * @tparam BoundaryConditions The boundary conditions of the solver
          * @tparam Collision The collision model
@@ -122,49 +100,38 @@ namespace LBM
             }
 
             // Prefetch devPtrs into L2
-            device::constexpr_for<0, NUMBER_MOMENTS()>(
-                [&](const auto moment)
+            // device::constexpr_for<0, NUMBER_MOMENTS()>(
+            //     [&](const auto moment)
+            //     {
+            //         cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
+            //     });
+
+            // Read from global memory into shared
+            Streaming::save(devPtrs, sharedBuffer, tid, idx);
+
+            // Pull the moments through shared memory
+            momentsArray moments = zeros<scalar_t, NUMBER_MOMENTS()>();
+            {
+                thread::array<scalar_t, VelocitySet::Q()> pop;
+                Streaming::pullMoments(pop, sharedBuffer, Tx);
+                block::sync();
+
+                // Pull pop from global memory in cover nodes
+                BlockHalo::pull(pop, readBuffer, Tx, Bx, point);
+                block::sync();
+
+                // Update the post-streaming moments according to the interior and/or boundary conditions
+                if constexpr (BoundaryConditions::appliesCondition())
                 {
-                    cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
-                });
-
-            // Coalesced read from global memory
-            momentsArray moments{
-                devPtrs.ptr<axis::index<axis::NO_DIRECTION>()>()[idx] + rho0(),
-                devPtrs.ptr<axis::index<axis::X>()>()[idx],
-                devPtrs.ptr<axis::index<axis::Y>()>()[idx],
-                devPtrs.ptr<axis::index<axis::Z>()>()[idx],
-                devPtrs.ptr<axis::index<axis::X, axis::X>()>()[idx],
-                devPtrs.ptr<axis::index<axis::X, axis::Y>()>()[idx],
-                devPtrs.ptr<axis::index<axis::X, axis::Z>()>()[idx],
-                devPtrs.ptr<axis::index<axis::Y, axis::Y>()>()[idx],
-                devPtrs.ptr<axis::index<axis::Y, axis::Z>()>()[idx],
-                devPtrs.ptr<axis::index<axis::Z, axis::Z>()>()[idx]};
-            block::sync();
-
-            // Reconstruct the population from the moments
-            thread::array<scalar_t, VelocitySet::Q()> pop;
-            VelocitySet::reconstruct(pop, moments);
-
-            // Save populations in shared memory
-            Streaming::save(pop, sharedBuffer, tid);
-            block::sync();
-
-            // Pull from shared memory
-            Streaming::pull(pop, sharedBuffer, Tx);
-
-            // Pull pop from global memory in cover nodes
-            BlockHalo::pull(pop, readBuffer, Tx, Bx, point);
-            block::sync();
-
-            // Update the post-streaming moments according to the interior and/or boundary conditions
-            if constexpr (BoundaryConditions::appliesCondition())
-            {
-                BoundaryConditions::template calculate_moments<VelocitySet>(pop, moments, sharedBuffer, Tx, point, tid);
-            }
-            else
-            {
-                VelocitySet::template calculate_moments(moments, pop);
+                    using NormalVector = normalVector<var3<bool>(BoundaryConditions::template periodic<axis::X>(), BoundaryConditions::template periodic<axis::Y>(), BoundaryConditions::template periodic<axis::Z>())>;
+                    const NormalVector boundaryNormal(point);
+                    VelocitySet::template calculate_moments(moments, pop, boundaryNormal);
+                    BoundaryConditions::template calculate_moments<VelocitySet>(moments, sharedBuffer, Tx, point, tid, boundaryNormal);
+                }
+                else
+                {
+                    VelocitySet::template calculate_moments(moments, pop);
+                }
             }
 
             // Scale the moments correctly
@@ -177,19 +144,19 @@ namespace LBM
             device::constexpr_for<0, NUMBER_MOMENTS()>(
                 [&](const auto moment)
                 {
-                    saveToPtr<moment>(devPtrs, moments, idx);
+                    kernel::saveToPtr<moment>(devPtrs, moments, idx);
                 });
 
             // Save the populations to the block halo
-            if constexpr (use_cooperative_halo())
+            // if constexpr (use_cooperative_halo())
+            // {
+            //     VelocitySet::reconstruct<false>(pop, moments);
+            //     BlockHalo::transpose_to_shared(pop, writeBuffer, sharedBuffer, Tx, Bx, point);
+            //     BlockHalo::save_from_shared(sharedBuffer, writeBuffer, Tx, Bx);
+            // }
+            // else
             {
-                VelocitySet::reconstruct<false>(pop, moments);
-                BlockHalo::transpose_to_shared(pop, writeBuffer, sharedBuffer, Tx, Bx, point);
-                BlockHalo::save_from_shared(sharedBuffer, writeBuffer, Tx, Bx);
-            }
-            else
-            {
-                BlockHalo::save(pop, moments, writeBuffer, Tx, Bx, point);
+                BlockHalo::save(moments, writeBuffer, Tx, Bx, point);
             }
         }
 
@@ -248,18 +215,9 @@ namespace LBM
             const device::ptrCollection<6, scalar_t> writeBuffer,
             const device::label_t bzOffset)
         {
-            if constexpr (VelocitySet::smem_alloc_size() == 0)
-            {
-                __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet::Q(), NUMBER_MOMENTS<host::label_t>()>()> sharedBuffer;
+            __shared__ thread::array<scalar_t, block::size() * NUMBER_MOMENTS<host::label_t>()> sharedBuffer;
 
-                momentBasedLBMKernel<VelocitySet, BoundaryConditionCase, Collision>::momentBasedLBM(devPtrs, readBuffer, writeBuffer, sharedBuffer, bzOffset);
-            }
-            else
-            {
-                extern __shared__ scalar_t sharedBuffer[];
-
-                momentBasedLBMKernel<VelocitySet, BoundaryConditionCase, Collision>::momentBasedLBM(devPtrs, readBuffer, writeBuffer, sharedBuffer, bzOffset);
-            }
+            momentBasedLBMKernel<VelocitySet, BoundaryConditionCase, Collision>::momentBasedLBM(devPtrs, readBuffer, writeBuffer, sharedBuffer, bzOffset);
         }
 
         /**

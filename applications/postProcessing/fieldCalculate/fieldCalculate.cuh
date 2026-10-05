@@ -71,7 +71,6 @@ namespace LBM
         {"magnitude", calculator::magnitude},
         {"magnitudeSquared", calculator::magnitudeSquared},
         {"dfdx", calculator::diff<axis::X>},
-        {"dfdx_v2", calculator::dfdx_v2},
         {"dfdy", calculator::diff<axis::Y>},
         {"dfdz", calculator::diff<axis::Z>},
         {"div", calculator::div}};
