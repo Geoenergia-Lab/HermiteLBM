@@ -73,12 +73,11 @@ namespace LBM
          * @param[in] Tx Three-dimensional thread coordinates
          * @param[in] Bx Three-dimensional block coordinates
          **/
-        template <class SharedBuffer>
         __device__ static inline void momentBasedLBM(
             const device::ptrColl_t &devPtrs,
             const device::ptrCollection<6, const scalar_t> &readBuffer,
             const device::ptrCollection<6, scalar_t> &writeBuffer,
-            SharedBuffer &sharedBuffer,
+            blockSharedBuffer &sharedBuffer,
             const thread::coordinate &Tx,
             const block::coordinate &Bx) noexcept
         {
@@ -113,7 +112,7 @@ namespace LBM
             momentsArray moments = zeros<scalar_t, NUMBER_MOMENTS()>();
             {
                 thread::array<scalar_t, VelocitySet::Q()> pop;
-                Streaming::pullMoments(pop, sharedBuffer, Tx);
+                Streaming::pull(pop, sharedBuffer, Tx);
                 block::sync();
 
                 // Pull pop from global memory in cover nodes
@@ -148,13 +147,12 @@ namespace LBM
                 });
 
             // Save the populations to the block halo
-            // if constexpr (use_cooperative_halo())
-            // {
-            //     VelocitySet::reconstruct<false>(pop, moments);
-            //     BlockHalo::transpose_to_shared(pop, writeBuffer, sharedBuffer, Tx, Bx, point);
-            //     BlockHalo::save_from_shared(sharedBuffer, writeBuffer, Tx, Bx);
-            // }
-            // else
+            if constexpr (use_cooperative_halo())
+            {
+                BlockHalo::transpose_to_shared(moments, writeBuffer, sharedBuffer, Tx, Bx, point);
+                BlockHalo::save_from_shared(sharedBuffer, writeBuffer, Tx, Bx);
+            }
+            else
             {
                 BlockHalo::save(moments, writeBuffer, Tx, Bx, point);
             }
@@ -164,12 +162,11 @@ namespace LBM
          * @overload Wraps the implementation, calculating an offset block ID for multi-GPU compatibility
          * @param[in] bzOffset Offset to the block ID in the Z axis
          **/
-        template <class SharedBuffer>
         __device__ static inline void momentBasedLBM(
             const device::ptrColl_t &devPtrs,
             const device::ptrCollection<6, const scalar_t> &readBuffer,
             const device::ptrCollection<6, scalar_t> &writeBuffer,
-            SharedBuffer &sharedBuffer,
+            blockSharedBuffer &sharedBuffer,
             const device::label_t bzOffset) noexcept
         {
             static_assert(std::is_same_v<BlockHalo, device::halo<VelocitySet, BoundaryConditions>>);
@@ -184,12 +181,11 @@ namespace LBM
         /**
          * @overload Wraps the implementation for a single GPU system
          **/
-        template <class SharedBuffer>
         __device__ static inline void momentBasedLBM(
             const device::ptrColl_t &devPtrs,
             const device::ptrCollection<6, const scalar_t> &readBuffer,
             const device::ptrCollection<6, scalar_t> &writeBuffer,
-            SharedBuffer &sharedBuffer) noexcept
+            blockSharedBuffer &sharedBuffer) noexcept
         {
             static_assert(std::is_same_v<BlockHalo, device::halo<VelocitySet, BoundaryConditions>>);
 
@@ -215,7 +211,7 @@ namespace LBM
             const device::ptrCollection<6, scalar_t> writeBuffer,
             const device::label_t bzOffset)
         {
-            __shared__ thread::array<scalar_t, block::size() * NUMBER_MOMENTS<host::label_t>()> sharedBuffer;
+            __shared__ blockSharedBuffer sharedBuffer;
 
             momentBasedLBMKernel<VelocitySet, BoundaryConditionCase, Collision>::momentBasedLBM(devPtrs, readBuffer, writeBuffer, sharedBuffer, bzOffset);
         }

@@ -74,10 +74,10 @@ namespace LBM
         /**
          * @brief Public method to calculate the post-streaming methods and update boundary conditions
          **/
-        template <class VelocitySet, class SharedBuffer>
+        template <class VelocitySet>
         __device__ static inline constexpr void calculate_moments(
             momentsArray &moments,
-            [[maybe_unused]] SharedBuffer &sharedBuffer,
+            [[maybe_unused]] blockSharedBuffer &sharedBuffer,
             [[maybe_unused]] const thread::coordinate &Tx,
             const device::pointCoordinate &point,
             [[maybe_unused]] const device::label_t tid,

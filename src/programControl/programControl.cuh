@@ -58,6 +58,16 @@ SourceFiles
 
 namespace LBM
 {
+    /**
+     * @brief CUDA kernel cache preference type enumeration
+     **/
+    typedef enum cachePreferenceTypeEnum : int
+    {
+        PREFER_NONE = cudaFuncCachePreferNone,
+        PREFER_SHARED = cudaFuncCachePreferShared,
+        PREFER_L1 = cudaFuncCachePreferL1
+    } cachePreferenceType;
+
     class programControl
     {
     public:
@@ -336,7 +346,7 @@ namespace LBM
          * @tparam T The function type (e.g., a lambda or a function pointer)
          * @param[in] func The kernel function to configure
          **/
-        template <const host::label_t smem_alloc_size, const bool PreferShared = true, class T>
+        template <const host::label_t smem_alloc_size, const cachePreferenceType CachePreferenceType, class T>
         __host__ void configure(T *func) const
         {
             for (host::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < deviceList().size(); VirtualDeviceIndex++)
@@ -344,14 +354,7 @@ namespace LBM
                 errorHandler::handle(cudaDeviceSynchronize());
                 errorHandler::handle(cudaSetDevice(deviceList()[VirtualDeviceIndex]));
                 errorHandler::handle(cudaDeviceSynchronize());
-                if constexpr (PreferShared)
-                {
-                    errorHandler::handle(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
-                }
-                else
-                {
-                    errorHandler::handle(cudaFuncSetCacheConfig(func, cudaFuncCachePreferL1));
-                }
+                errorHandler::handle(cudaFuncSetCacheConfig(func, static_cast<cudaFuncCache>(CachePreferenceType)));
                 errorHandler::handle(cudaDeviceSynchronize());
                 errorHandler::handle(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
                 errorHandler::handle(cudaDeviceSynchronize());

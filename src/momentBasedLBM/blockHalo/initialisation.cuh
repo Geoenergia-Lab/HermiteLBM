@@ -154,7 +154,7 @@ namespace LBM
             thread::array<scalar_t, VelocitySet::Q()> pop;
             VelocitySet::reconstruct(pop, moments);
 
-            __shared__ thread::array<scalar_t, block::size() * NUMBER_MOMENTS<host::label_t>()> sharedBuffer;
+            __shared__ blockSharedBuffer sharedBuffer;
 
             const normalVector<var3<bool>(true, true, false)> boundaryNormal(point);
 

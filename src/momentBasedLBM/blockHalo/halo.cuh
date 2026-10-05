@@ -111,14 +111,11 @@ namespace LBM
                 const block::coordinate &Bx,
                 const device::pointCoordinate &point) noexcept
             {
-                thread::array<scalar_t, VelocitySet::Q()> pop;
-                VelocitySet::reconstruct<false>(pop, moments);
+                save_direction<axis::X>(moments, writeBuffer, Tx, Bx, point);
 
-                save_direction<axis::X>(pop, writeBuffer, Tx, Bx, point);
+                save_direction<axis::Y>(moments, writeBuffer, Tx, Bx, point);
 
-                save_direction<axis::Y>(pop, writeBuffer, Tx, Bx, point);
-
-                save_direction<axis::Z>(pop, writeBuffer, Tx, Bx, point);
+                save_direction<axis::Z>(moments, writeBuffer, Tx, Bx, point);
             }
 
 #include "haloSharedMemoryOperations.cuh"
@@ -342,7 +339,7 @@ namespace LBM
              **/
             template <const axis::type alpha, const int coeff>
             __device__ static inline constexpr void save_face(
-                const thread::array<scalar_t, VelocitySet::Q()> &pop,
+                const momentsArray &moments,
                 const device::ptrCollection<6, scalar_t> &writeBuffer,
                 const thread::coordinate &Tx,
                 const block::coordinate &Bx) noexcept
@@ -359,7 +356,7 @@ namespace LBM
                             Tx.value<axis::orthogonal<alpha, 1>()>(),
                             Bx.value<axis::X>(),
                             Bx.value<axis::Y>(),
-                            Bx.value<axis::Z>())] = pop[q_i<streaming_index<alpha, coeff>(i)>()];
+                            Bx.value<axis::Z>())] = VelocitySet::reconstruct<streaming_index<alpha, coeff>(i)>(moments);
                     });
             }
 
@@ -374,7 +371,7 @@ namespace LBM
              **/
             template <const axis::type alpha>
             __device__ static inline constexpr void save_direction(
-                const thread::array<scalar_t, VelocitySet::Q()> &pop,
+                const momentsArray &moments,
                 const device::ptrCollection<6, scalar_t> &writeBuffer,
                 const thread::coordinate &Tx,
                 const block::coordinate &Bx,
@@ -382,11 +379,11 @@ namespace LBM
             {
                 if (boundaryCheck<alpha, -1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
                 {
-                    save_face<alpha, -1>(pop, writeBuffer, Tx, Bx);
+                    save_face<alpha, -1>(moments, writeBuffer, Tx, Bx);
                 }
                 else if (boundaryCheck<alpha, +1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
                 {
-                    save_face<alpha, +1>(pop, writeBuffer, Tx, Bx);
+                    save_face<alpha, +1>(moments, writeBuffer, Tx, Bx);
                 }
             }
         };
