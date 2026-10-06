@@ -50,15 +50,15 @@ SourceFiles
 #ifndef __MBLBM_MAIN_CUH
 #define __MBLBM_MAIN_CUH
 
-namespace LBM
-{
-    /**
-     * @brief Define the boundary condition case
-     **/
-    // using BoundaryConditionCase = lidDrivenCavity;
-    using BoundaryConditionCase = jetFlow;
-    // using BoundaryConditionCase = benchmark;
-}
+// namespace LBM
+// {
+//     /**
+//      * @brief Define the boundary condition case
+//      **/
+//     // using BoundaryConditionCase = lidDrivenCavity;
+//     using BoundaryConditionCase = jetFlow;
+//     // using BoundaryConditionCase = benchmark;
+// }
 
 #include "../../../src/momentBasedLBM/momentBasedLBM.cuh"
 
@@ -93,7 +93,7 @@ int main(const int argc, const char *const argv[])
     const VectorField U("U", mesh, programCtrl);
     const SymmericTensorField Pi("Pi", mesh, programCtrl);
 
-    programCtrl.configure<VelocitySet::smem_alloc_size()>(kernel::momentBasedLBM);
+    programCtrl.configure<VelocitySet::smem_alloc_size(), PREFER_L1>(kernel::momentBasedLBM);
 
     const KernelLauncher momentBasedLBM(mesh, programCtrl, rho, U, Pi);
 

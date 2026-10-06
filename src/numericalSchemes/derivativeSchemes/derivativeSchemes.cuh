@@ -315,106 +315,106 @@ namespace LBM
                 }
             };
 
-            template <typename ReturnType, typename T>
-            __host__ [[nodiscard]] const std::vector<ReturnType> dfdx_v2(
-                const std::vector<T> &f,
-                const host::latticeMesh &mesh)
-            {
-                std::vector<ReturnType> result(f.size(), 0);
+            // template <typename ReturnType, typename T>
+            // __host__ [[nodiscard]] const std::vector<ReturnType> dfdx_v2(
+            //     const std::vector<T> &f,
+            //     const host::latticeMesh &mesh)
+            // {
+            //     std::vector<ReturnType> result(f.size(), 0);
 
-                mesh.nDevices().print("nDevices");
+            //     mesh.nDevices().print("nDevices");
 
-                GPU::forAll(
-                    mesh.nDevices(),
-                    [&]([[maybe_unused]] const host::label_t GPU_x, [[maybe_unused]] const host::label_t GPU_y, [[maybe_unused]] const host::label_t GPU_z)
-                    {
-                        // const host::label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
+            //     GPU::forAll(
+            //         mesh.nDevices(),
+            //         [&]([[maybe_unused]] const host::label_t GPU_x, [[maybe_unused]] const host::label_t GPU_y, [[maybe_unused]] const host::label_t GPU_z)
+            //         {
+            //             // const host::label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nxGPUs, nyGPUs);
 
-                        for (host::label_t bz = 0; bz < mesh.blocksPerDevice<axis::Z>(); bz++)
-                        {
-                            for (host::label_t by = 0; by < mesh.blocksPerDevice<axis::Y>(); by++)
-                            {
-                                for (host::label_t bx = 1; bx < mesh.blocksPerDevice<axis::X>() - 1; bx++)
-                                {
-                                    const host::blockLabel Bx(bx, by, bz);
+            //             for (host::label_t bz = 0; bz < mesh.blocksPerDevice<axis::Z>(); bz++)
+            //             {
+            //                 for (host::label_t by = 0; by < mesh.blocksPerDevice<axis::Y>(); by++)
+            //                 {
+            //                     for (host::label_t bx = 1; bx < mesh.blocksPerDevice<axis::X>() - 1; bx++)
+            //                     {
+            //                         const host::blockLabel Bx(bx, by, bz);
 
-                                    for (host::label_t tz = 0; tz < block::nz<host::label_t>(); tz++)
-                                    {
-                                        for (host::label_t ty = 0; ty < block::ny<host::label_t>(); ty++)
-                                        {
-                                            // Construct a line that spans the width of the stencil across the entire block x dimension
-                                            const thread::array<const double, block::nx<host::label_t>() * 3> stencil_array = stencil_line<double, false, false>(f, ty, tz, bx, by, bz, mesh);
+            //                         for (host::label_t tz = 0; tz < block::nz<host::label_t>(); tz++)
+            //                         {
+            //                             for (host::label_t ty = 0; ty < block::ny<host::label_t>(); ty++)
+            //                             {
+            //                                 // Construct a line that spans the width of the stencil across the entire block x dimension
+            //                                 const thread::array<const double, block::nx<host::label_t>() * 3> stencil_array = stencil_line<double, false, false>(f, ty, tz, bx, by, bz, mesh);
 
-                                            for (host::label_t tx = 0; tx < block::nx<host::label_t>(); tx++)
-                                            {
-                                                const host::threadLabel Tx(tx, ty, tz);
-                                                const host::label_t center = host::idx(Tx, Bx, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
+            //                                 for (host::label_t tx = 0; tx < block::nx<host::label_t>(); tx++)
+            //                                 {
+            //                                     const host::threadLabel Tx(tx, ty, tz);
+            //                                     const host::label_t center = host::idx(Tx, Bx, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
 
-                                                // Get the finite difference value
-                                                result[center] = finite_difference<2, ReturnType>(stencil_array, tx + block::nx<host::label_t>());
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+            //                                     // Get the finite difference value
+            //                                     result[center] = finite_difference<2, ReturnType>(stencil_array, tx + block::nx<host::label_t>());
+            //                                 }
+            //                             }
+            //                         }
+            //                     }
+            //                 }
+            //             }
 
-                        for (host::label_t bz = 0; bz < mesh.blocksPerDevice<axis::Z>(); bz++)
-                        {
-                            for (host::label_t by = 0; by < mesh.blocksPerDevice<axis::Y>(); by++)
-                            {
-                                constexpr const host::label_t bx = 0;
-                                const host::blockLabel Bx(bx, by, bz);
-                                for (host::label_t tz = 0; tz < block::nz<host::label_t>(); tz++)
-                                {
-                                    for (host::label_t ty = 0; ty < block::ny<host::label_t>(); ty++)
-                                    {
-                                        // Construct a line that spans the width of the stencil across the entire block x dimension
-                                        const thread::array<const double, block::nx<host::label_t>() * 3> stencil_array = stencil_line<double, true, false>(f, ty, tz, bx, by, bz, mesh);
+            //             for (host::label_t bz = 0; bz < mesh.blocksPerDevice<axis::Z>(); bz++)
+            //             {
+            //                 for (host::label_t by = 0; by < mesh.blocksPerDevice<axis::Y>(); by++)
+            //                 {
+            //                     constexpr const host::label_t bx = 0;
+            //                     const host::blockLabel Bx(bx, by, bz);
+            //                     for (host::label_t tz = 0; tz < block::nz<host::label_t>(); tz++)
+            //                     {
+            //                         for (host::label_t ty = 0; ty < block::ny<host::label_t>(); ty++)
+            //                         {
+            //                             // Construct a line that spans the width of the stencil across the entire block x dimension
+            //                             const thread::array<const double, block::nx<host::label_t>() * 3> stencil_array = stencil_line<double, true, false>(f, ty, tz, bx, by, bz, mesh);
 
-                                        for (host::label_t tx = 0; tx < block::nx<host::label_t>(); tx++)
-                                        {
-                                            const host::threadLabel Tx(tx, ty, tz);
-                                            const host::label_t center = host::idx(Tx, Bx, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
+            //                             for (host::label_t tx = 0; tx < block::nx<host::label_t>(); tx++)
+            //                             {
+            //                                 const host::threadLabel Tx(tx, ty, tz);
+            //                                 const host::label_t center = host::idx(Tx, Bx, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
 
-                                            // Get the finite difference value
-                                            result[center] = finite_difference<2, ReturnType>(stencil_array, tx + block::nx<host::label_t>());
-                                        }
-                                    }
-                                }
-                            }
-                        }
+            //                                 // Get the finite difference value
+            //                                 result[center] = finite_difference<2, ReturnType>(stencil_array, tx + block::nx<host::label_t>());
+            //                             }
+            //                         }
+            //                     }
+            //                 }
+            //             }
 
-                        for (host::label_t bz = 0; bz < mesh.blocksPerDevice<axis::Z>(); bz++)
-                        {
-                            for (host::label_t by = 0; by < mesh.blocksPerDevice<axis::Y>(); by++)
-                            {
-                                const host::label_t bx = mesh.blocksPerDevice<axis::X>() - 1;
-                                const host::blockLabel Bx(bx, by, bz);
+            //             for (host::label_t bz = 0; bz < mesh.blocksPerDevice<axis::Z>(); bz++)
+            //             {
+            //                 for (host::label_t by = 0; by < mesh.blocksPerDevice<axis::Y>(); by++)
+            //                 {
+            //                     const host::label_t bx = mesh.blocksPerDevice<axis::X>() - 1;
+            //                     const host::blockLabel Bx(bx, by, bz);
 
-                                for (host::label_t tz = 0; tz < block::nz<host::label_t>(); tz++)
-                                {
-                                    for (host::label_t ty = 0; ty < block::ny<host::label_t>(); ty++)
-                                    {
-                                        // Construct a line that spans the width of the stencil across the entire block x dimension
-                                        const thread::array<const double, block::nx<host::label_t>() * 3> stencil_array = stencil_line<double, false, true>(f, ty, tz, bx, by, bz, mesh);
+            //                     for (host::label_t tz = 0; tz < block::nz<host::label_t>(); tz++)
+            //                     {
+            //                         for (host::label_t ty = 0; ty < block::ny<host::label_t>(); ty++)
+            //                         {
+            //                             // Construct a line that spans the width of the stencil across the entire block x dimension
+            //                             const thread::array<const double, block::nx<host::label_t>() * 3> stencil_array = stencil_line<double, false, true>(f, ty, tz, bx, by, bz, mesh);
 
-                                        for (host::label_t tx = 0; tx < block::nx<host::label_t>(); tx++)
-                                        {
-                                            const host::threadLabel Tx(tx, ty, tz);
-                                            const host::label_t center = host::idx(Tx, Bx, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
+            //                             for (host::label_t tx = 0; tx < block::nx<host::label_t>(); tx++)
+            //                             {
+            //                                 const host::threadLabel Tx(tx, ty, tz);
+            //                                 const host::label_t center = host::idx(Tx, Bx, mesh.blocksPerDevice<axis::X>(), mesh.blocksPerDevice<axis::Y>());
 
-                                            // Get the finite difference value
-                                            result[center] = finite_difference<2, ReturnType>(stencil_array, tx + block::nx<host::label_t>());
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
+            //                                 // Get the finite difference value
+            //                                 result[center] = finite_difference<2, ReturnType>(stencil_array, tx + block::nx<host::label_t>());
+            //                             }
+            //                         }
+            //                     }
+            //                 }
+            //             }
+            //         });
 
-                return result;
-            }
+            //     return result;
+            // }
         }
 
     }

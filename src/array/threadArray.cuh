@@ -518,6 +518,7 @@ namespace LBM
     using scalar = thread::array<scalar_t, 1>;
     using vector = thread::array<scalar_t, 3>;
     using symmetricTensor = thread::array<scalar_t, 6>;
+    using blockSharedBuffer = thread::array<scalar_t, sharedMemoryBufferSize()>;
 }
 
 #endif

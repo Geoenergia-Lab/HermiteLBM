@@ -82,7 +82,7 @@ namespace LBM
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T cs2() noexcept
         {
-            return static_cast<T>(static_cast<double>(1) / static_cast<double>(3));
+            return static_cast<T>(static_cast<double>(1) / as2<double>());
         }
 
         /**

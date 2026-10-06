@@ -51,33 +51,169 @@ SourceFiles
 
 case normalVectorBase::WEST():
 {
+    if constexpr (lateralNeumann)
+    {
+        const device::label_t lateralOutlet = block::idx(WestInterior, Tx.value<axis::Y>(), Tx.value<axis::Z>());
+
+        // Classic Neumann
+        moments[m_i<1>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<1>()];
+        moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<2>()];
+        moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<3>()];
+
+        Dirichlet::apply<VelocitySet, normalVectorBase::WEST()>(moments);
+
+        if constexpr (fixOutletDensity)
+        {
+            moments[0] = rho0();
+        }
+    }
+
     return;
 }
 case normalVectorBase::EAST():
 {
+    if constexpr (lateralNeumann)
+    {
+        const device::label_t lateralOutlet = block::idx(EastInterior, Tx.value<axis::Y>(), Tx.value<axis::Z>());
+
+        // Classic Neumann
+        moments[m_i<1>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<1>()];
+        moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<2>()];
+        moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<3>()];
+
+        Dirichlet::apply<VelocitySet, normalVectorBase::EAST()>(moments);
+
+        if constexpr (fixOutletDensity)
+        {
+            moments[0] = rho0();
+        }
+    }
+
     return;
 }
 case normalVectorBase::SOUTH():
 {
+    if constexpr (lateralNeumann)
+    {
+        const device::label_t lateralOutlet = block::idx(Tx.value<axis::X>(), SouthInterior, Tx.value<axis::Z>());
+
+        // Classic Neumann
+        moments[m_i<1>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<1>()];
+        moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<2>()];
+        moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<3>()];
+
+        Dirichlet::apply<VelocitySet, normalVectorBase::SOUTH()>(moments);
+
+        if constexpr (fixOutletDensity)
+        {
+            moments[0] = rho0();
+        }
+    }
+
     return;
 }
 case normalVectorBase::NORTH():
 {
+    if constexpr (lateralNeumann)
+    {
+        const device::label_t lateralOutlet = block::idx(Tx.value<axis::X>(), NorthInterior, Tx.value<axis::Z>());
+
+        // Classic Neumann
+        moments[m_i<1>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<1>()];
+        moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<2>()];
+        moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<3>()];
+
+        Dirichlet::apply<VelocitySet, normalVectorBase::NORTH()>(moments);
+
+        if constexpr (fixOutletDensity)
+        {
+            moments[0] = rho0();
+        }
+    }
+
     return;
 }
 case normalVectorBase::SOUTH_WEST():
 {
+    if constexpr (lateralNeumann)
+    {
+        const device::label_t lateralOutlet = block::idx(WestInterior, SouthInterior, Tx.value<axis::Z>());
+
+        // Classic Neumann
+        moments[m_i<1>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<1>()];
+        moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<2>()];
+        moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<3>()];
+
+        Dirichlet::apply<VelocitySet, normalVectorBase::SOUTH_WEST()>(moments);
+
+        if constexpr (fixOutletDensity)
+        {
+            moments[0] = rho0();
+        }
+    }
+
     return;
 }
 case normalVectorBase::NORTH_WEST():
 {
+    if constexpr (lateralNeumann)
+    {
+        const device::label_t lateralOutlet = block::idx(WestInterior, NorthInterior, Tx.value<axis::Z>());
+
+        // Classic Neumann
+        moments[m_i<1>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<1>()];
+        moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<2>()];
+        moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<3>()];
+
+        Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_WEST()>(moments);
+
+        if constexpr (fixOutletDensity)
+        {
+            moments[0] = rho0();
+        }
+    }
+
     return;
 }
 case normalVectorBase::SOUTH_EAST():
 {
+    if constexpr (lateralNeumann)
+    {
+        const device::label_t lateralOutlet = block::idx(EastInterior, SouthInterior, Tx.value<axis::Z>());
+
+        // Classic Neumann
+        moments[m_i<1>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<1>()];
+        moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<2>()];
+        moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<3>()];
+
+        Dirichlet::apply<VelocitySet, normalVectorBase::SOUTH_EAST()>(moments);
+
+        if constexpr (fixOutletDensity)
+        {
+            moments[0] = rho0();
+        }
+    }
+
     return;
 }
 case normalVectorBase::NORTH_EAST():
 {
+    if constexpr (lateralNeumann)
+    {
+        const device::label_t lateralOutlet = block::idx(EastInterior, NorthInterior, Tx.value<axis::Z>());
+
+        // Classic Neumann
+        moments[m_i<1>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<1>()];
+        moments[m_i<2>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<2>()];
+        moments[m_i<3>()] = sharedBuffer[lateralOutlet * (NUMBER_MOMENTS()) + m_i<3>()];
+
+        Dirichlet::apply<VelocitySet, normalVectorBase::NORTH_EAST()>(moments);
+
+        if constexpr (fixOutletDensity)
+        {
+            moments[0] = rho0();
+        }
+    }
+
     return;
 }

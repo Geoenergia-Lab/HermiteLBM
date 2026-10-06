@@ -68,7 +68,7 @@ namespace LBM
 #ifdef SCALAR_PRECISION
             types::assertions::validate<scalar_t>();
 
-            return 8 * sizeof(float) / (sizeof(scalar_t));
+            return 16 * sizeof(float) / (sizeof(scalar_t));
 #else
             return 8;
 #endif
@@ -147,20 +147,6 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval T stride() noexcept
         {
             return size<T>() + padding<T>();
-        }
-
-        /**
-         * @brief Total size of the shared memory
-         * @tparam Q Number of velocity coefficients of the lattice
-         * @tparam nVars Number of moment variables
-         * @param[in] variableSize Size of the variable
-         **/
-        template <const host::label_t Q, const host::label_t nVars>
-        __device__ __host__ [[nodiscard]] inline consteval host::label_t sharedMemoryBufferSize(const host::label_t variableSize = 1) noexcept
-        {
-            constexpr const host::label_t A = (Q - static_cast<host::label_t>(1)) * block::stride<host::label_t>();
-            constexpr const host::label_t B = block::size<host::label_t>() * (nVars + static_cast<host::label_t>(1));
-            return (A > B ? A : B) * variableSize;
         }
 
         /**

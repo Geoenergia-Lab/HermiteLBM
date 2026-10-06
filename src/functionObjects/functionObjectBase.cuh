@@ -105,11 +105,11 @@ namespace LBM
             template <class Kernel>
             __host__ static inline constexpr void configure(const programControl &programCtrl) noexcept
             {
-                programCtrl.configure<0, false>(Kernel::instantaneous());
-                programCtrl.configure<0, false>(Kernel::instantaneousAndMean());
-                programCtrl.configure<0, false>(Kernel::mean());
-                programCtrl.configure<0, false>(Kernel::prime());
-                programCtrl.configure<0, false>(Kernel::primeSqMean());
+                programCtrl.configure<0, PREFER_L1>(Kernel::instantaneous());
+                programCtrl.configure<0, PREFER_L1>(Kernel::instantaneousAndMean());
+                programCtrl.configure<0, PREFER_L1>(Kernel::mean());
+                programCtrl.configure<0, PREFER_L1>(Kernel::prime());
+                programCtrl.configure<0, PREFER_L1>(Kernel::primeSqMean());
             }
 
             /**

@@ -137,7 +137,7 @@ namespace LBM
          * @brief Constructs a thermal model for the isothermal case, calculating the diagonal correction term and Pics2 value based on the provided moments
          * @param[in] moments Moment array (rho, U, Pi)
          **/
-        __device__ __host__ [[nodiscard]] thermalModel<Isothermal>(const momentsArray &moments) noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr thermalModel<Isothermal>(const momentsArray &moments) noexcept
             : Base(Base::pics2(diagonalTerm_[m_i<0>()], diagonalTerm_[m_i<1>()], diagonalTerm_[m_i<2>()])),
               diagonalTerm_(This::diagonalTerm(moments)) {}
 
@@ -206,7 +206,7 @@ namespace LBM
          * @brief Constructs a thermal model for the thermal case, calculating the Pics2 value based on the provided moments
          * @param[in] moments Moment array (rho, U, Pi)
          **/
-        __device__ __host__ [[nodiscard]] thermalModel<Thermal>(const momentsArray &moments) noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr thermalModel<Thermal>(const momentsArray &moments) noexcept
             : Base(Base::pics2(moments[q_i<4>()], moments[q_i<7>()], moments[q_i<9>()])) {}
 
         /**

@@ -62,6 +62,17 @@ namespace LBM
         return 10;
     }
 
+    /**
+     * @brief Total size of the shared memory
+     * @tparam Q Number of velocity coefficients of the lattice
+     * @tparam nVars Number of moment variables
+     * @param[in] variableSize Size of the variable
+     **/
+    __device__ __host__ [[nodiscard]] inline consteval host::label_t sharedMemoryBufferSize(const host::label_t variableSize = 1) noexcept
+    {
+        return block::size<host::label_t>() * NUMBER_MOMENTS<host::label_t>() * variableSize;
+    }
+
     namespace device
     {
         using ptrColl_t = device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t>;

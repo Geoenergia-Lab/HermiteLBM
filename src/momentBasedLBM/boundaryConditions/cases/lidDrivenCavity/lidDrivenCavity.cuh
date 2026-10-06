@@ -74,17 +74,15 @@ namespace LBM
         /**
          * @brief Public method to calculate the post-streaming methods and update boundary conditions
          **/
-        template <class VelocitySet, class SharedBuffer>
+        template <class VelocitySet>
         __device__ static inline constexpr void calculate_moments(
-            const thread::array<scalar_t, VelocitySet::Q()> &pop,
             momentsArray &moments,
-            [[maybe_unused]] const SharedBuffer &sharedBuffer,
+            [[maybe_unused]] blockSharedBuffer &sharedBuffer,
             [[maybe_unused]] const thread::coordinate &Tx,
             const device::pointCoordinate &point,
-            [[maybe_unused]] const device::label_t tid) noexcept
+            [[maybe_unused]] const device::label_t tid,
+            const NormalVector &boundaryNormal) noexcept
         {
-            const NormalVector boundaryNormal(point);
-
             const scalar_t rho_I = moments[m_i<0>()];
             const scalar_t mxy_I = moments[m_i<5>()];
             const scalar_t mxz_I = moments[m_i<6>()];

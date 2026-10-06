@@ -194,29 +194,50 @@ namespace LBM
 
         /**
          * @brief Calculate the regularized distribution function from the moments
-         * @tparam CalculateRest Whether to calculate the rest population (f_0) or not
          * @param[out] pop The distribution function array
          * @param[in] moments Moment array (rho, U, Pi)
          **/
-        template <const bool CalculateRest = true>
-        __device__ __host__ static inline constexpr void reconstruct(
-            thread::array<scalar_t, Lattice::Q()> &pop,
-            const momentsArray &moments) noexcept
+        __device__ __host__ static inline constexpr void reconstruct(thread::array<scalar_t, Lattice::Q()> &pop, const momentsArray &moments) noexcept
+        {
+            // Loop over the non-rest populations
+            device::constexpr_for<0, This::Q()>(
+                [&](const auto i)
+                {
+                    reconstruct<i>(pop, moments);
+                });
+        }
+
+        /**
+         * @brief Reconstruct a specific population from a given set of moments
+         * @tparam i The index of the population to reconstruct
+         * @param[out] pop The distribution function array
+         * @param[in] moments Moment array (rho, U, Pi)
+         **/
+        template <const device::label_t i>
+        __device__ __host__ static inline constexpr void reconstruct(thread::array<scalar_t, Lattice::Q()> &pop, const momentsArray &moments) noexcept
+        {
+            pop[q_i<i>()] = reconstruct<i>(moments);
+        }
+
+        /**
+         * @brief Reconstruct a specific population from a given set of moments
+         * @tparam i The index of the population to reconstruct
+         * @return The distribution function value for the specified population index
+         * @param[in] moments Moment array (rho, U, Pi)
+         **/
+        template <const device::label_t i>
+        __device__ __host__ [[nodiscard]] static inline constexpr scalar_t reconstruct(const momentsArray &moments) noexcept
         {
             const ThermoModel thermo(moments);
 
-            if constexpr (CalculateRest)
+            if constexpr (i == 0)
             {
-                pop[q_i<0>()] = moments[m_i<0>()] * Lattice::template w_0<scalar_t>() * thermo.pics2();
+                return moments[m_i<0>()] * Lattice::template w_0<const scalar_t>() * thermo.pics2();
             }
-            const thread::array<const scalar_t, This::nPerm()> rho_w = This::rhow(moments[m_i<0>()]);
-
-            // Loop over the non-rest populations
-            device::constexpr_for<1, This::Q()>(
-                [&](const auto i)
-                {
-                    pop[q_i<i>()] = This::rhow<i>(rho_w) * (thermo.pics2() + This::template sum_moments<i>(thermo, moments));
-                });
+            else
+            {
+                return moments[m_i<0>()] * Lattice::template weight<const scalar_t, i>() * (thermo.pics2() + This::template sum_moments<i>(thermo, moments));
+            }
         }
 
     private:

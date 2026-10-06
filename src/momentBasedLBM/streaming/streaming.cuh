@@ -66,57 +66,61 @@ namespace LBM
     {
     public:
         /**
-         * @brief Default constructor
-         **/
-        __device__ __host__ [[nodiscard]] inline consteval streaming() {}
-
-        /**
-         * @brief Saves thread population density to shared memory
-         * @tparam N Size of shared memory array
-         * @param[in] pop Population density array at current lattice node
-         * @param[out] s_pop Shared memory array for population storage
+         * @brief Reads global moments into the shared memory array
+         * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
+         * @param[out] sharedBuffer Shared memory array for population storage
          * @param[in] tid Thread ID within block
-         *
-         * This method stores population data from individual threads into
-         * shared memory for efficient access during the streaming step.
-         * It uses compile-time loop unrolling for optimal performance.
+         * @param[in] idx Global index of the lattice node
          **/
-        template <class SharedBuffer>
         __device__ static inline void save(
-            const thread::array<scalar_t, VelocitySet::template Q()> &pop,
-            SharedBuffer &s_pop,
-            const device::label_t tid) noexcept
+            const device::ptrColl_t &devPtrs,
+            blockSharedBuffer &sharedBuffer,
+            const device::label_t tid,
+            const device::label_t idx) noexcept
         {
-            device::constexpr_for<0, (VelocitySet::template Q() - 1)>(
+            sharedBuffer[q_i<0 * block::size()>() + tid] = devPtrs.ptr<axis::index<axis::NO_DIRECTION>()>()[idx] + rho0();
+
+            device::constexpr_for<1, NUMBER_MOMENTS<device::label_t>()>(
                 [&](const auto i)
                 {
-                    s_pop[q_i<i * block::stride()>() + tid] = pop[q_i<i + 1>()];
+                    sharedBuffer[q_i<i * block::size()>() + tid] = devPtrs.ptr<i>()[idx];
                 });
+
+            block::sync();
         }
 
         /**
          * @brief Pulls population density from shared memory with periodic boundaries
          * @tparam N Size of shared memory array
          * @param[out] pop Population density array to be populated
-         * @param[in] s_pop Shared memory array containing population data
-         *
-         * This method retrieves population data from shared memory, applying
-         * periodic boundary conditions to handle data exchange between threads
-         * at block boundaries. It implements the D3Q19 streaming pattern.
+         * @param[in] sharedBuffer Shared memory array containing moment data
          **/
-        template <class SharedBuffer>
         __device__ static inline void pull(
             thread::array<scalar_t, VelocitySet::template Q()> &pop,
-            const SharedBuffer &s_pop,
+            const blockSharedBuffer &sharedBuffer,
             const thread::coordinate &Tx) noexcept
         {
-            device::constexpr_for<0, (VelocitySet::template Q() - 1)>(
+            device::constexpr_for<0, VelocitySet::template Q()>(
                 [&](const auto i)
                 {
-                    const device::label_t x = periodic_index<-VelocitySet::template c<int, axis::X>(q_i<i + 1>()), block::nx<device::label_t>()>(Tx.value<axis::X>());
-                    const device::label_t y = periodic_index<-VelocitySet::template c<int, axis::Y>(q_i<i + 1>()), block::ny<device::label_t>()>(Tx.value<axis::Y>());
-                    const device::label_t z = periodic_index<-VelocitySet::template c<int, axis::Z>(q_i<i + 1>()), block::nz<device::label_t>()>(Tx.value<axis::Z>());
-                    pop[q_i<i + 1>()] = s_pop[q_i<i * block::stride()>() + block::idx(x, y, z)];
+                    const device::label_t idxIncoming = block::idx(
+                        periodic_index<-VelocitySet::template c<int, axis::X>(q_i<i>()), block::template nx<device::label_t>()>(Tx.value<axis::X>()),
+                        periodic_index<-VelocitySet::template c<int, axis::Y>(q_i<i>()), block::template ny<device::label_t>()>(Tx.value<axis::Y>()),
+                        periodic_index<-VelocitySet::template c<int, axis::Z>(q_i<i>()), block::template nz<device::label_t>()>(Tx.value<axis::Z>()));
+
+                    const momentsArray incomingMoments{
+                        sharedBuffer[q_i<0 * block::size()>() + idxIncoming],
+                        sharedBuffer[q_i<1 * block::size()>() + idxIncoming],
+                        sharedBuffer[q_i<2 * block::size()>() + idxIncoming],
+                        sharedBuffer[q_i<3 * block::size()>() + idxIncoming],
+                        sharedBuffer[q_i<4 * block::size()>() + idxIncoming],
+                        sharedBuffer[q_i<5 * block::size()>() + idxIncoming],
+                        sharedBuffer[q_i<6 * block::size()>() + idxIncoming],
+                        sharedBuffer[q_i<7 * block::size()>() + idxIncoming],
+                        sharedBuffer[q_i<8 * block::size()>() + idxIncoming],
+                        sharedBuffer[q_i<9 * block::size()>() + idxIncoming]};
+
+                    VelocitySet::reconstruct<i>(pop, incomingMoments);
                 });
         }
 

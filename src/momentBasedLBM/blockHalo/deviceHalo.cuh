@@ -215,17 +215,19 @@ namespace LBM
                 haloPtrs[0], haloPtrs[1], haloPtrs[2], haloPtrs[3], haloPtrs[4], haloPtrs[5],
                 haloPtrs[6], haloPtrs[7], haloPtrs[8], haloPtrs[9], haloPtrs[10], haloPtrs[11]);
 
-            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), const scalar_t> devPtrs(
-                rho.self().constPtr(deviceIdx),
-                U.x().constPtr(deviceIdx),
-                U.y().constPtr(deviceIdx),
-                U.z().constPtr(deviceIdx),
-                Pi.xx().constPtr(deviceIdx),
-                Pi.xy().constPtr(deviceIdx),
-                Pi.xz().constPtr(deviceIdx),
-                Pi.yy().constPtr(deviceIdx),
-                Pi.yz().constPtr(deviceIdx),
-                Pi.zz().constPtr(deviceIdx));
+            const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs(
+                rho.self().mutPtr(deviceIdx),
+                U.x().mutPtr(deviceIdx),
+                U.y().mutPtr(deviceIdx),
+                U.z().mutPtr(deviceIdx),
+                Pi.xx().mutPtr(deviceIdx),
+                Pi.xy().mutPtr(deviceIdx),
+                Pi.xz().mutPtr(deviceIdx),
+                Pi.yy().mutPtr(deviceIdx),
+                Pi.yz().mutPtr(deviceIdx),
+                Pi.zz().mutPtr(deviceIdx));
+
+            const bool firstTimeStep = programCtrl.timeStep() == static_cast<host::label_t>(0);
 
             if (runTime::program_status.load() == runTime::GOOD)
             {
@@ -233,7 +235,8 @@ namespace LBM
                     mesh,
                     programCtrl.streams()[device::internalStreamID(deviceIdx)],
                     devPtrs,
-                    haloBuffers);
+                    haloBuffers,
+                    firstTimeStep);
             }
 
             errorHandler::handle(cudaDeviceSynchronize());

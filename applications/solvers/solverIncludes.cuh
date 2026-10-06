@@ -61,8 +61,19 @@ SourceFiles
 
 // LBM includes
 #include "../../../src/momentBasedLBM/velocitySet/velocitySet.cuh"
-#include "../../../src/momentBasedLBM/blockHalo/blockHalo.cuh"
 #include "../../../src/momentBasedLBM/boundaryConditions/boundaryConditions.cuh"
+
+namespace LBM
+{
+    /**
+     * @brief Define the boundary condition case
+     **/
+    // using BoundaryConditionCase = lidDrivenCavity;
+    using BoundaryConditionCase = jetFlow;
+    // using BoundaryConditionCase = benchmark;
+}
+
+#include "../../../src/momentBasedLBM/blockHalo/blockHalo.cuh"
 #include "../../../src/momentBasedLBM/collision/collision.cuh"
 #include "../../../src/momentBasedLBM/streaming/streaming.cuh"
 
