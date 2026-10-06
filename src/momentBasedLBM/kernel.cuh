@@ -243,17 +243,17 @@ namespace LBM
                 errorHandler::handleInline(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
 
                 // Sync the streams to ensure previous operations are complete before launching new kernels
-                for (const host::label_t idxStream : idxStreams)
+                for (host::label_t idxStream = 0; idxStream < idxStreams.size(); idxStream++)
                 {
-                    programCtrl.streams().synchronize(device::idxStream(deviceIdx, idxStream));
+                    programCtrl.streams().synchronize(device::idxStream(deviceIdx, idxStreams[idxStream]));
                 }
 
                 // Launch the kernels for the specified streams and block offsets
                 for (host::label_t idxStream = 0; idxStream < idxStreams.size(); idxStream++)
                 {
                     kernel::launch<momentBasedLBM, VelocitySet::smem_alloc_size()>(
-                        mesh.gridBlock()[device::idxStream(deviceIdx, idxStreams[idxStream])],
-                        programCtrl.streams()[device::internalStreamID(deviceIdx)],
+                        mesh.gridBlock()[idxStreams[idxStream]],
+                        programCtrl.streams()[device::idxStream(deviceIdx, idxStreams[idxStream])],
                         devPtrs[deviceIdx],
                         haloPtrs.readBuffer(deviceIdx, timeStep),
                         haloPtrs.writeBuffer(deviceIdx, timeStep),
@@ -286,7 +286,7 @@ namespace LBM
             const haloBuffer<VelocitySet> &haloPtrs,
             const host::label_t timeStep) noexcept
         {
-            constexpr const std::array<host::label_t, 1> idxStreams = {static_cast<device::label_t>(1)};
+            constexpr const std::array<host::label_t, 1> idxStreams = {static_cast<host::label_t>(1)};
             constexpr const std::array<device::label_t, 1> bzOffsets = {static_cast<device::label_t>(1)};
             launchHelper(mesh, programCtrl, devPtrs, haloPtrs, timeStep, idxStreams, bzOffsets);
         }
@@ -308,7 +308,7 @@ namespace LBM
             const deviceCommunicator<VelocitySet> &devComm,
             const host::label_t timeStep) noexcept
         {
-            constexpr const std::array<host::label_t, 2> idxStreams = {static_cast<device::label_t>(0), static_cast<device::label_t>(2)};
+            constexpr const std::array<host::label_t, 2> idxStreams = {static_cast<host::label_t>(0), static_cast<host::label_t>(2)};
             const std::array<device::label_t, 2> bzOffsets = {static_cast<device::label_t>(0), static_cast<device::label_t>(mesh.blocksPerDevice<axis::Z>() - static_cast<host::label_t>(1))};
             launchHelper(mesh, programCtrl, devPtrs, haloPtrs, timeStep, idxStreams, bzOffsets);
             devComm.exchange(timeStep);
