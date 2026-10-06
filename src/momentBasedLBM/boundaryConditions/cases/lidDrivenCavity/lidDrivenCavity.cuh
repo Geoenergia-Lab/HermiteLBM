@@ -83,9 +83,41 @@ namespace LBM
             [[maybe_unused]] const device::label_t tid,
             const NormalVector &boundaryNormal) noexcept
         {
-            if (boundaryNormal.isBoundary())
+            const scalar_t rho_I = moments[m_i<0>()];
+            const scalar_t mxy_I = moments[m_i<5>()];
+            const scalar_t mxz_I = moments[m_i<6>()];
+            const scalar_t myz_I = moments[m_i<8>()];
+
+            // Apply Dirichlet boundary conditions
             {
-                Base::apply<VelocitySet>(moments, boundaryNormal.nodeType());
+                const scalar_t nBoundaries = boundaryNormal.template countBoundaries<scalar_t>();
+
+                const symmetricTensor boundarySwitches = {
+                    boundaryNormal.template isWest<scalar_t>(),
+                    boundaryNormal.template isEast<scalar_t>(),
+                    boundaryNormal.template isNorth<scalar_t>(),
+                    boundaryNormal.template isSouth<scalar_t>(),
+                    boundaryNormal.template isBack<scalar_t>(),
+                    boundaryNormal.template isFront<scalar_t>()};
+
+                moments[m_i<1>()] = U<axis::X>(boundarySwitches, nBoundaries);
+                moments[m_i<2>()] = U<axis::Y>(boundarySwitches, nBoundaries);
+                moments[m_i<3>()] = U<axis::Z>(boundarySwitches, nBoundaries);
+
+                // We can make m_xx branchless very easily
+                // North: Equilibrium with constant velocity boundary
+                // Others: Equilibrium with zero velocity boundary
+                // So, we just switch U_North[0] ^ 2 based on the North condition
+                // We are applying the velocity lid to ALL North boundaries, including edges and corners
+                {
+                    moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];
+                }
+            }
+
+            // Apply the second-order moments that are universal to this case
+            {
+                moments[m_i<7>()] = static_cast<scalar_t>(0);
+                moments[m_i<9>()] = static_cast<scalar_t>(0);
             }
 
             switch (boundaryNormal.nodeType())

@@ -156,10 +156,12 @@ namespace LBM
 
             __shared__ blockSharedBuffer sharedBuffer;
 
-            const normalVector<var3<bool>(true, true, false)> boundaryNormal(point);
-
+            // Update the post-streaming moments according to the interior and/or boundary conditions
             if constexpr (BoundaryConditions::appliesCondition())
             {
+                using NormalVector = normalVector<var3<bool>(BoundaryConditions::template periodic<axis::X>(), BoundaryConditions::template periodic<axis::Y>(), BoundaryConditions::template periodic<axis::Z>())>;
+                const NormalVector boundaryNormal(point);
+                VelocitySet::template calculate_moments(moments, pop, boundaryNormal);
                 BoundaryConditions::template calculate_moments<VelocitySet>(moments, sharedBuffer, Tx, point, tid, boundaryNormal);
             }
             else
