@@ -55,7 +55,7 @@ namespace LBM
     struct constantVelocityBC
     {
         template <const nodeType_t BoundaryCase>
-        __device__ __host__ [[nodiscard]] static inline constexpr void apply(momentsArray &moments) noexcept
+        [[nodiscard]] __device__ __host__ static inline constexpr void apply(momentsArray &moments) noexcept
         {
             if constexpr (BoundaryCase == normalVectorBase::SOUTH_WEST_BACK())
             {
@@ -219,7 +219,7 @@ namespace LBM
     struct noSlipVelocityBC
     {
         template <const nodeType_t BoundaryCase>
-        __device__ __host__ [[nodiscard]] static inline constexpr void apply(momentsArray &moments) noexcept
+        [[nodiscard]] __device__ __host__ static inline constexpr void apply(momentsArray &moments) noexcept
         {
             moments[q_i<1>()] = static_cast<scalar_t>(0);
             moments[q_i<2>()] = static_cast<scalar_t>(0);

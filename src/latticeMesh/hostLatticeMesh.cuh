@@ -77,7 +77,7 @@ namespace LBM
              * - Calculation of LBM relaxation parameters
              * - Initialization of device constants for GPU execution
              **/
-            __host__ [[nodiscard]] latticeMesh(const programControl &programCtrl)
+            [[nodiscard]] __host__ latticeMesh(const programControl &programCtrl)
                 : dimensions_(string::extractParameter<host::blockLabel>("latticeMesh", "n")),
                   L_(string::extractParameter<pointVector>("latticeMesh", "L")),
                   nDevices_(string::extractParameter<host::blockLabel>("deviceDecomposition", "n")),
@@ -104,7 +104,7 @@ namespace LBM
              * @param[in] mesh The lattice mesh
              * @param[in] meshDimensions The dimensions of the mesh to construct
              **/
-            __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const host::blockLabel &meshDimensions) noexcept
+            [[nodiscard]] __host__ latticeMesh(const host::latticeMesh &mesh, const host::blockLabel &meshDimensions) noexcept
                 : dimensions_({meshDimensions.x, meshDimensions.y, meshDimensions.z}),
                   L_(mesh.L()),
                   nDevices_(string::extractParameter<host::blockLabel>("deviceDecomposition", "n")),
@@ -118,15 +118,15 @@ namespace LBM
             /**
              * @brief Disable copying
              **/
-            __host__ [[nodiscard]] latticeMesh(const latticeMesh &) = delete;
-            __host__ [[nodiscard]] latticeMesh &operator=(const latticeMesh &) = delete;
+            [[nodiscard]] __host__ latticeMesh(const latticeMesh &) = delete;
+            [[nodiscard]] __host__ latticeMesh &operator=(const latticeMesh &) = delete;
 
             /**
              * @brief Returns the total number of lattice points in the mesh.
              *
              * @return The total number of grid points.
              **/
-            __host__ [[nodiscard]] inline constexpr host::label_t size() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t size() const noexcept
             {
                 return dimensions_.size();
             }
@@ -138,7 +138,7 @@ namespace LBM
              * @return Number of points in the selected direction.
              **/
             template <const axis::type alpha>
-            __host__ [[nodiscard]] inline constexpr host::label_t dimension() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t dimension() const noexcept
             {
                 return dimensions_.value<alpha>();
             }
@@ -148,7 +148,7 @@ namespace LBM
              *
              * @return Const reference to the mesh extents.
              **/
-            __host__ [[nodiscard]] inline constexpr const host::blockLabel &dimensions() const noexcept
+            [[nodiscard]] __host__ inline constexpr const host::blockLabel &dimensions() const noexcept
             {
                 return dimensions_;
             }
@@ -160,7 +160,7 @@ namespace LBM
              * @return Number of blocks in the selected direction.
              **/
             template <const axis::type alpha>
-            __host__ [[nodiscard]] inline constexpr host::label_t nBlocks() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t nBlocks() const noexcept
             {
                 return dimensions_.value<alpha>() / block::n<alpha, host::label_t>();
             }
@@ -170,7 +170,7 @@ namespace LBM
              *
              * @return Block counts for x, y, and z directions.
              **/
-            __host__ [[nodiscard]] inline constexpr host::blockLabel nBlocks() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::blockLabel nBlocks() const noexcept
             {
                 return host::blockLabel(nBlocks<axis::X>(), nBlocks<axis::Y>(), nBlocks<axis::Z>());
             }
@@ -180,7 +180,7 @@ namespace LBM
              *
              * @return Grid dimensions for the three launch phases.
              **/
-            __host__ [[nodiscard]] inline constexpr const std::array<dim3, 3> &gridBlock() const noexcept
+            [[nodiscard]] __host__ inline constexpr const std::array<dim3, 3> &gridBlock() const noexcept
             {
                 return gridBlock_;
             }
@@ -190,7 +190,7 @@ namespace LBM
              *
              * @return Thread block shape.
              **/
-            __host__ [[nodiscard]] static inline consteval dim3 threadBlock() noexcept
+            [[nodiscard]] __host__ static inline consteval dim3 threadBlock() noexcept
             {
                 return {block::nx<uint32_t>(), block::ny<uint32_t>(), block::nz<uint32_t>()};
             }
@@ -200,7 +200,7 @@ namespace LBM
              *
              * @return Const reference to the physical length vector.
              **/
-            __host__ [[nodiscard]] inline constexpr const pointVector &L() const noexcept
+            [[nodiscard]] __host__ inline constexpr const pointVector &L() const noexcept
             {
                 return L_;
             }
@@ -211,7 +211,7 @@ namespace LBM
              * @param[in] x X coordinate of the point.
              * @return true if the point is on the west face; otherwise false.
              **/
-            __host__ [[nodiscard]] inline constexpr bool West(const host::label_t x) const noexcept
+            [[nodiscard]] __host__ inline constexpr bool West(const host::label_t x) const noexcept
             {
                 return (x == 0);
             }
@@ -222,7 +222,7 @@ namespace LBM
              * @param[in] x X coordinate of the point.
              * @return true if the point is on the east face; otherwise false.
              **/
-            __host__ [[nodiscard]] inline constexpr bool East(const host::label_t x) const noexcept
+            [[nodiscard]] __host__ inline constexpr bool East(const host::label_t x) const noexcept
             {
                 return (x == dimensions_.x - 1);
             }
@@ -233,7 +233,7 @@ namespace LBM
              * @param[in] y Y coordinate of the point.
              * @return true if the point is on the south face; otherwise false.
              **/
-            __host__ [[nodiscard]] inline constexpr bool South(const host::label_t y) const noexcept
+            [[nodiscard]] __host__ inline constexpr bool South(const host::label_t y) const noexcept
             {
                 return (y == 0);
             }
@@ -244,7 +244,7 @@ namespace LBM
              * @param[in] y Y coordinate of the point.
              * @return true if the point is on the north face; otherwise false.
              **/
-            __host__ [[nodiscard]] inline constexpr bool North(const host::label_t y) const noexcept
+            [[nodiscard]] __host__ inline constexpr bool North(const host::label_t y) const noexcept
             {
                 return (y == dimensions_.y - 1);
             }
@@ -255,7 +255,7 @@ namespace LBM
              * @param[in] z Z coordinate of the point.
              * @return true if the point is on the back face; otherwise false.
              **/
-            __host__ [[nodiscard]] inline constexpr bool Back(const host::label_t z) const noexcept
+            [[nodiscard]] __host__ inline constexpr bool Back(const host::label_t z) const noexcept
             {
                 return (z == 0);
             }
@@ -266,7 +266,7 @@ namespace LBM
              * @param[in] z Z coordinate of the point.
              * @return true if the point is on the front face; otherwise false.
              **/
-            __host__ [[nodiscard]] inline constexpr bool Front(const host::label_t z) const noexcept
+            [[nodiscard]] __host__ inline constexpr bool Front(const host::label_t z) const noexcept
             {
                 return (z == dimensions_.z - 1);
             }
@@ -276,7 +276,7 @@ namespace LBM
              *
              * @return Device counts in each direction.
              **/
-            __host__ [[nodiscard]] inline constexpr const host::blockLabel &nDevices() const noexcept
+            [[nodiscard]] __host__ inline constexpr const host::blockLabel &nDevices() const noexcept
             {
                 return nDevices_;
             }
@@ -288,7 +288,7 @@ namespace LBM
              * @return Number of devices assigned along the selected axis.
              **/
             template <const axis::type alpha>
-            __host__ [[nodiscard]] inline constexpr host::label_t nDevices() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t nDevices() const noexcept
             {
                 return nDevices_.value<alpha>();
             }
@@ -301,7 +301,7 @@ namespace LBM
              * @return Number of entries needed for the face halo.
              **/
             template <const axis::type alpha, const host::label_t QF>
-            __host__ [[nodiscard]] inline constexpr host::label_t nFaces() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t nFaces() const noexcept
             {
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -316,7 +316,7 @@ namespace LBM
              * @return Number of face entries assigned to each device.
              **/
             template <const axis::type alpha, const host::label_t QF>
-            __host__ [[nodiscard]] inline constexpr host::label_t nFacesPerDevice() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t nFacesPerDevice() const noexcept
             {
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -328,7 +328,7 @@ namespace LBM
              *
              * @return Number of mesh points per GPU.
              **/
-            __host__ [[nodiscard]] inline constexpr host::label_t sizePerDevice() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t sizePerDevice() const noexcept
             {
                 const host::label_t nxPointsPerDevice = dimensions_.value<axis::X>() / nDevices<axis::X>();
                 const host::label_t nyPointsPerDevice = dimensions_.value<axis::Y>() / nDevices<axis::Y>();
@@ -344,7 +344,7 @@ namespace LBM
              * @return Number of blocks per GPU in the selected direction.
              **/
             template <const axis::type alpha>
-            __host__ [[nodiscard]] inline constexpr host::label_t blocksPerDevice() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t blocksPerDevice() const noexcept
             {
                 return nBlocks<alpha>() / nDevices_.value<alpha>();
             }
@@ -354,7 +354,7 @@ namespace LBM
              *
              * @return Block counts per GPU for x, y, and z directions.
              **/
-            __host__ [[nodiscard]] inline constexpr host::blockLabel blocksPerDevice() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::blockLabel blocksPerDevice() const noexcept
             {
                 return {nBlocks<axis::X>() / nDevices_.value<axis::X>(), nBlocks<axis::Y>() / nDevices_.value<axis::Y>(), nBlocks<axis::Z>() / nDevices_.value<axis::Z>()};
             }
@@ -385,7 +385,7 @@ namespace LBM
              *
              * @return Three grid descriptors used by the solver kernels.
              **/
-            __host__ [[nodiscard]] inline constexpr const std::array<dim3, 3> initialiseGridBlock() const noexcept
+            [[nodiscard]] __host__ inline constexpr const std::array<dim3, 3> initialiseGridBlock() const noexcept
             {
                 return {
                     dim3(static_cast<uint32_t>(blocksPerDevice<axis::X>()), static_cast<uint32_t>(blocksPerDevice<axis::Y>()), static_cast<uint32_t>(1)),
@@ -479,7 +479,7 @@ namespace LBM
                     {
                         const host::label_t virtualDeviceIndex = GPU::idx(dx, dy, dz, nDevices.value<axis::X>(), nDevices.value<axis::Y>());
 
-                        errorHandler::handle(cudaSetDevice(programCtrl.deviceList()[virtualDeviceIndex]));
+                        errorHandler::handle(device::API::setDevice(programCtrl.deviceList()[virtualDeviceIndex]));
 
                         const device::label_t nx = static_cast<device::label_t>(dimensions.x);
                         const device::label_t ny = static_cast<device::label_t>(dimensions.y);

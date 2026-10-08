@@ -78,7 +78,7 @@ namespace LBM
          * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)
          **/
         template <typename T, const T nx, const T ny, const T nz>
-        __device__ __host__ [[nodiscard]] inline constexpr T idx(const T tx, const T ty, const T tz, const T bx, const T by, const T bz, const T nxBlocks, const T nyBlocks) noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr T idx(const T tx, const T ty, const T tz, const T bx, const T by, const T bz, const T nxBlocks, const T nyBlocks) noexcept
         {
             return (tx + nx * (ty + ny * (tz + nz * (bx + nxBlocks * (by + nyBlocks * bz)))));
         }
@@ -162,7 +162,7 @@ namespace LBM
          * @tparam Args Type of the function arguments
          **/
         template <typename T, typename... Args>
-        __device__ __host__ [[nodiscard]] inline consteval bool has_reference_parameters(T (*)(Args...))
+        [[nodiscard]] __device__ __host__ inline consteval bool has_reference_parameters(T (*)(Args...))
         {
             // Folds over all arguments, returning true if ANY are references
             return (std::is_reference_v<Args> || ...);
@@ -179,7 +179,7 @@ namespace LBM
          * @param[in] args Arguments to pass to the kernel
          **/
         template <const auto KernelFunc, const host::label_t sharedMem = 0, const dim3 threadBlock = dim3{block::nx<uint32_t>(), block::ny<uint32_t>(), block::nz<uint32_t>()}, typename... Args>
-        __host__ inline void launch(const dim3 &grid, const cudaStream_t &stream, const Args... args) noexcept
+        __host__ inline void launch(const dim3 &grid, const deviceStream_t &stream, const Args... args) noexcept
         {
             //  Enforce that the kernel signature doesn't take references
             static_assert(!has_reference_parameters(KernelFunc), "Kernel signature cannot contain reference parameters!");
@@ -196,7 +196,7 @@ namespace LBM
      * @param[in] val The variable to exponent
      **/
     template <const host::label_t Pow, typename T>
-    __device__ __host__ [[nodiscard]] inline constexpr T pow(const T &val) noexcept
+    [[nodiscard]] __device__ __host__ inline constexpr T pow(const T &val) noexcept
     {
         if constexpr (Pow == 0)
         {
@@ -212,7 +212,7 @@ namespace LBM
     }
 
     template <typename T>
-    __device__ __host__ [[nodiscard]] inline constexpr T rms_sq(const T x, const T y) noexcept
+    [[nodiscard]] __device__ __host__ inline constexpr T rms_sq(const T x, const T y) noexcept
     {
         return (x * x) + (y * y);
     }
@@ -370,7 +370,7 @@ namespace LBM
          *
          * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)
          **/
-        __host__ [[nodiscard]] inline constexpr label_t idx(const label_t tx, const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz, const label_t nxBlocks, const label_t nyBlocks) noexcept
+        [[nodiscard]] __host__ inline constexpr label_t idx(const label_t tx, const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz, const label_t nxBlocks, const label_t nyBlocks) noexcept
         {
             return global::idx<host::label_t, block::nx<host::label_t>(), block::ny<host::label_t>(), block::nz<host::label_t>()>(tx, ty, tz, bx, by, bz, nxBlocks, nyBlocks);
         }
@@ -382,7 +382,7 @@ namespace LBM
          * @param[in] nxBlocks Number of blocks in x-direction
          * @param[in] nyBlocks Number of blocks in y-direction
          **/
-        __host__ [[nodiscard]] inline constexpr label_t idx(const host::threadLabel &Tx, const host::blockLabel &Bx, const label_t nxBlocks, const label_t nyBlocks) noexcept
+        [[nodiscard]] __host__ inline constexpr label_t idx(const host::threadLabel &Tx, const host::blockLabel &Bx, const label_t nxBlocks, const label_t nyBlocks) noexcept
         {
             return idx(Tx.x, Tx.y, Tx.z, Bx.x, Bx.y, Bx.z, nxBlocks, nyBlocks);
         }
@@ -399,7 +399,7 @@ namespace LBM
          * @param[in] ny Global Y dimension
          * @return Linearized index: x + nx*(y + ny*z)
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr host::label_t idx(const host::label_t x, const host::label_t y, const host::label_t z, const host::label_t nx, const host::label_t ny) noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr host::label_t idx(const host::label_t x, const host::label_t y, const host::label_t z, const host::label_t nx, const host::label_t ny) noexcept
         {
             return x + (nx * (y + (ny * z)));
         }
@@ -410,7 +410,7 @@ namespace LBM
          * @param[in] nx Global X dimension
          * @param[in] ny Global Y dimension
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr host::label_t idx(const host::pointLabel &point, const host::label_t nx, const host::label_t ny) noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr host::label_t idx(const host::pointLabel &point, const host::label_t nx, const host::label_t ny) noexcept
         {
             return idx(point.value<axis::X>(), point.value<axis::Y>(), point.value<axis::Z>(), nx, ny);
         }
@@ -427,7 +427,7 @@ namespace LBM
          * @note Uses device constants device::nx, device::ny, device::nz
          * @return True if thread is outside domain boundaries
          **/
-        __device__ [[nodiscard]] inline bool out_of_bounds(const device::pointCoordinate &point) noexcept
+        [[nodiscard]] __device__ inline bool out_of_bounds(const device::pointCoordinate &point) noexcept
         {
             return ((point.value<axis::X>() >= device::n<axis::X>()) || (point.value<axis::Y>() >= device::n<axis::Y>()) || (point.value<axis::Z>() >= device::n<axis::Z>()));
         }
@@ -440,7 +440,7 @@ namespace LBM
          *
          * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)
          **/
-        __device__ [[nodiscard]] inline device::label_t idx(
+        [[nodiscard]] __device__ inline device::label_t idx(
             const device::label_t tx, const device::label_t ty, const device::label_t tz,
             const device::label_t bx, const device::label_t by, const device::label_t bz) noexcept
         {
@@ -452,7 +452,7 @@ namespace LBM
          * @param[in] Tx Three-dimensional thread coordinates
          * @param[in] Bx Three-dimensional block coordinates
          **/
-        __device__ [[nodiscard]] inline device::label_t idx(const thread::coordinate &Tx, const block::coordinate &Bx) noexcept
+        [[nodiscard]] __device__ inline device::label_t idx(const thread::coordinate &Tx, const block::coordinate &Bx) noexcept
         {
             return idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>(), Bx.value<axis::X>(), Bx.value<axis::Y>(), Bx.value<axis::Z>());
         }
@@ -473,7 +473,7 @@ namespace LBM
          *   - y-stride: block::nx()
          *   - z-stride: block::nx() * block::ny()
          **/
-        __device__ [[nodiscard]] inline device::label_t idx(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
+        [[nodiscard]] __device__ inline device::label_t idx(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
         {
             return tx + block::nx<device::label_t>() * (ty + block::ny<device::label_t>() * tz);
         }
@@ -482,7 +482,7 @@ namespace LBM
          * @overload
          * @param[in] Tx Three-dimensional thread coordinates
          **/
-        __device__ [[nodiscard]] inline device::label_t idx(const thread::coordinate &Tx) noexcept
+        [[nodiscard]] __device__ inline device::label_t idx(const thread::coordinate &Tx) noexcept
         {
             return block::idx(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
         }
@@ -504,7 +504,7 @@ namespace LBM
          * @param[in] dx, dy, dz Device indices in the X, Y and Z directions
          * @param[in] ndx, ndy Number of devices in the X and Y directions
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr host::label_t idx(
+        [[nodiscard]] __device__ __host__ inline constexpr host::label_t idx(
             const host::label_t dx, const host::label_t dy, const host::label_t dz,
             const host::label_t ndx, const host::label_t ndy) noexcept
         {

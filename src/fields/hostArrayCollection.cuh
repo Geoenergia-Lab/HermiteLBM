@@ -64,7 +64,7 @@ namespace LBM
         class arrayCollection
         {
         public:
-            __host__ [[nodiscard]] arrayCollection(
+            [[nodiscard]] __host__ arrayCollection(
                 const name_t &fileName,
                 const words_t &varNames)
                 : empty_(!(std::filesystem::exists(fileName))),
@@ -80,7 +80,7 @@ namespace LBM
              * @brief Get read-only access to underlying data
              * @return Const reference to data vector
              **/
-            __host__ [[nodiscard]] inline constexpr const std::vector<T> &arr() const noexcept
+            [[nodiscard]] __host__ inline constexpr const std::vector<T> &arr() const noexcept
             {
                 return arr_;
             }
@@ -89,7 +89,7 @@ namespace LBM
              * @brief Get variable names in collection
              * @return Const reference to variable names vector
              **/
-            __host__ [[nodiscard]] inline const words_t &varNames() const noexcept
+            [[nodiscard]] __host__ inline const words_t &varNames() const noexcept
             {
                 return varNames_;
             }
@@ -98,7 +98,7 @@ namespace LBM
              * @brief Check if the collection is empty (i.e., if the file was not found)
              * @return True if empty, false otherwise
              **/
-            __host__ [[nodiscard]] inline constexpr bool empty() const noexcept
+            [[nodiscard]] __host__ inline constexpr bool empty() const noexcept
             {
                 return empty_;
             }
@@ -116,7 +116,7 @@ namespace LBM
              * are stored in separate contiguous arrays).
              **/
             template <const bool Deinterleave, const bool Sort>
-            __host__ [[nodiscard]] const std::vector<std::vector<T>> splitFields(const host::latticeMesh &mesh) const
+            [[nodiscard]] __host__ const std::vector<std::vector<T>> splitFields(const host::latticeMesh &mesh) const
             {
                 if constexpr (Deinterleave)
                 {
@@ -194,7 +194,7 @@ namespace LBM
              * @brief Split the fields into separate vectors and de-interleave into natural Cartesian coordinates
              * @param[in] mesh Reference to the lattice mesh
              **/
-            __host__ [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoS(const host::latticeMesh &mesh) const
+            [[nodiscard]] __host__ const std::vector<std::vector<T>> deinterleaveAoS(const host::latticeMesh &mesh) const
             {
                 return splitFields<true, false>(mesh);
             }
@@ -203,7 +203,7 @@ namespace LBM
              * @brief Split the fields into separate vectors without de-interleaving
              * @param[in] mesh Reference to the lattice mesh
              **/
-            __host__ [[nodiscard]] const std::vector<std::vector<T>> splitFieldsRaw(const host::latticeMesh &mesh) const
+            [[nodiscard]] __host__ const std::vector<std::vector<T>> splitFieldsRaw(const host::latticeMesh &mesh) const
             {
                 return splitFields<false, false>(mesh);
             }
@@ -212,7 +212,7 @@ namespace LBM
              * @brief Split the fields into separate vectors and sort each field in ascending order
              * @param[in] mesh Reference to the lattice mesh
              **/
-            __host__ [[nodiscard]] const std::vector<std::vector<T>> splitFieldsAndSort(const host::latticeMesh &mesh) const
+            [[nodiscard]] __host__ const std::vector<std::vector<T>> splitFieldsAndSort(const host::latticeMesh &mesh) const
             {
                 return splitFields<false, true>(mesh);
             }
@@ -240,7 +240,7 @@ namespace LBM
              * @return Initialized data vector
              * @throws std::runtime_error if indexed files not found
              **/
-            __host__ [[nodiscard]] static const std::vector<T> initialiseVector(const name_t &fileName, const bool empty)
+            [[nodiscard]] __host__ static const std::vector<T> initialiseVector(const name_t &fileName, const bool empty)
             {
                 if (empty)
                 {
@@ -263,7 +263,7 @@ namespace LBM
              * @param[in] nxBlocksPerDevice,nyBlocksPerDevice,nzBlocksPerDevice Number of blocks per device in each spatial dimension
              **/
             template <const bool Deinterleave>
-            __host__ [[nodiscard]] static host::label_t destIndex(
+            [[nodiscard]] __host__ static host::label_t destIndex(
                 const host::latticeMesh &mesh,
                 const host::label_t localIdx,
                 const host::label_t tx, const host::label_t ty, const host::label_t tz,

@@ -71,7 +71,7 @@ namespace LBM
         /**
          * @brief Default constructor
          **/
-        __host__ [[nodiscard]] YourClassName() = default;
+        [[nodiscard]] __host__ YourClassName() = default;
 
         /**
          * @brief Parameterized constructor
@@ -122,7 +122,7 @@ namespace LBM
          * @return Description of return value
          **/
         template <class ReturnType, class InputType>
-        __host__ [[nodiscard]] ReturnType exampleFunction(const InputType input) const {}
+        [[nodiscard]] __host__ ReturnType exampleFunction(const InputType input) const {}
 
         /**
          * @brief Example CUDA device function
@@ -132,7 +132,7 @@ namespace LBM
          * @return Description of return value
          **/
         template <class DeviceReturnType, class DeviceInputType>
-        __device__ [[nodiscard]] DeviceReturnType deviceFunction(const DeviceInputType input) const {}
+        [[nodiscard]] __device__ DeviceReturnType deviceFunction(const DeviceInputType input) const {}
 
     private:
         // Member variables with brief descriptions
@@ -159,7 +159,7 @@ namespace LBM
      * @note Optional
      **/
     template <class ReturnType, class ClassName, class ParamType>
-    __device__ __host__ [[nodiscard]] ReturnType nonMemberFunction(const ClassName &obj, const ParamType param) {}
+    [[nodiscard]] __device__ __host__ ReturnType nonMemberFunction(const ClassName &obj, const ParamType param) {}
 
 } // namespace LBM
 

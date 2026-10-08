@@ -194,7 +194,7 @@ namespace LBM
     namespace axis
     {
         template <const type alpha>
-        __host__ [[nodiscard]] inline constexpr host::blockLabel to_3d(const host::label_t ta, const host::label_t tb, const host::label_t i) noexcept
+        [[nodiscard]] __host__ inline constexpr host::blockLabel to_3d(const host::label_t ta, const host::label_t tb, const host::label_t i) noexcept
         {
             if constexpr (alpha == X)
             {
@@ -213,7 +213,7 @@ namespace LBM
         }
 
         template <const type alpha, const int coeff>
-        __host__ [[nodiscard]] static inline constexpr host::blockLabel to_3d(const host::label_t ta, const host::label_t tb) noexcept
+        [[nodiscard]] __host__ static inline constexpr host::blockLabel to_3d(const host::label_t ta, const host::label_t tb) noexcept
         {
             return to_3d<alpha>(ta, tb, thread::boundary<alpha, coeff>());
         }

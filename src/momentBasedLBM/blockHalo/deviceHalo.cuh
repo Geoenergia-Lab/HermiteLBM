@@ -78,7 +78,7 @@ namespace LBM
          * @param[in] mesh Host lattice mesh containing the mesh information on the CPU
          * @param[in] programCtrl Host program control containing the program information on the CPU
          **/
-        __host__ [[nodiscard]] haloBuffer(
+        [[nodiscard]] __host__ haloBuffer(
             const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
             const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
             const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi,
@@ -106,7 +106,7 @@ namespace LBM
          * @param[in] timeStep The time step
          * @return A read-only buffer
          **/
-        __host__ [[nodiscard]] inline constexpr const singleBuffer<const scalar_t> readBuffer(
+        [[nodiscard]] __host__ inline constexpr const singleBuffer<const scalar_t> readBuffer(
             const host::label_t deviceIdx,
             const host::label_t timeStep) const noexcept
         {
@@ -127,7 +127,7 @@ namespace LBM
          * @param[in] timeStep The time step
          * @return A mutable buffer
          **/
-        __host__ [[nodiscard]] inline constexpr const singleBuffer<scalar_t> writeBuffer(
+        [[nodiscard]] __host__ inline constexpr const singleBuffer<scalar_t> writeBuffer(
             const host::label_t deviceIdx,
             const host::label_t timeStep) const noexcept
         {
@@ -156,7 +156,7 @@ namespace LBM
          * @return The allocation size
          **/
         template <const axis::type alpha>
-        __host__ [[nodiscard]] static inline constexpr host::label_t allocSize(
+        [[nodiscard]] __host__ static inline constexpr host::label_t allocSize(
             const host::label_t nx,
             const host::label_t ny,
             const host::label_t nz) noexcept
@@ -172,7 +172,7 @@ namespace LBM
          * @param[in] mesh Host lattice mesh containing the mesh information on the CPU
          * @param[in] programCtrl Host program control containing the program information on the CPU
          **/
-        __host__ [[nodiscard]] const doubleBuffer<scalar_t> initialise_ptrs(
+        [[nodiscard]] __host__ const doubleBuffer<scalar_t> initialise_ptrs(
             const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
             const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
             const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi,
@@ -180,9 +180,9 @@ namespace LBM
             const programControl &programCtrl,
             const host::label_t deviceIdx) const
         {
-            errorHandler::handle(cudaDeviceSynchronize());
-            errorHandler::handle(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
-            errorHandler::handle(cudaDeviceSynchronize());
+            errorHandler::handle(device::API::deviceSynchronize());
+            errorHandler::handle(device::API::setDevice(programCtrl.deviceList()[deviceIdx]));
+            errorHandler::handle(device::API::deviceSynchronize());
 
             scalar_t *haloPtrs[12];
 
@@ -239,7 +239,7 @@ namespace LBM
                     firstTimeStep);
             }
 
-            errorHandler::handle(cudaDeviceSynchronize());
+            errorHandler::handle(device::API::deviceSynchronize());
 
             return haloBuffers;
         }
@@ -253,7 +253,7 @@ namespace LBM
          * @param[in] programCtrl Host program control containing the program information on the CPU
          * @return A vector of double buffers containing the block halo buffers for each device
          **/
-        __host__ [[nodiscard]] const std::vector<doubleBuffer<scalar_t>> initialise(
+        [[nodiscard]] __host__ const std::vector<doubleBuffer<scalar_t>> initialise(
             const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
             const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
             const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi,

@@ -98,7 +98,7 @@ namespace LBM
          * @return The magnitude of the tensor at the given index
          **/
         template <const sqMode Squared, typename T>
-        __host__ [[nodiscard]] T mag(const std::vector<std::vector<T>> &f, const host::label_t i)
+        [[nodiscard]] __host__ T mag(const std::vector<std::vector<T>> &f, const host::label_t i)
         {
             // Do the accumulation of the magnitude in double precision
             double result = static_cast<double>(0);
@@ -126,7 +126,7 @@ namespace LBM
          * @return The magnitude of the tensor
          **/
         template <const sqMode Squared, typename T>
-        __host__ [[nodiscard]] const std::vector<T> mag(const std::vector<std::vector<T>> &f)
+        [[nodiscard]] __host__ const std::vector<T> mag(const std::vector<std::vector<T>> &f)
         {
             std::vector<T> vec_result(f[0].size(), 0);
 

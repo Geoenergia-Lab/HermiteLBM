@@ -88,7 +88,7 @@ namespace LBM
             using FieldType = fieldType<1>;
 
         public:
-            __host__ [[nodiscard]] array(
+            [[nodiscard]] __host__ array(
                 [[maybe_unused]] const name_t &name,
                 const name_t &componentName,
                 const host::latticeMesh &mesh,
@@ -113,7 +113,7 @@ namespace LBM
              * @param[in] programCtrl The program control object
              * @param[in] allocate If false, the array is not allocated.
              **/
-            __host__ [[nodiscard]] array(
+            [[nodiscard]] __host__ array(
                 const name_t &name,
                 const name_t &componentName,
                 const host::latticeMesh &mesh,
@@ -142,7 +142,7 @@ namespace LBM
              * @return Const pointer to device memory.
              **/
             template <typename Idx>
-            __device__ __host__ [[nodiscard]] inline const T *constPtr(const Idx idx) const noexcept
+            [[nodiscard]] __device__ __host__ inline const T *constPtr(const Idx idx) const noexcept
             {
                 return ptr_[idx];
             }
@@ -154,7 +154,7 @@ namespace LBM
              * @return Pointer to device memory.
              **/
             template <typename Idx>
-            __device__ __host__ [[nodiscard]] inline T *ptr(const Idx idx) noexcept
+            [[nodiscard]] __device__ __host__ inline T *ptr(const Idx idx) noexcept
             {
                 return ptr_[idx];
             }
@@ -166,7 +166,7 @@ namespace LBM
              * @return Pointer to device memory.
              **/
             template <typename Idx>
-            __device__ __host__ [[nodiscard]] inline T *mutPtr(const Idx idx) const noexcept
+            [[nodiscard]] __device__ __host__ inline T *mutPtr(const Idx idx) const noexcept
             {
                 return ptr_[idx];
             }
@@ -180,7 +180,7 @@ namespace LBM
              * @param[in] programCtrl The program control object
              * @return Host array of device pointers, or nullptr if not allocated.
              **/
-            __host__ [[nodiscard]] static inline T **allocate_on_devices(
+            [[nodiscard]] __host__ static inline T **allocate_on_devices(
                 const host::latticeMesh &mesh,
                 const T *hostArrayGlobal,
                 const bool allocate,
@@ -198,7 +198,7 @@ namespace LBM
              * @param[in] programCtrl The program control object
              * @return Host array of device pointers.
              **/
-            __host__ [[nodiscard]] static inline T **allocate_on_devices(
+            [[nodiscard]] __host__ static inline T **allocate_on_devices(
                 const host::latticeMesh &mesh,
                 const std::vector<T> &hostArrayGlobal,
                 const bool allocate,
@@ -216,7 +216,7 @@ namespace LBM
              * @return Host array of device pointers.
              **/
             template <const host::mallocType MallocType>
-            __host__ [[nodiscard]] static inline T **allocate_on_devices(
+            [[nodiscard]] __host__ static inline T **allocate_on_devices(
                 const host::array<MallocType, T> &hostArrayGlobal,
                 const bool allocate,
                 const programControl &programCtrl)
@@ -232,7 +232,7 @@ namespace LBM
              * @param[in] programCtrl The program control object
              * @return Host array of device pointers.
              **/
-            __host__ [[nodiscard]] static inline T **allocate_on_devices(
+            [[nodiscard]] __host__ static inline T **allocate_on_devices(
                 const host::latticeMesh &mesh,
                 const T val,
                 const bool allocate,
@@ -267,7 +267,7 @@ namespace LBM
 
                         for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList.size(); ++virtualDeviceIndex)
                         {
-                            errorHandler::handle(cudaSetDevice(deviceList[virtualDeviceIndex]));
+                            errorHandler::handle(device::API::setDevice(deviceList[virtualDeviceIndex]));
                             device::copyToSymbol(device::U_North, North() * U_inf, i);
                             device::copyToSymbol(device::U_South, South() * U_inf, i);
                             device::copyToSymbol(device::U_East, East() * U_inf, i);
@@ -282,7 +282,7 @@ namespace LBM
             /**
              * @brief Constructs a host array with a given name
              **/
-            __host__ [[nodiscard]] host::array<host::PAGED, T> from_host(
+            [[nodiscard]] __host__ host::array<host::PAGED, T> from_host(
                 const name_t &name,
                 const name_t &componentName,
                 const host::latticeMesh &mesh,

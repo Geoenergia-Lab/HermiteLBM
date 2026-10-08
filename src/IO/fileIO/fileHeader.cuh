@@ -64,7 +64,7 @@ namespace LBM
          * @return The value of the parameter converted to type T
          **/
         template <typename T>
-        __host__ [[nodiscard]] inline T read(const words_t &lines, const name_t &parameterName)
+        [[nodiscard]] __host__ inline T read(const words_t &lines, const name_t &parameterName)
         {
             return string::extractParameter<T>(lines, parameterName);
         }
@@ -78,7 +78,7 @@ namespace LBM
          * @return The value of the parameter converted to type T
          **/
         template <typename T>
-        __host__ [[nodiscard]] inline constexpr T read(const words_t &lines, const name_t &parameterName, const name_t &trueString)
+        [[nodiscard]] __host__ inline constexpr T read(const words_t &lines, const name_t &parameterName, const name_t &trueString)
         {
             return (string::extractParameterLine(lines, parameterName) == trueString) ? static_cast<T>(true) : static_cast<T>(false);
         }
@@ -90,7 +90,7 @@ namespace LBM
              * @brief Constructs from text lines
              * @param[in] systemInfoLines Text lines read from the file
              **/
-            __host__ [[nodiscard]] systemInformation(const words_t &systemInfoLines)
+            [[nodiscard]] __host__ systemInformation(const words_t &systemInfoLines)
                 : endianType_(read<endian::type>(systemInfoLines, "binaryType", "littleEndian")),
                   scalarSize_(read<host::label_t>(systemInfoLines, "scalarSize")) {}
 
@@ -98,7 +98,7 @@ namespace LBM
              * @brief Returns the endianness of the binary data
              * @return The endianness as a value of the endian::type enum
              **/
-            __host__ [[nodiscard]] inline constexpr endian::type endianType() const noexcept
+            [[nodiscard]] __host__ inline constexpr endian::type endianType() const noexcept
             {
                 return endianType_;
             }
@@ -107,7 +107,7 @@ namespace LBM
              * @brief Returns the size of the scalar values in bytes (e.g., 4 for float, 8 for double)
              * @return The size of scalar values in bytes
              **/
-            __host__ [[nodiscard]] inline constexpr host::label_t scalarSize() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t scalarSize() const noexcept
             {
                 return scalarSize_;
             }
@@ -131,7 +131,7 @@ namespace LBM
              * @brief Constructs a meshPrimitive object by parsing the provided lines of the lattice mesh block.
              * @param[in] mesh Vector of strings containing the mesh information
              **/
-            __host__ [[nodiscard]] meshPrimitive(const words_t &mesh)
+            [[nodiscard]] __host__ meshPrimitive(const words_t &mesh)
                 : nPoints_({read<device::label_t>(mesh, "nx"), read<device::label_t>(mesh, "ny"), read<device::label_t>(mesh, "nz")}),
                   nDevices_({read<device::label_t>(mesh, "nxGPUs"), read<device::label_t>(mesh, "nyGPUs"), read<device::label_t>(mesh, "nzGPUs")}) {}
 
@@ -139,7 +139,7 @@ namespace LBM
              * @brief Returns the number of lattice points in each direction as a device::blockLabel struct.
              * @return A device::blockLabel struct containing the number of lattice points in x, y, and z directions.
              **/
-            __host__ [[nodiscard]] inline constexpr const device::blockLabel &nPoints() const noexcept
+            [[nodiscard]] __host__ inline constexpr const device::blockLabel &nPoints() const noexcept
             {
                 return nPoints_;
             }
@@ -148,7 +148,7 @@ namespace LBM
              * @brief Returns the number of devices (GPUs) in each direction as a device::blockLabel struct.
              * @return A device::blockLabel struct containing the number of devices in x, y, and z directions.
              **/
-            __host__ [[nodiscard]] inline constexpr const device::blockLabel &nDevices() const noexcept
+            [[nodiscard]] __host__ inline constexpr const device::blockLabel &nDevices() const noexcept
             {
                 return nDevices_;
             }
@@ -172,7 +172,7 @@ namespace LBM
              * @brief Constructs a fieldInformation object by parsing the provided lines of the field information block.
              * @param[in] fieldInfoLines The lines of the field information block to parse.
              **/
-            __host__ [[nodiscard]] fieldInformation(const words_t &fieldInfoLines)
+            [[nodiscard]] __host__ fieldInformation(const words_t &fieldInfoLines)
                 : timeStep_(read<host::label_t>(fieldInfoLines, "timeStep")),
                   timeType_(read<time::type>(fieldInfoLines, "timeType", "instantaneous")),
                   meanCount_(initialiseMeanCount(fieldInfoLines, timeType_)),
@@ -183,7 +183,7 @@ namespace LBM
              * @brief Returns the time step of the saved fields.
              * @return The time step as a host::label_t.
              **/
-            __host__ [[nodiscard]] inline constexpr host::label_t timeStep() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t timeStep() const noexcept
             {
                 return timeStep_;
             }
@@ -192,7 +192,7 @@ namespace LBM
              * @brief Returns the time type (instantaneous or time average).
              * @return The time type as a value of the time::type enum.
              **/
-            __host__ [[nodiscard]] inline constexpr time::type timeType() const noexcept
+            [[nodiscard]] __host__ inline constexpr time::type timeType() const noexcept
             {
                 return timeType_;
             }
@@ -201,7 +201,7 @@ namespace LBM
              * @brief Returns the number of fields.
              * @return The number of fields as a host::label_t.
              **/
-            __host__ [[nodiscard]] inline constexpr host::label_t meanCount() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t meanCount() const noexcept
             {
                 return meanCount_;
             }
@@ -210,7 +210,7 @@ namespace LBM
              * @brief Returns the number of fields.
              * @return The number of fields as a host::label_t.
              **/
-            __host__ [[nodiscard]] inline constexpr host::label_t nFields() const noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t nFields() const noexcept
             {
                 return nFields_;
             }
@@ -219,19 +219,19 @@ namespace LBM
              * @brief Returns the field names as a vector of strings.
              * @return A vector containing the field names.
              **/
-            __host__ [[nodiscard]] inline constexpr const words_t &fieldNames() const noexcept
+            [[nodiscard]] __host__ inline constexpr const words_t &fieldNames() const noexcept
             {
                 return fieldNames_;
             }
 
-            __host__ [[nodiscard]] static const words_t readFieldNames(
+            [[nodiscard]] __host__ static const words_t readFieldNames(
                 const name_t &fieldName,
                 const name_t &fileName)
             {
                 return readFieldNames(fieldName, read_until(fileName, "fieldData"));
             }
 
-            __host__ [[nodiscard]] static const words_t readFieldNames(
+            [[nodiscard]] __host__ static const words_t readFieldNames(
                 const name_t &fieldName,
                 const words_t &fieldInfoLines)
             {
@@ -295,7 +295,7 @@ namespace LBM
              * @param[in] N Number of field names to read
              * @return A vector containing the field names.
              **/
-            __host__ [[nodiscard]] static const words_t readFieldNames(const words_t &fieldInfoLines, const host::label_t N)
+            [[nodiscard]] __host__ static const words_t readFieldNames(const words_t &fieldInfoLines, const host::label_t N)
             {
                 if (fieldInfoLines.empty())
                 {
@@ -319,7 +319,7 @@ namespace LBM
              * @return The mean count as a host::label_t (0 for instantaneous, read from lines for time average)
              * @throws std::runtime_error if meanCount is missing or invalid for time average fields
              **/
-            __host__ [[nodiscard]] static host::label_t initialiseMeanCount(const words_t &fieldInfoLines, const time::type TimeType)
+            [[nodiscard]] __host__ static host::label_t initialiseMeanCount(const words_t &fieldInfoLines, const time::type TimeType)
             {
                 if (TimeType == time::instantaneous)
                 {
@@ -362,7 +362,7 @@ namespace LBM
          * extracting metadata about grid dimensions, data format, and field names.
          * It performs comprehensive error checking for file integrity and format compliance.
          **/
-        __host__ [[nodiscard]] const fieldFileHeader parseFieldFileHeader(const name_t &fileName)
+        [[nodiscard]] __host__ const fieldFileHeader parseFieldFileHeader(const name_t &fileName)
         {
             // Check if file exists and is accessible
             if (!std::filesystem::exists(fileName))

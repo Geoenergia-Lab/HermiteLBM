@@ -159,7 +159,7 @@ namespace LBM
          * @brief Returns a constant reference to the device pointer collection.
          * @return const reference to kernel::ptrCollection.
          **/
-        __host__ [[nodiscard]] inline constexpr const kernel::ptrCollection &devPtrs() const noexcept { return devPtrs_; }
+        [[nodiscard]] __host__ inline constexpr const kernel::ptrCollection &devPtrs() const noexcept { return devPtrs_; }
 
     private:
         /**
@@ -229,7 +229,7 @@ namespace LBM
          * @brief Returns a constant reference to the device pointer collection.
          * @return const reference to kernel::ptrCollection.
          **/
-        __host__ [[nodiscard]] inline constexpr const kernel::ptrCollection &devPtrs() const noexcept { return devPtrs_; }
+        [[nodiscard]] __host__ inline constexpr const kernel::ptrCollection &devPtrs() const noexcept { return devPtrs_; }
 
     private:
         /**
@@ -297,7 +297,7 @@ namespace LBM
          * @brief Returns a constant reference to the device pointer collection of the active launcher.
          * @return const reference to kernel::ptrCollection.
          **/
-        __host__ [[nodiscard]] inline const kernel::ptrCollection &devPtrs() const noexcept
+        [[nodiscard]] __host__ inline const kernel::ptrCollection &devPtrs() const noexcept
         {
             return std::visit(
                 [](const auto &launcher) -> const kernel::ptrCollection &

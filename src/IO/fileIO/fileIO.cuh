@@ -63,7 +63,7 @@ namespace LBM
          * @param[in] size The size to convert
          **/
         template <typename T>
-        __host__ [[nodiscard]] std::streamsize to_streamsize(const T size)
+        [[nodiscard]] __host__ std::streamsize to_streamsize(const T size)
         {
             types::assertions::validate<T>();
 
@@ -85,7 +85,7 @@ namespace LBM
          * @param[in] intStr String to validate
          * @return True if string is non-empty and contains only digits
          **/
-        __host__ [[nodiscard]] inline bool isValidInteger(const name_t &intStr) noexcept
+        [[nodiscard]] __host__ inline bool isValidInteger(const name_t &intStr) noexcept
         {
             return (!intStr.empty() || string::isAllDigits(intStr));
         }
@@ -98,7 +98,7 @@ namespace LBM
          * Searches current directory for files with pattern: {fileName}_{number}.LBMBin
          * where {number} consists of only digits.
          **/
-        __host__ [[nodiscard]] bool hasIndexedFiles(const name_t &fileName)
+        [[nodiscard]] __host__ bool hasIndexedFiles(const name_t &fileName)
         {
             const std::filesystem::path currentDir = std::filesystem::current_path();
             const name_t prefix = fileName + "_";
@@ -146,7 +146,7 @@ namespace LBM
          * Parses files with pattern: {fileName}_{number}.LBMBin and extracts
          * the numeric portion as time indices.
          **/
-        __host__ [[nodiscard]] const std::vector<host::label_t> timeIndices(const name_t &fileName)
+        [[nodiscard]] __host__ const std::vector<host::label_t> timeIndices(const name_t &fileName)
         {
             std::vector<host::label_t> indices;
             const std::filesystem::path currentDir = std::filesystem::current_path();
@@ -203,7 +203,7 @@ namespace LBM
          * @param[in] fileName Case name prefix to search for
          * @return Highest time index found, or 0 if no files found
          **/
-        __host__ [[nodiscard]] host::label_t latestTime(const name_t &fileName)
+        [[nodiscard]] __host__ host::label_t latestTime(const name_t &fileName)
         {
             if (hasIndexedFiles(fileName))
             {
@@ -222,7 +222,7 @@ namespace LBM
          * @param[in] target The line content that stops counting (excluded).
          * @return Number of lines read before target; if target not found, returns total lines.
          **/
-        __host__ [[nodiscard]] host::label_t line_count(std::ifstream &file, const name_t &target)
+        [[nodiscard]] __host__ host::label_t line_count(std::ifstream &file, const name_t &target)
         {
             name_t line;
             host::label_t result = 0;
@@ -252,7 +252,7 @@ namespace LBM
          * @param[in] target The exact line content at which to stop reading (not included).
          * @return Vector of strings containing the lines before the target.
          **/
-        __host__ [[nodiscard]] const words_t read_until(const name_t &filename, const name_t &target)
+        [[nodiscard]] __host__ const words_t read_until(const name_t &filename, const name_t &target)
         {
             std::ifstream file(filename);
             if (!file.is_open())

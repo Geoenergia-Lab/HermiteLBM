@@ -91,7 +91,7 @@ namespace LBM
              * @details The array contains one entry per error enum value, with position 0 reserved
              * for the no-error case.
              **/
-            __host__ [[nodiscard]] inline consteval const std::array<const char *, 11> messages() noexcept
+            [[nodiscard]] __host__ inline consteval const std::array<const char *, 11> messages() noexcept
             {
                 return {
                     "",
@@ -116,7 +116,7 @@ namespace LBM
         /**
          * @brief Stores the first CUDA runtime error reported by the program.
          **/
-        static constinit std::atomic<cudaError_t> first_cuda_error(cudaSuccess);
+        static constinit std::atomic<deviceError_t> first_cuda_error(deviceSuccess);
 
         /**
          * @brief Stores the first non-CUDA runtime error code reported by the program.
@@ -131,14 +131,14 @@ namespace LBM
          * @details Records the first CUDA error encountered and marks the program as failed
          * if a non-success status is reported.
          **/
-        __host__ void update_codes(const cudaError_t code) noexcept
+        __host__ void update_codes(const deviceError_t code) noexcept
         {
             // Record the first error (only if no error has been recorded yet).
-            cudaError_t expected_error = cudaSuccess;
+            deviceError_t expected_error = deviceSuccess;
             first_cuda_error.compare_exchange_strong(expected_error, code);
 
             // Make program_status sticky: once BAD, it stays BAD.
-            if (code != cudaSuccess)
+            if (code != deviceSuccess)
             {
                 programStatus expected_status = GOOD;
                 program_status.compare_exchange_strong(expected_status, BAD);
@@ -156,7 +156,7 @@ namespace LBM
         __host__ void update_codes(const int code) noexcept
         {
             // Record the first error (only if no error has been recorded yet).
-            int expected_error = cudaSuccess;
+            int expected_error = deviceSuccess;
             first_reg_error.compare_exchange_strong(expected_error, code);
 
             // Make program_status sticky: once BAD, it stays BAD.

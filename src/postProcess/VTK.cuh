@@ -84,7 +84,7 @@ namespace LBM
              * @return True if the file was written successfully, false otherwise
              * @note This function writes the XML header and structure of the VTK file, then appends the binary data blocks for the fields, points, and cells as specified by the template parameters
              **/
-            __host__ [[nodiscard]] static bool write(
+            [[nodiscard]] __host__ static bool write(
                 const std::vector<std::vector<scalar_t>> &solutionVars,
                 std::ofstream &outFile,
                 const host::latticeMesh &mesh,
@@ -322,7 +322,7 @@ namespace LBM
              * @brief Obtain the name of the grid type based on the template parameters
              * @return A string containing the name of the VTK grid type (e.g. "StructuredGrid", "ImageData", or "UnstructuredGrid")
              **/
-            __host__ [[nodiscard]] static inline consteval const char *gridName() noexcept
+            [[nodiscard]] __host__ static inline consteval const char *gridName() noexcept
             {
                 if constexpr (Structured)
                 {
@@ -347,7 +347,7 @@ namespace LBM
              * @return A string containing the name of the VTK type (e.g. "Float32", "Int64")
              **/
             template <typename T>
-            __host__ [[nodiscard]] static inline consteval const char *typeName() noexcept
+            [[nodiscard]] __host__ static inline consteval const char *typeName() noexcept
             {
                 if constexpr (std::is_same_v<T, float>)
                 {

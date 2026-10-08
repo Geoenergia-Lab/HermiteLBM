@@ -55,12 +55,12 @@ namespace LBM
     class velocitySetBase
     {
     public:
-        __device__ __host__ [[nodiscard]] static inline consteval scalar_t A() noexcept
+        [[nodiscard]] __device__ __host__ static inline consteval scalar_t A() noexcept
         {
             return static_cast<scalar_t>(static_cast<double>(2) / static_cast<double>(3));
         }
 
-        __device__ __host__ [[nodiscard]] static inline consteval scalar_t B() noexcept
+        [[nodiscard]] __device__ __host__ static inline consteval scalar_t B() noexcept
         {
             return static_cast<scalar_t>(static_cast<double>(1) / static_cast<double>(3));
         }
@@ -70,7 +70,7 @@ namespace LBM
          * @tparam T The return type
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval T as2() noexcept
+        [[nodiscard]] __device__ __host__ static inline consteval T as2() noexcept
         {
             return static_cast<T>(3);
         }
@@ -80,7 +80,7 @@ namespace LBM
          * @tparam T The return type
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval T cs2() noexcept
+        [[nodiscard]] __device__ __host__ static inline consteval T cs2() noexcept
         {
             return static_cast<T>(static_cast<double>(1) / as2<double>());
         }
@@ -90,7 +90,7 @@ namespace LBM
          * @tparam T The return type
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval T scale_i() noexcept
+        [[nodiscard]] __device__ __host__ static inline consteval T scale_i() noexcept
         {
             return static_cast<T>(3);
         }
@@ -100,7 +100,7 @@ namespace LBM
          * @tparam T The return type
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval T scale_ii() noexcept
+        [[nodiscard]] __device__ __host__ static inline consteval T scale_ii() noexcept
         {
             return static_cast<T>(4.5);
         }
@@ -110,7 +110,7 @@ namespace LBM
          * @tparam T The return type
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval T scale_ij() noexcept
+        [[nodiscard]] __device__ __host__ static inline consteval T scale_ij() noexcept
         {
             return static_cast<T>(9);
         }
@@ -122,7 +122,7 @@ namespace LBM
          * @return Scaling factor for the second-order moment
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline constexpr T scale(const bool is_diagonal) noexcept
+        [[nodiscard]] __device__ __host__ static inline constexpr T scale(const bool is_diagonal) noexcept
         {
             if (is_diagonal)
             {

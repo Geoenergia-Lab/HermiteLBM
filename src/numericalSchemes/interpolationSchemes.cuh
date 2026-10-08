@@ -69,7 +69,7 @@ namespace LBM
              * @param[in] weight The interpolation weight, which should be between 0 and 1, where 0 corresponds to f0 and 1 corresponds to f1
              *
              **/
-            __host__ [[nodiscard]] inline constexpr interpolate(const T f0, const T f1, const T weight) noexcept
+            [[nodiscard]] __host__ inline constexpr interpolate(const T f0, const T f1, const T weight) noexcept
                 : f0_(f0),
                   f1_(f1),
                   weight_(weight) {}
@@ -83,7 +83,7 @@ namespace LBM
              * @return The interpolated field value at the arbitrary point
              **/
             template <typename ValueType>
-            __host__ [[nodiscard]] static inline constexpr ValueType linear(const ValueType f_0, const ValueType f_1, const ValueType W) noexcept
+            [[nodiscard]] __host__ static inline constexpr ValueType linear(const ValueType f_0, const ValueType f_1, const ValueType W) noexcept
             {
                 return ((static_cast<ValueType>(1) - W) * f_0) + (W * f_1);
             }
@@ -92,7 +92,7 @@ namespace LBM
              * @brief Perform linear interpolation using the stored field values and weight
              * @return The interpolated field value at the arbitrary point
              **/
-            __host__ [[nodiscard]] inline constexpr T linear() const noexcept
+            [[nodiscard]] __host__ inline constexpr T linear() const noexcept
             {
                 return interpolate::linear(f0_, f1_, weight_);
             }

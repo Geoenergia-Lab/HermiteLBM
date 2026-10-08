@@ -101,7 +101,7 @@ namespace LBM
              * @param[in] mesh The lattice mesh
              * @param[in] programCtrl The program control object
              **/
-            __host__ [[nodiscard]] arrayBase(
+            [[nodiscard]] __host__ arrayBase(
                 devPtr_t<T> ptr,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl) noexcept
@@ -118,7 +118,7 @@ namespace LBM
              * @param[in] allocationSize Number of points allocated per GPU (used to compute segment size).
              * @return Device pointer for the segment.
              **/
-            __host__ [[nodiscard]] static T *allocate_device_segment(
+            [[nodiscard]] __host__ static T *allocate_device_segment(
                 const host::latticeMesh &mesh,
                 const T *hostArrayGlobal,
                 const host::label_t GPU_x,
@@ -144,7 +144,7 @@ namespace LBM
              * @param[in] programCtrl The program control object
              * @return Host array of device pointers (one per GPU).
              **/
-            __host__ [[nodiscard]] static T **allocate_on_devices(
+            [[nodiscard]] __host__ static T **allocate_on_devices(
                 const host::latticeMesh &mesh,
                 const T *hostArrayGlobal,
                 const programControl &programCtrl,
@@ -179,8 +179,8 @@ namespace LBM
             /**
              * @brief Disable copying
              **/
-            __host__ [[nodiscard]] arrayBase(const arrayBase &) = delete;
-            __host__ [[nodiscard]] arrayBase &operator=(const arrayBase &) = delete;
+            [[nodiscard]] __host__ arrayBase(const arrayBase &) = delete;
+            [[nodiscard]] __host__ arrayBase &operator=(const arrayBase &) = delete;
 
         private:
             /**
@@ -188,7 +188,7 @@ namespace LBM
              **/
             __host__ void free_device_pointers() noexcept
             {
-                errorHandler::handle(cudaDeviceSynchronize());
+                errorHandler::handle(device::API::deviceSynchronize());
 
                 if (ptr_ == nullptr)
                 {

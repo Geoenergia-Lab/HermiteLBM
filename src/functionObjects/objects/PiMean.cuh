@@ -72,7 +72,7 @@ namespace LBM
              * @param[in] idx Spatial index
              * @return The moments
              **/
-            __device__ [[nodiscard]] static inline constexpr symmetricTensor calculate(
+            [[nodiscard]] __device__ static inline constexpr symmetricTensor calculate(
                 const device::ptrColl_t &devPtrs,
                 const device::label_t idx) noexcept
             {
@@ -133,7 +133,7 @@ namespace LBM
              * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
              * @param[in] programCtrl The program control object
              **/
-            __host__ [[nodiscard]] secondOrderMoments(
+            [[nodiscard]] __host__ secondOrderMoments(
                 const host::latticeMesh &mesh,
                 const kernel::ptrCollection &devPtrs,
                 const programControl &programCtrl) noexcept
@@ -149,8 +149,8 @@ namespace LBM
              * @brief Disable copying
              **/
             __host__ ~secondOrderMoments() {}
-            __host__ [[nodiscard]] secondOrderMoments(const secondOrderMoments &) = delete;
-            __host__ [[nodiscard]] secondOrderMoments &operator=(const secondOrderMoments &) = delete;
+            [[nodiscard]] __host__ secondOrderMoments(const secondOrderMoments &) = delete;
+            [[nodiscard]] __host__ secondOrderMoments &operator=(const secondOrderMoments &) = delete;
 
             /**
              * @brief Calculate the time-averaged second order moments
@@ -210,7 +210,7 @@ namespace LBM
              * @brief Access to the pointers of the time averaged field
              * @param[in] idx Memory index
              **/
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
+            [[nodiscard]] __host__ inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
             {
                 return {PiMean_.ptr(idx)};
             }
@@ -219,7 +219,7 @@ namespace LBM
              * @brief Access to the pointers of the perturbation field
              * @param[in] idx Memory index
              **/
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept
+            [[nodiscard]] __host__ inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept
             {
                 return {PiPrime_.ptr(idx)};
             }
@@ -228,7 +228,7 @@ namespace LBM
              * @brief Access to the pointers of the mean of the square of the perturbation field
              * @param[in] idx Memory index
              **/
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primeSqMeanPtrs(const host::label_t idx) noexcept
+            [[nodiscard]] __host__ inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primeSqMeanPtrs(const host::label_t idx) noexcept
             {
                 return {PiPrimeSqMean_.ptr(idx)};
             }

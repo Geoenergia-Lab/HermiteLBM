@@ -66,7 +66,7 @@ namespace LBM
          * @return The values at location idx
          **/
         template <const host::label_t... ptrIndices>
-        __device__ [[nodiscard]] inline constexpr const thread::array<scalar_t, sizeof...(ptrIndices)> read_from_moments(const device::ptrColl_t &devPtrs, const device::label_t idx) noexcept
+        [[nodiscard]] __device__ inline constexpr const thread::array<scalar_t, sizeof...(ptrIndices)> read_from_moments(const device::ptrColl_t &devPtrs, const device::label_t idx) noexcept
         {
             return {devPtrs.ptr<ptrIndices>()[idx]...};
         }
@@ -79,7 +79,7 @@ namespace LBM
          * @return The values at location idx
          **/
         template <const host::label_t N>
-        __device__ [[nodiscard]] inline constexpr const thread::array<scalar_t, N> read(const device::ptrCollection<N, scalar_t> &devPtrs, const device::label_t idx) noexcept
+        [[nodiscard]] __device__ inline constexpr const thread::array<scalar_t, N> read(const device::ptrCollection<N, scalar_t> &devPtrs, const device::label_t idx) noexcept
         {
             return [&]<host::label_t... Is>(std::index_sequence<Is...>)
             {
@@ -114,7 +114,7 @@ namespace LBM
          * @return The updated time average.
          **/
         template <typename T>
-        __device__ [[nodiscard]] inline constexpr T time_average(const T fMean, const T f, const T invNewCount) noexcept
+        [[nodiscard]] __device__ inline constexpr T time_average(const T fMean, const T f, const T invNewCount) noexcept
         {
             return fMean + (f - fMean) * invNewCount;
         }
@@ -130,7 +130,7 @@ namespace LBM
          * @return Array where each element is the updated time average of the corresponding elements.
          **/
         template <typename T, const host::label_t N, const host::label_t... Is>
-        __device__ [[nodiscard]] inline constexpr const thread::array<T, N> time_average(const thread::array<T, N> &fMean, const thread::array<T, N> &f, const T invNewCount, const std::index_sequence<Is...>) noexcept
+        [[nodiscard]] __device__ inline constexpr const thread::array<T, N> time_average(const thread::array<T, N> &fMean, const thread::array<T, N> &f, const T invNewCount, const std::index_sequence<Is...>) noexcept
         {
             return {time_average(fMean[Is], f[Is], invNewCount)...};
         }
@@ -145,7 +145,7 @@ namespace LBM
          * @return The updated time average array.
          **/
         template <typename T, const host::label_t N>
-        __device__ [[nodiscard]] inline constexpr const thread::array<T, N> time_average(const thread::array<T, N> &fMean, const thread::array<T, N> &f, const T invNewCount) noexcept
+        [[nodiscard]] __device__ inline constexpr const thread::array<T, N> time_average(const thread::array<T, N> &fMean, const thread::array<T, N> &f, const T invNewCount) noexcept
         {
             return time_average(fMean, f, invNewCount, std::make_index_sequence<N>{});
         }
@@ -158,7 +158,7 @@ namespace LBM
          * @return (a - b) * (a - b).
          **/
         template <typename T>
-        __device__ [[nodiscard]] inline constexpr T squared_difference(const T a, const T b) noexcept
+        [[nodiscard]] __device__ inline constexpr T squared_difference(const T a, const T b) noexcept
         {
             return (a - b) * (a - b);
         }
@@ -173,7 +173,7 @@ namespace LBM
          * @return Array where each element is (a[i] - b[i]) ^ 2.
          **/
         template <typename T, const host::label_t N, const host::label_t... Is>
-        __device__ [[nodiscard]] inline constexpr const thread::array<T, N> squared_difference(const thread::array<T, N> &a, const thread::array<T, N> &b, const std::index_sequence<Is...>) noexcept
+        [[nodiscard]] __device__ inline constexpr const thread::array<T, N> squared_difference(const thread::array<T, N> &a, const thread::array<T, N> &b, const std::index_sequence<Is...>) noexcept
         {
             return {squared_difference(a[Is], b[Is])...};
         }
@@ -187,7 +187,7 @@ namespace LBM
          * @return Array of squared differences.
          **/
         template <typename T, const host::label_t N>
-        __device__ [[nodiscard]] inline constexpr const thread::array<T, N> squared_difference(const thread::array<T, N> &a, const thread::array<T, N> &b) noexcept
+        [[nodiscard]] __device__ inline constexpr const thread::array<T, N> squared_difference(const thread::array<T, N> &a, const thread::array<T, N> &b) noexcept
         {
             return squared_difference(a, b, std::make_index_sequence<N>{});
         }
@@ -346,7 +346,7 @@ namespace LBM
          * @param[in] objectName Name of the function object to check
          * @return True if the object is enabled in configuration
          **/
-        __host__ [[nodiscard]] bool initialiserSwitch(const name_t &objectName) noexcept
+        [[nodiscard]] __host__ bool initialiserSwitch(const name_t &objectName) noexcept
         {
             return std::filesystem::exists("functionObjects") ? string::containsString(string::trim<true>(string::eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), objectName) : false;
         }

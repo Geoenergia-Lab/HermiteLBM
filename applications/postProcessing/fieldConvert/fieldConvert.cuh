@@ -54,7 +54,7 @@ SourceFiles
 
 namespace LBM
 {
-    __host__ [[nodiscard]] axis::type cutPlaneDirection(const programControl &programCtrl) noexcept
+    [[nodiscard]] __host__ axis::type cutPlaneDirection(const programControl &programCtrl) noexcept
     {
         const name_t cutPlanePrefix = programCtrl.getArgument("-cutPlane");
 
@@ -82,7 +82,7 @@ namespace LBM
         return axis::NO_DIRECTION;
     }
 
-    __host__ [[nodiscard]] inline host::latticeMesh meshSlice(const host::latticeMesh &mesh, const axis::type alpha) noexcept
+    [[nodiscard]] __host__ inline host::latticeMesh meshSlice(const host::latticeMesh &mesh, const axis::type alpha) noexcept
     {
         if (alpha == axis::X)
         {
@@ -103,7 +103,7 @@ namespace LBM
     }
 
     template <const axis::type alpha>
-    __host__ [[nodiscard]] inline constexpr std::vector<std::vector<scalar_t>> initialiseSlice(
+    [[nodiscard]] __host__ inline constexpr std::vector<std::vector<scalar_t>> initialiseSlice(
         const host::latticeMesh &mesh,
         const host::label_t nFields)
     {
@@ -113,7 +113,7 @@ namespace LBM
     }
 
     template <const axis::type alpha>
-    __host__ [[nodiscard]] inline constexpr scalar_t indexCoordinate(const host::latticeMesh &mesh, const scalar_t pointCoordinate)
+    [[nodiscard]] __host__ inline constexpr scalar_t indexCoordinate(const host::latticeMesh &mesh, const scalar_t pointCoordinate)
     {
         axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -121,7 +121,7 @@ namespace LBM
     }
 
     template <const axis::type alpha>
-    __host__ [[nodiscard]] const std::vector<std::vector<scalar_t>> extractCutPlane(
+    [[nodiscard]] __host__ const std::vector<std::vector<scalar_t>> extractCutPlane(
         const std::vector<std::vector<scalar_t>> &fields,
         const host::latticeMesh &mesh,
         const scalar_t pointCoordinate)
@@ -183,7 +183,7 @@ namespace LBM
         return cutPlane;
     }
 
-    __host__ [[nodiscard]] inline constexpr const std::vector<std::vector<scalar_t>> extractCutPlane(
+    [[nodiscard]] __host__ inline constexpr const std::vector<std::vector<scalar_t>> extractCutPlane(
         const std::vector<std::vector<scalar_t>> &fields,
         const host::latticeMesh &mesh,
         const axis::type alpha,
@@ -210,7 +210,7 @@ namespace LBM
         }
     }
 
-    __host__ [[nodiscard]] const std::vector<std::vector<scalar_t>> processFields(
+    [[nodiscard]] __host__ const std::vector<std::vector<scalar_t>> processFields(
         const host::arrayCollection<scalar_t> &hostMoments,
         const host::latticeMesh &mesh,
         const programControl &programCtrl,
@@ -237,7 +237,7 @@ namespace LBM
         }
     }
 
-    __host__ [[nodiscard]] const name_t processName(const programControl &programCtrl, const name_t &fileNamePrefix, const host::label_t nameIndex, const bool cutPlane)
+    [[nodiscard]] __host__ const name_t processName(const programControl &programCtrl, const name_t &fileNamePrefix, const host::label_t nameIndex, const bool cutPlane)
     {
         // Get the file name at the present time step
         if (cutPlane)

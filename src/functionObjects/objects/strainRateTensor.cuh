@@ -75,7 +75,7 @@ namespace LBM
              * @return The calculated component of the strain rate tensor
              **/
             template <const host::label_t Index>
-            __device__ [[nodiscard]] static inline constexpr scalar_t calculate(const scalar_t uAlpha, const scalar_t uBeta, const scalar_t mAlphaBeta) noexcept
+            [[nodiscard]] __device__ static inline constexpr scalar_t calculate(const scalar_t uAlpha, const scalar_t uBeta, const scalar_t mAlphaBeta) noexcept
             {
                 static_assert((Index == axis::index<axis::X, axis::X>() || Index == axis::index<axis::X, axis::Y>() || Index == axis::index<axis::X, axis::Z>() || Index == axis::index<axis::Y, axis::Y>() || Index == axis::index<axis::Y, axis::Z>() || Index == axis::index<axis::Z, axis::Z>()), "Invalid index");
 
@@ -95,7 +95,7 @@ namespace LBM
              * @param[in] idx Spatial index
              * @return The calculated strain rate tensor
              **/
-            __device__ [[nodiscard]] static inline constexpr const symmetricTensor calculate(
+            [[nodiscard]] __device__ static inline constexpr const symmetricTensor calculate(
                 const device::ptrColl_t &devPtrs,
                 const device::label_t idx) noexcept
             {
@@ -171,7 +171,7 @@ namespace LBM
              * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
              * @param[in] programCtrl The program control object
              **/
-            __host__ [[nodiscard]] strainRateTensor(
+            [[nodiscard]] __host__ strainRateTensor(
                 const host::latticeMesh &mesh,
                 const kernel::ptrCollection &devPtrs,
                 const programControl &programCtrl) noexcept
@@ -188,8 +188,8 @@ namespace LBM
              * @brief Disable copying
              **/
             __host__ ~strainRateTensor() {}
-            __host__ [[nodiscard]] strainRateTensor(const strainRateTensor &) = delete;
-            __host__ [[nodiscard]] strainRateTensor &operator=(const strainRateTensor &) = delete;
+            [[nodiscard]] __host__ strainRateTensor(const strainRateTensor &) = delete;
+            [[nodiscard]] __host__ strainRateTensor &operator=(const strainRateTensor &) = delete;
 
             /**
              * @brief Calculate the instantaneous strain rate tensor
@@ -275,7 +275,7 @@ namespace LBM
              * @brief Access to the pointers of the instantaneous field
              * @param[in] idx Memory index
              **/
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> instantaneousPtrs(const host::label_t idx) noexcept
+            [[nodiscard]] __host__ inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> instantaneousPtrs(const host::label_t idx) noexcept
             {
                 return S_.ptr(idx);
             }
@@ -284,7 +284,7 @@ namespace LBM
              * @brief Access to the pointers of the time averaged field
              * @param[in] idx Memory index
              **/
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
+            [[nodiscard]] __host__ inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
             {
                 return SMean_.ptr(idx);
             }
@@ -293,7 +293,7 @@ namespace LBM
              * @brief Access to the pointers of the perturbation field
              * @param[in] idx Memory index
              **/
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept
+            [[nodiscard]] __host__ inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept
             {
                 return SPrime_.ptr(idx);
             }
@@ -302,7 +302,7 @@ namespace LBM
              * @brief Access to the pointers of the mean of the square of the perturbation field
              * @param[in] idx Memory index
              **/
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primeSqMeanPtrs(const host::label_t idx) noexcept
+            [[nodiscard]] __host__ inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primeSqMeanPtrs(const host::label_t idx) noexcept
             {
                 return {SPrimeSqMean_.ptr(idx)};
             }

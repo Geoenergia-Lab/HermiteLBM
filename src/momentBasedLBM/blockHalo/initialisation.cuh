@@ -154,6 +154,8 @@ namespace LBM
             thread::array<scalar_t, VelocitySet::Q()> pop;
             VelocitySet::reconstruct(pop, moments);
 
+            // constexpr const integralConstant<scalar_t, static_cast<scalar_t>(0)> v;
+
             __shared__ blockSharedBuffer sharedBuffer;
 
             // Update the post-streaming moments according to the interior and/or boundary conditions

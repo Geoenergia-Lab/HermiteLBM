@@ -126,7 +126,7 @@ namespace LBM
          * @return A pointer to a block of pinned memory on the host, all initialised to val
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *allocate(const host::label_t nPoints, const T val) noexcept
+        [[nodiscard]] __host__ T *allocate(const host::label_t nPoints, const T val) noexcept
         {
             T *ptr;
 
@@ -183,7 +183,7 @@ namespace LBM
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(cudaSetDevice(deviceID));
+                    errorHandler::handle(device::API::setDevice(deviceID));
                 });
         }
 
@@ -195,7 +195,7 @@ namespace LBM
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(cudaDeviceSynchronize());
+                    errorHandler::handle(device::API::deviceSynchronize());
                 });
         }
 
@@ -214,7 +214,7 @@ namespace LBM
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T), 0, cudaMemcpyHostToDevice));
+                    errorHandler::handle(device::API::memcpyToSymbol(symbol, &valueTemp, sizeof(T), 0, deviceMemcpyType_t::memcpyHostToDevice));
                 });
 
             syncDevice();
@@ -235,7 +235,7 @@ namespace LBM
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(cudaMemcpyToSymbol(symbol, value, N * sizeof(T), 0, cudaMemcpyHostToDevice));
+                    errorHandler::handle(device::API::memcpyToSymbol(symbol, value, N * sizeof(T), 0, deviceMemcpyType_t::memcpyHostToDevice));
                 });
 
             syncDevice();
@@ -255,7 +255,7 @@ namespace LBM
         {
             if (static_cast<host::label_t>(index) >= N)
             {
-                errorHandler::handle(cudaErrorMemoryAllocation);
+                errorHandler::handle(deviceErrorMemoryAllocation);
             }
             syncDevice();
             const T valueTemp = value;
@@ -263,7 +263,7 @@ namespace LBM
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(cudaMemcpyToSymbol(symbol, &valueTemp, static_cast<host::label_t>(sizeof(T)), static_cast<host::label_t>(index) * static_cast<host::label_t>(sizeof(T)), cudaMemcpyHostToDevice));
+                    errorHandler::handle(device::API::memcpyToSymbol(symbol, &valueTemp, static_cast<host::label_t>(sizeof(T)), static_cast<host::label_t>(index) * static_cast<host::label_t>(sizeof(T)), deviceMemcpyType_t::memcpyHostToDevice));
                 });
 
             syncDevice();
@@ -289,14 +289,14 @@ namespace LBM
                 {
                     host::label_t free_bytes = 0;
                     host::label_t total_bytes = 0;
-                    errorHandler::handle(cudaMemGetInfo(&free_bytes, &total_bytes));
+                    errorHandler::handle(device::API::memGetInfo(&free_bytes, &total_bytes));
                     if ((nBytes < free_bytes) && (nBytes < total_bytes))
                     {
                         errorHandler::handle(cudaMalloc(ptr, nBytes));
                     }
                     else
                     {
-                        errorHandler::handle(cudaErrorMemoryAllocation);
+                        errorHandler::handle(deviceErrorMemoryAllocation);
                     }
                 });
 
@@ -311,7 +311,7 @@ namespace LBM
          * @note Verbose mode prints allocation details
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *allocate(const host::label_t nPoints) noexcept
+        [[nodiscard]] __host__ T *allocate(const host::label_t nPoints) noexcept
         {
             T *ptr;
 
@@ -332,7 +332,7 @@ namespace LBM
          * @param[in] deviceID The device on which to allocate the memory
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *allocate(const host::label_t nPoints, const deviceIndex_t deviceID) noexcept
+        [[nodiscard]] __host__ T *allocate(const host::label_t nPoints, const deviceIndex_t deviceID) noexcept
         {
             syncDevice();
 
@@ -351,13 +351,13 @@ namespace LBM
         template <typename T>
         __host__ void free(T *const ptrRestrict ptr) noexcept
         {
-            cudaPointerAttributes attrs;
-            errorHandler::handle(cudaPointerGetAttributes(&attrs, ptr));
+            ptrAttributes_t attrs;
+            errorHandler::handle(device::API::pointerGetAttributes(&attrs, ptr));
             if (ptr == nullptr)
             {
                 return;
             }
-            else if (attrs.type == cudaMemoryTypeDevice)
+            else if (attrs.type == device::memoryTypeDevice)
             {
                 syncDevice();
                 setDevice(attrs.device);
@@ -393,18 +393,18 @@ namespace LBM
 
             if (devPtr == nullptr)
             {
-                errorHandler::handle(cudaErrorMemoryAllocation);
+                errorHandler::handle(deviceErrorMemoryAllocation);
             }
 
             if (hostPtr == nullptr)
             {
-                errorHandler::handle(cudaErrorMemoryAllocation);
+                errorHandler::handle(deviceErrorMemoryAllocation);
             }
 
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(cudaMemcpy(devPtr, hostPtr, nPoints * sizeof(T), cudaMemcpyHostToDevice));
+                    errorHandler::handle(cudaMemcpy(devPtr, hostPtr, nPoints * sizeof(T), deviceMemcpyTypeEnum::memcpyHostToDevice));
                 });
 
             syncDevice();
@@ -470,7 +470,7 @@ namespace LBM
          * @return Pointer to allocated device memory containing copied data
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *allocateArray(const std::vector<T> &f) noexcept
+        [[nodiscard]] __host__ T *allocateArray(const std::vector<T> &f) noexcept
         {
             syncDevice();
 
@@ -492,7 +492,7 @@ namespace LBM
          * @param[in] deviceID The device on which to allocate the memory
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *allocateArray(const std::vector<T> &f, const deviceIndex_t deviceID) noexcept
+        [[nodiscard]] __host__ T *allocateArray(const std::vector<T> &f, const deviceIndex_t deviceID) noexcept
         {
             setDevice(deviceID);
 
@@ -508,7 +508,7 @@ namespace LBM
          * @throws std::runtime_error if CUDA operations fail
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *allocateArray(const device::label_t nPoints, const T val) noexcept
+        [[nodiscard]] __host__ T *allocateArray(const device::label_t nPoints, const T val) noexcept
         {
             syncDevice();
 
@@ -531,7 +531,7 @@ namespace LBM
          * @param[in] deviceID The device on which to allocate the memory
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *allocateArray(const device::label_t nPoints, const T val, const deviceIndex_t deviceID) noexcept
+        [[nodiscard]] __host__ T *allocateArray(const device::label_t nPoints, const T val, const deviceIndex_t deviceID) noexcept
         {
             syncDevice();
 
@@ -551,9 +551,9 @@ namespace LBM
          * @param[in] stream Stream on which to execute the copy
          **/
         template <typename T>
-        __host__ inline void memcpyAsyncDeviceToHost(T *const ptrRestrict hostPtr, const T *const ptrRestrict devPtr, const host::label_t nPoints, const cudaStream_t &stream) noexcept
+        __host__ inline void memcpyAsyncDeviceToHost(T *const ptrRestrict hostPtr, const T *const ptrRestrict devPtr, const host::label_t nPoints, const deviceStream_t &stream) noexcept
         {
-            errorHandler::handle(cudaMemcpyAsync(hostPtr, devPtr, nPoints * sizeof(T), cudaMemcpyDeviceToHost, stream));
+            errorHandler::handle(cudaMemcpyAsync(hostPtr, devPtr, nPoints * sizeof(T), deviceMemcpyTypeEnum::memcpyDeviceToHost, stream));
         }
 
         /**
@@ -567,7 +567,7 @@ namespace LBM
          * @param[in] stream Device execution stream to copy over
          **/
         template <typename T>
-        __host__ inline void memcpyPeerAsync(T *const ptrRestrict destPtr, const deviceIndex_t destDevice, const T *const ptrRestrict srcPtr, const deviceIndex_t srcDevice, const host::label_t nPoints, const cudaStream_t &stream) noexcept
+        __host__ inline void memcpyPeerAsync(T *const ptrRestrict destPtr, const deviceIndex_t destDevice, const T *const ptrRestrict srcPtr, const deviceIndex_t srcDevice, const host::label_t nPoints, const deviceStream_t &stream) noexcept
         {
             errorHandler::handleInline(cudaMemcpyPeerAsync(destPtr, destDevice, srcPtr, srcDevice, nPoints * sizeof(T), stream));
         }

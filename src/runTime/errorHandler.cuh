@@ -100,9 +100,9 @@ namespace LBM
         template <typename T>
         __host__ static inline void handle_impl(const T err, const std::source_location &loc) noexcept
         {
-            if constexpr (std::is_same_v<T, cudaError_t>)
+            if constexpr (std::is_same_v<T, deviceError_t>)
             {
-                if (err != cudaSuccess)
+                if (err != deviceSuccess)
                 {
                     update_codes_and_print(err, loc);
                 }
@@ -137,11 +137,11 @@ namespace LBM
         }
 
         template <typename T>
-        __host__ [[nodiscard]] static inline constexpr const char *get_error_string(const T code) noexcept
+        [[nodiscard]] __host__ static inline constexpr const char *get_error_string(const T code) noexcept
         {
-            if constexpr (std::is_same_v<T, cudaError_t>)
+            if constexpr (std::is_same_v<T, deviceError_t>)
             {
-                return cudaGetErrorString(code);
+                return device::API::getErrorString(code);
             }
 
             if constexpr (std::is_same_v<T, runTime::error::code>)
@@ -150,7 +150,7 @@ namespace LBM
             }
         }
 
-        __host__ [[nodiscard]] static inline constexpr const char *base_name(const std::source_location &loc) noexcept
+        [[nodiscard]] __host__ static inline constexpr const char *base_name(const std::source_location &loc) noexcept
         {
             const char *path = loc.file_name();
             const char *base = path;

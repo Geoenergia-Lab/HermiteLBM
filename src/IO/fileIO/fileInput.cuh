@@ -125,7 +125,7 @@ namespace LBM
          * all variables for each point are stored contiguously.
          **/
         template <typename T>
-        __host__ [[nodiscard]] const std::vector<T> readFieldFile(const name_t &fileName)
+        [[nodiscard]] __host__ const std::vector<T> readFieldFile(const name_t &fileName)
         {
             endian::assertions::validate();
             types::assertions::validate<T>();
@@ -202,7 +202,7 @@ namespace LBM
          * reading the entire file when only specific fields are needed.
          **/
         template <typename T>
-        __host__ [[nodiscard]] const std::vector<T> readFieldByName(const name_t &fileName, const name_t &fieldName)
+        [[nodiscard]] __host__ const std::vector<T> readFieldByName(const name_t &fileName, const name_t &fieldName)
         {
             types::assertions::validate<T>();
             endian::assertions::validate();

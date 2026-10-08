@@ -92,7 +92,7 @@ namespace LBM
              * @param[in] meanCount The current mean count
              * @return The inverse of the new mean count
              **/
-            __device__ __host__ [[nodiscard]] static inline constexpr scalar_t invNewCount(const host::label_t meanCount) noexcept
+            [[nodiscard]] __device__ __host__ static inline constexpr scalar_t invNewCount(const host::label_t meanCount) noexcept
             {
                 return static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
             }
@@ -240,7 +240,7 @@ namespace LBM
              * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
              * @param[in] programCtrl The program control object
              **/
-            __host__ [[nodiscard]] FunctionObjectBase(
+            [[nodiscard]] __host__ FunctionObjectBase(
                 const name_t &name,
                 const host::latticeMesh &mesh,
                 const kernel::ptrCollection &devPtrs,
@@ -264,7 +264,7 @@ namespace LBM
             /**
              * @brief Check if calculation of the instantaneous quantity is enabled
              **/
-            __host__ [[nodiscard]] inline constexpr bool doInstantaneous() const noexcept
+            [[nodiscard]] __host__ inline constexpr bool doInstantaneous() const noexcept
             {
                 return calculate_;
             }
@@ -272,7 +272,7 @@ namespace LBM
             /**
              * @brief Check if calculation of the time average is enabled
              **/
-            __host__ [[nodiscard]] inline constexpr bool doMean() const noexcept
+            [[nodiscard]] __host__ inline constexpr bool doMean() const noexcept
             {
                 return calculateMean_;
             }
@@ -280,7 +280,7 @@ namespace LBM
             /**
              * @brief Check if calculation of the perturbation is enabled
              **/
-            __host__ [[nodiscard]] inline constexpr bool doPrime() const noexcept
+            [[nodiscard]] __host__ inline constexpr bool doPrime() const noexcept
             {
                 return calculatePrime_;
             }
@@ -288,7 +288,7 @@ namespace LBM
             /**
              * @brief Check if calculation of the time average of the square of the perturbation is enabled
              **/
-            __host__ [[nodiscard]] inline constexpr bool doPrimeSqMean() const noexcept
+            [[nodiscard]] __host__ inline constexpr bool doPrimeSqMean() const noexcept
             {
                 return calculatePrimeSqMean_;
             }

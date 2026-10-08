@@ -60,7 +60,7 @@ namespace LBM
          * @brief Constructs the field from a name
          * @param[in] name Name of the field
          **/
-        __host__ [[nodiscard]] inline constexpr fieldType(const std::string &name) noexcept : name_(name) {}
+        [[nodiscard]] __host__ inline constexpr fieldType(const std::string &name) noexcept : name_(name) {}
 
         /**
          * @brief Helper function to generate component names based on the base name and the number of components (N).
@@ -69,7 +69,7 @@ namespace LBM
          * @return A collection of component names corresponding to the field components, following a consistent naming convention based on N.
          **/
         template <class ReturnType>
-        __host__ [[nodiscard]] static const ReturnType makeComponentNames(const name_t &baseName)
+        [[nodiscard]] __host__ static const ReturnType makeComponentNames(const name_t &baseName)
         {
             static_assert(N == 1 || N == 3 || N == 6, "Unsupported component count");
 
@@ -92,7 +92,7 @@ namespace LBM
         /**
          * @brief Provides read-only access to the name of the field
          **/
-        __host__ [[nodiscard]] inline constexpr const name_t &name() const noexcept
+        [[nodiscard]] __host__ inline constexpr const name_t &name() const noexcept
         {
             return name_;
         }
@@ -112,7 +112,7 @@ namespace LBM
          * @brief Returns the time type of the array.
          * @return time::type value (instantaneous or time‑averaged).
          **/
-        __host__ [[nodiscard]] static inline consteval time::type type() noexcept
+        [[nodiscard]] __host__ static inline consteval time::type type() noexcept
         {
             return TimeType;
         }

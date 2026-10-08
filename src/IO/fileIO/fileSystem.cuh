@@ -78,7 +78,7 @@ namespace LBM
              * @param[in] nVars Number of variables
              **/
             template <typename T, const T Present, const format Format>
-            __host__ [[nodiscard]] inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz, const host::label_t nVars) noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz, const host::label_t nVars) noexcept
             {
                 static_assert(Format == ASCII || Format == BINARY, "Format must be ASCII or BINARY");
 
@@ -121,7 +121,7 @@ namespace LBM
              * @param[in] nz Global Z dimension
              **/
             template <typename T, const T Present, const host::label_t N>
-            __host__ [[nodiscard]] inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz) noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz) noexcept
             {
                 if constexpr (static_cast<bool>(Present))
                 {
@@ -152,7 +152,7 @@ namespace LBM
              * @param[in] nVars Number of variables
              **/
             template <const contained Fields, const format Format>
-            __host__ [[nodiscard]] inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz, const host::label_t nVars) noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz, const host::label_t nVars) noexcept
             {
                 return scalar::usage<contained, Fields, Format>(nx, ny, nz, nVars);
             }
@@ -175,7 +175,7 @@ namespace LBM
              * @param[in] nz Global Z dimension
              **/
             template <const contained Points, const format Format>
-            __host__ [[nodiscard]] inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz) noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz) noexcept
             {
                 return scalar::usage<contained, Points, Format>(nx, ny, nz, 3);
             }
@@ -197,7 +197,7 @@ namespace LBM
              * @param[in] nz Global Z dimension
              **/
             template <const contained Elements>
-            __host__ [[nodiscard]] inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz) noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz) noexcept
             {
                 return connectivity::usage<contained, Elements, 8>(nx, ny, nz);
             }
@@ -219,7 +219,7 @@ namespace LBM
              * @param[in] nz Global Z dimension
              **/
             template <const contained Offsets>
-            __host__ [[nodiscard]] inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz) noexcept
+            [[nodiscard]] __host__ inline constexpr host::label_t usage(const host::label_t nx, const host::label_t ny, const host::label_t nz) noexcept
             {
                 return connectivity::usage<contained, Offsets, 1>(nx, ny, nz);
             }
@@ -239,7 +239,7 @@ namespace LBM
          * @return Total bytes required
          **/
         template <const format Format, const fields::contained Fields, const points::contained Points, const elements::contained Elements, const offsets::contained Offsets>
-        __host__ [[nodiscard]] inline constexpr host::label_t expectedDiskUsage(const host::label_t nx, const host::label_t ny, const host::label_t nz, const host::label_t nVars) noexcept
+        [[nodiscard]] __host__ inline constexpr host::label_t expectedDiskUsage(const host::label_t nx, const host::label_t ny, const host::label_t nz, const host::label_t nVars) noexcept
         {
             return fields::usage<Fields, Format>(nx, ny, nz, nVars) + points::usage<Points, Format>(nx, ny, nz) + elements::usage<Elements>(nx, ny, nz) + offsets::usage<Offsets>(nx, ny, nz);
         }
@@ -257,7 +257,7 @@ namespace LBM
          * @return Total bytes required.
          **/
         template <const format Format, const fields::contained Fields, const points::contained Points, const elements::contained Elements, const offsets::contained Offsets, class LatticeMesh>
-        __host__ [[nodiscard]] inline constexpr host::label_t expectedDiskUsage(const LatticeMesh &mesh, const host::label_t nVars) noexcept
+        [[nodiscard]] __host__ inline constexpr host::label_t expectedDiskUsage(const LatticeMesh &mesh, const host::label_t nVars) noexcept
         {
             return expectedDiskUsage<Format, Fields, Points, Elements, Offsets>(mesh.template dimension<axis::X>(), mesh.template dimension<axis::Y>(), mesh.template dimension<axis::Z>(), nVars);
         }
@@ -267,7 +267,7 @@ namespace LBM
          * @param[in] dir The directory to query
          * @return Available bytes.
          **/
-        __host__ [[nodiscard]] inline host::label_t availableDiskSpace(const std::filesystem::path &dir = std::filesystem::current_path()) noexcept
+        [[nodiscard]] __host__ inline host::label_t availableDiskSpace(const std::filesystem::path &dir = std::filesystem::current_path()) noexcept
         {
             std::error_code ec;
             const std::filesystem::space_info space = std::filesystem::space(dir, ec);
@@ -279,7 +279,7 @@ namespace LBM
          * @param[in] required Required disk space
          * @param[in] dir The directory to query
          **/
-        __host__ [[nodiscard]] inline bool hasEnoughSpace(const host::label_t required, const std::filesystem::path &dir = std::filesystem::current_path()) noexcept
+        [[nodiscard]] __host__ inline bool hasEnoughSpace(const host::label_t required, const std::filesystem::path &dir = std::filesystem::current_path()) noexcept
         {
             return required < availableDiskSpace(dir);
         }
@@ -322,7 +322,7 @@ namespace LBM
          * @param[in] dir The directory to query
          **/
         template <const format Format, const fields::contained Fields, const points::contained Points, const elements::contained Elements, const offsets::contained Offsets, class LatticeMesh>
-        __host__ [[nodiscard]] bool diskSpaceCheck(const LatticeMesh &mesh, const host::label_t nVars, const std::filesystem::path &dir = std::filesystem::current_path()) noexcept
+        [[nodiscard]] __host__ bool diskSpaceCheck(const LatticeMesh &mesh, const host::label_t nVars, const std::filesystem::path &dir = std::filesystem::current_path()) noexcept
         {
             const host::label_t needed = expectedDiskUsage<Format, Fields, Points, Elements, Offsets>(mesh, nVars);
             return hasEnoughSpace(needed, dir);
@@ -355,7 +355,7 @@ namespace LBM
          * @param[in] bytes Number of bytes
          **/
         template <typename T>
-        __host__ [[nodiscard]] inline constexpr T to_MiB(const host::label_t bytes) noexcept
+        [[nodiscard]] __host__ inline constexpr T to_MiB(const host::label_t bytes) noexcept
         {
             return static_cast<T>(static_cast<double>(bytes) / static_cast<double>(1024 * 1024));
         }
@@ -367,7 +367,7 @@ namespace LBM
          * @return true if the directory exists or was created successfully, false otherwise
          **/
         template <const bool ThrowOnFailure = true>
-        __host__ [[nodiscard]] bool makeDirectory(const name_t &dir)
+        [[nodiscard]] __host__ bool makeDirectory(const name_t &dir)
         {
             if (!std::filesystem::is_directory(dir))
             {

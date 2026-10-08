@@ -66,7 +66,7 @@ namespace LBM
          * @return Linearized index: idxPop<alpha>
          **/
         template <const axis::type alpha, const label_t QF>
-        __host__ [[nodiscard]] inline label_t idxPop(const label_t pop, const threadLabel &Tx, const blockLabel &Bx, const label_t nxBlocks, const label_t nyBlocks) noexcept
+        [[nodiscard]] __host__ inline label_t idxPop(const label_t pop, const threadLabel &Tx, const blockLabel &Bx, const label_t nxBlocks, const label_t nyBlocks) noexcept
         {
             return Tx.value<axis::orthogonal<alpha, 0>()>() + block::n<axis::orthogonal<alpha, 0>()>() * (Tx.value<axis::orthogonal<alpha, 1>()>() + block::n<axis::orthogonal<alpha, 1>()>() * (pop + QF * (Bx.x + nxBlocks * (Bx.y + nyBlocks * Bx.z))));
         }
@@ -87,7 +87,7 @@ namespace LBM
          * @return Linearized two-dimensional face index
          **/
         template <const axis::type alpha, const device::label_t pop, const device::label_t QF>
-        __device__ [[nodiscard]] inline device::label_t idxPop(
+        [[nodiscard]] __device__ inline device::label_t idxPop(
             const device::label_t ta,
             const device::label_t tb,
             const device::label_t bx,
@@ -104,7 +104,7 @@ namespace LBM
          * @param[in] Bx Three-dimensional block coordinates
          **/
         template <const axis::type alpha, const device::label_t pop, const device::label_t QF>
-        __device__ [[nodiscard]] inline device::label_t idxPop(
+        [[nodiscard]] __device__ inline device::label_t idxPop(
             const device::label_t talpha, const device::label_t tbeta,
             const block::coordinate &Bx) noexcept
         {
@@ -117,7 +117,7 @@ namespace LBM
          * @param[in] Bx Three-dimensional block coordinates
          **/
         template <const axis::type alpha, const device::label_t pop, const device::label_t QF>
-        __device__ [[nodiscard]] inline device::label_t idxPop(
+        [[nodiscard]] __device__ inline device::label_t idxPop(
             const dim2 &ij,
             const block::coordinate &Bx) noexcept
         {
@@ -131,7 +131,7 @@ namespace LBM
          * @returns The pointer index corresponding to the axis direction alpha and coefficient coeff
          **/
         template <const axis::type alpha, const int coeff>
-        __device__ __host__ [[nodiscard]] static inline consteval axis::pointerIndex_t pointerIndex() noexcept
+        [[nodiscard]] __device__ __host__ static inline consteval axis::pointerIndex_t pointerIndex() noexcept
         {
             axis::assertions::validate<alpha, axis::null::NOT_NULL>();
             velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();

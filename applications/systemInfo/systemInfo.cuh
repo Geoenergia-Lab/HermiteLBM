@@ -85,7 +85,7 @@ namespace LBM
      *
      * @return The comment marker for the current OS: "::" on Windows and "#" on Linux.
      **/
-    __host__ [[nodiscard]] inline consteval const char *comment_string() noexcept
+    [[nodiscard]] __host__ inline consteval const char *comment_string() noexcept
     {
         if constexpr (system::distro() == system::WINDOWS)
         {
@@ -128,11 +128,11 @@ namespace LBM
      * @details Checks for CUDA devices and handles potential errors during device querying.
      * @return The number of CUDA devices available. Returns 0 if no devices are found.
      **/
-    __host__ [[nodiscard]] deviceIndex_t countDevices() noexcept
+    [[nodiscard]] __host__ deviceIndex_t countDevices() noexcept
     {
         deviceIndex_t deviceCount = 0;
 
-        if (cudaGetDeviceCount(&deviceCount) != cudaSuccess)
+        if (device::API::getDeviceCount(&deviceCount) != deviceSuccess)
         {
             return 0;
         }
@@ -151,7 +151,7 @@ namespace LBM
      * @return Numerical index of the month (0 for January, 11 for December).
      * @throws std::runtime_error If the input string does not match any month abbreviation.
      **/
-    __host__ [[nodiscard]] host::label_t monthIndex(const name_t &monthStr)
+    [[nodiscard]] __host__ host::label_t monthIndex(const name_t &monthStr)
     {
         // Map month abbreviations to numbers
         const words_t months{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -172,7 +172,7 @@ namespace LBM
      * @details Uses the predefined __DATE__ and __TIME__ macros to determine compilation time.
      * @return Formatted timestamp string (YYYY-MM-DD HH:MM:SS).
      **/
-    __host__ [[nodiscard]] const name_t compileTimestamp()
+    [[nodiscard]] __host__ const name_t compileTimestamp()
     {
         const name_t date = __DATE__;
         const name_t time = __TIME__;
@@ -199,7 +199,7 @@ namespace LBM
      * @return The value of the environment variable, or the default value if it is not set.
      **/
     template <const bool verboseOutput = false>
-    __host__ [[nodiscard]] const name_t getEnvironmentVariable(const name_t &envVariable, const name_t &defaultName)
+    [[nodiscard]] __host__ const name_t getEnvironmentVariable(const name_t &envVariable, const name_t &defaultName)
     {
         const char *const env_ptr = std::getenv(envVariable.c_str());
 
@@ -229,7 +229,7 @@ namespace LBM
      * @throws std::runtime_error If the environment variable is not set.
      **/
     template <const bool verboseOutput = false>
-    __host__ [[nodiscard]] const name_t getEnvironmentVariable(const name_t &envVariable)
+    [[nodiscard]] __host__ const name_t getEnvironmentVariable(const name_t &envVariable)
     {
         const char *const env_ptr = std::getenv(envVariable.c_str());
 

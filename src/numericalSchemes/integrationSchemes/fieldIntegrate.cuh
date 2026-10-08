@@ -64,7 +64,7 @@ namespace LBM
          * assuming the integral is zero at x=0 for each (y, z) line.
          **/
         template <const host::label_t SchemeOrder, typename TReturn, typename T>
-        __host__ [[nodiscard]] const std::vector<TReturn> integrate_x(
+        [[nodiscard]] __host__ const std::vector<TReturn> integrate_x(
             const std::vector<T> &f,
             const host::latticeMesh &mesh)
         {
@@ -101,7 +101,7 @@ namespace LBM
          * @brief Calculates the integral of a scalar field along the y-axis.
          **/
         template <const host::label_t SchemeOrder, typename TReturn, typename T>
-        __host__ [[nodiscard]] const std::vector<TReturn> integrate_y(
+        [[nodiscard]] __host__ const std::vector<TReturn> integrate_y(
             const std::vector<T> &f,
             const host::latticeMesh &mesh)
         {
@@ -138,7 +138,7 @@ namespace LBM
          * @brief Calculates the integral of a scalar field along the z-axis.
          **/
         template <const host::label_t SchemeOrder, typename TReturn, typename T>
-        __host__ [[nodiscard]] const std::vector<TReturn> integrate_z(
+        [[nodiscard]] __host__ const std::vector<TReturn> integrate_z(
             const std::vector<T> &f,
             const host::latticeMesh &mesh)
         {

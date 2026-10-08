@@ -70,7 +70,7 @@ namespace LBM
          * spacing and dimensions. The values are stored in a single flat vector.
          **/
         template <typename T>
-        __host__ [[nodiscard]] const std::vector<T> meshCoordinates(const host::latticeMesh &mesh)
+        [[nodiscard]] __host__ const std::vector<T> meshCoordinates(const host::latticeMesh &mesh)
         {
             std::vector<T> coords(mesh.size() * 3, 0);
 
@@ -100,7 +100,7 @@ namespace LBM
          * @details Each cell contributes eight point indices forming a hexahedron.
          **/
         template <const bool one_based, typename IndexType>
-        __host__ [[nodiscard]] const std::vector<IndexType> meshConnectivity(const host::latticeMesh &mesh)
+        [[nodiscard]] __host__ const std::vector<IndexType> meshConnectivity(const host::latticeMesh &mesh)
         {
             const host::label_t nx = mesh.dimension<axis::X>();
             const host::label_t ny = mesh.dimension<axis::Y>();
@@ -143,7 +143,7 @@ namespace LBM
          * connectivity or element writing.
          **/
         template <typename T>
-        __host__ [[nodiscard]] const std::vector<T> meshOffsets(const host::latticeMesh &mesh)
+        [[nodiscard]] __host__ const std::vector<T> meshOffsets(const host::latticeMesh &mesh)
         {
             const host::label_t nx = mesh.dimension<axis::X>();
             const host::label_t ny = mesh.dimension<axis::Y>();

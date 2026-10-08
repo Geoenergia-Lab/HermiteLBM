@@ -62,7 +62,7 @@ namespace LBM
              * @brief Calculates the Reynolds stress tensor R from the fluctuation of the velocity vector UPrime
              * @param[in] UPrime Fluctuation of the velocity vector
              **/
-            __device__ __host__ [[nodiscard]] static inline constexpr const symmetricTensor calculate(const vector &UPrime) noexcept
+            [[nodiscard]] __device__ __host__ static inline constexpr const symmetricTensor calculate(const vector &UPrime) noexcept
             {
                 return {UPrime[0] * UPrime[0], UPrime[0] * UPrime[1], UPrime[0] * UPrime[2], UPrime[1] * UPrime[1], UPrime[1] * UPrime[2], UPrime[2] * UPrime[2]};
             }
@@ -76,7 +76,7 @@ namespace LBM
              * @param[in] S Mean strain rate tensor
              * @return Production term P
              **/
-            __device__ __host__ [[nodiscard]] static inline constexpr const scalar calculate(const symmetricTensor &R, const symmetricTensor &S) noexcept
+            [[nodiscard]] __device__ __host__ static inline constexpr const scalar calculate(const symmetricTensor &R, const symmetricTensor &S) noexcept
             {
                 const symmetricTensor RdotS = R * S;
                 return {RdotS[0] + RdotS[1] + RdotS[1] + RdotS[2] + RdotS[2] + RdotS[3] + RdotS[4] + RdotS[4] + RdotS[5]};
@@ -90,7 +90,7 @@ namespace LBM
              * @param[in] SPrime Perturbation of the strain rate tensor
              * @param[in] nu Kinematic viscosity
              **/
-            __device__ __host__ [[nodiscard]] static inline constexpr const scalar calculate(const symmetricTensor &SPrime, const scalar_t nu) noexcept
+            [[nodiscard]] __device__ __host__ static inline constexpr const scalar calculate(const symmetricTensor &SPrime, const scalar_t nu) noexcept
             {
                 return {static_cast<scalar_t>(2) * nu * ((SPrime[0] * SPrime[0]) + (SPrime[1] * SPrime[1]) + (SPrime[2] * SPrime[2]) + static_cast<scalar_t>(2) * ((SPrime[3] * SPrime[3]) + (SPrime[4] * SPrime[4]) + (SPrime[5] * SPrime[5])))};
             }
@@ -99,7 +99,7 @@ namespace LBM
              * @brief Convenience function to calculate epsilon using device-allocated constant variables
              * @param[in] SPrime Perturbation of the strain rate tensor
              **/
-            __device__ [[nodiscard]] static inline const scalar calculate(const symmetricTensor &SPrime) noexcept
+            [[nodiscard]] __device__ static inline const scalar calculate(const symmetricTensor &SPrime) noexcept
             {
                 return calculate(SPrime, device::nu);
             }
@@ -180,7 +180,7 @@ namespace LBM
          * @param[in] mesh The lattice mesh
          * @param[in] programCtrl The program control object
          **/
-        __host__ [[nodiscard]] turbulenceStatistics(
+        [[nodiscard]] __host__ turbulenceStatistics(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const kernel::ptrCollection &devPtrs)

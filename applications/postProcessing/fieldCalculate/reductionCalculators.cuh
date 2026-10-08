@@ -63,7 +63,7 @@ namespace LBM
          * @return std::abs(val) if Sign == ABS, else val.
          **/
         template <const numericalSchemes::absMode Sign, typename T>
-        __host__ [[nodiscard]] inline constexpr T fix_sign(const T val) noexcept
+        [[nodiscard]] __host__ inline constexpr T fix_sign(const T val) noexcept
         {
             if constexpr (Sign == numericalSchemes::ABS)
             {
@@ -85,7 +85,7 @@ namespace LBM
          * @return The extremum value (raw or absolute, as specified by Sign).
          **/
         template <const numericalSchemes::absMode Sign, typename T, typename Compare>
-        __host__ [[nodiscard]] T fieldExtremaImpl(const std::vector<T> &field, const Compare comp) noexcept
+        [[nodiscard]] __host__ T fieldExtremaImpl(const std::vector<T> &field, const Compare comp) noexcept
         {
             T extremum = fix_sign<Sign>(field[0]);
 
@@ -108,7 +108,7 @@ namespace LBM
          * @return The spatial mean of the field
          **/
         template <typename ReturnType, typename T>
-        __host__ [[nodiscard]] inline ReturnType spatialSum(const std::vector<T> &field) noexcept
+        [[nodiscard]] __host__ inline ReturnType spatialSum(const std::vector<T> &field) noexcept
         {
             double sum = static_cast<double>(0);
             for (const T &value : field)
@@ -125,7 +125,7 @@ namespace LBM
          * @return The spatial mean of the field
          **/
         template <typename T>
-        __host__ [[nodiscard]] inline T spatialMean(const std::vector<T> &field) noexcept
+        [[nodiscard]] __host__ inline T spatialMean(const std::vector<T> &field) noexcept
         {
             return static_cast<T>(spatialSum<double>(field) / static_cast<double>(field.size()));
         }
@@ -138,7 +138,7 @@ namespace LBM
          * @return True if the field contains NaN values, false otherwise
          **/
         template <typename T>
-        __host__ [[nodiscard]] inline host::label_t containsNaN(const std::vector<T> &field, int &status) noexcept
+        [[nodiscard]] __host__ inline host::label_t containsNaN(const std::vector<T> &field, int &status) noexcept
         {
             host::label_t count = 0;
             for (const T &value : field)

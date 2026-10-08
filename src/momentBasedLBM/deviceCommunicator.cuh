@@ -65,7 +65,7 @@ namespace LBM
          * @param[in] programCtrl The program control object
          * @param[in] haloPtrs The halo to exchange between devices
          **/
-        __host__ [[nodiscard]] deviceCommunicator(
+        [[nodiscard]] __host__ deviceCommunicator(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const haloBuffer<VelocitySet> &haloPtrs) noexcept
@@ -82,8 +82,8 @@ namespace LBM
         /**
          * @brief Disable copying
          **/
-        __host__ [[nodiscard]] deviceCommunicator(const deviceCommunicator &) = delete;
-        __host__ [[nodiscard]] deviceCommunicator &operator=(const deviceCommunicator &) = delete;
+        [[nodiscard]] __host__ deviceCommunicator(const deviceCommunicator &) = delete;
+        [[nodiscard]] __host__ deviceCommunicator &operator=(const deviceCommunicator &) = delete;
 
         /**
          * @brief Perform the inter-device exchange for the given time step
@@ -123,7 +123,7 @@ namespace LBM
          * @param[in] programCtrl The program control object
          * @return A std::vector of exchange functions to be called at run time
          **/
-        __host__ [[nodiscard]] const std::vector<exchangeFunction> assembleCommList(const programControl &programCtrl) const noexcept
+        [[nodiscard]] __host__ const std::vector<exchangeFunction> assembleCommList(const programControl &programCtrl) const noexcept
         {
             std::vector<exchangeFunction> commList;
 
@@ -148,7 +148,7 @@ namespace LBM
          * @param[in] mesh The lattice mesh
          **/
         template <const axis::type alpha>
-        __host__ [[nodiscard]] static inline constexpr host::blockLabel commBlockID(const host::latticeMesh &mesh) noexcept
+        [[nodiscard]] __host__ static inline constexpr host::blockLabel commBlockID(const host::latticeMesh &mesh) noexcept
         {
             if constexpr (alpha == axis::X)
             {

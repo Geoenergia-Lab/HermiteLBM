@@ -85,7 +85,7 @@ namespace LBM
          * @returns One of two axis directions orthogonal to alpha
          **/
         template <const axis::type alpha, const device::label_t i>
-        __device__ __host__ [[nodiscard]] inline consteval axis::type orthogonal() noexcept
+        [[nodiscard]] __device__ __host__ inline consteval axis::type orthogonal() noexcept
         {
             static_assert(i < 2, "Index of axis orthogonal to alpha must be < 2");
 
@@ -162,7 +162,7 @@ namespace LBM
          * @tparam beta The second axis
          **/
         template <const type alpha, const type beta = NO_DIRECTION>
-        __device__ __host__ [[nodiscard]] inline consteval host::label_t index() noexcept
+        [[nodiscard]] __device__ __host__ inline consteval host::label_t index() noexcept
         {
             assertions::validate<alpha, CAN_BE_NULL>();
             assertions::validate<beta, CAN_BE_NULL>();

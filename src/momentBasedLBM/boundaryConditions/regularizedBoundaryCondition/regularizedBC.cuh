@@ -57,7 +57,7 @@ namespace LBM
         using ValueType = thread::array<scalar_t, 7>;
 
         template <class VelocitySet, const nodeType_t BoundaryCase>
-        __device__ __host__ [[nodiscard]] static inline constexpr const ValueType incomingMoments(const thread::array<scalar_t, VelocitySet::Q()> &pop) noexcept
+        [[nodiscard]] __device__ __host__ static inline constexpr const ValueType incomingMoments(const thread::array<scalar_t, VelocitySet::Q()> &pop) noexcept
         {
             if constexpr (VelocitySet::Q() == 27)
             {

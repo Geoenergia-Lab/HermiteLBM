@@ -69,7 +69,7 @@ namespace LBM
          *
          * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)
          **/
-        __host__ [[nodiscard]] inline label_t idx(
+        [[nodiscard]] __host__ inline label_t idx(
             const label_t tx, const label_t ty, const label_t tz,
             const label_t bx, const label_t by, const label_t bz,
             const latticeMesh &mesh) noexcept
@@ -77,7 +77,7 @@ namespace LBM
             return idx(tx, ty, tz, bx, by, bz, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
         }
 
-        __host__ [[nodiscard]] inline label_t idx(
+        [[nodiscard]] __host__ inline label_t idx(
             const threadLabel &Tx,
             const blockLabel &Bx,
             const latticeMesh &mesh) noexcept
@@ -99,7 +99,7 @@ namespace LBM
          * @param[in] args Arguments to pass to the kernel
          **/
         template <const auto KernelFunc, const host::label_t sharedMem = 0, const dim3 threadBlock = dim3{block::nx<uint32_t>(), block::ny<uint32_t>(), block::nz<uint32_t>()}, typename... Args>
-        __host__ inline void launch(const host::latticeMesh &mesh, const cudaStream_t &stream, const Args... args) noexcept
+        __host__ inline void launch(const host::latticeMesh &mesh, const deviceStream_t &stream, const Args... args) noexcept
         {
             const dim3 nBlocks(static_cast<uint32_t>(mesh.blocksPerDevice<axis::X>()), static_cast<uint32_t>(mesh.blocksPerDevice<axis::Y>()), static_cast<uint32_t>(mesh.blocksPerDevice<axis::Z>()));
 

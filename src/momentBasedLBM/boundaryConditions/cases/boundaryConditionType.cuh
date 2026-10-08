@@ -83,7 +83,7 @@ namespace LBM
          * @tparam alpha The axis direction (X, Y or Z)
          **/
         template <const axis::type alpha>
-        __device__ __host__ [[nodiscard]] static inline consteval bool periodic() noexcept
+        [[nodiscard]] __device__ __host__ static inline consteval bool periodic() noexcept
         {
             constexpr const var3<bool> result(PeriodicX, PeriodicY, PeriodicZ);
             return result.value<alpha>();
@@ -92,7 +92,7 @@ namespace LBM
         /**
          * @brief Switch determining whether or not the simulation should save to a file
          **/
-        __device__ __host__ [[nodiscard]] static inline consteval bool save() noexcept { return true; }
+        [[nodiscard]] __device__ __host__ static inline consteval bool save() noexcept { return true; }
 
         /**
          * @brief Generic switch to apply the boundary conditions to the case (WIP)

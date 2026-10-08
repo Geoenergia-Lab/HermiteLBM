@@ -211,6 +211,10 @@ namespace LBM
             const device::ptrCollection<6, scalar_t> writeBuffer,
             const device::label_t bzOffset)
         {
+            // __shared__ blockSharedBuffer sharedBuffer;
+
+            // constexpr const integralConstant<scalar_t, static_cast<scalar_t>(0)> v;
+
             __shared__ blockSharedBuffer sharedBuffer;
 
             momentBasedLBMKernel<VelocitySet, BoundaryConditionCase, Collision>::momentBasedLBM(devPtrs, readBuffer, writeBuffer, sharedBuffer, bzOffset);
@@ -240,7 +244,7 @@ namespace LBM
             for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
             {
                 // Set the active device
-                errorHandler::handleInline(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
+                errorHandler::handleInline(device::API::setDevice(programCtrl.deviceList()[deviceIdx]));
 
                 // Sync the streams to ensure previous operations are complete before launching new kernels
                 for (host::label_t idxStream = 0; idxStream < idxStreams.size(); idxStream++)

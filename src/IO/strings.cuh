@@ -64,7 +64,7 @@ namespace LBM
          * @return A new vector of strings with s concatenated to each element of S.
          * @note This function creates a new vector and does not modify the input vector S.
          **/
-        __host__ [[nodiscard]] const words_t catenate(const name_t &s, const words_t &S) noexcept
+        [[nodiscard]] __host__ const words_t catenate(const name_t &s, const words_t &S) noexcept
         {
             words_t S_new(S.size(), "");
 
@@ -83,7 +83,7 @@ namespace LBM
          * @return A new vector of strings with s concatenated to each element of S.
          * @note This function creates a new vector and does not modify the input vector S.
          **/
-        __host__ [[nodiscard]] const words_t catenate(const words_t &S, const name_t &s) noexcept
+        [[nodiscard]] __host__ const words_t catenate(const words_t &S, const name_t &s) noexcept
         {
             words_t S_new(S.size(), "");
 
@@ -102,7 +102,7 @@ namespace LBM
          * @return true if target is found in vec, false otherwise.
          * @note Uses std::find for efficient searching.
          **/
-        __host__ [[nodiscard]] inline constexpr bool containsString(const words_t &vec, const name_t &target) noexcept
+        [[nodiscard]] __host__ inline constexpr bool containsString(const words_t &vec, const name_t &target) noexcept
         {
             return std::find(vec.begin(), vec.end(), target) != vec.end();
         }
@@ -114,7 +114,7 @@ namespace LBM
          * @return The position of c within str
          **/
         template <const char c>
-        __host__ [[nodiscard]] inline constexpr host::label_t findCharPosition(const name_t &str)
+        [[nodiscard]] __host__ inline constexpr host::label_t findCharPosition(const name_t &str)
         {
             return str.find(c);
         }
@@ -125,7 +125,7 @@ namespace LBM
          * @return A single string with each element of S separated by a newline character.
          * @note This function is useful for creating multi-line strings from a list of lines.
          **/
-        __host__ [[nodiscard]] const name_t catenate(const words_t &S) noexcept
+        [[nodiscard]] __host__ const name_t catenate(const words_t &S) noexcept
         {
             name_t s;
             for (host::label_t line = 0; line < S.size(); line++)
@@ -142,7 +142,7 @@ namespace LBM
          * @throws std::runtime_error if the input vector has 2 or fewer lines.
          * @note This function is useful for removing enclosing braces from blocks of text.
          **/
-        __host__ [[nodiscard]] const words_t eraseBraces(const words_t &lines)
+        [[nodiscard]] __host__ const words_t eraseBraces(const words_t &lines)
         {
             // Check minimum size requirement
             if (lines.size() < 3)
@@ -177,7 +177,7 @@ namespace LBM
          * @brief Splits a string by its whitespace into a vector of strings
          * @param[in] str The string to split
          **/
-        __host__ [[nodiscard]] const words_t splitByWhitespace(const name_t &str)
+        [[nodiscard]] __host__ const words_t splitByWhitespace(const name_t &str)
         {
             std::istringstream iss(str);
             words_t tokens;
@@ -198,7 +198,7 @@ namespace LBM
          * @note Handles space, tab, newline, carriage return, form feed, and vertical tab.
          **/
         template <const bool trimSemicolon>
-        __host__ [[nodiscard]] const name_t trim(const name_t &str)
+        [[nodiscard]] __host__ const name_t trim(const name_t &str)
         {
             const host::label_t start = str.find_first_not_of(" \t\n\r\f\v");
 
@@ -224,7 +224,7 @@ namespace LBM
          * @return A new vector with each string trimmed.
          **/
         template <const bool trimSemicolon>
-        __host__ [[nodiscard]] const words_t trim(const words_t &str)
+        [[nodiscard]] __host__ const words_t trim(const words_t &str)
         {
             words_t strTrimmed(str.size(), "");
 
@@ -242,7 +242,7 @@ namespace LBM
          * @return String with comments removed (everything after '//').
          * @note Only handles single-line comments starting with '//'.
          **/
-        __host__ [[nodiscard]] const name_t removeComments(const name_t &str)
+        [[nodiscard]] __host__ const name_t removeComments(const name_t &str)
         {
             const host::label_t commentPos = str.find("//");
             if (commentPos != name_t::npos)
@@ -258,7 +258,7 @@ namespace LBM
          * @return true if string contains only whitespace, false otherwise.
          * @note Uses std::isspace for whitespace detection.
          **/
-        __host__ [[nodiscard]] bool isOnlyWhitespace(const name_t &str)
+        [[nodiscard]] __host__ bool isOnlyWhitespace(const name_t &str)
         {
             for (char c : str)
             {
@@ -279,7 +279,7 @@ namespace LBM
          * @throws std::runtime_error if block is not found.
          * @note Handles various declaration styles including braces and semicolons.
          **/
-        __host__ [[nodiscard]] host::label_t findBlockLine(const words_t &lines, const name_t &blockName, const host::label_t startLine = 0)
+        [[nodiscard]] __host__ host::label_t findBlockLine(const words_t &lines, const name_t &blockName, const host::label_t startLine = 0)
         {
             for (host::label_t i = startLine; i < lines.size(); ++i)
             {
@@ -328,7 +328,7 @@ namespace LBM
          * @throws std::runtime_error for malformed blocks or unbalanced braces.
          * @note Preserves original formatting including comments in the returned block.
          **/
-        __host__ [[nodiscard]] const words_t extractBlock(const words_t &lines, const name_t &blockName, const host::label_t startLine = 0)
+        [[nodiscard]] __host__ const words_t extractBlock(const words_t &lines, const name_t &blockName, const host::label_t startLine = 0)
         {
             words_t result;
 
@@ -428,7 +428,7 @@ namespace LBM
          * @return Vector of strings containing the complete block.
          * @note Convenience wrapper for extractBlock(lines, key + " " + fieldName).
          **/
-        __host__ [[nodiscard]] const words_t extractBlock(const words_t &lines, const name_t &fieldName, const name_t &key)
+        [[nodiscard]] __host__ const words_t extractBlock(const words_t &lines, const name_t &fieldName, const name_t &key)
         {
             return extractBlock(lines, key + " " + fieldName);
         }
@@ -439,7 +439,7 @@ namespace LBM
          * @return A std::vector of std::string_view objects contained within the caseInfo file
          * @note This function will cause the program to exit if caseInfo is not found in the launch directory
          **/
-        __host__ [[nodiscard]] const words_t readFile(const name_t &fileName)
+        [[nodiscard]] __host__ const words_t readFile(const name_t &fileName)
         {
             // Does the file even exist?
             if (!std::filesystem::exists(fileName))
@@ -473,7 +473,7 @@ namespace LBM
          * @return True if s is a valid number, false otherwise.
          * @note A valid number can optionally start with a '+' or '-' sign and may contain one decimal point.
          **/
-        __host__ [[nodiscard]] bool isNumber(const name_t &s) noexcept
+        [[nodiscard]] __host__ bool isNumber(const name_t &s) noexcept
         {
             if (s.empty())
             {
@@ -531,7 +531,7 @@ namespace LBM
          * @param[in] numStr The number string
          * @return True if the string is all digits, false otherwise
          **/
-        __host__ [[nodiscard]] inline bool isAllDigits(const name_t &numStr) noexcept
+        [[nodiscard]] __host__ inline bool isAllDigits(const name_t &numStr) noexcept
         {
             for (char c : numStr)
             {
@@ -553,7 +553,7 @@ namespace LBM
          * @note This function can be used to, for example, split a string by commas, spaces, etc
          **/
         template <const char delim, const bool removeWhitespace>
-        __host__ [[nodiscard]] const words_t split(const std::string_view &s) noexcept
+        [[nodiscard]] __host__ const words_t split(const std::string_view &s) noexcept
         {
             words_t result;
             size_t start = 0;
@@ -587,7 +587,7 @@ namespace LBM
          * @param[in] parameterLines The lines to scan
          * @param[in] name The parameter to look for
          **/
-        __host__ [[nodiscard]] const name_t extractParameterLine(const words_t &parameterLines, const name_t &name)
+        [[nodiscard]] __host__ const name_t extractParameterLine(const words_t &parameterLines, const name_t &name)
         {
             // Loop over S
             for (device::label_t i = 0; i < parameterLines.size(); i++)
@@ -619,7 +619,7 @@ namespace LBM
          * @param[in] parameterValueString String representation of the parameter value
          **/
         template <typename T>
-        __host__ [[nodiscard]] T extractParameter(const name_t &parameterValueString)
+        [[nodiscard]] __host__ T extractParameter(const name_t &parameterValueString)
         {
             // Is it supposed an integral value?
             if constexpr (std::is_integral_v<T>)
@@ -668,7 +668,7 @@ namespace LBM
          * @note The line containing the definition of variableName must separate variableName and its value with a space, for instance nx 128;
          **/
         template <typename T>
-        __host__ [[nodiscard]] T extractParameter(const words_t &S, const name_t &name)
+        [[nodiscard]] __host__ T extractParameter(const words_t &S, const name_t &name)
         {
             return extractParameter<T>(extractParameterLine(S, name));
         }
@@ -686,7 +686,7 @@ namespace LBM
          * @return T constructed from the three extracted values.
          **/
         template <typename T>
-        __host__ [[nodiscard]] const T extractParameter(const name_t &fileName, const name_t &prefix) noexcept
+        [[nodiscard]] __host__ const T extractParameter(const name_t &fileName, const name_t &prefix) noexcept
         {
             using value_type = typename T::value_type;
 
@@ -701,7 +701,7 @@ namespace LBM
          * @param[in] name The argument to be searched for
          * @return A std::string_view of the value argument corresponding to name
          **/
-        __host__ [[nodiscard]] const name_t parseNameValuePair(const words_t &args, const name_t &name)
+        [[nodiscard]] __host__ const name_t parseNameValuePair(const words_t &args, const name_t &name)
         {
             // Loop over the input arguments and search for name
             for (device::label_t i = 0; i < args.size(); i++)
@@ -735,7 +735,7 @@ namespace LBM
          * @note This function can be used to parse arguments passed to the executable on the command line such as -GPU 0,1
          **/
         template <typename T>
-        __host__ [[nodiscard]] const std::vector<T> parseValue(const words_t &args, const name_t &name)
+        [[nodiscard]] __host__ const std::vector<T> parseValue(const words_t &args, const name_t &name)
         {
             const words_t s_v = string::split<","[0], true>(parseNameValuePair(args, name));
 

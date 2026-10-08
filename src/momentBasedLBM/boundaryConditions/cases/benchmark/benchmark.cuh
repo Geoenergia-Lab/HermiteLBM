@@ -67,7 +67,7 @@ namespace LBM
         /**
          * @brief Switch determining whether or not the boundary condition actually applies a condition
          **/
-        __device__ __host__ [[nodiscard]] static inline consteval bool appliesCondition() noexcept { return false; }
+        [[nodiscard]] __device__ __host__ static inline consteval bool appliesCondition() noexcept { return false; }
 
     private:
     };

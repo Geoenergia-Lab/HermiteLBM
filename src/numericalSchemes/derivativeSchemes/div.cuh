@@ -65,7 +65,7 @@ namespace LBM
              * @param[in] mesh The lattice mesh
              **/
             template <const host::label_t SchemeOrder, typename T>
-            __host__ [[nodiscard]] const std::vector<T> div(
+            [[nodiscard]] __host__ const std::vector<T> div(
                 const std::vector<T> &u,
                 const std::vector<T> &v,
                 const std::vector<T> &w,

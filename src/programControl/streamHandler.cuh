@@ -59,7 +59,7 @@ namespace LBM
          * @param[in] idxDev The device index
          * @param[in] idxStr The stream index for the direction
          **/
-        __host__ [[nodiscard]] static inline constexpr host::label_t idxStream(const host::label_t idxDev, const host::label_t idxStr) noexcept
+        [[nodiscard]] __host__ static inline constexpr host::label_t idxStream(const host::label_t idxDev, const host::label_t idxStr) noexcept
         {
             return (static_cast<host::label_t>(3) * idxDev) + idxStr;
         }
@@ -70,7 +70,7 @@ namespace LBM
          * @param[in] idxDev The device index
          **/
         template <const int coeff>
-        __host__ [[nodiscard]] static inline constexpr host::label_t idxStream(const host::label_t idxDev) noexcept
+        [[nodiscard]] __host__ static inline constexpr host::label_t idxStream(const host::label_t idxDev) noexcept
         {
             velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
@@ -90,7 +90,7 @@ namespace LBM
          * @param[in] deviceIdx The index of the device (GPU)
          * @return A unique stream ID for the device
          **/
-        __host__ [[nodiscard]] inline constexpr host::label_t internalStreamID(const host::label_t deviceIdx) noexcept
+        [[nodiscard]] __host__ inline constexpr host::label_t internalStreamID(const host::label_t deviceIdx) noexcept
         {
             return idxStream(deviceIdx, 1);
         }
@@ -112,7 +112,7 @@ namespace LBM
          * @brief Default constructor
          * @param[in] deviceIndices Ordinals of the devices for which to create the streams
          **/
-        __host__ [[nodiscard]] streamHandler(const std::vector<deviceIndex_t> &deviceIndices) noexcept
+        [[nodiscard]] __host__ streamHandler(const std::vector<deviceIndex_t> &deviceIndices) noexcept
             : streams_(createCudaStreams(deviceIndices)) {}
 
         /**
@@ -123,18 +123,18 @@ namespace LBM
          **/
         __host__ ~streamHandler() noexcept
         {
-            for (const cudaStream_t &stream : streams_)
+            for (const deviceStream_t &stream : streams_)
             {
-                errorHandler::handle(cudaStreamSynchronize(stream));
-                errorHandler::handle(cudaStreamDestroy(stream));
+                errorHandler::handle(device::API::streamSynchronize(stream));
+                errorHandler::handle(device::API::streamDestroy(stream));
             }
         }
 
         /**
          * @brief Disable copying
          **/
-        __host__ [[nodiscard]] streamHandler(const streamHandler &) = delete;
-        __host__ [[nodiscard]] streamHandler &operator=(const streamHandler &) = delete;
+        [[nodiscard]] __host__ streamHandler(const streamHandler &) = delete;
+        [[nodiscard]] __host__ streamHandler &operator=(const streamHandler &) = delete;
 
         /**
          * @brief Synchronizes a specific CUDA stream
@@ -142,7 +142,7 @@ namespace LBM
          **/
         __host__ inline void synchronize(const host::label_t i) const noexcept
         {
-            errorHandler::handleInline(cudaStreamSynchronize(streams_[i]));
+            errorHandler::handleInline(device::API::streamSynchronize(streams_[i]));
         }
 
         /**
@@ -151,7 +151,7 @@ namespace LBM
          * @return Reference to the requested CUDA stream
          * @warning No bounds checking performed at runtime
          **/
-        __host__ const cudaStream_t &operator[](const host::label_t i) const noexcept
+        __host__ const deviceStream_t &operator[](const host::label_t i) const noexcept
         {
             return streams_[i];
         }
@@ -160,7 +160,7 @@ namespace LBM
          * @brief Returns all managed CUDA streams
          * @return Const reference to std::array containing all CUDA streams
          **/
-        __host__ [[nodiscard]] inline const std::vector<cudaStream_t> &streams() const noexcept
+        [[nodiscard]] __host__ inline const std::vector<deviceStream_t> &streams() const noexcept
         {
             return streams_;
         }
@@ -173,29 +173,29 @@ namespace LBM
          * Private helper function that handles actual stream creation
          * with proper error checking and device synchronization.
          **/
-        __host__ [[nodiscard]] static const std::vector<cudaStream_t> createCudaStreams(const std::vector<deviceIndex_t> &deviceIndices)
+        [[nodiscard]] __host__ static const std::vector<deviceStream_t> createCudaStreams(const std::vector<deviceIndex_t> &deviceIndices)
         {
-            std::vector<cudaStream_t> streams(deviceIndices.size() * 3);
+            std::vector<deviceStream_t> streams(deviceIndices.size() * 3);
 
             for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
             {
-                errorHandler::handle(cudaSetDevice(deviceIndices[deviceIdx]));
-                errorHandler::handle(cudaDeviceSynchronize());
+                errorHandler::handle(device::API::setDevice(deviceIndices[deviceIdx]));
+                errorHandler::handle(device::API::deviceSynchronize());
             }
 
             for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
             {
-                errorHandler::handle(cudaSetDevice(deviceIndices[deviceIdx]));
+                errorHandler::handle(device::API::setDevice(deviceIndices[deviceIdx]));
                 for (device::label_t stream = 0; stream < 3; stream++)
                 {
-                    errorHandler::handle(cudaStreamCreate(&streams[device::idxStream(deviceIdx, stream)]));
+                    errorHandler::handle(device::API::streamCreate(&streams[device::idxStream(deviceIdx, stream)]));
                 }
             }
 
             for (host::label_t deviceIdx = 0; deviceIdx < deviceIndices.size(); deviceIdx++)
             {
-                errorHandler::handle(cudaSetDevice(deviceIndices[deviceIdx]));
-                errorHandler::handle(cudaDeviceSynchronize());
+                errorHandler::handle(device::API::setDevice(deviceIndices[deviceIdx]));
+                errorHandler::handle(device::API::deviceSynchronize());
             }
 
             return streams;
@@ -204,7 +204,7 @@ namespace LBM
         /**
          * @brief The underlying streams held in a std::array
          **/
-        const std::vector<cudaStream_t> streams_;
+        const std::vector<deviceStream_t> streams_;
     };
 }
 

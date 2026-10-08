@@ -68,7 +68,7 @@ namespace LBM
              * @brief Returns a C-string containing N spaces followed by a null terminator.
              * @return const char* pointer to the whitespace string.
              **/
-            __host__ [[nodiscard]] static inline constexpr const char *c_str() noexcept
+            [[nodiscard]] __host__ static inline constexpr const char *c_str() noexcept
             {
                 return data_.data();
             }
@@ -78,7 +78,7 @@ namespace LBM
              * @brief Initializes the static whitespace array with spaces.
              * @return ValueType array filled with spaces and null terminator.
              **/
-            __host__ [[nodiscard]] static inline constexpr const ValueType initialise_spaces() noexcept
+            [[nodiscard]] __host__ static inline constexpr const ValueType initialise_spaces() noexcept
             {
                 ValueType result;
                 if constexpr (N > 0)
@@ -103,7 +103,7 @@ namespace LBM
          * @return Reference to the output stream.
          **/
         template <const std::size_t N>
-        __host__ [[nodiscard]] std::ostream inline constexpr &operator<<(std::ostream &os, const whitespace<N> &s) noexcept
+        [[nodiscard]] __host__ std::ostream inline constexpr &operator<<(std::ostream &os, const whitespace<N> &s) noexcept
         {
             os << s.c_str();
             return os;
@@ -170,7 +170,7 @@ namespace LBM
          * @param[in] vec The vector to print
          **/
         template <typename T>
-        __host__ [[nodiscard]] inline std::ostream &operator<<(std::ostream &os, const std::vector<T> &vec) noexcept
+        [[nodiscard]] __host__ inline std::ostream &operator<<(std::ostream &os, const std::vector<T> &vec) noexcept
         {
             print_container(os, vec);
             return os;
@@ -185,7 +185,7 @@ namespace LBM
          * @return Reference to the output stream.
          **/
         template <typename T, const std::size_t N>
-        __host__ [[nodiscard]] inline std::ostream &operator<<(std::ostream &os, const std::array<T, N> &arr) noexcept
+        [[nodiscard]] __host__ inline std::ostream &operator<<(std::ostream &os, const std::array<T, N> &arr) noexcept
         {
             print_container(os, arr);
             return os;

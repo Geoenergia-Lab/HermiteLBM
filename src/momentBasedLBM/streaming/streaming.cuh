@@ -120,7 +120,7 @@ namespace LBM
                         sharedBuffer[q_i<8 * block::size()>() + idxIncoming],
                         sharedBuffer[q_i<9 * block::size()>() + idxIncoming]};
 
-                    VelocitySet::reconstruct<i>(pop, incomingMoments);
+                    VelocitySet::template reconstruct<i>(pop, incomingMoments);
                 });
         }
 
@@ -136,7 +136,7 @@ namespace LBM
          * for improved performance, falling back to modulo arithmetic otherwise.
          **/
         template <const int coeff, const device::label_t Dim>
-        __device__ [[nodiscard]] static inline device::label_t periodic_index(const device::label_t idx) noexcept
+        [[nodiscard]] __device__ static inline device::label_t periodic_index(const device::label_t idx) noexcept
         {
             velocityCoefficient::assertions::validate<coeff, velocityCoefficient::CAN_BE_NULL>();
 

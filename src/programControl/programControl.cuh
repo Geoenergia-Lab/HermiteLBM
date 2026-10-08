@@ -58,16 +58,6 @@ SourceFiles
 
 namespace LBM
 {
-    /**
-     * @brief CUDA kernel cache preference type enumeration
-     **/
-    typedef enum cachePreferenceTypeEnum : int
-    {
-        PREFER_NONE = cudaFuncCachePreferNone,
-        PREFER_SHARED = cudaFuncCachePreferShared,
-        PREFER_L1 = cudaFuncCachePreferL1
-    } cachePreferenceType;
-
     class programControl
     {
     public:
@@ -76,7 +66,7 @@ namespace LBM
          * @param[in] argc First argument passed to main
          * @param[in] argv Second argument passed to main
          **/
-        __host__ [[nodiscard]] programControl(const int argc, const char *const argv[]) noexcept
+        [[nodiscard]] __host__ programControl(const int argc, const char *const argv[]) noexcept
             : input_(inputControl(argc, argv)),
               caseName_(string::extractParameter<name_t>(string::readFile("programControl"), "caseName")),
               Re_(initialiseConst<scalar_t>("Re")),
@@ -122,7 +112,7 @@ namespace LBM
             {
                 for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList().size(); virtualDeviceIndex++)
                 {
-                    errorHandler::handle(cudaSetDevice(deviceList()[virtualDeviceIndex]));
+                    errorHandler::handle(device::API::setDevice(deviceList()[virtualDeviceIndex]));
 
                     // Allocate symbols on the GPU
                     const scalar_t U = Ma_ / std::sqrt(static_cast<scalar_t>(3));
@@ -146,9 +136,9 @@ namespace LBM
             // Probably unnecessary but nice to do it anyway
             if (deviceList().size() > 0)
             {
-                errorHandler::handle(cudaDeviceSynchronize());
-                errorHandler::handle(cudaSetDevice(deviceList()[0]));
-                errorHandler::handle(cudaDeviceSynchronize());
+                errorHandler::handle(device::API::deviceSynchronize());
+                errorHandler::handle(device::API::setDevice(deviceList()[0]));
+                errorHandler::handle(device::API::deviceSynchronize());
             }
         };
 
@@ -165,8 +155,8 @@ namespace LBM
         /**
          * @brief Disable copying
          **/
-        __host__ [[nodiscard]] programControl(const programControl &) = delete;
-        __host__ [[nodiscard]] programControl &operator=(const programControl &) = delete;
+        [[nodiscard]] __host__ programControl(const programControl &) = delete;
+        [[nodiscard]] __host__ programControl &operator=(const programControl &) = delete;
 
         /**
          * @brief Print the file header
@@ -193,7 +183,7 @@ namespace LBM
          * @brief Returns the name of the case
          * @return A const name_t
          **/
-        __host__ [[nodiscard]] inline constexpr const name_t &caseName() const noexcept
+        [[nodiscard]] __host__ inline constexpr const name_t &caseName() const noexcept
         {
             return caseName_;
         }
@@ -202,7 +192,7 @@ namespace LBM
          * @brief Returns the array of device indices
          * @return A read-only reference to deviceList_ contained within input_
          **/
-        __host__ [[nodiscard]] inline constexpr const std::vector<deviceIndex_t> &deviceList() const noexcept
+        [[nodiscard]] __host__ inline constexpr const std::vector<deviceIndex_t> &deviceList() const noexcept
         {
             return input_.deviceList();
         }
@@ -211,7 +201,7 @@ namespace LBM
          * @brief Returns the Reynolds number
          * @return The Reynolds number
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr scalar_t Re() const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr scalar_t Re() const noexcept
         {
             return Re_;
         }
@@ -220,7 +210,7 @@ namespace LBM
          * @brief Returns the characteristic velocity
          * @return The characteristic velocity
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr scalar_t Ma() const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr scalar_t Ma() const noexcept
         {
             return Ma_;
         }
@@ -229,7 +219,7 @@ namespace LBM
          * @brief Returns the characteristic velocity
          * @return The characteristic velocity
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr scalar_t L_char() const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr scalar_t L_char() const noexcept
         {
             return L_char_;
         }
@@ -238,7 +228,7 @@ namespace LBM
          * @brief Returns the total number of simulation time steps
          * @return The total number of simulation time steps
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr host::label_t nt() const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr host::label_t nt() const noexcept
         {
             return nTimeSteps_;
         }
@@ -248,7 +238,7 @@ namespace LBM
          * @param[in] timeStep The time step to check
          * @return True if the program should checkpoint, false otherwise
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr bool save(const host::label_t timeStep) const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr bool save(const host::label_t timeStep) const noexcept
         {
             return (timeStep % saveInterval_) == 0;
         }
@@ -258,7 +248,7 @@ namespace LBM
          * @param[in] timeStep The time step to check
          * @return True if the program should checkpoint, false otherwise
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr bool print(const host::label_t timeStep) const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr bool print(const host::label_t timeStep) const noexcept
         {
             return (timeStep % infoInterval_) == 0;
         }
@@ -267,7 +257,7 @@ namespace LBM
          * @brief Returns the latest time step of the solution files contained within the current directory
          * @return The latest time step as a host::label_t
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr host::label_t latestTime() const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr host::label_t latestTime() const noexcept
         {
             return latestTime_;
         }
@@ -276,11 +266,11 @@ namespace LBM
          * @brief Returns a reference to the current time step
          * @return The latest time step as a host::label_t
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr const host::label_t &timeStep() const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr const host::label_t &timeStep() const noexcept
         {
             return timeStep_;
         }
-        __device__ __host__ [[nodiscard]] inline constexpr host::label_t &timeStep() noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr host::label_t &timeStep() noexcept
         {
             return timeStep_;
         }
@@ -288,7 +278,7 @@ namespace LBM
         /**
          * @brief Determines whether or not the run time loop should exit
          **/
-        __host__ [[nodiscard]] inline constexpr bool end() const noexcept
+        [[nodiscard]] __host__ inline constexpr bool end() const noexcept
         {
             return (timeStep() < nt() && (runTime::program_status.load() == runTime::GOOD));
         }
@@ -297,7 +287,7 @@ namespace LBM
          * @brief Provides read-only access to the input control
          * @return A const reference to an inputControl object
          **/
-        __host__ [[nodiscard]] inline constexpr const inputControl &input() const noexcept
+        [[nodiscard]] __host__ inline constexpr const inputControl &input() const noexcept
         {
             return input_;
         }
@@ -307,7 +297,7 @@ namespace LBM
          * @return A string representing the convertion type passed at the command line
          * @param[in] argument The argument to search for
          **/
-        __host__ [[nodiscard]] const name_t getArgument(const name_t &argument) const
+        [[nodiscard]] __host__ const name_t getArgument(const name_t &argument) const
         {
             if (input_.isArgPresent(argument))
             {
@@ -334,7 +324,7 @@ namespace LBM
          * @brief Provides read-only access to the arguments supplied at the command line
          * @return The command line input as a vector of strings
          **/
-        __host__ [[nodiscard]] inline constexpr const words_t &commandLine() const noexcept
+        [[nodiscard]] __host__ inline constexpr const words_t &commandLine() const noexcept
         {
             return input_.commandLine();
         }
@@ -351,13 +341,13 @@ namespace LBM
         {
             for (host::label_t VirtualDeviceIndex = 0; VirtualDeviceIndex < deviceList().size(); VirtualDeviceIndex++)
             {
-                errorHandler::handle(cudaDeviceSynchronize());
-                errorHandler::handle(cudaSetDevice(deviceList()[VirtualDeviceIndex]));
-                errorHandler::handle(cudaDeviceSynchronize());
-                errorHandler::handle(cudaFuncSetCacheConfig(func, static_cast<cudaFuncCache>(CachePreferenceType)));
-                errorHandler::handle(cudaDeviceSynchronize());
-                errorHandler::handle(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
-                errorHandler::handle(cudaDeviceSynchronize());
+                errorHandler::handle(device::API::deviceSynchronize());
+                errorHandler::handle(device::API::setDevice(deviceList()[VirtualDeviceIndex]));
+                errorHandler::handle(device::API::deviceSynchronize());
+                errorHandler::handle(device::API::funcSetCacheConfig(func, static_cast<deviceFuncCache_t>(CachePreferenceType)));
+                errorHandler::handle(device::API::deviceSynchronize());
+                errorHandler::handle(device::API::funcSetMaxDynamicSharedMemorySize(func, smem_alloc_size));
+                errorHandler::handle(device::API::deviceSynchronize());
             }
         }
 
@@ -365,7 +355,7 @@ namespace LBM
          * @brief Returns a vector of time step indices corresponding to the saved time steps in the "timeStep" directory
          * @return A vector of host::label_t representing the saved time step indices
          **/
-        __host__ [[nodiscard]] const std::vector<host::label_t> timeStepIndices() const
+        [[nodiscard]] __host__ const std::vector<host::label_t> timeStepIndices() const
         {
             const std::vector<host::label_t> fileNameIndices = savedTimeSteps("timeStep");
 
@@ -390,7 +380,7 @@ namespace LBM
          * @brief Return a reference to the streamHandler object
          * @return A const reference to the streamHandler object
          **/
-        __host__ [[nodiscard]] inline constexpr const streamHandler &streams() const noexcept
+        [[nodiscard]] __host__ inline constexpr const streamHandler &streams() const noexcept
         {
             return streams_;
         }
@@ -451,7 +441,7 @@ namespace LBM
          * @param[in] varName The name of the variable to read
          **/
         template <typename T>
-        __host__ [[nodiscard]] static inline T initialiseConst(const name_t &varName) noexcept
+        [[nodiscard]] __host__ static inline T initialiseConst(const name_t &varName) noexcept
         {
             return string::extractParameter<T>(string::readFile("programControl"), varName);
         }
@@ -461,7 +451,7 @@ namespace LBM
          * @return A vector of host::label_t representing the saved time step indices
          * @param[in] dir_path The path to the directory to read (e.g., "timeStep")
          **/
-        __host__ [[nodiscard]] static const std::vector<host::label_t> savedTimeSteps(const std::string &dir_path)
+        [[nodiscard]] __host__ static const std::vector<host::label_t> savedTimeSteps(const std::string &dir_path)
         {
             std::vector<host::label_t> numbers;
 
@@ -505,7 +495,7 @@ namespace LBM
          * @brief Returns the latest time step of the solution files contained within the current directory
          * @return The latest time step as a host::label_t
          **/
-        __host__ [[nodiscard]] static inline host::label_t latestSaved()
+        [[nodiscard]] __host__ static inline host::label_t latestSaved()
         {
             return savedTimeSteps("timeStep").empty() ? 0 : savedTimeSteps("timeStep").back();
         }

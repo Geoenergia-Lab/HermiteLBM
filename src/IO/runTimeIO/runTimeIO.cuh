@@ -69,7 +69,7 @@ namespace LBM
          * @param[in] mesh The lattice mesh
          * @param[in] programCtrl The program control object
          **/
-        __host__ [[nodiscard]] runTimeIO(
+        [[nodiscard]] __host__ runTimeIO(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
@@ -110,15 +110,15 @@ namespace LBM
         /**
          * @brief Disable copying
          **/
-        __host__ [[nodiscard]] runTimeIO(const runTimeIO &) = delete;
-        __host__ [[nodiscard]] runTimeIO &operator=(const runTimeIO &) = delete;
+        [[nodiscard]] __host__ runTimeIO(const runTimeIO &) = delete;
+        [[nodiscard]] __host__ runTimeIO &operator=(const runTimeIO &) = delete;
 
         /**
          * @brief Formats a duration in seconds into HH:MM:SS string format
          * @param[in] totalSeconds Total number of seconds to format
          * @return String formatted as HH:MM:SS (supports negative durations)
          **/
-        __host__ [[nodiscard]] static const name_t duration(const long long totalSeconds) noexcept
+        [[nodiscard]] __host__ static const name_t duration(const long long totalSeconds) noexcept
         {
             // Handle sign and absolute value conversion
             const bool isNegative = (totalSeconds < 0);
@@ -155,7 +155,7 @@ namespace LBM
          * This metric provides a standardized way to compare LBM implementation performance.
          **/
         template <typename T>
-        __host__ [[nodiscard]] static inline constexpr T MLUPS(
+        [[nodiscard]] __host__ static inline constexpr T MLUPS(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const std::chrono::high_resolution_clock::time_point &start,

@@ -63,7 +63,7 @@ namespace LBM
         /**
          * @brief Switch determining whether or not the boundary condition actually applies a condition
          **/
-        __device__ __host__ [[nodiscard]] static inline consteval bool appliesCondition() noexcept { return true; }
+        [[nodiscard]] __device__ __host__ static inline consteval bool appliesCondition() noexcept { return true; }
 
         /**
          * @brief Public method to calculate the post-streaming methods and update boundary conditions
@@ -134,12 +134,12 @@ namespace LBM
 #include "jetBoundaryCondition.cuh"
         }
 
-        __device__ [[nodiscard]] static inline scalar_t center_x() noexcept
+        [[nodiscard]] __device__ static inline scalar_t center_x() noexcept
         {
             return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::n<axis::X>() - 1);
         }
 
-        __device__ [[nodiscard]] static inline scalar_t center_y() noexcept
+        [[nodiscard]] __device__ static inline scalar_t center_y() noexcept
         {
             return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::n<axis::Y>() - 1);
         }
@@ -148,22 +148,22 @@ namespace LBM
 
         static constexpr const scalar_t pi = static_cast<scalar_t>(std::numbers::pi);
 
-        __device__ [[nodiscard]] static inline scalar_t dudx(const scalar_t x, const scalar_t y) noexcept
+        [[nodiscard]] __device__ static inline scalar_t dudx(const scalar_t x, const scalar_t y) noexcept
         {
             return -(x * (std::exp(-pow<2>(device::L_char - static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)) - std::exp(-pow<2>(device::L_char + static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)))) / (std::sqrt(sigma) * std::sqrt(pi) * std::erf(device::L_char / (static_cast<scalar_t>(2) * std::sqrt(sigma))) * std::sqrt(pow<2>(x) + pow<2>(y)));
         }
 
-        __device__ [[nodiscard]] static inline scalar_t dudy(const scalar_t x, const scalar_t y) noexcept
+        [[nodiscard]] __device__ static inline scalar_t dudy(const scalar_t x, const scalar_t y) noexcept
         {
             return -(y * (std::exp(-pow<2>(device::L_char - static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)) - std::exp(-pow<2>(device::L_char + static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)))) / (std::sqrt(sigma) * std::sqrt(pi) * std::erf(device::L_char / (static_cast<scalar_t>(2) * std::sqrt(sigma))) * std::sqrt(pow<2>(x) + pow<2>(y)));
         }
 
-        __device__ [[nodiscard]] static inline scalar_t radius() noexcept
+        [[nodiscard]] __device__ static inline scalar_t radius() noexcept
         {
             return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::L_char);
         }
 
-        __device__ [[nodiscard]] static inline scalar_t r2() noexcept
+        [[nodiscard]] __device__ static inline scalar_t r2() noexcept
         {
             return radius() * radius();
         }

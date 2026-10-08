@@ -81,7 +81,7 @@ namespace LBM
              * @param[in] nPoints Number of elements.
              * @param[in] mesh The lattice mesh
              **/
-            __host__ [[nodiscard]] array(
+            [[nodiscard]] __host__ array(
                 const host::label_t nPoints,
                 const host::latticeMesh &mesh)
                 : arrayBase<T>("", mesh),
@@ -99,19 +99,19 @@ namespace LBM
             /**
              * @brief Get raw pointer to the data (read‑only).
              **/
-            __host__ [[nodiscard]] inline constexpr const T *data() const noexcept { return ptr_; }
+            [[nodiscard]] __host__ inline constexpr const T *data() const noexcept { return ptr_; }
 
             /**
              * @brief Get raw pointer to the data (mutable).
              **/
-            __host__ [[nodiscard]] inline constexpr T *data() noexcept { return ptr_; }
+            [[nodiscard]] __host__ inline constexpr T *data() noexcept { return ptr_; }
 
             /**
              * @brief Element access (mutable).
              * @param[in] idx Index (0‑based).
              * @return Reference to element.
              **/
-            __host__ [[nodiscard]] inline constexpr T &operator[](const host::label_t idx) noexcept
+            [[nodiscard]] __host__ inline constexpr T &operator[](const host::label_t idx) noexcept
             {
                 return ptr_[idx];
             }
@@ -121,7 +121,7 @@ namespace LBM
              * @param[in] idx Index (0‑based).
              * @return Const reference to element.
              **/
-            __host__ [[nodiscard]] inline constexpr const T &operator[](const host::label_t idx) const noexcept
+            [[nodiscard]] __host__ inline constexpr const T &operator[](const host::label_t idx) const noexcept
             {
                 return ptr_[idx];
             }
@@ -129,7 +129,7 @@ namespace LBM
             /**
              * @brief Get the number of elements.
              **/
-            __host__ [[nodiscard]] inline constexpr host::label_t size() const noexcept { return nPoints_; }
+            [[nodiscard]] __host__ inline constexpr host::label_t size() const noexcept { return nPoints_; }
 
             /**
              * @brief Copy data from a collection of device pointers into this array.

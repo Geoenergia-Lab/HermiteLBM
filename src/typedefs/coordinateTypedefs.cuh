@@ -62,7 +62,7 @@ namespace LBM
          * @tparam alpha The axis direction (X, Y or Z)
          **/
         template <const axis::type alpha>
-        __device__ [[nodiscard]] inline constexpr device::label_t n() noexcept
+        [[nodiscard]] __device__ inline constexpr device::label_t n() noexcept
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -87,7 +87,7 @@ namespace LBM
          * @tparam alpha The axis direction (X, Y or Z)
          **/
         template <const axis::type alpha>
-        __device__ [[nodiscard]] inline constexpr device::label_t NUM_BLOCK() noexcept
+        [[nodiscard]] __device__ inline constexpr device::label_t NUM_BLOCK() noexcept
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -118,7 +118,7 @@ namespace LBM
          * @returns One of two thread coordinates that lie on the extremities of alpha within the block
          **/
         template <const axis::type alpha, const int coeff, typename ValueType = device::label_t>
-        __host__ [[nodiscard]] inline consteval ValueType boundary() noexcept
+        [[nodiscard]] __host__ inline consteval ValueType boundary() noexcept
         {
             if constexpr (coeff == -1)
             {
@@ -143,7 +143,7 @@ namespace LBM
             /**
              * @brief Constructs from threadIdx
              **/
-            __device__ [[nodiscard]] inline explicit coordinate() noexcept
+            [[nodiscard]] __device__ inline explicit coordinate() noexcept
                 : var3<device::label_t>(
                       static_cast<device::label_t>(threadIdx.x),
                       static_cast<device::label_t>(threadIdx.y),
@@ -155,7 +155,7 @@ namespace LBM
              * @tparam coeff The coefficient indicating the direction along the axis (must be -1, 0 or 1)
              **/
             template <const axis::type alpha, const int coeff>
-            __device__ [[nodiscard]] inline constexpr device::label_t shifted_coordinate() const noexcept
+            [[nodiscard]] __device__ inline constexpr device::label_t shifted_coordinate() const noexcept
             {
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
@@ -192,7 +192,7 @@ namespace LBM
             /**
              * @brief Constructs from blockIdx
              **/
-            __device__ [[nodiscard]] inline explicit coordinate() noexcept
+            [[nodiscard]] __device__ inline explicit coordinate() noexcept
                 : var3<device::label_t>(
                       static_cast<device::label_t>(blockIdx.x),
                       static_cast<device::label_t>(blockIdx.y),
@@ -201,7 +201,7 @@ namespace LBM
             /**
              * @brief Constructs from an arbitrary input
              **/
-            __device__ [[nodiscard]] inline explicit coordinate(
+            [[nodiscard]] __device__ inline explicit coordinate(
                 const device::label_t bx,
                 const device::label_t by,
                 const device::label_t bz) noexcept
@@ -213,7 +213,7 @@ namespace LBM
              * @tparam coeff The coefficient indicating the direction along the axis (must be -1, 0 or 1)
              **/
             template <const axis::type alpha, const int coeff>
-            __device__ [[nodiscard]] inline constexpr device::label_t shifted_block() const noexcept
+            [[nodiscard]] __device__ inline constexpr device::label_t shifted_block() const noexcept
             {
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
@@ -252,7 +252,7 @@ namespace LBM
              * @param[in] Tx Three-dimensional thread coordinates
              * @param[in] Bx Three-dimensional block coordinates
              **/
-            __device__ [[nodiscard]] inline explicit pointCoordinate(
+            [[nodiscard]] __device__ inline explicit pointCoordinate(
                 const thread::coordinate &Tx,
                 const block::coordinate &Bx) noexcept
                 : var3<device::label_t>(
@@ -268,31 +268,31 @@ namespace LBM
     class dim2
     {
     public:
-        __device__ __host__ [[nodiscard]] inline constexpr dim2(const device::label_t a, const device::label_t b) noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr dim2(const device::label_t a, const device::label_t b) noexcept
             : i_(a),
               j_(b){};
 
-        __device__ __host__ [[nodiscard]] dim2(const dim2 &) = delete;
-        __device__ __host__ [[nodiscard]] dim2 &operator=(const dim2 &) = delete;
+        [[nodiscard]] __device__ __host__ dim2(const dim2 &) = delete;
+        [[nodiscard]] __device__ __host__ dim2 &operator=(const dim2 &) = delete;
 
-        __device__ __host__ [[nodiscard]] inline constexpr device::label_t i() const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr device::label_t i() const noexcept
         {
             return i_;
         }
 
         template <const axis::type alpha>
-        __device__ __host__ [[nodiscard]] static inline constexpr device::label_t i(const device::label_t linearIdx) noexcept
+        [[nodiscard]] __device__ __host__ static inline constexpr device::label_t i(const device::label_t linearIdx) noexcept
         {
             return linearIdx % (block::n<axis::orthogonal<alpha, 0>()>());
         }
 
         template <const axis::type alpha>
-        __device__ __host__ [[nodiscard]] static inline constexpr device::label_t j(const device::label_t linearIdx) noexcept
+        [[nodiscard]] __device__ __host__ static inline constexpr device::label_t j(const device::label_t linearIdx) noexcept
         {
             return linearIdx / (block::n<axis::orthogonal<alpha, 0>()>());
         }
 
-        __device__ __host__ [[nodiscard]] inline constexpr device::label_t j() const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr device::label_t j() const noexcept
         {
             return j_;
         }

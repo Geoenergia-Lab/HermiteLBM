@@ -69,7 +69,7 @@ namespace LBM
          * @brief Constructs boundary field values for all regions
          * @param[in] fieldName Name of the field to initialize across all regions
          **/
-        __host__ [[nodiscard]] boundaryFields(const name_t &fieldName)
+        [[nodiscard]] __host__ boundaryFields(const name_t &fieldName)
             : values_{
                   boundaryValue<VelocitySet, Scaled>(fieldName, "North"),
                   boundaryValue<VelocitySet, Scaled>(fieldName, "South"),
@@ -80,7 +80,7 @@ namespace LBM
                   boundaryValue<VelocitySet, Scaled>(fieldName, "internalField")},
               fieldName_(fieldName) {}
 
-        __host__ [[nodiscard]] boundaryFields()
+        [[nodiscard]] __host__ boundaryFields()
             : values_{
                   boundaryValue<VelocitySet, Scaled>(),
                   boundaryValue<VelocitySet, Scaled>(),
@@ -96,31 +96,31 @@ namespace LBM
          * @brief Provide access to field values for specific boundary regions
          * @return The value of the field in the specified region
          **/
-        __host__ [[nodiscard]] inline constexpr scalar_t North() const noexcept
+        [[nodiscard]] __host__ inline constexpr scalar_t North() const noexcept
         {
             return values_[0]();
         }
-        __host__ [[nodiscard]] inline constexpr scalar_t South() const noexcept
+        [[nodiscard]] __host__ inline constexpr scalar_t South() const noexcept
         {
             return values_[1]();
         }
-        __host__ [[nodiscard]] inline constexpr scalar_t East() const noexcept
+        [[nodiscard]] __host__ inline constexpr scalar_t East() const noexcept
         {
             return values_[2]();
         }
-        __host__ [[nodiscard]] inline constexpr scalar_t West() const noexcept
+        [[nodiscard]] __host__ inline constexpr scalar_t West() const noexcept
         {
             return values_[3]();
         }
-        __host__ [[nodiscard]] inline constexpr scalar_t Back() const noexcept
+        [[nodiscard]] __host__ inline constexpr scalar_t Back() const noexcept
         {
             return values_[4]();
         }
-        __host__ [[nodiscard]] inline constexpr scalar_t Front() const noexcept
+        [[nodiscard]] __host__ inline constexpr scalar_t Front() const noexcept
         {
             return values_[5]();
         }
-        __host__ [[nodiscard]] inline constexpr scalar_t internalField() const noexcept
+        [[nodiscard]] __host__ inline constexpr scalar_t internalField() const noexcept
         {
             return values_[6]();
         }
@@ -134,7 +134,7 @@ namespace LBM
         /**
          * @brief Name of the field
          **/
-        const name_t &fieldName_;
+        const name_t fieldName_;
     };
 
 }

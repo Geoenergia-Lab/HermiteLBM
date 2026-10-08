@@ -75,7 +75,7 @@ namespace LBM
          * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
          * @param[in] programCtrl The program control object
          **/
-        __host__ [[nodiscard]] objectRegistry(
+        [[nodiscard]] __host__ objectRegistry(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const kernel::ptrCollection &devPtrs)
@@ -96,8 +96,8 @@ namespace LBM
         /**
          * @brief Disable copying
          **/
-        __host__ [[nodiscard]] objectRegistry(const objectRegistry &) = delete;
-        __host__ [[nodiscard]] objectRegistry &operator=(const objectRegistry &) = delete;
+        [[nodiscard]] __host__ objectRegistry(const objectRegistry &) = delete;
+        [[nodiscard]] __host__ objectRegistry &operator=(const objectRegistry &) = delete;
 
         /**
          * @brief Executes all registered function object calculations for given time step
@@ -158,7 +158,7 @@ namespace LBM
          * @return Vector of function objects to be executed
          **/
         template <typename... Args>
-        __host__ [[nodiscard]] static const std::vector<functionObjects::calculateFunction> functionObjectCallInitialiser(Args &...args) noexcept
+        [[nodiscard]] __host__ static const std::vector<functionObjects::calculateFunction> functionObjectCallInitialiser(Args &...args) noexcept
         {
             std::vector<functionObjects::calculateFunction> calls;
             (addObjectCall(calls, args), ...);
@@ -243,7 +243,7 @@ namespace LBM
          * @return Vector of function objects to be executed
          **/
         template <typename... Args>
-        __host__ [[nodiscard]] static const std::vector<functionObjects::saveFunction> functionObjectSaveInitialiser(Args &...args) noexcept
+        [[nodiscard]] __host__ static const std::vector<functionObjects::saveFunction> functionObjectSaveInitialiser(Args &...args) noexcept
         {
             std::vector<functionObjects::saveFunction> calls;
             (addSaveCall(calls, args), ...);

@@ -80,7 +80,7 @@ namespace LBM
          * @param[in] m_zz The diagonal moment in the z-direction
          * @return The calculated value of 1 - c_s^2 * (m_xx + m_yy + m_zz)
          **/
-        __device__ __host__ [[nodiscard]] static inline constexpr scalar_t pics2(const scalar_t m_xx, const scalar_t m_yy, const scalar_t m_zz) noexcept
+        [[nodiscard]] __device__ __host__ static inline constexpr scalar_t pics2(const scalar_t m_xx, const scalar_t m_yy, const scalar_t m_zz) noexcept
         {
             return static_cast<scalar_t>(1) - velocitySetBase::cs2<scalar_t>() * (m_xx + m_yy + m_zz);
         }
@@ -99,7 +99,7 @@ namespace LBM
          * @brief Returns the value of 1 - c_s^2 * (m_xx + m_yy + m_zz)
          * @return The calculated value of 1 - c_s^2 * (m_xx + m_yy + m_zz)
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr scalar_t pics2() const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr scalar_t pics2() const noexcept
         {
             return pics2_;
         }
@@ -108,7 +108,7 @@ namespace LBM
          * @brief Returns the type of the thermal model
          * @return The thermal model type (Thermal or Isothermal)
          **/
-        __device__ __host__ [[nodiscard]] static inline consteval thermalModel_t modelType() noexcept
+        [[nodiscard]] __device__ __host__ static inline consteval thermalModel_t modelType() noexcept
         {
             return ThermalModel;
         }
@@ -137,7 +137,7 @@ namespace LBM
          * @brief Constructs a thermal model for the isothermal case, calculating the diagonal correction term and Pics2 value based on the provided moments
          * @param[in] moments Moment array (rho, U, Pi)
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr thermalModel<Isothermal>(const momentsArray &moments) noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr thermalModel<Isothermal>(const momentsArray &moments) noexcept
             : Base(Base::pics2(diagonalTerm_[m_i<0>()], diagonalTerm_[m_i<1>()], diagonalTerm_[m_i<2>()])),
               diagonalTerm_(This::diagonalTerm(moments)) {}
 
@@ -145,7 +145,7 @@ namespace LBM
          * @brief Returns the modified diagonal terms for the isothermal formulation
          * @return The modified diagonal terms as a thread::array of size 3
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr const thread::array<const scalar_t, 3> &diagonalTerm() const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr const thread::array<const scalar_t, 3> &diagonalTerm() const noexcept
         {
             return diagonalTerm_;
         }
@@ -157,7 +157,7 @@ namespace LBM
          * @return The selected moment value based on the index
          **/
         template <const host::label_t i>
-        __device__ __host__ [[nodiscard]] inline constexpr scalar_t moment(const momentsArray &moments) const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr scalar_t moment(const momentsArray &moments) const noexcept
         {
             if constexpr (i == 4)
             {
@@ -182,7 +182,7 @@ namespace LBM
          * @brief Calculates the diagonal correction term for the isothermal velocity set
          * @param[in] moments Moment array (rho, U, Pi)
          **/
-        __device__ __host__ [[nodiscard]] static inline constexpr const thread::array<const scalar_t, 3> diagonalTerm(const momentsArray &moments) noexcept
+        [[nodiscard]] __device__ __host__ static inline constexpr const thread::array<const scalar_t, 3> diagonalTerm(const momentsArray &moments) noexcept
         {
             const scalar_t Delta_m = (moments[q_i<1>()] * moments[q_i<1>()] + moments[q_i<2>()] * moments[q_i<2>()] + moments[q_i<3>()] * moments[q_i<3>()] - moments[q_i<4>()] - moments[q_i<7>()] - moments[q_i<9>()]) / static_cast<scalar_t>(3);
 
@@ -206,7 +206,7 @@ namespace LBM
          * @brief Constructs a thermal model for the thermal case, calculating the Pics2 value based on the provided moments
          * @param[in] moments Moment array (rho, U, Pi)
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr thermalModel<Thermal>(const momentsArray &moments) noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr thermalModel<Thermal>(const momentsArray &moments) noexcept
             : Base(Base::pics2(moments[q_i<4>()], moments[q_i<7>()], moments[q_i<9>()])) {}
 
         /**
@@ -216,7 +216,7 @@ namespace LBM
          * @return The selected moment value based on the index
          **/
         template <const host::label_t i>
-        __device__ __host__ [[nodiscard]] inline constexpr scalar_t moment(const momentsArray &moments) const noexcept
+        [[nodiscard]] __device__ __host__ inline constexpr scalar_t moment(const momentsArray &moments) const noexcept
         {
             return moments[m_i<i>()];
         }

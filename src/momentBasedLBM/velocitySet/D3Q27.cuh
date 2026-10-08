@@ -73,7 +73,7 @@ namespace LBM
         /**
          * @brief Determines the amount of shared memory required for a kernel based on the velocity set
          **/
-        __device__ __host__ [[nodiscard]] static inline consteval host::label_t smem_alloc_size() noexcept
+        [[nodiscard]] __device__ __host__ static inline consteval host::label_t smem_alloc_size() noexcept
         {
             return 0;
         }
