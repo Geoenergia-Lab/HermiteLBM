@@ -114,7 +114,7 @@ namespace LBM
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(cudaMallocHost(ptr, sizeof(T) * nPoints));
+                    errorHandler::handle(device::API::mallocHost(ptr, sizeof(T) * nPoints));
                 });
         }
 
@@ -156,7 +156,7 @@ namespace LBM
         {
             if (ptr != nullptr)
             {
-                errorHandler::handle(cudaFreeHost(ptr));
+                errorHandler::handle(device::API::hostFree(ptr));
             }
         }
 
@@ -292,7 +292,7 @@ namespace LBM
                     errorHandler::handle(device::API::memGetInfo(&free_bytes, &total_bytes));
                     if ((nBytes < free_bytes) && (nBytes < total_bytes))
                     {
-                        errorHandler::handle(cudaMalloc(ptr, nBytes));
+                        errorHandler::handle(device::API::deviceMalloc(ptr, nBytes));
                     }
                     else
                     {
@@ -362,7 +362,7 @@ namespace LBM
                 syncDevice();
                 setDevice(attrs.device);
                 syncDevice();
-                errorHandler::handle(cudaFree(ptr));
+                errorHandler::handle(device::API::deviceFree(ptr));
                 syncDevice();
             }
         }
@@ -404,7 +404,7 @@ namespace LBM
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(cudaMemcpy(devPtr, hostPtr, nPoints * sizeof(T), deviceMemcpyTypeEnum::memcpyHostToDevice));
+                    errorHandler::handle(device::API::memcpy<T>(devPtr, hostPtr, nPoints * sizeof(T), deviceMemcpyTypeEnum::memcpyHostToDevice));
                 });
 
             syncDevice();
@@ -553,7 +553,7 @@ namespace LBM
         template <typename T>
         __host__ inline void memcpyAsyncDeviceToHost(T *const ptrRestrict hostPtr, const T *const ptrRestrict devPtr, const host::label_t nPoints, const deviceStream_t &stream) noexcept
         {
-            errorHandler::handle(cudaMemcpyAsync(hostPtr, devPtr, nPoints * sizeof(T), deviceMemcpyTypeEnum::memcpyDeviceToHost, stream));
+            errorHandler::handle(device::API::memcpyAsync<T>(hostPtr, devPtr, nPoints * sizeof(T), deviceMemcpyTypeEnum::memcpyDeviceToHost, stream));
         }
 
         /**
@@ -569,7 +569,7 @@ namespace LBM
         template <typename T>
         __host__ inline void memcpyPeerAsync(T *const ptrRestrict destPtr, const deviceIndex_t destDevice, const T *const ptrRestrict srcPtr, const deviceIndex_t srcDevice, const host::label_t nPoints, const deviceStream_t &stream) noexcept
         {
-            errorHandler::handleInline(cudaMemcpyPeerAsync(destPtr, destDevice, srcPtr, srcDevice, nPoints * sizeof(T), stream));
+            errorHandler::handleInline(device::API::memcpyPeerAsync(destPtr, destDevice, srcPtr, srcDevice, nPoints * sizeof(T), stream));
         }
     }
 }

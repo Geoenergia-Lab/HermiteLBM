@@ -137,10 +137,16 @@ namespace LBM
             }
 
             template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t memcpy(T *const dst, const T *src, const size_t count, const deviceMemcpyType_t kind) noexcept
+            {
+                return hipMemcpy(dst, src, count, static_cast<hipMemcpyKind>(kind));
+            }
+
+            template <typename T>
             [[nodiscard]] __host__ inline deviceError_t memcpyToSymbol(
                 const T &symbol, const void *src, const size_t count,
-                const size_t offset = 0,
-                const deviceMemcpyType_t kind = deviceMemcpyType_t::memcpyHostToDevice) noexcept
+                const size_t offset,
+                const deviceMemcpyType_t kind) noexcept
             {
                 return hipMemcpyToSymbol(HIP_SYMBOL(symbol), src, count, offset, static_cast<hipMemcpyKind>(kind));
             }
@@ -172,6 +178,43 @@ namespace LBM
             [[nodiscard]] __host__ inline deviceError_t funcSetMaxDynamicSharedMemorySize(Kernel *func, const int bytes) noexcept
             {
                 return hipFuncSetAttribute(reinterpret_cast<const void *>(func), hipFuncAttributeMaxDynamicSharedMemorySize, bytes);
+            }
+
+            template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t hostFree(T *const ptr) noexcept
+            {
+                return hipHostFree(ptr);
+            }
+
+            template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t deviceFree(T *const ptr) noexcept
+            {
+                return hipFree(ptr);
+            }
+
+            template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t deviceMalloc(T **ptr, const size_t size) noexcept
+            {
+                return hipMalloc(ptr, size);
+            }
+
+            template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t mallocHost(T **ptr, const size_t size) noexcept
+            {
+                return hipHostMalloc(ptr, size, hipHostMallocDefault);
+            }
+
+            template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t
+            memcpyPeerAsync(T *const dst, const int dstDeviceId, const T *const src, const int srcDeviceId, const size_t count, const deviceStream_t stream) noexcept
+            {
+                return hipMemcpyPeerAsync(dst, dstDeviceId, src, srcDeviceId, count, stream);
+            }
+
+            template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t memcpyAsync(T *const dst, const T *const src, const size_t count, const deviceMemcpyType_t kind, const hipStream_t stream) noexcept
+            {
+                return hipMemcpyAsync(dst, src, count, static_cast<hipMemcpyKind>(kind), stream);
             }
         }
     }
@@ -266,10 +309,13 @@ namespace LBM
             }
 
             template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t memcpyToSymbol(
-                const T &symbol, const void *src, const size_t count,
-                const size_t offset = 0,
-                const deviceMemcpyKind kind = deviceMemcpyHostToDevice) noexcept
+            [[nodiscard]] __host__ inline deviceError_t memcpy(T *const dst, const T *src, const size_t count, const deviceMemcpyType_t kind) noexcept
+            {
+                return cudaMemcpy(dst, src, count, kind);
+            }
+
+            template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t memcpyToSymbol(const T &symbol, const void *src, const size_t count, const size_t offset = 0, const deviceMemcpyKind kind = deviceMemcpyHostToDevice) noexcept
             {
                 return cudaMemcpyToSymbol(symbol, src, count, offset, kind);
             }
@@ -277,6 +323,12 @@ namespace LBM
             [[nodiscard]] __host__ inline deviceError_t memGetInfo(const size_t *free, const size_t *total) noexcept
             {
                 return cudaMemGetInfo(free, total);
+            }
+
+            template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t memcpyAsync(T *dst, const T *src, const size_t count, const deviceMemcpyKind kind, const hipStream_t stream) noexcept
+            {
+                return cudaMemcpyAsync(dst, src, count, static_cast<cudaMemcpyKind>(kind), stream);
             }
 
             [[nodiscard]] __host__ inline deviceError_t pointerGetAttributes(devicePointerAttribute_t *attributes, const void *ptr) noexcept
@@ -300,6 +352,36 @@ namespace LBM
                     func,
                     cudaFuncAttributeMaxDynamicSharedMemorySize,
                     bytes);
+            }
+
+            template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t hostFree(T *const ptr) noexcept
+            {
+                return cudaFreeHost(ptr);
+            }
+
+            template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t deviceFree(T *const ptr) noexcept
+            {
+                return cudaFree(ptr);
+            }
+
+            template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t deviceMalloc(T **ptr, const size_t size) noexcept
+            {
+                return cudaMalloc(ptr, size);
+            }
+
+            template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t mallocHost(T **ptr, const size_t size) noexcept
+            {
+                return cudaMallocHost(ptr, size, hipHostMallocDefault);
+            }
+
+            template <typename T>
+            [[nodiscard]] __host__ inline deviceError_t memcpyPeerAsync(T *const dst, const int dstDeviceId, const T *const src, const int srcDeviceId, const size_t count, const deviceStream_t stream) noexcept
+            {
+                return cudaMemcpyPeerAsync(dst, dstDeviceId, src, srcDeviceId, count, stream);
             }
         }
     }
