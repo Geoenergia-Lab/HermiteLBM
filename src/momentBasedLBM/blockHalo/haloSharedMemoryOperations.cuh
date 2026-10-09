@@ -165,7 +165,6 @@ __device__ static inline constexpr void transpose(const thread::coordinate &Tx, 
         [&](const auto i)
         {
             sharedBuffer[idxOffset + base_idx + (static_cast<device::label_t>(i) * faceArea<alpha>())] = VelocitySet::reconstructPop<streaming_index<alpha, coeff>(i)>(moments);
-            // sharedBuffer[idxOffset + base_idx + (static_cast<device::label_t>(i) * faceArea<alpha>())] = pop[q_i<streaming_index<alpha, coeff>(i)>()];
         });
 }
 

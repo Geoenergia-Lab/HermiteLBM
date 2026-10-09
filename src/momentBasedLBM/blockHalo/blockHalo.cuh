@@ -65,8 +65,8 @@ namespace LBM
          * @param[in] nyBlocks Number of blocks in y-direction
          * @return Linearized index: idxPop<alpha>
          **/
-        template <const axis::type alpha, const label_t QF>
-        __host__ [[nodiscard]] inline label_t idxPop(const label_t pop, const threadLabel &Tx, const blockLabel &Bx, const label_t nxBlocks, const label_t nyBlocks) noexcept
+        template <const axis::type alpha, const label_t pop, const label_t QF>
+        __host__ [[nodiscard]] inline label_t idxPop(const threadLabel &Tx, const blockLabel &Bx, const label_t nxBlocks, const label_t nyBlocks) noexcept
         {
             return Tx.value<axis::orthogonal<alpha, 0>()>() + block::n<axis::orthogonal<alpha, 0>()>() * (Tx.value<axis::orthogonal<alpha, 1>()>() + block::n<axis::orthogonal<alpha, 1>()>() * (pop + QF * (Bx.x + nxBlocks * (Bx.y + nyBlocks * Bx.z))));
         }

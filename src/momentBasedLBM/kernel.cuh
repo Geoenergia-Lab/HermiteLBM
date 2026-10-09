@@ -205,7 +205,7 @@ namespace LBM
          * @param[in] readBuffer Collection of read-only pointers to the block halo faces used during streaming
          * @param[in] writeBuffer Collection of mutable pointers to the block halo faces used after streaming
          **/
-        __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP<VelocitySet>()) __global__ void momentBasedLBM(
+        __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP<VelocitySet>()) __global__ static void momentBasedLBM(
             const device::ptrColl_t devPtrs,
             const device::ptrCollection<6, const scalar_t> readBuffer,
             const device::ptrCollection<6, scalar_t> writeBuffer,
@@ -227,7 +227,7 @@ namespace LBM
          * @param[in] bzOffset Offsets to the block ID in the Z axis
          **/
         template <const host::label_t N>
-        __host__ void launchHelper(
+        __host__ inline void launchHelper(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const ptrCollection &devPtrs,

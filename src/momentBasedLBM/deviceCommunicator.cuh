@@ -56,7 +56,6 @@ namespace LBM
     class deviceCommunicator
     {
         using This = deviceCommunicator<VelocitySet>;
-        using exchangeFunction = std::function<void(const host::label_t, const host::label_t)>;
 
     public:
         /**
@@ -71,8 +70,7 @@ namespace LBM
             const haloBuffer<VelocitySet> &haloPtrs) noexcept
             : mesh_(mesh),
               programCtrl_(programCtrl),
-              haloPtrs_(haloPtrs),
-              commList_(assembleCommList(programCtrl)) {}
+              haloPtrs_(haloPtrs) {}
 
         /**
          * @brief Destructor
@@ -91,9 +89,9 @@ namespace LBM
          **/
         __host__ inline void exchange(const host::label_t timeStep) const noexcept
         {
-            for (host::label_t idxPair = 0; idxPair < commList_.size(); idxPair++)
+            for (host::label_t idxPair = 0; idxPair < programCtrl_.deviceList().size() - 1; idxPair++)
             {
-                commList_[idxPair](idxPair, timeStep);
+                exchangeImpl<axis::Z>(idxPair, timeStep);
             }
         }
 
@@ -114,35 +112,6 @@ namespace LBM
         const haloBuffer<VelocitySet> &haloPtrs_;
 
         /**
-         * @brief List of exchange functions to execute per time step
-         **/
-        const std::vector<exchangeFunction> commList_;
-
-        /**
-         * @brief Assemble the list of exchange functions from the program control object
-         * @param[in] programCtrl The program control object
-         * @return A std::vector of exchange functions to be called at run time
-         **/
-        __host__ [[nodiscard]] const std::vector<exchangeFunction> assembleCommList(const programControl &programCtrl) const noexcept
-        {
-            std::vector<exchangeFunction> commList;
-
-            if (programCtrl.deviceList().size() > 1)
-            {
-                for (host::label_t idxPair = 0; idxPair < programCtrl.deviceList().size() - 1; idxPair++)
-                {
-                    commList.push_back(
-                        [this](const host::label_t pair, const host::label_t timeStep)
-                        {
-                            this->exchangeImpl<axis::Z>(pair, timeStep);
-                        });
-                }
-            }
-
-            return commList;
-        }
-
-        /**
          * @brief Get the relevant starting block index for a particular axis
          * @tparam alpha The axis direction (X, Y or Z)
          * @param[in] mesh The lattice mesh
@@ -150,20 +119,7 @@ namespace LBM
         template <const axis::type alpha>
         __host__ [[nodiscard]] static inline constexpr host::blockLabel commBlockID(const host::latticeMesh &mesh) noexcept
         {
-            if constexpr (alpha == axis::X)
-            {
-                return host::blockLabel(mesh.blocksPerDevice<alpha>() - 1, 0, 0);
-            }
-
-            if constexpr (alpha == axis::Y)
-            {
-                return host::blockLabel(0, mesh.blocksPerDevice<alpha>() - 1, 0);
-            }
-
-            if constexpr (alpha == axis::Z)
-            {
-                return host::blockLabel(0, 0, mesh.blocksPerDevice<alpha>() - 1);
-            }
+            return axis::to_3d<alpha>(static_cast<host::label_t>(0), static_cast<host::label_t>(0), mesh.blocksPerDevice<alpha>() - static_cast<host::label_t>(1));
         }
 
         /**
@@ -180,25 +136,30 @@ namespace LBM
             const host::label_t nab = mesh_.nBlocks<axis::orthogonal<alpha, 0>()>();
             const host::label_t nbb = mesh_.nBlocks<axis::orthogonal<alpha, 1>()>();
 
-            constexpr const host::threadLabel threadStart(static_cast<device::label_t>(0), static_cast<device::label_t>(0), static_cast<device::label_t>(0));
+            constexpr const host::threadLabel threadStart(static_cast<host::label_t>(0), static_cast<host::label_t>(0), static_cast<host::label_t>(0));
 
             const host::label_t idxDevL = idxExchange;
-            const host::label_t idxDevR = idxExchange + 1;
+            const host::label_t idxDevR = idxExchange + static_cast<host::label_t>(1);
 
             // Right to Left exchange
-            constexpr const host::blockLabel blockIdxDestL(0, 0, 0);
-            const host::label_t idxDestL = host::idxPop<alpha, VelocitySet::template QF<host::label_t>()>(0, threadStart, blockIdxDestL, nab, nbb);
-            constexpr const host::blockLabel RDeviceSourceBlock(0, 0, 0);
-            const host::label_t idxSrcR = host::idxPop<alpha, VelocitySet::template QF<host::label_t>()>(0, threadStart, RDeviceSourceBlock, nab, nbb);
+            constexpr const host::blockLabel blockIdxDestL(static_cast<host::label_t>(0), static_cast<host::label_t>(0), static_cast<host::label_t>(0));
+            const host::label_t idxDestL = host::idxPop<alpha, 0, VelocitySet::template QF<host::label_t>()>(threadStart, blockIdxDestL, nab, nbb);
+            constexpr const host::blockLabel blockIdxSrcR(static_cast<host::label_t>(0), static_cast<host::label_t>(0), static_cast<host::label_t>(0));
+            const host::label_t idxSrcR = host::idxPop<alpha, 0, VelocitySet::template QF<host::label_t>()>(threadStart, blockIdxSrcR, nab, nbb);
 
             // Left to Right exchange
             const host::blockLabel blockIdxDestR = This::commBlockID<alpha>(mesh_);
-            const host::label_t idxDestR = host::idxPop<alpha, VelocitySet::template QF<host::label_t>()>(0, threadStart, blockIdxDestR, nab, nbb);
-            const host::blockLabel LDeviceSourceBlock = This::commBlockID<alpha>(mesh_);
-            const host::label_t idxSrcL = host::idxPop<alpha, VelocitySet::template QF<host::label_t>()>(0, threadStart, LDeviceSourceBlock, nab, nbb);
+            const host::label_t idxDestR = host::idxPop<alpha, 0, VelocitySet::template QF<host::label_t>()>(threadStart, blockIdxDestR, nab, nbb);
+            const host::blockLabel blockIdxSrcL = This::commBlockID<alpha>(mesh_);
+            const host::label_t idxSrcL = host::idxPop<alpha, 0, VelocitySet::template QF<host::label_t>()>(threadStart, blockIdxSrcL, nab, nbb);
 
             // Call the exchange functions
-            const host::label_t area = VelocitySet::template QF<host::label_t>() * block::n<axis::orthogonal<alpha, 0>(), host::label_t>() * block::n<axis::orthogonal<alpha, 1>(), host::label_t>() * mesh_.blocksPerDevice<axis::orthogonal<alpha, 0>()>() * mesh_.blocksPerDevice<axis::orthogonal<alpha, 1>()>();
+            const host::label_t area =
+                VelocitySet::template QF<host::label_t>() *
+                block::n<axis::orthogonal<alpha, 0>(), host::label_t>() *
+                block::n<axis::orthogonal<alpha, 1>(), host::label_t>() *
+                mesh_.blocksPerDevice<axis::orthogonal<alpha, 0>()>() *
+                mesh_.blocksPerDevice<axis::orthogonal<alpha, 1>()>();
 
             This::exchange<alpha, -1>(idxDevR, idxDevL, idxSrcR, idxDestL, haloPtrs_, programCtrl_, area, timeStep); // Copy to the Left GPU
             This::exchange<alpha, +1>(idxDevL, idxDevR, idxSrcL, idxDestR, haloPtrs_, programCtrl_, area, timeStep); // Copy to the Right GPU

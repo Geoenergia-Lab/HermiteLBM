@@ -130,26 +130,6 @@ namespace LBM
         }
 
         /**
-         * @brief Padding for the shared memory
-         * @tparam T Return type
-         **/
-        template <typename T = device::label_t>
-        __device__ __host__ [[nodiscard]] inline consteval T padding() noexcept
-        {
-            return 33;
-        }
-
-        /**
-         * @brief Stride for the shared memory
-         * @tparam T Return type
-         **/
-        template <typename T = device::label_t>
-        __device__ __host__ [[nodiscard]] inline consteval T stride() noexcept
-        {
-            return size<T>() + padding<T>();
-        }
-
-        /**
          * @brief Size of the warp (32)
          **/
         __device__ __host__ [[nodiscard]] inline consteval device::label_t warp_size() noexcept

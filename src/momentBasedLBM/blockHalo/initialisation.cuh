@@ -190,7 +190,7 @@ namespace LBM
          * @param[in] devPtrs Device pointer collection containing the moment arrays.
          * @param[in] haloBuffer Pointer collection holding the halo buffers for the block.
          **/
-        __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisationD3Q19Thermal(
+        __launch_bounds__(block::maxThreads(), 1) __global__ static void momentBasedLBMInitialisationD3Q19Thermal(
             const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
             const device::ptrCollection<12, scalar_t> haloBuffer,
             const bool firstTimeStep)
@@ -204,7 +204,7 @@ namespace LBM
          * @param[in] devPtrs Device pointer collection containing the moment arrays.
          * @param[in] haloBuffer Pointer collection holding the halo buffers for the block.
          **/
-        __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisationD3Q19Isothermal(
+        __launch_bounds__(block::maxThreads(), 1) __global__ static void momentBasedLBMInitialisationD3Q19Isothermal(
             const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
             const device::ptrCollection<12, scalar_t> haloBuffer,
             const bool firstTimeStep)
@@ -218,7 +218,7 @@ namespace LBM
          * @param[in] devPtrs Device pointer collection containing the moment arrays.
          * @param[in] haloBuffer Pointer collection holding the halo buffers for the block.
          **/
-        __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisationD3Q27Thermal(
+        __launch_bounds__(block::maxThreads(), 1) __global__ static void momentBasedLBMInitialisationD3Q27Thermal(
             const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
             const device::ptrCollection<12, scalar_t> haloBuffer,
             const bool firstTimeStep)
@@ -232,7 +232,7 @@ namespace LBM
          * @param[in] devPtrs Device pointer collection containing the moment arrays.
          * @param[in] haloBuffer Pointer collection holding the halo buffers for the block.
          **/
-        __launch_bounds__(block::maxThreads(), 1) __global__ void momentBasedLBMInitialisationD3Q27Isothermal(
+        __launch_bounds__(block::maxThreads(), 1) __global__ static void momentBasedLBMInitialisationD3Q27Isothermal(
             const device::ptrCollection<NUMBER_MOMENTS<host::label_t>(), scalar_t> devPtrs,
             const device::ptrCollection<12, scalar_t> haloBuffer,
             const bool firstTimeStep)
@@ -250,7 +250,7 @@ namespace LBM
          * kernel based on the compile-time velocity set type.
          **/
         template <class VelocitySet>
-        __host__ inline consteval auto momentBasedLBMInitialisation() noexcept
+        __host__ inline static consteval auto momentBasedLBMInitialisation() noexcept
         {
             if constexpr (std::is_same_v<VelocitySet, D3Q19<Thermal>>)
             {
