@@ -117,7 +117,7 @@ namespace LBM
      * @param[in] SMeanPtrs Pointers to the mean strain rate tensor
      * @param[in] invNewCount Inverse of the new count for time averaging
      **/
-    __launch_bounds__(block::maxThreads(), 1) __global__ void turbulenceStatisticsCalculate(
+    __launch_bounds__(block::maxThreads(), 1) __global__ static void turbulenceStatisticsCalculate(
         const device::ptrColl_t devPtrs,                      // Pointers to the moments
         const device::ptrCollection<6, scalar_t> RPtrs,       // Reynolds stress tensor
         const device::ptrCollection<1, scalar_t> PPtrs,       // Production term
