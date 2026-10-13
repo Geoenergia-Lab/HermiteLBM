@@ -246,6 +246,74 @@ namespace LBM
 
         return env_ptr;
     }
+
+    /**
+     * @brief Constructs the architecture flag used for compilation from a given string
+     * @param[in] archVersion String representation of the architecture flag
+     **/
+    hostFunctionReturnType const name_t archFlag(const name_t &archVersion)
+    {
+        if constexpr (deviceType::v == AMD)
+        {
+            return "--offload-arch=" + archVersion;
+        }
+
+        if constexpr (deviceType::v == NVIDIA)
+        {
+            return "-gencode arch=compute_" + archVersion + ",code=sm_" + archVersion;
+        }
+    }
+
+    /**
+     * @brief Constructs the architecture flag used for compilation from a given device properties struct
+     * @param[in] props Device properties struct
+     **/
+    hostFunctionReturnType const name_t archFlag(const deviceProp_t &props)
+    {
+        if constexpr (deviceType::v == AMD)
+        {
+            return archFlag(std::string(props.gcnArchName));
+        }
+
+        if constexpr (deviceType::v == NVIDIA)
+        {
+            return archFlag(std::to_string(props.major) + std::to_string(props.minor));
+        }
+    }
+
+    /**
+     * @brief Constructs the lto flag used for compilation from a given string
+     * @param[in] archVersion String representation of the lto flag
+     **/
+    hostFunctionReturnType const name_t ltoFlag(const name_t &archVersion)
+    {
+        if constexpr (deviceType::v == AMD)
+        {
+            return "";
+        }
+
+        if constexpr (deviceType::v == NVIDIA)
+        {
+            return "-gencode arch=compute_" + archVersion + ",code=lto_" + archVersion;
+        }
+    }
+
+    /**
+     * @brief Constructs the lto flag used for compilation from a given device properties struct
+     * @param[in] props Device properties struct
+     **/
+    hostFunctionReturnType const name_t ltoFlag(const deviceProp_t &props)
+    {
+        if constexpr (deviceType::v == AMD)
+        {
+            return ltoFlag(std::string(props.gcnArchName));
+        }
+
+        if constexpr (deviceType::v == NVIDIA)
+        {
+            return ltoFlag(std::to_string(props.major) + std::to_string(props.minor));
+        }
+    }
 }
 
 #endif

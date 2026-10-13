@@ -106,8 +106,9 @@ int main(const int argc, const char *const argv[])
 
     if (HERMITELBM_ARCHITECTURE_DETECTION == "Manual")
     {
-        const name_t all_arch_flags = "-gencode arch=compute_" + HERMITELBM_ARCHITECTURE_VERSION + ",code=sm_" + HERMITELBM_ARCHITECTURE_VERSION;
-        const name_t all_lto_flags = "-gencode arch=compute_" + HERMITELBM_ARCHITECTURE_VERSION + ",code=lto_" + HERMITELBM_ARCHITECTURE_VERSION;
+        const name_t all_arch_flags = archFlag(HERMITELBM_ARCHITECTURE_VERSION);
+        const name_t all_lto_flags = ltoFlag(HERMITELBM_ARCHITECTURE_VERSION);
+
         outputFile << comment_string() << " Consolidated architecture flags for all found GPUs (no duplicates)" << std::endl;
         write_hardware_info_line(outputFile, "NVCXX_ALL_ARCHFLAGS=" + all_arch_flags + " " + all_lto_flags);
     }
@@ -119,21 +120,8 @@ int main(const int argc, const char *const argv[])
         {
             const deviceProp_t props = device::properties(i);
 
-            const name_t current_arch_flag =
-                "-gencode arch=compute_" +
-                std::to_string(props.major) +
-                std::to_string(props.minor) +
-                ",code=sm_" +
-                std::to_string(props.major) +
-                std::to_string(props.minor);
-
-            const name_t current_lto_flag =
-                " -gencode arch=compute_" +
-                std::to_string(props.major) +
-                std::to_string(props.minor) +
-                ",code=lto_" +
-                std::to_string(props.major) +
-                std::to_string(props.minor);
+            const name_t current_arch_flag = archFlag(props);
+            const name_t current_lto_flag = ltoFlag(props);
 
             if (all_arch_flags.find(current_arch_flag) == name_t::npos)
             {

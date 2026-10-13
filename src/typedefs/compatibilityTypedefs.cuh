@@ -55,6 +55,27 @@ namespace LBM
 
 #define GPU_COMPILER_ERROR_MSG "GPU compiler not found"
 
+    /**
+     * @brief Supported GPU brands for the build
+     **/
+    typedef enum deviceBrandEnum : int64_t
+    {
+        UNDEFINED = -1,
+        NVIDIA = 0,
+        AMD = 1,
+    } deviceBrandEnum;
+
+    struct deviceType
+    {
+#if defined(__HIP__)
+        static constexpr const deviceBrandEnum v = AMD;
+#elif defined(__CUDACC__)
+        static constexpr const deviceBrandenum v = NVIDIA;
+#else
+        static constexpr const deviceBrandEnum v = UNDEFINED;
+#endif
+    };
+
 #if defined(__HIP__)
 #define devicehostFunctionReturnType [[nodiscard]] __device__ __host__
 #define deviceFunctionReturnType [[nodiscard]] __device__
@@ -315,7 +336,7 @@ namespace LBM
         hostFunctionReturnType inline deviceError_t funcSetCacheConfig(Kernel *func, const deviceFuncCache_t config) noexcept
         {
 #if defined(__HIP__)
-            return hipFuncSetCacheConfig(func, config);
+            return hipFuncSetCacheConfig(reinterpret_cast<void *>(func), config);
 #elif defined(__CUDACC__)
             return cudaFuncSetCacheConfig(func, config);
 #else
@@ -328,7 +349,7 @@ namespace LBM
         hostFunctionReturnType inline deviceError_t funcSetMaxDynamicSharedMemorySize(Kernel *func, const int bytes) noexcept
         {
 #if defined(__HIP__)
-            return hipFuncSetAttribute(func, hipFuncAttributeMaxDynamicSharedMemorySize, bytes);
+            return hipFuncSetAttribute(reinterpret_cast<void *>(func), hipFuncAttributeMaxDynamicSharedMemorySize, bytes);
 #elif defined(__CUDACC__)
             return cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, bytes);
 #else
@@ -421,7 +442,6 @@ namespace LBM
 #endif
         }
     }
-
 }
 
 #endif
