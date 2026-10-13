@@ -47,6 +47,7 @@ NVCXX_DEFINES = -DSCALAR_PRECISION=32 -DLABEL_SIZE=32 -DUSE_SMEM_HALO
 # Everything here is portable across the two host compilers.
 NVCXX_OPTFLAGS_COMMON = -O3
 NVCXX_HOST_WFLAGS_COMMON = -O3 -funroll-loops -march=native -mtune=native -Wall -Wextra -Werror -Wattributes -Wbuiltin-macro-redefined -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion -Wfloat-equal -Wformat-security -Wformat=2 -Winline -Wint-to-pointer-cast -Woverflow -Wpointer-arith -Wshadow -Wsign-conversion -Wwrite-strings
+NVCXX_HOST_WFLAGS_GCC_ONLY = -Wimplicit-fallthrough=5 -Wlogical-op -Wstrict-aliasing=3 -Wstringop-overflow=4
 
 # --------------------------------------------------------------------------- #
 #  CUDA-specific flags                                                        #
