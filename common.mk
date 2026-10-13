@@ -45,12 +45,8 @@ NVCXX_DEFINES = -DSCALAR_PRECISION=32 -DLABEL_SIZE=32 -DUSE_SMEM_HALO
 
 # Base host compiler warnings that BOTH GCC and Clang understand.
 # Everything here is portable across the two host compilers.
-NVCXX_HOST_WFLAGS_COMMON = -O3 -funroll-loops -march=native -mtune=native \
-    -Wall -Wextra -Werror -Wattributes -Wbuiltin-macro-redefined \
-    -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion \
-    -Wfloat-equal -Wformat-security -Wformat=2 \
-    -Winline -Wint-to-pointer-cast -Woverflow -Wpointer-arith \
-    -Wshadow -Wsign-conversion -Wwrite-strings
+NVCXX_OPTFLAGS_COMMON = -O3
+NVCXX_HOST_WFLAGS_COMMON = -O3 -funroll-loops -march=native -mtune=native -Wall -Wextra -Werror -Wattributes -Wbuiltin-macro-redefined -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion -Wfloat-equal -Wformat-security -Wformat=2 -Winline -Wint-to-pointer-cast -Woverflow -Wpointer-arith -Wshadow -Wsign-conversion -Wwrite-strings
 
 # --------------------------------------------------------------------------- #
 #  CUDA-specific flags                                                        #
@@ -58,7 +54,7 @@ NVCXX_HOST_WFLAGS_COMMON = -O3 -funroll-loops -march=native -mtune=native \
 
 ifeq ($(HERMITELBM_API),CUDA)
 
-  NVCXX_OPTFLAGS = --restrict -extra-device-vectorization --maxrregcount=128
+  NVCXX_OPTFLAGS = $(NVCXX_OPTFLAGS_COMMON) --restrict -extra-device-vectorization --maxrregcount=128
   NVCXX_MFLAGS   = -m64
   NVCXX_WFLAGS   = -Werror cross-execution-space-call,reorder,default-stream-launch,missing-launch-bounds,ext-lambda-captures-this
   NVCXX_COMPILER_WFLAGS = -Xcompiler "$(NVCXX_HOST_WFLAGS_COMMON) $(NVCXX_HOST_WFLAGS_GCC_ONLY)"
@@ -68,7 +64,7 @@ ifeq ($(HERMITELBM_API),CUDA)
   # In Manual mode, build the arch flag ourselves. In Automatic mode, leave
   # NVCXX_ALL_ARCHFLAGS untouched — hardware.info provides it.
   ifeq ($(HERMITELBM_ARCHITECTURE_DETECTION),Manual)
-    NVCXX_ALL_ARCHFLAGS = -gencode arch=compute_$(HERMITELBM_ARCHITECTURE_VERSION),code=sm_$(HERMITELBM_ARCHITECTURE_VERSION)
+    NVCXX_ALL_ARCHFLAGS = -gencode arch=compute_$(HERMITELBM_ARCHITECTURE_VERSION),code=sm_$(HERMITELBM_ARCHITECTURE_VERSION) -gencode arch=compute_$(HERMITELBM_ARCHITECTURE_VERSION),code=lto_$(HERMITELBM_ARCHITECTURE_VERSION)
   endif
 
 # --------------------------------------------------------------------------- #
@@ -77,7 +73,7 @@ ifeq ($(HERMITELBM_API),CUDA)
 
 else ifeq ($(HERMITELBM_API),HIP)
 
-  NVCXX_OPTFLAGS =
+  NVCXX_OPTFLAGS = $(NVCXX_OPTFLAGS_COMMON)
   NVCXX_MFLAGS   =
   NVCXX_WFLAGS   =
   NVCXX_COMPILER_WFLAGS = $(NVCXX_HOST_WFLAGS_COMMON) $(NVCXX_HOST_WFLAGS_CLANG)
