@@ -46,7 +46,7 @@ NVCXX_DEFINES = -DSCALAR_PRECISION=32 -DLABEL_SIZE=32 -DUSE_SMEM_HALO
 # Base host compiler warnings that BOTH GCC and Clang understand.
 # Everything here is portable across the two host compilers.
 NVCXX_OPTFLAGS_COMMON = -O3
-NVCXX_HOST_WFLAGS_COMMON = -O3 -funroll-loops -march=native -mtune=native -Wall -Wextra -Werror -Wattributes -Wbuiltin-macro-redefined -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion -Wfloat-equal -Wformat-security -Wformat=2 -Winline -Wint-to-pointer-cast -Woverflow -Wpointer-arith -Wshadow -Wsign-conversion -Wwrite-strings
+NVCXX_HOST_WFLAGS_COMMON = -funroll-loops -march=native -mtune=native -Wall -Wextra -Werror -Wattributes -Wbuiltin-macro-redefined -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion -Wfloat-equal -Wformat-security -Wformat=2 -Winline -Wint-to-pointer-cast -Woverflow -Wpointer-arith -Wshadow -Wsign-conversion -Wwrite-strings
 NVCXX_HOST_WFLAGS_GCC = -Wimplicit-fallthrough=5 -Wlogical-op -Wstrict-aliasing=3 -Wstringop-overflow=4
 NVCXX_HOST_WFLAGS_CLANG = -Wimplicit-fallthrough
 
@@ -59,7 +59,7 @@ ifeq ($(HERMITELBM_API),CUDA)
   NVCXX_OPTFLAGS = $(NVCXX_OPTFLAGS_COMMON) --restrict -extra-device-vectorization --maxrregcount=128
   NVCXX_MFLAGS   = -m64
   NVCXX_WFLAGS   = -Werror cross-execution-space-call,reorder,default-stream-launch,missing-launch-bounds,ext-lambda-captures-this
-  NVCXX_COMPILER_WFLAGS = -Xcompiler "$(NVCXX_HOST_WFLAGS_COMMON) $(NVCXX_HOST_WFLAGS_GCC)"
+  NVCXX_COMPILER_WFLAGS = -Xcompiler "$(NVCXX_OPTFLAGS_COMMON) $(NVCXX_HOST_WFLAGS_COMMON) $(NVCXX_HOST_WFLAGS_GCC)"
   NVCXX_DFLAGS   = $(NVCXX_DEFINES) -lpthread
   NVCXX_DEBUG_INFOFLAGS = -Xptxas -v
 
@@ -92,6 +92,6 @@ endif
 #  Assembled flag set                                                         #
 # --------------------------------------------------------------------------- #
 
-NVCXX_FLAGS = $(NVCXX_STANDARD) $(NVCXX_OPTFLAGS) $(NVCXX_MFLAGS) $(NVCXX_ALL_ARCHFLAGS) $(NVCXX_WFLAGS) $(NVCXX_COMPILER_WFLAGS) $(NVCXX_DFLAGS) $(HAS_MULTI_GPU) $(NVCXX_DEBUG_INFOFLAGS)
+NVCXX_FLAGS = $(strip $(NVCXX_STANDARD) $(NVCXX_OPTFLAGS) $(NVCXX_MFLAGS) $(NVCXX_ALL_ARCHFLAGS) $(NVCXX_WFLAGS) $(NVCXX_COMPILER_WFLAGS) $(NVCXX_DFLAGS) $(HAS_MULTI_GPU) $(NVCXX_DEBUG_INFOFLAGS))
 
 # --------------------------------------------------------------------------- #
