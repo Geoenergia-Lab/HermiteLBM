@@ -88,7 +88,7 @@ namespace LBM
              * @param[in] programCtrl The program control object
              **/
             template <class BoundaryField>
-            [[nodiscard]] __host__ array(
+            hostFunctionReturnType array(
                 const name_t &name,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl,
@@ -105,7 +105,7 @@ namespace LBM
              * @param[in] programCtrl The program control object
              **/
             template <class BoundaryField>
-            [[nodiscard]] __host__ array(
+            hostFunctionReturnType array(
                 const name_t &name,
                 const name_t &componentName,
                 const host::latticeMesh &mesh,
@@ -123,36 +123,36 @@ namespace LBM
             /**
              * @brief Get raw pointer to the data (read‑only).
              **/
-            [[nodiscard]] __host__ inline constexpr const T *data() const noexcept { return arr_.data(); }
+            hostFunctionReturnType inline constexpr const T *data() const noexcept { return arr_.data(); }
 
             /**
              * @brief Element access (mutable).
              * @param[in] idx Index.
              * @return Reference to element.
              **/
-            [[nodiscard]] __host__ inline constexpr T &operator[](const host::label_t idx) noexcept { return arr_[idx]; }
+            hostFunctionReturnType inline constexpr T &operator[](const host::label_t idx) noexcept { return arr_[idx]; }
 
             /**
              * @brief Element access (read‑only).
              * @param[in] idx Index.
              * @return Const reference to element.
              **/
-            [[nodiscard]] __host__ inline constexpr const T &operator[](const host::label_t idx) const noexcept { return arr_[idx]; }
+            hostFunctionReturnType inline constexpr const T &operator[](const host::label_t idx) const noexcept { return arr_[idx]; }
 
             /**
              * @brief Get the number of elements.
              **/
-            [[nodiscard]] __host__ inline constexpr host::label_t size() const noexcept { return arr_.size(); }
+            hostFunctionReturnType inline constexpr host::label_t size() const noexcept { return arr_.size(); }
 
             /**
              * @brief Get the current averaging count (for time‑averaged fields).
              **/
-            [[nodiscard]] __host__ inline constexpr host::label_t meanCount() const noexcept { return meanCount_; }
+            hostFunctionReturnType inline constexpr host::label_t meanCount() const noexcept { return meanCount_; }
 
             /**
              * @brief Get a reference to the averaging count (for modification).
              **/
-            [[nodiscard]] __host__ inline constexpr host::label_t &meanCountRef() noexcept { return meanCount_; }
+            hostFunctionReturnType inline constexpr host::label_t &meanCountRef() noexcept { return meanCount_; }
 
         private:
             /**
@@ -174,7 +174,7 @@ namespace LBM
              * @return Vector containing the initial field.
              **/
             template <class BoundaryField>
-            [[nodiscard]] __host__ static const std::vector<T> initialise_array(
+            hostFunctionReturnType static const std::vector<T> initialise_array(
                 const host::latticeMesh &mesh,
                 const name_t &fieldName,
                 const name_t &componentName,
@@ -217,7 +217,7 @@ namespace LBM
              * @return Vector containing the initial field.
              **/
             template <class BoundaryField>
-            [[nodiscard]] __host__ static const std::vector<T> initialConditions(
+            hostFunctionReturnType static const std::vector<T> initialConditions(
                 const host::latticeMesh &mesh,
                 const name_t &fieldName,
                 const programControl &programCtrl,

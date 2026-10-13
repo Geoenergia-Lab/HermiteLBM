@@ -95,7 +95,7 @@ namespace LBM
      * @param[in] programCtrl The program control object
      * @returns The mean counter as a device::label_t.
      **/
-    [[nodiscard]] __host__ host::label_t initialiseMeanCount(const name_t &fieldName, const programControl &programCtrl)
+    hostFunctionReturnType host::label_t initialiseMeanCount(const name_t &fieldName, const programControl &programCtrl)
     {
         if (std::filesystem::exists("timeStep/" + std::to_string(programCtrl.latestTime()) + "/" + fieldName + ".LBMBin"))
         {
@@ -122,7 +122,7 @@ namespace LBM
      * @param[in] fieldName The name of the field
      * @param[in] timeStep The time step to search
      **/
-    [[nodiscard]] __host__ bool foundArray(const name_t &fieldName, const host::label_t timeStep) noexcept
+    hostFunctionReturnType bool foundArray(const name_t &fieldName, const host::label_t timeStep) noexcept
     {
         return std::filesystem::exists("timeStep/" + std::to_string(timeStep) + "/" + fieldName + ".LBMBin");
     }

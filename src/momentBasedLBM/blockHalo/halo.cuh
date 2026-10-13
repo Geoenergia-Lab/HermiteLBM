@@ -128,7 +128,7 @@ namespace LBM
              * @param[in] i The index of the velocity
              **/
             template <const axis::type alpha, const int coeff>
-            [[nodiscard]] __device__ static inline consteval device::label_t streaming_index(const device::label_t i) noexcept
+            deviceFunctionReturnType static inline consteval device::label_t streaming_index(const device::label_t i) noexcept
             {
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -147,7 +147,7 @@ namespace LBM
              * @return True if the thread is at the specified block boundary and not at the domain edge (if non-periodic)
              **/
             template <const axis::type alpha, const int coeff, const bool isPeriodic>
-            [[nodiscard]] __device__ static inline constexpr bool boundaryCheck(const device::label_t alpha_v, const thread::coordinate &Tx) noexcept
+            deviceFunctionReturnType static inline constexpr bool boundaryCheck(const device::label_t alpha_v, const thread::coordinate &Tx) noexcept
             {
                 if constexpr (coeff == -1)
                 {
@@ -181,7 +181,7 @@ namespace LBM
              * @param[in] t The thread coordinate
              **/
             template <const int coeff>
-            [[nodiscard]] __device__ static inline constexpr device::label_t thread_stencil(const blockStencil &dt, const device::label_t t) noexcept
+            deviceFunctionReturnType static inline constexpr device::label_t thread_stencil(const blockStencil &dt, const device::label_t t) noexcept
             {
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::CAN_BE_NULL>();
 
@@ -210,7 +210,7 @@ namespace LBM
              * @param[in] b The current block
              **/
             template <const axis::type alpha, const int coeff>
-            [[nodiscard]] __device__ static inline constexpr device::label_t block_stencil(const device::label_t t, const device::label_t b_shifted, const device::label_t b) noexcept
+            deviceFunctionReturnType static inline constexpr device::label_t block_stencil(const device::label_t t, const device::label_t b_shifted, const device::label_t b) noexcept
             {
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
 

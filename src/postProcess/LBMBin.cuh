@@ -74,7 +74,7 @@ namespace LBM
             static constexpr const char *fileExtension = ".LBMBin";
             static constexpr const char *name = "LBMBin";
 
-            [[nodiscard]] __host__ inline consteval LBMBin() {}
+            hostFunctionReturnType inline consteval LBMBin() {}
 
             using This = LBMBin;
 

@@ -57,7 +57,7 @@ namespace LBM
      * @tparam T The return type
      **/
     template <typename T = device::label_t>
-    [[nodiscard]] __device__ __host__ inline consteval T NUMBER_MOMENTS() noexcept
+    devicehostFunctionReturnType inline consteval T NUMBER_MOMENTS() noexcept
     {
         return 10;
     }
@@ -68,7 +68,7 @@ namespace LBM
      * @tparam nVars Number of moment variables
      * @param[in] variableSize Size of the variable
      **/
-    [[nodiscard]] __device__ __host__ inline consteval host::label_t sharedMemoryBufferSize(const host::label_t variableSize = 1) noexcept
+    devicehostFunctionReturnType inline consteval host::label_t sharedMemoryBufferSize(const host::label_t variableSize = 1) noexcept
     {
         return block::size<host::label_t>() * NUMBER_MOMENTS<host::label_t>() * variableSize;
     }
@@ -83,7 +83,7 @@ namespace LBM
      * @tparam T The return type
      **/
     template <typename T = scalar_t>
-    [[nodiscard]] __device__ __host__ inline consteval T rho0() noexcept
+    devicehostFunctionReturnType inline consteval T rho0() noexcept
     {
         return static_cast<T>(1);
     }

@@ -244,7 +244,7 @@ namespace LBM
             for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
             {
                 // Set the active device
-                errorHandler::handleInline(device::API::setDevice(programCtrl.deviceList()[deviceIdx]));
+                errorHandler::handleInline(API::setDevice(programCtrl.deviceList()[deviceIdx]));
 
                 // Sync the streams to ensure previous operations are complete before launching new kernels
                 for (host::label_t idxStream = 0; idxStream < idxStreams.size(); idxStream++)

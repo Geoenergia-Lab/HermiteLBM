@@ -98,7 +98,7 @@ namespace LBM
              * @param[in] name Field name.
              * @param[in] mesh The lattice mesh
              **/
-            [[nodiscard]] __host__ arrayBase(
+            hostFunctionReturnType arrayBase(
                 const name_t &name,
                 const host::latticeMesh &mesh) noexcept
                 : FieldType(name),
@@ -113,14 +113,14 @@ namespace LBM
             /**
              * @brief Disable copying
              **/
-            [[nodiscard]] __host__ arrayBase(const arrayBase &) = delete;
-            [[nodiscard]] __host__ arrayBase &operator=(const arrayBase &) = delete;
+            hostFunctionReturnType arrayBase(const arrayBase &) = delete;
+            hostFunctionReturnType arrayBase &operator=(const arrayBase &) = delete;
 
             /**
              * @brief Get the associated lattice mesh.
              * @return Const reference to the mesh.
              **/
-            [[nodiscard]] __host__ inline constexpr const host::latticeMesh &mesh() const noexcept { return mesh_; }
+            hostFunctionReturnType inline constexpr const host::latticeMesh &mesh() const noexcept { return mesh_; }
         };
     }
 }

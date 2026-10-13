@@ -60,7 +60,7 @@ namespace LBM
          * @return A collision object
          * @note This constructor is consteval
          **/
-        [[nodiscard]] __device__ __host__ inline consteval collision() noexcept {}
+        devicehostFunctionReturnType inline consteval collision() noexcept {}
 
     private:
     };

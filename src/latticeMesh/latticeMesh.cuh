@@ -69,7 +69,7 @@ namespace LBM
          *
          * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)
          **/
-        [[nodiscard]] __host__ inline label_t idx(
+        hostFunctionReturnType inline label_t idx(
             const label_t tx, const label_t ty, const label_t tz,
             const label_t bx, const label_t by, const label_t bz,
             const latticeMesh &mesh) noexcept
@@ -77,7 +77,7 @@ namespace LBM
             return idx(tx, ty, tz, bx, by, bz, mesh.nBlocks<axis::X>(), mesh.nBlocks<axis::Y>());
         }
 
-        [[nodiscard]] __host__ inline label_t idx(
+        hostFunctionReturnType inline label_t idx(
             const threadLabel &Tx,
             const blockLabel &Bx,
             const latticeMesh &mesh) noexcept

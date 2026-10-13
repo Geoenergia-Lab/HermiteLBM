@@ -114,7 +114,7 @@ namespace LBM
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(device::API::mallocHost(ptr, sizeof(T) * nPoints));
+                    errorHandler::handle(API::host::malloc(ptr, sizeof(T) * nPoints));
                 });
         }
 
@@ -126,7 +126,7 @@ namespace LBM
          * @return A pointer to a block of pinned memory on the host, all initialised to val
          **/
         template <typename T>
-        [[nodiscard]] __host__ T *allocate(const host::label_t nPoints, const T val) noexcept
+        hostFunctionReturnType T *allocate(const host::label_t nPoints, const T val) noexcept
         {
             T *ptr;
 
@@ -156,7 +156,7 @@ namespace LBM
         {
             if (ptr != nullptr)
             {
-                errorHandler::handle(device::API::hostFree(ptr));
+                errorHandler::handle(API::host::free(ptr));
             }
         }
 
@@ -183,7 +183,7 @@ namespace LBM
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(device::API::setDevice(deviceID));
+                    errorHandler::handle(API::setDevice(deviceID));
                 });
         }
 
@@ -195,7 +195,7 @@ namespace LBM
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(device::API::deviceSynchronize());
+                    errorHandler::handle(API::deviceSynchronize());
                 });
         }
 
@@ -214,7 +214,7 @@ namespace LBM
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(device::API::memcpyToSymbol(symbol, &valueTemp, sizeof(T), 0, deviceMemcpyType_t::memcpyHostToDevice));
+                    errorHandler::handle(API::memcpyToSymbol(symbol, &valueTemp, sizeof(T), 0, deviceMemcpyType_t::memcpyHostToDevice));
                 });
 
             syncDevice();
@@ -235,7 +235,7 @@ namespace LBM
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(device::API::memcpyToSymbol(symbol, value, N * sizeof(T), 0, deviceMemcpyType_t::memcpyHostToDevice));
+                    errorHandler::handle(API::memcpyToSymbol(symbol, value, N * sizeof(T), 0, deviceMemcpyType_t::memcpyHostToDevice));
                 });
 
             syncDevice();
@@ -255,7 +255,7 @@ namespace LBM
         {
             if (static_cast<host::label_t>(index) >= N)
             {
-                errorHandler::handle(deviceErrorMemoryAllocation);
+                errorHandler::handle(errorCodes::deviceErrorMemoryAllocation);
             }
             syncDevice();
             const T valueTemp = value;
@@ -263,7 +263,7 @@ namespace LBM
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(device::API::memcpyToSymbol(symbol, &valueTemp, static_cast<host::label_t>(sizeof(T)), static_cast<host::label_t>(index) * static_cast<host::label_t>(sizeof(T)), deviceMemcpyType_t::memcpyHostToDevice));
+                    errorHandler::handle(API::memcpyToSymbol(symbol, &valueTemp, static_cast<host::label_t>(sizeof(T)), static_cast<host::label_t>(index) * static_cast<host::label_t>(sizeof(T)), deviceMemcpyType_t::memcpyHostToDevice));
                 });
 
             syncDevice();
@@ -289,14 +289,14 @@ namespace LBM
                 {
                     host::label_t free_bytes = 0;
                     host::label_t total_bytes = 0;
-                    errorHandler::handle(device::API::memGetInfo(&free_bytes, &total_bytes));
+                    errorHandler::handle(API::memGetInfo(&free_bytes, &total_bytes));
                     if ((nBytes < free_bytes) && (nBytes < total_bytes))
                     {
-                        errorHandler::handle(device::API::deviceMalloc(ptr, nBytes));
+                        errorHandler::handle(API::device::malloc(ptr, nBytes));
                     }
                     else
                     {
-                        errorHandler::handle(deviceErrorMemoryAllocation);
+                        errorHandler::handle(errorCodes::deviceErrorMemoryAllocation);
                     }
                 });
 
@@ -311,7 +311,7 @@ namespace LBM
          * @note Verbose mode prints allocation details
          **/
         template <typename T>
-        [[nodiscard]] __host__ T *allocate(const host::label_t nPoints) noexcept
+        hostFunctionReturnType T *allocate(const host::label_t nPoints) noexcept
         {
             T *ptr;
 
@@ -332,7 +332,7 @@ namespace LBM
          * @param[in] deviceID The device on which to allocate the memory
          **/
         template <typename T>
-        [[nodiscard]] __host__ T *allocate(const host::label_t nPoints, const deviceIndex_t deviceID) noexcept
+        hostFunctionReturnType T *allocate(const host::label_t nPoints, const deviceIndex_t deviceID) noexcept
         {
             syncDevice();
 
@@ -352,17 +352,17 @@ namespace LBM
         __host__ void free(T *const ptrRestrict ptr) noexcept
         {
             ptrAttributes_t attrs;
-            errorHandler::handle(device::API::pointerGetAttributes(&attrs, ptr));
+            errorHandler::handle(API::pointerGetAttributes(&attrs, ptr));
             if (ptr == nullptr)
             {
                 return;
             }
-            else if (attrs.type == device::memoryTypeDevice)
+            else if (attrs.type == memoryType::device)
             {
                 syncDevice();
                 setDevice(attrs.device);
                 syncDevice();
-                errorHandler::handle(device::API::deviceFree(ptr));
+                errorHandler::handle(API::device::free(ptr));
                 syncDevice();
             }
         }
@@ -393,18 +393,18 @@ namespace LBM
 
             if (devPtr == nullptr)
             {
-                errorHandler::handle(deviceErrorMemoryAllocation);
+                errorHandler::handle(errorCodes::deviceErrorMemoryAllocation);
             }
 
             if (hostPtr == nullptr)
             {
-                errorHandler::handle(deviceErrorMemoryAllocation);
+                errorHandler::handle(errorCodes::deviceErrorMemoryAllocation);
             }
 
             ifAllocationAllowed(
                 [&]()
                 {
-                    errorHandler::handle(device::API::memcpy<T>(devPtr, hostPtr, nPoints * sizeof(T), deviceMemcpyTypeEnum::memcpyHostToDevice));
+                    errorHandler::handle(API::memcpy<T>(devPtr, hostPtr, nPoints * sizeof(T), deviceMemcpyTypeEnum::memcpyHostToDevice));
                 });
 
             syncDevice();
@@ -470,7 +470,7 @@ namespace LBM
          * @return Pointer to allocated device memory containing copied data
          **/
         template <typename T>
-        [[nodiscard]] __host__ T *allocateArray(const std::vector<T> &f) noexcept
+        hostFunctionReturnType T *allocateArray(const std::vector<T> &f) noexcept
         {
             syncDevice();
 
@@ -492,7 +492,7 @@ namespace LBM
          * @param[in] deviceID The device on which to allocate the memory
          **/
         template <typename T>
-        [[nodiscard]] __host__ T *allocateArray(const std::vector<T> &f, const deviceIndex_t deviceID) noexcept
+        hostFunctionReturnType T *allocateArray(const std::vector<T> &f, const deviceIndex_t deviceID) noexcept
         {
             setDevice(deviceID);
 
@@ -508,7 +508,7 @@ namespace LBM
          * @throws std::runtime_error if CUDA operations fail
          **/
         template <typename T>
-        [[nodiscard]] __host__ T *allocateArray(const device::label_t nPoints, const T val) noexcept
+        hostFunctionReturnType T *allocateArray(const device::label_t nPoints, const T val) noexcept
         {
             syncDevice();
 
@@ -531,7 +531,7 @@ namespace LBM
          * @param[in] deviceID The device on which to allocate the memory
          **/
         template <typename T>
-        [[nodiscard]] __host__ T *allocateArray(const device::label_t nPoints, const T val, const deviceIndex_t deviceID) noexcept
+        hostFunctionReturnType T *allocateArray(const device::label_t nPoints, const T val, const deviceIndex_t deviceID) noexcept
         {
             syncDevice();
 
@@ -553,7 +553,7 @@ namespace LBM
         template <typename T>
         __host__ inline void memcpyAsyncDeviceToHost(T *const ptrRestrict hostPtr, const T *const ptrRestrict devPtr, const host::label_t nPoints, const deviceStream_t &stream) noexcept
         {
-            errorHandler::handle(device::API::memcpyAsync<T>(hostPtr, devPtr, nPoints * sizeof(T), deviceMemcpyTypeEnum::memcpyDeviceToHost, stream));
+            errorHandler::handle(API::memcpyAsync<T>(hostPtr, devPtr, nPoints * sizeof(T), deviceMemcpyTypeEnum::memcpyDeviceToHost, stream));
         }
 
         /**
@@ -569,7 +569,7 @@ namespace LBM
         template <typename T>
         __host__ inline void memcpyPeerAsync(T *const ptrRestrict destPtr, const deviceIndex_t destDevice, const T *const ptrRestrict srcPtr, const deviceIndex_t srcDevice, const host::label_t nPoints, const deviceStream_t &stream) noexcept
         {
-            errorHandler::handleInline(device::API::memcpyPeerAsync(destPtr, destDevice, srcPtr, srcDevice, nPoints * sizeof(T), stream));
+            errorHandler::handleInline(API::memcpyPeerAsync(destPtr, destDevice, srcPtr, srcDevice, nPoints * sizeof(T), stream));
         }
     }
 }

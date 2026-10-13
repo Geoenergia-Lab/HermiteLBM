@@ -63,7 +63,7 @@ namespace LBM
          * @tparam T Return type
          **/
         template <typename T>
-        [[nodiscard]] __device__ __host__ inline consteval T nx() noexcept
+        devicehostFunctionReturnType inline consteval T nx() noexcept
         {
 #ifdef SCALAR_PRECISION
             types::assertions::validate<scalar_t>();
@@ -79,7 +79,7 @@ namespace LBM
          * @tparam T Return type
          **/
         template <typename T>
-        [[nodiscard]] __device__ __host__ inline consteval T ny() noexcept
+        devicehostFunctionReturnType inline consteval T ny() noexcept
         {
 #ifdef SCALAR_PRECISION
             types::assertions::validate<scalar_t>();
@@ -95,7 +95,7 @@ namespace LBM
          * @tparam T Return type
          **/
         template <typename T>
-        [[nodiscard]] __device__ __host__ inline consteval T nz() noexcept
+        devicehostFunctionReturnType inline consteval T nz() noexcept
         {
 #ifdef SCALAR_PRECISION
             types::assertions::validate<scalar_t>();
@@ -112,7 +112,7 @@ namespace LBM
          * @tparam T Return type
          **/
         template <const axis::type alpha, typename T = device::label_t>
-        [[nodiscard]] __device__ __host__ inline consteval T n() noexcept
+        devicehostFunctionReturnType inline consteval T n() noexcept
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -124,7 +124,7 @@ namespace LBM
          * @tparam T Return type
          **/
         template <typename T = device::label_t>
-        [[nodiscard]] __device__ __host__ inline consteval T size() noexcept
+        devicehostFunctionReturnType inline consteval T size() noexcept
         {
             return nx<T>() * ny<T>() * nz<T>();
         }
@@ -132,7 +132,7 @@ namespace LBM
         /**
          * @brief Size of the warp (32)
          **/
-        [[nodiscard]] __device__ __host__ inline consteval device::label_t warp_size() noexcept
+        devicehostFunctionReturnType inline consteval device::label_t warp_size() noexcept
         {
             return 32;
         }
@@ -140,7 +140,7 @@ namespace LBM
         /**
          * @brief Number of warps within the block
          **/
-        [[nodiscard]] __device__ __host__ inline consteval device::label_t n_warps() noexcept
+        devicehostFunctionReturnType inline consteval device::label_t n_warps() noexcept
         {
             return block::size() / warp_size();
         }
@@ -149,7 +149,7 @@ namespace LBM
          * @brief Launch bounds information
          * @note These variables are device specific - enable modification later
          **/
-        [[nodiscard]] __host__ inline consteval device::label_t maxThreads() noexcept
+        hostFunctionReturnType inline consteval device::label_t maxThreads() noexcept
         {
             return block::nx<device::label_t>() * block::ny<device::label_t>() * block::nz<device::label_t>();
         }

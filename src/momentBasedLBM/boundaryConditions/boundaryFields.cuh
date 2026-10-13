@@ -69,7 +69,7 @@ namespace LBM
          * @brief Constructs boundary field values for all regions
          * @param[in] fieldName Name of the field to initialize across all regions
          **/
-        [[nodiscard]] __host__ boundaryFields(const name_t &fieldName)
+        hostFunctionReturnType boundaryFields(const name_t &fieldName)
             : values_{
                   boundaryValue<VelocitySet, Scaled>(fieldName, "North"),
                   boundaryValue<VelocitySet, Scaled>(fieldName, "South"),
@@ -80,7 +80,7 @@ namespace LBM
                   boundaryValue<VelocitySet, Scaled>(fieldName, "internalField")},
               fieldName_(fieldName) {}
 
-        [[nodiscard]] __host__ boundaryFields()
+        hostFunctionReturnType boundaryFields()
             : values_{
                   boundaryValue<VelocitySet, Scaled>(),
                   boundaryValue<VelocitySet, Scaled>(),
@@ -96,31 +96,31 @@ namespace LBM
          * @brief Provide access to field values for specific boundary regions
          * @return The value of the field in the specified region
          **/
-        [[nodiscard]] __host__ inline constexpr scalar_t North() const noexcept
+        hostFunctionReturnType inline constexpr scalar_t North() const noexcept
         {
             return values_[0]();
         }
-        [[nodiscard]] __host__ inline constexpr scalar_t South() const noexcept
+        hostFunctionReturnType inline constexpr scalar_t South() const noexcept
         {
             return values_[1]();
         }
-        [[nodiscard]] __host__ inline constexpr scalar_t East() const noexcept
+        hostFunctionReturnType inline constexpr scalar_t East() const noexcept
         {
             return values_[2]();
         }
-        [[nodiscard]] __host__ inline constexpr scalar_t West() const noexcept
+        hostFunctionReturnType inline constexpr scalar_t West() const noexcept
         {
             return values_[3]();
         }
-        [[nodiscard]] __host__ inline constexpr scalar_t Back() const noexcept
+        hostFunctionReturnType inline constexpr scalar_t Back() const noexcept
         {
             return values_[4]();
         }
-        [[nodiscard]] __host__ inline constexpr scalar_t Front() const noexcept
+        hostFunctionReturnType inline constexpr scalar_t Front() const noexcept
         {
             return values_[5]();
         }
-        [[nodiscard]] __host__ inline constexpr scalar_t internalField() const noexcept
+        hostFunctionReturnType inline constexpr scalar_t internalField() const noexcept
         {
             return values_[6]();
         }

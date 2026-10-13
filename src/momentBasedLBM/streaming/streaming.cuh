@@ -136,7 +136,7 @@ namespace LBM
          * for improved performance, falling back to modulo arithmetic otherwise.
          **/
         template <const int coeff, const device::label_t Dim>
-        [[nodiscard]] __device__ static inline device::label_t periodic_index(const device::label_t idx) noexcept
+        deviceFunctionReturnType static inline device::label_t periodic_index(const device::label_t idx) noexcept
         {
             velocityCoefficient::assertions::validate<coeff, velocityCoefficient::CAN_BE_NULL>();
 

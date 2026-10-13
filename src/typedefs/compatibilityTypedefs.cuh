@@ -52,7 +52,14 @@ SourceFiles
 
 namespace LBM
 {
+
+#define GPU_COMPILER_ERROR_MSG "GPU compiler not found"
+
 #if defined(__HIP__)
+#define devicehostFunctionReturnType [[nodiscard]] __device__ __host__
+#define deviceFunctionReturnType [[nodiscard]] __device__
+#define hostFunctionReturnType [[nodiscard]] __host__
+
     using deviceError_t = hipError_t;
     using deviceStream_t = hipStream_t;
     using deviceEvent_t = hipEvent_t;
@@ -76,150 +83,27 @@ namespace LBM
         memcpyDeviceToHost = hipMemcpyDeviceToHost
     } deviceMemcpyType_t;
 
-    static constexpr const deviceError_t deviceSuccess = hipSuccess;
-    static constexpr const deviceError_t deviceErrorMemoryAllocation = hipErrorOutOfMemory;
-
-    namespace device
+    struct errorCodes
     {
-        // enum memoryType
-        // {
-        //     memoryTypeUnregistered = hipMemoryTypeUnregistered,
-        //     memoryTypeHost = hipMemoryTypeHost,
-        //     memoryTypeDevice = hipMemoryTypeDevice,
-        //     memoryTypeManaged = hipMemoryTypeManaged
-        // };
+        static constexpr const deviceError_t deviceSuccess = hipSuccess;
+        static constexpr const deviceError_t deviceErrorMemoryAllocation = hipErrorOutOfMemory;
+    };
 
-        static constexpr const hipMemoryType memoryTypeUnregistered = hipMemoryTypeUnregistered;
-        static constexpr const hipMemoryType memoryTypeHost = hipMemoryTypeHost;
-        static constexpr const hipMemoryType memoryTypeDevice = hipMemoryTypeDevice;
-        static constexpr const hipMemoryType memoryTypeManaged = hipMemoryTypeManaged;
+    struct memoryType
+    {
+        using T = hipMemoryType;
+        static constexpr const T unregistered = hipMemoryTypeUnregistered;
+        static constexpr const T host = hipMemoryTypeHost;
+        static constexpr const T device = hipMemoryTypeDevice;
+        static constexpr const T managed = hipMemoryTypeManaged;
+    };
 
-        namespace API
-        {
-            [[nodiscard]] __host__ inline deviceError_t getDeviceCount(int *count) noexcept
-            {
-                return hipGetDeviceCount(count);
-            }
+#elif defined(__CUDACC__)
 
-            [[nodiscard]] __host__ inline deviceError_t getDeviceProperties(deviceProp_t *props, int deviceID) noexcept
-            {
-                return hipGetDeviceProperties(props, deviceID);
-            }
+#define devicehostFunctionReturnType __device__ __host__ [[nodiscard]]
+#define deviceFunctionReturnType __device__ [[nodiscard]]
+#define hostFunctionReturnType __host__ [[nodiscard]]
 
-            [[nodiscard]] __host__ inline deviceError_t getDevice(int *deviceID) noexcept
-            {
-                return hipGetDevice(deviceID);
-            }
-
-            [[nodiscard]] __host__ inline deviceError_t setDevice(const int deviceID) noexcept
-            {
-                return hipSetDevice(deviceID);
-            }
-
-            [[nodiscard]] __host__ inline deviceError_t deviceSynchronize() noexcept
-            {
-                return hipDeviceSynchronize();
-            }
-
-            [[nodiscard]] __host__ inline deviceError_t streamCreate(deviceStream_t *stream) noexcept
-            {
-                return hipStreamCreate(stream);
-            }
-
-            [[nodiscard]] __host__ inline deviceError_t streamDestroy(deviceStream_t stream) noexcept
-            {
-                return hipStreamDestroy(stream);
-            }
-
-            [[nodiscard]] __host__ inline deviceError_t streamSynchronize(deviceStream_t stream) noexcept
-            {
-                return hipStreamSynchronize(stream);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t memcpy(T *const dst, const T *src, const size_t count, const deviceMemcpyType_t kind) noexcept
-            {
-                return hipMemcpy(dst, src, count, static_cast<hipMemcpyKind>(kind));
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t memcpyToSymbol(
-                const T &symbol, const void *src, const size_t count,
-                const size_t offset,
-                const deviceMemcpyType_t kind) noexcept
-            {
-                return hipMemcpyToSymbol(HIP_SYMBOL(symbol), src, count, offset, static_cast<hipMemcpyKind>(kind));
-            }
-
-            [[nodiscard]] __host__ inline deviceError_t memGetInfo(size_t *free, size_t *total) noexcept
-            {
-                return hipMemGetInfo(free, total);
-            }
-
-            [[nodiscard]] __host__ inline deviceError_t pointerGetAttributes(hipPointerAttribute_t *attributes, const void *ptr) noexcept
-            {
-                return hipPointerGetAttributes(attributes, ptr);
-            }
-
-            [[nodiscard]] __host__ inline constexpr const char *getErrorString(const deviceError_t error) noexcept
-            {
-                return hipGetErrorString(error);
-            }
-
-            template <typename Kernel, typename = std::enable_if_t<std::is_function_v<Kernel>>>
-            [[nodiscard]] __host__ inline deviceError_t funcSetCacheConfig(Kernel *func, const hipFuncCache_t config) noexcept
-            {
-                return hipFuncSetCacheConfig(
-                    reinterpret_cast<const void *>(func),
-                    config);
-            }
-
-            template <typename Kernel>
-            [[nodiscard]] __host__ inline deviceError_t funcSetMaxDynamicSharedMemorySize(Kernel *func, const int bytes) noexcept
-            {
-                return hipFuncSetAttribute(reinterpret_cast<const void *>(func), hipFuncAttributeMaxDynamicSharedMemorySize, bytes);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t hostFree(T *const ptr) noexcept
-            {
-                return hipHostFree(ptr);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t deviceFree(T *const ptr) noexcept
-            {
-                return hipFree(ptr);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t deviceMalloc(T **ptr, const size_t size) noexcept
-            {
-                return hipMalloc(ptr, size);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t mallocHost(T **ptr, const size_t size) noexcept
-            {
-                return hipHostMalloc(ptr, size, hipHostMallocDefault);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t
-            memcpyPeerAsync(T *const dst, const int dstDeviceId, const T *const src, const int srcDeviceId, const size_t count, const deviceStream_t stream) noexcept
-            {
-                return hipMemcpyPeerAsync(dst, dstDeviceId, src, srcDeviceId, count, stream);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t memcpyAsync(T *const dst, const T *const src, const size_t count, const deviceMemcpyType_t kind, const hipStream_t stream) noexcept
-            {
-                return hipMemcpyAsync(dst, src, count, static_cast<hipMemcpyKind>(kind), stream);
-            }
-        }
-    }
-
-#else
     using deviceError_t = cudaError_t;
     using deviceStream_t = cudaStream_t;
     using deviceEvent_t = cudaEvent_t;
@@ -243,149 +127,301 @@ namespace LBM
         memcpyDeviceToHost = cudaMemcpyDeviceToHost
     } deviceMemcpyType_t;
 
-    static constexpr const deviceError_t deviceSuccess = cudaSuccess;
-    static constexpr const deviceError_t deviceErrorMemoryAllocation = cudaErrorMemoryAllocation;
-
-    namespace device
+    struct errorCodes
     {
-        // static constexpr const memoryType_t memoryTypeUnregistered = cudaMemoryTypeUnregistered;
-        // static constexpr const memoryType_t memoryTypeHost = cudaMemoryTypeHost;
-        // static constexpr const memoryType_t memoryTypeDevice = cudaMemoryTypeDevice;
-        // static constexpr const memoryType_t memoryTypeManaged = cudaMemoryTypeManaged;
+        static constexpr const deviceError_t deviceSuccess = cudaSuccess;
+        static constexpr const deviceError_t deviceErrorMemoryAllocation = cudaErrorMemoryAllocation;
+    };
 
-        static constexpr const cudaMemoryType memoryTypeUnregistered = cudaMemoryTypeUnregistered;
-        static constexpr const cudaMemoryType memoryTypeHost = cudaMemoryTypeHost;
-        static constexpr const cudaMemoryType memoryTypeDevice = cudaMemoryTypeDevice;
-        static constexpr const cudaMemoryType memoryTypeManaged = cudaMemoryTypeManaged;
+    struct memoryType
+    {
+        using T = cudaMemoryType;
+        static constexpr const T unregistered = cudaMemoryTypeUnregistered;
+        static constexpr const T host = cudaMemoryTypeHost;
+        static constexpr const T device = cudaMemoryTypeDevice;
+        static constexpr const T managed = cudaMemoryTypeManaged;
+    };
 
-        // enum memoryType
-        // {
-        //     memoryTypeUnregistered = cudaMemoryTypeUnregistered,
-        //     memoryTypeHost = cudaMemoryTypeHost,
-        //     memoryTypeDevice = cudaMemoryTypeDevice,
-        //     memoryTypeManaged = cudaMemoryTypeManaged
-        // };
+#else
+    static_assert(false, GPU_COMPILER_ERROR_MSG);
 
-        namespace API
+#endif
+
+    namespace API
+    {
+        hostFunctionReturnType inline deviceError_t getDeviceCount(int *count) noexcept
         {
-            [[nodiscard]] __host__ inline deviceError_t getDeviceCount(int *count) noexcept
-            {
-                return cudaGetDeviceCount(count);
-            }
+#if defined(__HIP__)
+            return hipGetDeviceCount(count);
+#elif defined(__CUDACC__)
+            return cudaGetDeviceCount(count);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
+#endif
+        }
 
-            [[nodiscard]] __host__ inline deviceError_t getDeviceProperties(deviceProp_t *props, int deviceID) noexcept
-            {
-                return cudaGetDeviceProperties(props, deviceID);
-            }
+        hostFunctionReturnType inline deviceError_t getDeviceProperties(deviceProp_t *props, int deviceID) noexcept
+        {
+#if defined(__HIP__)
+            return hipGetDeviceProperties(props, deviceID);
+#elif defined(__CUDACC__)
+            return cudaGetDeviceProperties(props, deviceID);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
+#endif
+        }
 
-            [[nodiscard]] __host__ inline deviceError_t getDevice(int *deviceID) noexcept
-            {
-                return cudaGetDevice(deviceID);
-            }
+        hostFunctionReturnType inline deviceError_t getDevice(int *deviceID) noexcept
+        {
+#if defined(__HIP__)
+            return hipGetDevice(deviceID);
+#elif defined(__CUDACC__)
+            return cudaGetDevice(deviceID);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
+#endif
+        }
 
-            [[nodiscard]] __host__ inline deviceError_t setDevice(const int deviceID) noexcept
-            {
-                return cudaSetDevice(deviceID);
-            }
+        hostFunctionReturnType inline deviceError_t setDevice(const int deviceID) noexcept
+        {
+#if defined(__HIP__)
+            return hipSetDevice(deviceID);
+#elif defined(__CUDACC__)
+            return cudaSetDevice(deviceID);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
+#endif
+        }
 
-            [[nodiscard]] __host__ inline deviceError_t deviceSynchronize() noexcept
-            {
-                return cudaDeviceSynchronize();
-            }
+        hostFunctionReturnType inline deviceError_t deviceSynchronize() noexcept
+        {
+#if defined(__HIP__)
+            return hipDeviceSynchronize();
+#elif defined(__CUDACC__)
+            return cudaDeviceSynchronize();
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
+#endif
+        }
 
-            [[nodiscard]] __host__ inline deviceError_t streamCreate(deviceStream_t *stream) noexcept
+        namespace stream
+        {
+            hostFunctionReturnType inline deviceError_t create(deviceStream_t *stream) noexcept
             {
+#if defined(__HIP__)
+                return hipStreamCreate(stream);
+#elif defined(__CUDACC__)
                 return cudaStreamCreate(stream);
+#else
+                static_assert(false, GPU_COMPILER_ERROR_MSG);
+                return 0;
+#endif
             }
 
-            [[nodiscard]] __host__ inline deviceError_t streamDestroy(deviceStream_t stream) noexcept
+            hostFunctionReturnType inline deviceError_t destroy(deviceStream_t stream) noexcept
             {
+#if defined(__HIP__)
+                return hipStreamDestroy(stream);
+#elif defined(__CUDACC__)
                 return cudaStreamDestroy(stream);
+#else
+                static_assert(false, GPU_COMPILER_ERROR_MSG);
+                return 0;
+#endif
             }
 
-            [[nodiscard]] __host__ inline deviceError_t streamSynchronize(deviceStream_t stream) noexcept
+            hostFunctionReturnType inline deviceError_t synchronize(deviceStream_t stream) noexcept
             {
+#if defined(__HIP__)
+                return hipStreamSynchronize(stream);
+#elif defined(__CUDACC__)
                 return cudaStreamSynchronize(stream);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t memcpy(T *const dst, const T *src, const size_t count, const deviceMemcpyType_t kind) noexcept
-            {
-                return cudaMemcpy(dst, src, count, kind);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t memcpyToSymbol(const T &symbol, const void *src, const size_t count, const size_t offset = 0, const deviceMemcpyKind kind = deviceMemcpyHostToDevice) noexcept
-            {
-                return cudaMemcpyToSymbol(symbol, src, count, offset, kind);
-            }
-
-            [[nodiscard]] __host__ inline deviceError_t memGetInfo(const size_t *free, const size_t *total) noexcept
-            {
-                return cudaMemGetInfo(free, total);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t memcpyAsync(T *dst, const T *src, const size_t count, const deviceMemcpyKind kind, const hipStream_t stream) noexcept
-            {
-                return cudaMemcpyAsync(dst, src, count, static_cast<cudaMemcpyKind>(kind), stream);
-            }
-
-            [[nodiscard]] __host__ inline deviceError_t pointerGetAttributes(devicePointerAttribute_t *attributes, const void *ptr) noexcept
-            {
-                return cudaPointerGetAttributes(attributes, ptr);
-            }
-
-            [[nodiscard]] __host__ inline constexpr const char *getErrorString(const deviceError_t error) noexcept
-            {
-                return cudaGetErrorString(error);
-            }
-
-            [[nodiscard]] __host__ inline deviceError_t funcSetCacheConfig(const void *func, const hipFuncCache_t config) noexcept
-            {
-                return cudaFuncSetCacheConfig(func, config);
-            }
-
-            [[nodiscard]] __host__ inline deviceError_t funcSetMaxDynamicSharedMemorySize(const void *func, const int bytes) noexcept
-            {
-                return cudaFuncSetAttribute(
-                    func,
-                    cudaFuncAttributeMaxDynamicSharedMemorySize,
-                    bytes);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t hostFree(T *const ptr) noexcept
-            {
-                return cudaFreeHost(ptr);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t deviceFree(T *const ptr) noexcept
-            {
-                return cudaFree(ptr);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t deviceMalloc(T **ptr, const size_t size) noexcept
-            {
-                return cudaMalloc(ptr, size);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t mallocHost(T **ptr, const size_t size) noexcept
-            {
-                return cudaMallocHost(ptr, size, hipHostMallocDefault);
-            }
-
-            template <typename T>
-            [[nodiscard]] __host__ inline deviceError_t memcpyPeerAsync(T *const dst, const int dstDeviceId, const T *const src, const int srcDeviceId, const size_t count, const deviceStream_t stream) noexcept
-            {
-                return cudaMemcpyPeerAsync(dst, dstDeviceId, src, srcDeviceId, count, stream);
+#else
+                static_assert(false, GPU_COMPILER_ERROR_MSG);
+                return 0;
+#endif
             }
         }
-    }
+
+        template <typename T>
+        hostFunctionReturnType inline deviceError_t memcpy(T *const dst, const T *const src, const size_t count, const deviceMemcpyType_t kind) noexcept
+        {
+#if defined(__HIP__)
+            return hipMemcpy(dst, src, count, static_cast<deviceMemcpyKind>(kind));
+#elif defined(__CUDACC__)
+            return cudaMemcpy(dst, src, count, static_cast<deviceMemcpyKind>(kind));
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
 #endif
+        }
+
+        template <typename Symbol, typename T>
+        hostFunctionReturnType inline deviceError_t memcpyToSymbol(const Symbol &symbol, const T *const src, const size_t count, const size_t offset, const deviceMemcpyType_t kind) noexcept
+        {
+#if defined(__HIP__)
+            return hipMemcpyToSymbol(HIP_SYMBOL(symbol), src, count, offset, static_cast<deviceMemcpyKind>(kind));
+#elif defined(__CUDACC__)
+            return cudaMemcpyToSymbol(symbol, src, count, offset, static_cast<deviceMemcpyKind>(kind));
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
+#endif
+        }
+
+        hostFunctionReturnType inline deviceError_t memGetInfo(size_t *free, size_t *total) noexcept
+        {
+#if defined(__HIP__)
+            return hipMemGetInfo(free, total);
+#elif defined(__CUDACC__)
+            return cudaMemGetInfo(free, total);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
+#endif
+        }
+
+        template <typename T>
+        hostFunctionReturnType inline deviceError_t pointerGetAttributes(ptrAttributes_t *attributes, const T *ptr) noexcept
+        {
+#if defined(__HIP__)
+            return hipPointerGetAttributes(attributes, ptr);
+#elif defined(__CUDACC__)
+            return cudaPointerGetAttributes(attributes, ptr);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
+#endif
+        }
+
+        hostFunctionReturnType inline const char *getErrorString(const deviceError_t error) noexcept
+        {
+#if defined(__HIP__)
+            return hipGetErrorString(error);
+#elif defined(__CUDACC__)
+            return cudaGetErrorString(error);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
+#endif
+        }
+
+        template <typename Kernel, typename = std::enable_if_t<std::is_function_v<Kernel>>>
+        hostFunctionReturnType inline deviceError_t funcSetCacheConfig(Kernel *func, const deviceFuncCache_t config) noexcept
+        {
+#if defined(__HIP__)
+            return hipFuncSetCacheConfig(func, config);
+#elif defined(__CUDACC__)
+            return cudaFuncSetCacheConfig(func, config);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
+#endif
+        }
+
+        template <typename Kernel>
+        hostFunctionReturnType inline deviceError_t funcSetMaxDynamicSharedMemorySize(Kernel *func, const int bytes) noexcept
+        {
+#if defined(__HIP__)
+            return hipFuncSetAttribute(func, hipFuncAttributeMaxDynamicSharedMemorySize, bytes);
+#elif defined(__CUDACC__)
+            return cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, bytes);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
+#endif
+        }
+
+        namespace device
+        {
+            template <typename T>
+            hostFunctionReturnType inline deviceError_t free(T *const ptr) noexcept
+            {
+#if defined(__HIP__)
+                return hipFree(ptr);
+#elif defined(__CUDACC__)
+                return cudaFree(ptr);
+#else
+                static_assert(false, GPU_COMPILER_ERROR_MSG);
+                return 0;
+#endif
+            }
+
+            template <typename T>
+            hostFunctionReturnType inline deviceError_t malloc(T **ptr, const size_t size) noexcept
+            {
+#if defined(__HIP__)
+                return hipMalloc(ptr, size);
+#elif defined(__CUDACC__)
+                return cudaMalloc(ptr, size);
+#else
+                static_assert(false, GPU_COMPILER_ERROR_MSG);
+                return 0;
+#endif
+            }
+        }
+
+        namespace host
+        {
+            template <typename T>
+            hostFunctionReturnType inline deviceError_t free(T *const ptr) noexcept
+            {
+#if defined(__HIP__)
+                return hipHostFree(ptr);
+#elif defined(__CUDACC__)
+                return cudaFreeHost(ptr);
+#else
+                static_assert(false, GPU_COMPILER_ERROR_MSG);
+                return 0;
+#endif
+            }
+
+            template <typename T>
+            hostFunctionReturnType inline deviceError_t malloc(T **ptr, const size_t size) noexcept
+            {
+#if defined(__HIP__)
+                return hipHostMalloc(ptr, size);
+#elif defined(__CUDACC__)
+                return cudaMallocHost(ptr, size);
+#else
+                static_assert(false, GPU_COMPILER_ERROR_MSG);
+                return 0;
+#endif
+            }
+        }
+
+        template <typename T>
+        hostFunctionReturnType inline deviceError_t memcpyPeerAsync(T *const dst, const int dstDeviceId, const T *const src, const int srcDeviceId, const size_t count, const deviceStream_t stream) noexcept
+        {
+#if defined(__HIP__)
+            return hipMemcpyPeerAsync(dst, dstDeviceId, src, srcDeviceId, count, stream);
+#elif defined(__CUDACC__)
+            return cudaMemcpyPeerAsync(dst, dstDeviceId, src, srcDeviceId, count, stream);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
+#endif
+        }
+
+        template <typename T>
+        hostFunctionReturnType inline deviceError_t memcpyAsync(T *const dst, const T *const src, const size_t count, const deviceMemcpyType_t kind, const deviceStream_t stream) noexcept
+        {
+#if defined(__HIP__)
+            return hipMemcpyAsync(dst, src, count, static_cast<deviceMemcpyKind>(kind), stream);
+#elif defined(__CUDACC__)
+            return cudaMemcpyAsync(dst, src, count, static_cast<deviceMemcpyKind>(kind), stream);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return 0;
+#endif
+        }
+    }
+
 }
 
 #endif

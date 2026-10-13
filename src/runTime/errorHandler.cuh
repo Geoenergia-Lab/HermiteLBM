@@ -102,7 +102,7 @@ namespace LBM
         {
             if constexpr (std::is_same_v<T, deviceError_t>)
             {
-                if (err != deviceSuccess)
+                if (err != errorCodes::deviceSuccess)
                 {
                     update_codes_and_print(err, loc);
                 }
@@ -137,11 +137,11 @@ namespace LBM
         }
 
         template <typename T>
-        [[nodiscard]] __host__ static inline constexpr const char *get_error_string(const T code) noexcept
+        hostFunctionReturnType static inline constexpr const char *get_error_string(const T code) noexcept
         {
             if constexpr (std::is_same_v<T, deviceError_t>)
             {
-                return device::API::getErrorString(code);
+                return API::getErrorString(code);
             }
 
             if constexpr (std::is_same_v<T, runTime::error::code>)
@@ -150,7 +150,7 @@ namespace LBM
             }
         }
 
-        [[nodiscard]] __host__ static inline constexpr const char *base_name(const std::source_location &loc) noexcept
+        hostFunctionReturnType static inline constexpr const char *base_name(const std::source_location &loc) noexcept
         {
             const char *path = loc.file_name();
             const char *base = path;

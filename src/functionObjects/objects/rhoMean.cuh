@@ -72,7 +72,7 @@ namespace LBM
              * @param[in] idx Spatial index
              * @return The moments
              **/
-            [[nodiscard]] __device__ static inline constexpr const scalar calculate(
+            deviceFunctionReturnType static inline constexpr const scalar calculate(
                 const device::ptrColl_t &devPtrs,
                 const device::label_t idx) noexcept
             {
@@ -133,7 +133,7 @@ namespace LBM
              * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
              * @param[in] programCtrl The program control object
              **/
-            [[nodiscard]] __host__ density(
+            hostFunctionReturnType density(
                 const host::latticeMesh &mesh,
                 const kernel::ptrCollection &devPtrs,
                 const programControl &programCtrl) noexcept
@@ -149,8 +149,8 @@ namespace LBM
              * @brief Disable copying
              **/
             __host__ ~density() {}
-            [[nodiscard]] __host__ density(const density &) = delete;
-            [[nodiscard]] __host__ density &operator=(const density &) = delete;
+            hostFunctionReturnType density(const density &) = delete;
+            hostFunctionReturnType density &operator=(const density &) = delete;
 
             /**
              * @brief Calculate the time-averaged density
@@ -210,19 +210,19 @@ namespace LBM
              * @brief Access to the pointers of the time averaged field
              * @param[in] idx Memory index
              **/
-            [[nodiscard]] __host__ inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept { return {rhoMean_.ptr(idx)}; }
+            hostFunctionReturnType inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept { return {rhoMean_.ptr(idx)}; }
 
             /**
              * @brief Access to the pointers of the perturbation field
              * @param[in] idx Memory index
              **/
-            [[nodiscard]] __host__ inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept { return {rhoPrime_.ptr(idx)}; }
+            hostFunctionReturnType inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept { return {rhoPrime_.ptr(idx)}; }
 
             /**
              * @brief Access to the pointers of the mean of the square of the perturbation field
              * @param[in] idx Memory index
              **/
-            [[nodiscard]] __host__ inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primeSqMeanPtrs(const host::label_t idx) noexcept { return {rhoPrimeSqMean_.ptr(idx)}; }
+            hostFunctionReturnType inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primeSqMeanPtrs(const host::label_t idx) noexcept { return {rhoPrimeSqMean_.ptr(idx)}; }
 
         private:
             /**

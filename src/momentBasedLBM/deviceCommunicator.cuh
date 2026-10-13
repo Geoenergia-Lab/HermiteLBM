@@ -64,7 +64,7 @@ namespace LBM
          * @param[in] programCtrl The program control object
          * @param[in] haloPtrs The halo to exchange between devices
          **/
-        [[nodiscard]] __host__ deviceCommunicator(
+        hostFunctionReturnType deviceCommunicator(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const haloBuffer<VelocitySet> &haloPtrs) noexcept
@@ -80,8 +80,8 @@ namespace LBM
         /**
          * @brief Disable copying
          **/
-        [[nodiscard]] __host__ deviceCommunicator(const deviceCommunicator &) = delete;
-        [[nodiscard]] __host__ deviceCommunicator &operator=(const deviceCommunicator &) = delete;
+        hostFunctionReturnType deviceCommunicator(const deviceCommunicator &) = delete;
+        hostFunctionReturnType deviceCommunicator &operator=(const deviceCommunicator &) = delete;
 
         /**
          * @brief Perform the inter-device exchange for the given time step
@@ -117,7 +117,7 @@ namespace LBM
          * @param[in] mesh The lattice mesh
          **/
         template <const axis::type alpha>
-        [[nodiscard]] __host__ static inline constexpr host::blockLabel commBlockID(const host::latticeMesh &mesh) noexcept
+        hostFunctionReturnType static inline constexpr host::blockLabel commBlockID(const host::latticeMesh &mesh) noexcept
         {
             return axis::to_3d<alpha>(static_cast<host::label_t>(0), static_cast<host::label_t>(0), mesh.blocksPerDevice<alpha>() - static_cast<host::label_t>(1));
         }

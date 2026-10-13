@@ -60,7 +60,7 @@ SourceFiles
  *
  * Memory layout: [tz][ty][tx] (tz slowest varying, tx fastest)
  **/
-[[nodiscard]] __device__ __host__ static inline constexpr device::label_t idx_block(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t idx_block(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
 {
     return tx + block::nx<device::label_t>() * (ty + block::ny<device::label_t>() * tz);
 }
@@ -69,7 +69,7 @@ SourceFiles
  * @overload Passes a pre-constructed thread coordinate
  * @param[in] Tx Three-dimensional thread coordinates
  **/
-[[nodiscard]] __device__ __host__ static inline constexpr device::label_t idx_block(const thread::coordinate &Tx) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t idx_block(const thread::coordinate &Tx) noexcept
 {
     return idx_block(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
 }
@@ -83,7 +83,7 @@ SourceFiles
  *
  * Memory layout: [tz][ty][tx] (tz slowest varying, tx fastest)
  **/
-[[nodiscard]] __device__ __host__ static inline constexpr device::label_t warpID(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t warpID(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
 {
     return idx_block(tx, ty, tz) / block::warp_size();
 }
@@ -92,7 +92,7 @@ SourceFiles
  * @overload Passes a pre-constructed thread coordinate
  * @param[in] Tx Three-dimensional thread coordinates
  **/
-[[nodiscard]] __device__ __host__ static inline constexpr device::label_t warpID(const thread::coordinate &Tx) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t warpID(const thread::coordinate &Tx) noexcept
 {
     return warpID(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
 }
@@ -106,7 +106,7 @@ SourceFiles
  *
  * Memory layout: [tz][ty][tx] (tz slowest varying, tx fastest)
  **/
-[[nodiscard]] __device__ __host__ static inline constexpr device::label_t idxWarp(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t idxWarp(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
 {
     return idx_block(tx, ty, tz) % block::warp_size();
 }
@@ -115,7 +115,7 @@ SourceFiles
  * @overload Passes a pre-constructed thread coordinate
  * @param[in] Tx Three-dimensional thread coordinates
  **/
-[[nodiscard]] __device__ __host__ static inline constexpr device::label_t idxWarp(const thread::coordinate &Tx) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t idxWarp(const thread::coordinate &Tx) noexcept
 {
     return idxWarp(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
 }
@@ -127,7 +127,7 @@ SourceFiles
  * @return Linearized face index>
  **/
 template <const axis::type alpha, typename T = device::label_t>
-[[nodiscard]] __device__ __host__ static inline consteval T faceArea() noexcept
+devicehostFunctionReturnType static inline consteval T faceArea() noexcept
 {
     return block::n<axis::orthogonal<alpha, 0>(), T>() * block::n<axis::orthogonal<alpha, 1>(), T>();
 }
@@ -139,7 +139,7 @@ template <const axis::type alpha, typename T = device::label_t>
  * @return Linearized face index>
  **/
 template <const axis::type alpha>
-[[nodiscard]] __device__ __host__ static inline constexpr device::label_t idxFace(const thread::coordinate &Tx) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t idxFace(const thread::coordinate &Tx) noexcept
 {
     return Tx.value<axis::orthogonal<alpha, 0>()>() + (Tx.value<axis::orthogonal<alpha, 1>()>() * block::n<axis::orthogonal<alpha, 0>()>());
 }
@@ -174,7 +174,7 @@ __device__ static inline constexpr void transpose(const thread::coordinate &Tx, 
  * @return Sum of the face areas for all faces before @p FaceIdx
  **/
 template <const int FaceIdx>
-[[nodiscard]] __device__ __host__ static inline consteval device::label_t sumFaceAreasBefore() noexcept
+devicehostFunctionReturnType static inline consteval device::label_t sumFaceAreasBefore() noexcept
 {
     return []<host::label_t... I>(std::index_sequence<I...>)
     {
@@ -189,7 +189,7 @@ template <const int FaceIdx>
  * @return Offset (in elements) to the beginning of the halo data for this axis/direction
  **/
 template <const axis::type alpha, const int coeff>
-[[nodiscard]] __device__ __host__ static inline consteval device::label_t smemOffset() noexcept
+devicehostFunctionReturnType static inline consteval device::label_t smemOffset() noexcept
 {
     axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -257,7 +257,7 @@ __device__ static inline constexpr void transpose_to_shared(
 /**
  * @brief Compute the number of channels for the given block set
  **/
-[[nodiscard]] __device__ __host__ static inline consteval device::label_t n_channels() noexcept
+devicehostFunctionReturnType static inline consteval device::label_t n_channels() noexcept
 {
     return block::n_warps() / warps_per_face();
 }
@@ -269,7 +269,7 @@ __device__ static inline constexpr void transpose_to_shared(
  * @return The axis corresponding to this warp/cycle combination
  **/
 template <const host::label_t warpIdx, const host::label_t warpCycle>
-[[nodiscard]] __device__ __host__ static inline consteval axis::type precompute_axis() noexcept
+devicehostFunctionReturnType static inline consteval axis::type precompute_axis() noexcept
 {
     constexpr const host::label_t result = (warpIdx + (warpCycle * n_channels())) / (VelocitySet::template QF<host::label_t>() * warps_per_face());
     axis::assertions::validate<static_cast<axis::type>(result), axis::NOT_NULL>();
@@ -283,7 +283,7 @@ template <const host::label_t warpIdx, const host::label_t warpCycle>
  * @return The population index for this lane/cycle pair
  **/
 template <const host::label_t idx, const host::label_t warpCycle>
-[[nodiscard]] __device__ __host__ static inline consteval host::label_t precompute_q() noexcept
+devicehostFunctionReturnType static inline consteval host::label_t precompute_q() noexcept
 {
     constexpr const host::label_t result = (idx + (warpCycle * n_channels())) % VelocitySet::template QF<host::label_t>();
     static_assert(result < VelocitySet::template QF<host::label_t>());
@@ -298,7 +298,7 @@ template <const host::label_t idx, const host::label_t warpCycle>
  * @return The coordinate pair corresponding to axis @p alpha
  **/
 template <const axis::type alpha>
-[[nodiscard]] __device__ static inline constexpr const dim2 &choose_axis(const dim2 &x, const dim2 &y) noexcept
+deviceFunctionReturnType static inline constexpr const dim2 &choose_axis(const dim2 &x, const dim2 &y) noexcept
 {
     if constexpr (alpha == axis::X)
     {
@@ -318,7 +318,7 @@ template <const axis::type alpha>
  * @return Index into the write buffer for this warp/channel combination
  **/
 template <const device::label_t warpIdx>
-[[nodiscard]] __device__ static inline constexpr device::label_t bufferIdx(const device::label_t c) noexcept
+deviceFunctionReturnType static inline constexpr device::label_t bufferIdx(const device::label_t c) noexcept
 {
     return (c + (warpIdx * n_channels())) / VelocitySet::template QF<device::label_t>();
 }
@@ -327,7 +327,7 @@ template <const device::label_t warpIdx>
  * @brief Calculates the shared memory stride (padded to avoid bank conflicts)
  * @return Padded stride in elements
  **/
-[[nodiscard]] __device__ static inline consteval device::label_t padded_stride() noexcept
+deviceFunctionReturnType static inline consteval device::label_t padded_stride() noexcept
 {
     return block::size() + static_cast<device::label_t>(0);
 }
@@ -390,7 +390,7 @@ __device__ static inline void store_final_lane(
  * @brief Calculate the number of shared memory loading cycles for the given velocity set
  * @return Number of cycles needed to save all populations per warp group
  **/
-[[nodiscard]] __device__ static inline consteval device::label_t warps_per_face() noexcept
+deviceFunctionReturnType static inline consteval device::label_t warps_per_face() noexcept
 {
     return static_cast<device::label_t>(2);
 }
@@ -399,7 +399,7 @@ __device__ static inline void store_final_lane(
  * @brief Calculate the number of shared memory loading cycles for the given velocity set
  * @return Number of cycles needed to save all populations per warp group
  **/
-[[nodiscard]] __device__ static inline consteval device::label_t n_cycles() noexcept
+deviceFunctionReturnType static inline consteval device::label_t n_cycles() noexcept
 {
     return (static_cast<device::label_t>(4) * VelocitySet::template QF<device::label_t>() + n_channels() - static_cast<device::label_t>(1)) / n_channels();
 }

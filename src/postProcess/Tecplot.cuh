@@ -65,7 +65,7 @@ namespace LBM
             static constexpr const char *fileExtension = ".dat";
             static constexpr const char *name = "Tecplot";
 
-            [[nodiscard]] __host__ inline consteval Tecplot() {}
+            hostFunctionReturnType inline consteval Tecplot() {}
 
             /**
              * @brief Writes solution data to a Tecplot ASCII file in unstructured grid format
@@ -79,7 +79,7 @@ namespace LBM
              * @note Output format: BLOCK data packing with FEBRICK (hexahedral) elements
              * @note Uses high precision (50 digits) for numerical output
              **/
-            [[nodiscard]] __host__ static bool write(
+            hostFunctionReturnType static bool write(
                 const std::vector<std::vector<scalar_t>> &solutionVars,
                 std::ofstream &outFile,
                 const host::latticeMesh &mesh,

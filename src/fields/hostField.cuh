@@ -64,7 +64,7 @@ namespace LBM
             using FieldType = fieldType<1>;
 
         public:
-            [[nodiscard]] __host__ scalarField(
+            hostFunctionReturnType scalarField(
                 const name_t &name,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
@@ -76,8 +76,8 @@ namespace LBM
              **/
             __host__ ~scalarField() {}
 
-            [[nodiscard]] __host__ inline constexpr ComponentType &self() noexcept { return self_; }
-            [[nodiscard]] __host__ inline constexpr const ComponentType &self() const noexcept { return self_; }
+            hostFunctionReturnType inline constexpr ComponentType &self() noexcept { return self_; }
+            hostFunctionReturnType inline constexpr const ComponentType &self() const noexcept { return self_; }
 
         private:
             /**
@@ -96,7 +96,7 @@ namespace LBM
             using FieldType = fieldType<3>;
 
         public:
-            [[nodiscard]] __host__ vectorField(
+            hostFunctionReturnType vectorField(
                 const name_t &name,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
@@ -110,13 +110,13 @@ namespace LBM
              **/
             __host__ ~vectorField() {}
 
-            [[nodiscard]] __host__ inline constexpr ComponentType &x() noexcept { return x_; }
-            [[nodiscard]] __host__ inline constexpr ComponentType &y() noexcept { return y_; }
-            [[nodiscard]] __host__ inline constexpr ComponentType &z() noexcept { return z_; }
+            hostFunctionReturnType inline constexpr ComponentType &x() noexcept { return x_; }
+            hostFunctionReturnType inline constexpr ComponentType &y() noexcept { return y_; }
+            hostFunctionReturnType inline constexpr ComponentType &z() noexcept { return z_; }
 
-            [[nodiscard]] __host__ inline constexpr const ComponentType &x() const noexcept { return x_; }
-            [[nodiscard]] __host__ inline constexpr const ComponentType &y() const noexcept { return y_; }
-            [[nodiscard]] __host__ inline constexpr const ComponentType &z() const noexcept { return z_; }
+            hostFunctionReturnType inline constexpr const ComponentType &x() const noexcept { return x_; }
+            hostFunctionReturnType inline constexpr const ComponentType &y() const noexcept { return y_; }
+            hostFunctionReturnType inline constexpr const ComponentType &z() const noexcept { return z_; }
 
         private:
             /**
@@ -137,7 +137,7 @@ namespace LBM
             using FieldType = fieldType<6>;
 
         public:
-            [[nodiscard]] __host__ symmetricTensorField(
+            hostFunctionReturnType symmetricTensorField(
                 const name_t &name,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
@@ -154,19 +154,19 @@ namespace LBM
              **/
             __host__ ~symmetricTensorField() {}
 
-            [[nodiscard]] __host__ inline constexpr ComponentType &xx() noexcept { return xx_; }
-            [[nodiscard]] __host__ inline constexpr ComponentType &xy() noexcept { return xy_; }
-            [[nodiscard]] __host__ inline constexpr ComponentType &xz() noexcept { return xz_; }
-            [[nodiscard]] __host__ inline constexpr ComponentType &yy() noexcept { return yy_; }
-            [[nodiscard]] __host__ inline constexpr ComponentType &yz() noexcept { return yz_; }
-            [[nodiscard]] __host__ inline constexpr ComponentType &zz() noexcept { return zz_; }
+            hostFunctionReturnType inline constexpr ComponentType &xx() noexcept { return xx_; }
+            hostFunctionReturnType inline constexpr ComponentType &xy() noexcept { return xy_; }
+            hostFunctionReturnType inline constexpr ComponentType &xz() noexcept { return xz_; }
+            hostFunctionReturnType inline constexpr ComponentType &yy() noexcept { return yy_; }
+            hostFunctionReturnType inline constexpr ComponentType &yz() noexcept { return yz_; }
+            hostFunctionReturnType inline constexpr ComponentType &zz() noexcept { return zz_; }
 
-            [[nodiscard]] __host__ inline constexpr const ComponentType &xx() const noexcept { return xx_; }
-            [[nodiscard]] __host__ inline constexpr const ComponentType &xy() const noexcept { return xy_; }
-            [[nodiscard]] __host__ inline constexpr const ComponentType &xz() const noexcept { return xz_; }
-            [[nodiscard]] __host__ inline constexpr const ComponentType &yy() const noexcept { return yy_; }
-            [[nodiscard]] __host__ inline constexpr const ComponentType &yz() const noexcept { return yz_; }
-            [[nodiscard]] __host__ inline constexpr const ComponentType &zz() const noexcept { return zz_; }
+            hostFunctionReturnType inline constexpr const ComponentType &xx() const noexcept { return xx_; }
+            hostFunctionReturnType inline constexpr const ComponentType &xy() const noexcept { return xy_; }
+            hostFunctionReturnType inline constexpr const ComponentType &xz() const noexcept { return xz_; }
+            hostFunctionReturnType inline constexpr const ComponentType &yy() const noexcept { return yy_; }
+            hostFunctionReturnType inline constexpr const ComponentType &yz() const noexcept { return yz_; }
+            hostFunctionReturnType inline constexpr const ComponentType &zz() const noexcept { return zz_; }
 
         private:
             /**

@@ -74,17 +74,17 @@ namespace LBM
          * @param[in] regionName Name of the boundary region (e.g., "North", "West")
          * @throws std::runtime_error if field name is invalid or configuration is malformed
          **/
-        [[nodiscard]] __host__ boundaryValue(const name_t &fieldName, const name_t &regionName)
+        hostFunctionReturnType boundaryValue(const name_t &fieldName, const name_t &regionName)
             : value(initialiseValue(fieldName, regionName)) {}
 
-        [[nodiscard]] __host__ boundaryValue()
+        hostFunctionReturnType boundaryValue()
             : value(static_cast<scalar_t>(0)) {}
 
         /**
          * @brief Access the stored boundary value
          * @return The boundary value with appropriate scaling applied
          **/
-        [[nodiscard]] __host__ inline constexpr scalar_t operator()() const noexcept
+        hostFunctionReturnType inline constexpr scalar_t operator()() const noexcept
         {
             return value;
         }
@@ -106,7 +106,7 @@ namespace LBM
          * @note This function is used to extract values that MUST be numeric
          **/
         template <const bool safety_check>
-        [[nodiscard]] __host__ static scalar_t extractParameter(const name_t &fieldName, const name_t &regionName, const name_t &initialConditionsName)
+        hostFunctionReturnType static scalar_t extractParameter(const name_t &fieldName, const name_t &regionName, const name_t &initialConditionsName)
         {
             const words_t boundaryLines = string::readFile(initialConditionsName);
 
@@ -149,7 +149,7 @@ namespace LBM
          * - Equilibrium-based calculations for moment fields
          * - Validation of field names and region names
          **/
-        [[nodiscard]] __host__ static scalar_t initialiseValue(const name_t &fieldName, const name_t &regionName, const name_t &initialConditionsName = "initialConditions")
+        hostFunctionReturnType static scalar_t initialiseValue(const name_t &fieldName, const name_t &regionName, const name_t &initialConditionsName = "initialConditions")
         {
             const words_t boundaryLines = string::readFile(initialConditionsName);
 

@@ -70,7 +70,7 @@ namespace LBM
          * @return The detected OS enum value:
          *         `LINUX`, `WINDOWS`, or `UNDEFINED` if unsupported.
          **/
-        [[nodiscard]] __host__ static inline constexpr distroEnum distro() noexcept
+        hostFunctionReturnType static inline constexpr distroEnum distro() noexcept
         {
 #if defined(_WIN32) && !defined(__linux__)
             return WINDOWS;
@@ -86,7 +86,7 @@ namespace LBM
          *
          * @return true if `HAS_MULTI_GPU` is defined and enabled; otherwise false.
          **/
-        [[nodiscard]] __host__ static inline consteval bool hasMultiGPU() noexcept
+        hostFunctionReturnType static inline consteval bool hasMultiGPU() noexcept
         {
 #ifdef HAS_MULTI_GPU
             return HAS_MULTI_GPU;
@@ -103,14 +103,12 @@ namespace LBM
          *         Returns 0 if the query fails.
          **/
         template <typename T>
-        [[nodiscard]] __host__ static inline T deviceCount() noexcept
+        hostFunctionReturnType static inline T deviceCount() noexcept
         {
             int N = 0;
-            const deviceError_t code = device::API::getDeviceCount(&N);
+            const deviceError_t code = API::getDeviceCount(&N);
 
-            // const deviceError_t code = hipGetDeviceCount(&N);
-
-            if (code != deviceSuccess)
+            if (code != errorCodes::deviceSuccess)
             {
                 errorHandler::handle(code);
                 return static_cast<T>(0);
@@ -123,7 +121,7 @@ namespace LBM
          *
          * @return The number of bits in `scalar_t`.
          **/
-        [[nodiscard]] __host__ static inline consteval host::label_t scalarSize() noexcept
+        hostFunctionReturnType static inline consteval host::label_t scalarSize() noexcept
         {
             return static_cast<host::label_t>(sizeof(scalar_t)) * static_cast<host::label_t>(8);
         }
@@ -133,7 +131,7 @@ namespace LBM
          *
          * @return The number of bits in `device::label_t`.
          **/
-        [[nodiscard]] __host__ static inline consteval host::label_t labelSize() noexcept
+        hostFunctionReturnType static inline consteval host::label_t labelSize() noexcept
         {
             return static_cast<host::label_t>(sizeof(device::label_t)) * static_cast<host::label_t>(8);
         }
@@ -143,7 +141,7 @@ namespace LBM
          *
          * @return A string describing the machine endianness.
          **/
-        [[nodiscard]] __host__ static inline consteval const char *binaryType() noexcept
+        hostFunctionReturnType static inline consteval const char *binaryType() noexcept
         {
             return endian::nameString();
         }
@@ -175,11 +173,11 @@ namespace LBM
          * @param[in] deviceID The ID of the device to query
          * @return A cudaDeviceProp struct containing the properties of deviceID
          **/
-        [[nodiscard]] __host__ const deviceProp_t properties(const int deviceID)
+        hostFunctionReturnType const deviceProp_t properties(const int deviceID)
         {
             deviceProp_t props;
 
-            errorHandler::handle(device::API::getDeviceProperties(&props, deviceID));
+            errorHandler::handle(API::getDeviceProperties(&props, deviceID));
 
             return props;
         }
@@ -188,11 +186,11 @@ namespace LBM
          * @brief Get the current GPU device index
          * @return The index of the currently active GPU device
          **/
-        [[nodiscard]] __host__ int current_ordinal() noexcept
+        hostFunctionReturnType int current_ordinal() noexcept
         {
             int result = 0;
 
-            errorHandler::handle(device::API::getDevice(&result));
+            errorHandler::handle(API::getDevice(&result));
 
             return result;
         }
