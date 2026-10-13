@@ -70,7 +70,7 @@ namespace LBM
 #if defined(__HIP__)
         static constexpr const deviceBrandEnum v = AMD;
 #elif defined(__CUDACC__)
-        static constexpr const deviceBrandenum v = NVIDIA;
+        static constexpr const deviceBrandEnum v = NVIDIA;
 #else
         static constexpr const deviceBrandEnum v = UNDEFINED;
 #endif

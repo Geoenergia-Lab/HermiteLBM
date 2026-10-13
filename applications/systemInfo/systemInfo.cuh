@@ -264,21 +264,26 @@ namespace LBM
         }
     }
 
+    template <typename PropT>
+    hostFunctionReturnType const name_t archFlagImpl(const PropT &props)
+    {
+        if constexpr (requires { props.gcnArchName; })
+        {
+            return archFlag(std::string(props.gcnArchName));
+        }
+        else
+        {
+            return archFlag(std::to_string(props.major) + std::to_string(props.minor));
+        }
+    }
+
     /**
      * @brief Constructs the architecture flag used for compilation from a given device properties struct
      * @param[in] props Device properties struct
      **/
     hostFunctionReturnType const name_t archFlag(const deviceProp_t &props)
     {
-        if constexpr (deviceType::v == AMD)
-        {
-            return archFlag(std::string(props.gcnArchName));
-        }
-
-        if constexpr (deviceType::v == NVIDIA)
-        {
-            return archFlag(std::to_string(props.major) + std::to_string(props.minor));
-        }
+        return archFlagImpl(props);
     }
 
     /**
@@ -298,21 +303,26 @@ namespace LBM
         }
     }
 
+    template <typename PropT>
+    hostFunctionReturnType const name_t ltoFlagImpl(const PropT &props)
+    {
+        if constexpr (requires { props.gcnArchName; })
+        {
+            return ltoFlag(std::string(props.gcnArchName));
+        }
+        else
+        {
+            return ltoFlag(std::to_string(props.major) + std::to_string(props.minor));
+        }
+    }
+
     /**
      * @brief Constructs the lto flag used for compilation from a given device properties struct
      * @param[in] props Device properties struct
      **/
     hostFunctionReturnType const name_t ltoFlag(const deviceProp_t &props)
     {
-        if constexpr (deviceType::v == AMD)
-        {
-            return ltoFlag(std::string(props.gcnArchName));
-        }
-
-        if constexpr (deviceType::v == NVIDIA)
-        {
-            return ltoFlag(std::to_string(props.major) + std::to_string(props.minor));
-        }
+        return ltoFlagImpl(props);
     }
 }
 

@@ -125,12 +125,12 @@ int main(const int argc, const char *const argv[])
 
             if (all_arch_flags.find(current_arch_flag) == name_t::npos)
             {
-                all_arch_flags += current_arch_flag;
+                all_arch_flags += " " + current_arch_flag;
             }
 
             if (all_arch_flags.find(current_lto_flag) == name_t::npos)
             {
-                all_arch_flags += current_lto_flag;
+                all_arch_flags += " " + current_lto_flag;
             }
 
             outputFile << comment_string() << " Properties for CUDA Device ID: " << i << std::endl;
