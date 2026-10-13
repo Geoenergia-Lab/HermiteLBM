@@ -60,26 +60,15 @@ ifeq ($(HERMITELBM_API),CUDA)
 
   NVCXX_OPTFLAGS = -O3 --restrict -extra-device-vectorization --maxrregcount=128
   NVCXX_MFLAGS   = -m64
-
   NVCXX_WFLAGS   = -Werror cross-execution-space-call,reorder,default-stream-launch,missing-launch-bounds,ext-lambda-captures-this
-
-  # GCC-only warnings that Clang does not understand. These are kept in the
-  # CUDA branch because nvcc's host compiler is GCC.
-  NVCXX_HOST_WFLAGS_GCC_ONLY = \
-      -Wimplicit-fallthrough=5 \
-      -Wlogical-op \
-      -Wstrict-aliasing=3 \
-      -Wstringop-overflow=4
-
   NVCXX_COMPILER_WFLAGS = -Xcompiler "$(NVCXX_HOST_WFLAGS_COMMON) $(NVCXX_HOST_WFLAGS_GCC_ONLY)"
-
   NVCXX_DFLAGS   = $(NVCXX_DEFINES) -lpthread
   NVCXX_DEBUG_INFOFLAGS = -Xptxas -v
 
+  # In Manual mode, build the arch flag ourselves. In Automatic mode, leave
+  # NVCXX_ALL_ARCHFLAGS untouched — hardware.info provides it.
   ifeq ($(HERMITELBM_ARCHITECTURE_DETECTION),Manual)
     NVCXX_ALL_ARCHFLAGS = -gencode arch=compute_$(HERMITELBM_ARCHITECTURE_VERSION),code=sm_$(HERMITELBM_ARCHITECTURE_VERSION)
-  else
-    NVCXX_ALL_ARCHFLAGS =
   endif
 
 # --------------------------------------------------------------------------- #
@@ -88,29 +77,15 @@ ifeq ($(HERMITELBM_API),CUDA)
 
 else ifeq ($(HERMITELBM_API),HIP)
 
-  NVCXX_OPTFLAGS = -O3 -mllvm -amdgpu-max-num-registers=128
+  NVCXX_OPTFLAGS = -O3
   NVCXX_MFLAGS   =
-
   NVCXX_WFLAGS   =
-
-  # Clang accepts -Wimplicit-fallthrough without the =N level argument.
-  # The other three GCC-only flags are dropped entirely for HIP.
-  NVCXX_HOST_WFLAGS_CLANG = -Wimplicit-fallthrough
-
-  # Uncomment the following line if you want Clang to silently ignore any
-  # unrecognized -W flags instead of splitting the list per backend.
-  # This is a stopgap, not a long-term solution.
-  # NVCXX_HOST_WFLAGS_CLANG += -Wno-unknown-warning-option
-
   NVCXX_COMPILER_WFLAGS = $(NVCXX_HOST_WFLAGS_COMMON) $(NVCXX_HOST_WFLAGS_CLANG)
-
   NVCXX_DFLAGS   = $(NVCXX_DEFINES) -lpthread
   NVCXX_DEBUG_INFOFLAGS = -mllvm -stats
 
   ifeq ($(HERMITELBM_ARCHITECTURE_DETECTION),Manual)
     NVCXX_ALL_ARCHFLAGS = --offload-arch=gfx$(HERMITELBM_ARCHITECTURE_VERSION)
-  else
-    NVCXX_ALL_ARCHFLAGS =
   endif
 
 endif
