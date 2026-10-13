@@ -146,7 +146,7 @@ namespace LBM
 
             if constexpr (std::is_same_v<T, runTime::error::code>)
             {
-                return runTime::error::messages()[code];
+                return runTime::error::messages()[static_cast<host::label_t>(code)];
             }
         }
 

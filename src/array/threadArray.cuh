@@ -239,9 +239,10 @@ namespace LBM
              * @note No runtime bounds checking - compile-time safe
              **/
             template <const host::label_t index_>
-            devicehostFunctionReturnType inline constexpr const T &operator[](const size_constant<index_> &index) __restrict__ const noexcept
+            devicehostFunctionReturnType inline constexpr const T &operator[]([[maybe_unused]] const size_constant<index_> &index) __restrict__ const noexcept
             {
                 assert_legal_access<index_>();
+                // return data_[index];
                 return data_[size_constant<index_>()];
             }
 

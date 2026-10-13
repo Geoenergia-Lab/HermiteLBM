@@ -58,7 +58,7 @@ NVCXX_HOST_WFLAGS_COMMON = -O3 -funroll-loops -march=native -mtune=native \
 
 ifeq ($(HERMITELBM_API),CUDA)
 
-  NVCXX_OPTFLAGS = -O3 --restrict -extra-device-vectorization --maxrregcount=128
+  NVCXX_OPTFLAGS = --restrict -extra-device-vectorization --maxrregcount=128
   NVCXX_MFLAGS   = -m64
   NVCXX_WFLAGS   = -Werror cross-execution-space-call,reorder,default-stream-launch,missing-launch-bounds,ext-lambda-captures-this
   NVCXX_COMPILER_WFLAGS = -Xcompiler "$(NVCXX_HOST_WFLAGS_COMMON) $(NVCXX_HOST_WFLAGS_GCC_ONLY)"
@@ -77,7 +77,7 @@ ifeq ($(HERMITELBM_API),CUDA)
 
 else ifeq ($(HERMITELBM_API),HIP)
 
-  NVCXX_OPTFLAGS = -O3
+  NVCXX_OPTFLAGS =
   NVCXX_MFLAGS   =
   NVCXX_WFLAGS   =
   NVCXX_COMPILER_WFLAGS = $(NVCXX_HOST_WFLAGS_COMMON) $(NVCXX_HOST_WFLAGS_CLANG)
@@ -94,14 +94,6 @@ endif
 #  Assembled flag set                                                         #
 # --------------------------------------------------------------------------- #
 
-NVCXX_FLAGS = $(NVCXX_STANDARD) \
-	$(NVCXX_OPTFLAGS) \
-	$(NVCXX_MFLAGS) \
-	$(NVCXX_ALL_ARCHFLAGS) \
-	$(NVCXX_WFLAGS) \
-	$(NVCXX_COMPILER_WFLAGS) \
-	$(NVCXX_DFLAGS) \
-	$(HAS_MULTI_GPU) \
-	$(NVCXX_DEBUG_INFOFLAGS)
+NVCXX_FLAGS = $(NVCXX_STANDARD) $(NVCXX_OPTFLAGS) $(NVCXX_MFLAGS) $(NVCXX_ALL_ARCHFLAGS) $(NVCXX_WFLAGS) $(NVCXX_COMPILER_WFLAGS) $(NVCXX_DFLAGS) $(HAS_MULTI_GPU) $(NVCXX_DEBUG_INFOFLAGS)
 
 # --------------------------------------------------------------------------- #

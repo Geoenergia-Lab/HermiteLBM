@@ -60,7 +60,7 @@ namespace LBM
      **/
     typedef enum deviceBrandEnum : int64_t
     {
-        UNDEFINED = -1,
+        UNDEFINED_DEVICE = -1,
         NVIDIA = 0,
         AMD = 1,
     } deviceBrandEnum;
@@ -72,7 +72,7 @@ namespace LBM
 #elif defined(__CUDACC__)
         static constexpr const deviceBrandEnum v = NVIDIA;
 #else
-        static constexpr const deviceBrandEnum v = UNDEFINED;
+        static constexpr const deviceBrandEnum v = UNDEFINED_DEVICE;
 #endif
     };
 
