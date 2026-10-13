@@ -40,19 +40,17 @@ endif
 
 NVCXX_STANDARD = -std=c++20
 
-# Host compiler warnings. These are passed through to the underlying host
-# compiler; the exact mechanism differs between nvcc and hipcc, so the
-# forwarding flag is set per-API below.
-NVCXX_HOST_WFLAGS = -O3 -funroll-loops -march=native -mtune=native \
-    -Wall -Wextra -Werror -Wattributes -Wbuiltin-macro-redefined \
-    -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion \
-    -Wfloat-equal -Wformat-security -Wformat=2 -Wimplicit-fallthrough=5 \
-    -Winline -Wint-to-pointer-cast -Wlogical-op -Woverflow -Wpointer-arith \
-    -Wshadow -Wsign-conversion -Wstrict-aliasing=3 -Wstringop-overflow=4 \
-    -Wwrite-strings
-
 # Preprocessor defines common to both backends.
 NVCXX_DEFINES = -DSCALAR_PRECISION=32 -DLABEL_SIZE=32 -DUSE_SMEM_HALO
+
+# Base host compiler warnings that BOTH GCC and Clang understand.
+# Everything here is portable across the two host compilers.
+NVCXX_HOST_WFLAGS_COMMON = -O3 -funroll-loops -march=native -mtune=native \
+    -Wall -Wextra -Werror -Wattributes -Wbuiltin-macro-redefined \
+    -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion \
+    -Wfloat-equal -Wformat-security -Wformat=2 \
+    -Winline -Wint-to-pointer-cast -Woverflow -Wpointer-arith \
+    -Wshadow -Wsign-conversion -Wwrite-strings
 
 # --------------------------------------------------------------------------- #
 #  CUDA-specific flags                                                        #
@@ -60,64 +58,60 @@ NVCXX_DEFINES = -DSCALAR_PRECISION=32 -DLABEL_SIZE=32 -DUSE_SMEM_HALO
 
 ifeq ($(HERMITELBM_API),CUDA)
 
-  	NVCXX_OPTFLAGS = -O3 --restrict -extra-device-vectorization --maxrregcount=128
-  	NVCXX_MFLAGS   = -m64
+  NVCXX_OPTFLAGS = -O3 --restrict -extra-device-vectorization --maxrregcount=128
+  NVCXX_MFLAGS   = -m64
 
-  	# nvcc has NVCC-specific warning names it understands.
-  	NVCXX_WFLAGS   = -Werror cross-execution-space-call,reorder,default-stream-launch,missing-launch-bounds,ext-lambda-captures-this
+  NVCXX_WFLAGS   = -Werror cross-execution-space-call,reorder,default-stream-launch,missing-launch-bounds,ext-lambda-captures-this
 
-  	# Host flags are forwarded to the host compiler via -Xcompiler.
-  	NVCXX_COMPILER_WFLAGS = -Xcompiler "$(NVCXX_HOST_WFLAGS)"
+  # GCC-only warnings that Clang does not understand. These are kept in the
+  # CUDA branch because nvcc's host compiler is GCC.
+  NVCXX_HOST_WFLAGS_GCC_ONLY = \
+      -Wimplicit-fallthrough=5 \
+      -Wlogical-op \
+      -Wstrict-aliasing=3 \
+      -Wstringop-overflow=4
 
-  	# -Xptxas -v prints per-kernel resource usage; keep it out of the default
-  	# build to avoid noise, but leave a hook for a debug target.
-  	NVCXX_DFLAGS   = $(NVCXX_DEFINES) -lpthread
-  	NVCXX_DEBUG_INFOFLAGS = -Xptxas -v
+  NVCXX_COMPILER_WFLAGS = -Xcompiler "$(NVCXX_HOST_WFLAGS_COMMON) $(NVCXX_HOST_WFLAGS_GCC_ONLY)"
 
-  	# Architecture flags. When HERMITELBM_ARCHITECTURE_DETECTION="Manual",
-  	# HERMITELBM_ARCHITECTURE_VERSION holds the compute capability digits
-  	# (e.g. 89 for sm_89). When "Automatic", the build system is expected to
-  	# fill NVCXX_ALL_ARCHFLAGS itself (e.g. via a hardware.info probe).
-  	ifeq ($(HERMITELBM_ARCHITECTURE_DETECTION),Manual)
-    	NVCXX_ALL_ARCHFLAGS = -gencode arch=compute_$(HERMITELBM_ARCHITECTURE_VERSION),code=sm_$(HERMITELBM_ARCHITECTURE_VERSION)
-  	else
-    	NVCXX_ALL_ARCHFLAGS =
-  	endif
+  NVCXX_DFLAGS   = $(NVCXX_DEFINES) -lpthread
+  NVCXX_DEBUG_INFOFLAGS = -Xptxas -v
+
+  ifeq ($(HERMITELBM_ARCHITECTURE_DETECTION),Manual)
+    NVCXX_ALL_ARCHFLAGS = -gencode arch=compute_$(HERMITELBM_ARCHITECTURE_VERSION),code=sm_$(HERMITELBM_ARCHITECTURE_VERSION)
+  else
+    NVCXX_ALL_ARCHFLAGS =
+  endif
 
 # --------------------------------------------------------------------------- #
 #  HIP-specific flags                                                         #
 # --------------------------------------------------------------------------- #
 
-	else ifeq ($(HERMITELBM_API),HIP)
+else ifeq ($(HERMITELBM_API),HIP)
 
-  	# HIP has no --restrict (use __restrict__ in code), no
-  	# -extra-device-vectorization (Clang does this under -O3), and no --m64
-  	# (64-bit is the default on x86-64). Register limit is passed through to
-  	# the AMDGPU backend via -mllvm.
-  	NVCXX_OPTFLAGS = -O3 -mllvm -amdgpu-max-num-registers=128
-  	NVCXX_MFLAGS   =
+  NVCXX_OPTFLAGS = -O3 -mllvm -amdgpu-max-num-registers=128
+  NVCXX_MFLAGS   =
 
-  	# HIP does not accept nvcc's named warning list. Use plain -Werror and
-  	# rely on the host warning set for diagnostics.
-  	NVCXX_WFLAGS   =
+  NVCXX_WFLAGS   =
 
-  	# hipcc already invokes Clang for the host pass, so host flags go in
-  	# directly, without -Xcompiler.
-  	NVCXX_COMPILER_WFLAGS = $(NVCXX_HOST_WFLAGS)
+  # Clang accepts -Wimplicit-fallthrough without the =N level argument.
+  # The other three GCC-only flags are dropped entirely for HIP.
+  NVCXX_HOST_WFLAGS_CLANG = -Wimplicit-fallthrough
 
-  	# -Xptxas is CUDA-only. For HIP, resource usage is available via
-  	# -mllvm -stats, but that is noisy; leave it as an opt-in debug flag.
-  	NVCXX_DFLAGS   = $(NVCXX_DEFINES) -lpthread
-  	NVCXX_DEBUG_INFOFLAGS = -mllvm -stats
+  # Uncomment the following line if you want Clang to silently ignore any
+  # unrecognized -W flags instead of splitting the list per backend.
+  # This is a stopgap, not a long-term solution.
+  # NVCXX_HOST_WFLAGS_CLANG += -Wno-unknown-warning-option
 
-  	# Architecture flags. When Manual, HERMITELBM_ARCHITECTURE_VERSION holds
-  	# the gfx target suffix without the "gfx" prefix (e.g. 1200 for gfx1200).
-  	# When Automatic, the build system fills NVCXX_ALL_ARCHFLAGS itself.
-  	ifeq ($(HERMITELBM_ARCHITECTURE_DETECTION),Manual)
-    	NVCXX_ALL_ARCHFLAGS = --offload-arch=gfx$(HERMITELBM_ARCHITECTURE_VERSION)
-  	else
-    	NVCXX_ALL_ARCHFLAGS =
-  	endif
+  NVCXX_COMPILER_WFLAGS = $(NVCXX_HOST_WFLAGS_COMMON) $(NVCXX_HOST_WFLAGS_CLANG)
+
+  NVCXX_DFLAGS   = $(NVCXX_DEFINES) -lpthread
+  NVCXX_DEBUG_INFOFLAGS = -mllvm -stats
+
+  ifeq ($(HERMITELBM_ARCHITECTURE_DETECTION),Manual)
+    NVCXX_ALL_ARCHFLAGS = --offload-arch=gfx$(HERMITELBM_ARCHITECTURE_VERSION)
+  else
+    NVCXX_ALL_ARCHFLAGS =
+  endif
 
 endif
 
