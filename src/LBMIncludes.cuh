@@ -97,7 +97,7 @@ SourceFiles
 #include <variant>
 #include <vector>
 
-#include "typedefs/compatibilityTypedefs.cuh"
+#include "API.cuh"
 
 namespace LBM
 {

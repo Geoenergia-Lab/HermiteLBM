@@ -248,10 +248,37 @@ namespace LBM
     }
 
     /**
-     * @brief Constructs the architecture flag used for compilation from a given string
-     * @param[in] archVersion String representation of the architecture flag
+     * @brief Pair of architecture and LTO flags built from the same architecture version.
+     */
+    struct flagPair
+    {
+        const name_t arch;
+        const name_t lto;
+    };
+
+    /**
+     * @brief Extracts the architecture version string from a device properties struct.
+     * @param[in] props Device properties struct
      **/
-    hostFunctionReturnType const name_t archFlag(const name_t &archVersion)
+    template <typename PropT>
+    hostFunctionReturnType const name_t archVersionFromProps(const PropT &props)
+    {
+        if constexpr (requires { props.gcnArchName; })
+        {
+            return name_t{std::string{props.gcnArchName}};
+        }
+        else
+        {
+            return name_t{std::to_string(props.major) + std::to_string(props.minor)};
+        }
+    }
+
+    /**
+     * @brief Constructs a generic flag string (either "sm" or "lto")
+     * @param[in] archVersion String representation of the architecture flag
+     * @param[in] codeArg Either "sm" or "lto"
+     **/
+    hostFunctionReturnType const name_t flagString(const name_t &archVersion, const name_t &codeArg)
     {
         if constexpr (deviceType::v == AMD)
         {
@@ -260,21 +287,34 @@ namespace LBM
 
         if constexpr (deviceType::v == NVIDIA)
         {
-            return "-gencode arch=compute_" + archVersion + ",code=sm_" + archVersion;
+            return "-gencode arch=compute_" + archVersion + ",code=" + codeArg + "_" + archVersion;
         }
+    }
+
+    /**
+     * @brief Constructs a generic flag from a device properties struct.
+     * @param[in] props Device properties struct
+     * @param[in] codeArg Either "sm" or "lto"
+     **/
+    template <typename PropT>
+    hostFunctionReturnType const name_t flagFromProps(const PropT &props, const name_t &codeArg)
+    {
+        return flagString(archVersionFromProps(props), codeArg);
+    }
+
+    /**
+     * @brief Constructs the architecture flag used for compilation from a given string
+     * @param[in] archVersion String representation of the architecture flag
+     **/
+    hostFunctionReturnType const name_t archFlag(const name_t &archVersion)
+    {
+        return flagString(archVersion, "sm");
     }
 
     template <typename PropT>
     hostFunctionReturnType const name_t archFlagImpl(const PropT &props)
     {
-        if constexpr (requires { props.gcnArchName; })
-        {
-            return archFlag(std::string(props.gcnArchName));
-        }
-        else
-        {
-            return archFlag(std::to_string(props.major) + std::to_string(props.minor));
-        }
+        return flagFromProps(props, "sm");
     }
 
     /**
@@ -292,28 +332,13 @@ namespace LBM
      **/
     hostFunctionReturnType const name_t ltoFlag(const name_t &archVersion)
     {
-        if constexpr (deviceType::v == AMD)
-        {
-            return "";
-        }
-
-        if constexpr (deviceType::v == NVIDIA)
-        {
-            return "-gencode arch=compute_" + archVersion + ",code=lto_" + archVersion;
-        }
+        return flagString(archVersion, "lto");
     }
 
     template <typename PropT>
     hostFunctionReturnType const name_t ltoFlagImpl(const PropT &props)
     {
-        if constexpr (requires { props.gcnArchName; })
-        {
-            return ltoFlag(std::string(props.gcnArchName));
-        }
-        else
-        {
-            return ltoFlag(std::to_string(props.major) + std::to_string(props.minor));
-        }
+        return flagFromProps(props, "lto");
     }
 
     /**
@@ -323,6 +348,31 @@ namespace LBM
     hostFunctionReturnType const name_t ltoFlag(const deviceProp_t &props)
     {
         return ltoFlagImpl(props);
+    }
+
+    /**
+     * @brief Constructs both the architecture and lto flags from a given string
+     * @param[in] archVersion String representation of the architecture version
+     **/
+    hostFunctionReturnType const flagPair flags(const name_t &archVersion)
+    {
+        return {flagString(archVersion, "sm"), flagString(archVersion, "lto")};
+    }
+
+    template <typename PropT>
+    hostFunctionReturnType const flagPair flagsImpl(const PropT &props)
+    {
+        const name_t archVersion = archVersionFromProps(props);
+        return {flagString(archVersion, "sm"), flagString(archVersion, "lto")};
+    }
+
+    /**
+     * @brief Constructs both the architecture and lto flags from a given device properties struct
+     * @param[in] props Device properties struct
+     **/
+    hostFunctionReturnType const flagPair flags(const deviceProp_t &props)
+    {
+        return flagsImpl(props);
     }
 }
 

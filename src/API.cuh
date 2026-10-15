@@ -37,18 +37,18 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A list of typedefs used throughout the HermiteLBM source code
+    Calls to the underlying GPU programming API
 
 Namespace
     LBM
 
 SourceFiles
-    compatibilityTypedefs.cuh
+    API.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_COMPATIBILITYTYPEDEFS_CUH
-#define __MBLBM_COMPATIBILITYTYPEDEFS_CUH
+#ifndef __MBLBM_API_CUH
+#define __MBLBM_API_CUH
 
 namespace LBM
 {
