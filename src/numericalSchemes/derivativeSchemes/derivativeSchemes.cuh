@@ -56,12 +56,12 @@ namespace LBM
     {
         namespace derivative
         {
-            __device__ __host__ [[nodiscard]] inline consteval host::label_t maxSchemeOrder() noexcept
+            devicehostFunctionReturnType inline consteval host::label_t maxSchemeOrder() noexcept
             {
                 return 8;
             }
 
-            __device__ __host__ [[nodiscard]] inline consteval host::label_t gridPadding(const host::label_t SchemeOrder) noexcept
+            devicehostFunctionReturnType inline consteval host::label_t gridPadding(const host::label_t SchemeOrder) noexcept
             {
                 return SchemeOrder - 1;
             }
@@ -74,7 +74,7 @@ namespace LBM
              * @param[in] center The coordinate at which to evaluate the finite difference
              **/
             template <const host::label_t SchemeOrder, typename ReturnType, class PaddedLine>
-            __host__ [[nodiscard]] inline constexpr ReturnType finite_difference(
+            hostFunctionReturnType inline constexpr ReturnType finite_difference(
                 const PaddedLine &padded_line,
                 const host::label_t center) noexcept
             {
@@ -166,7 +166,7 @@ namespace LBM
              * @param[in] mesh The lattice mesh
              **/
             template <const axis::type alpha, const host::label_t SchemeOrder, typename ReturnType, typename T>
-            __host__ [[nodiscard]] const std::vector<ReturnType> diff(
+            hostFunctionReturnType const std::vector<ReturnType> diff(
                 const std::vector<T> &f,
                 const host::latticeMesh &mesh)
             {
@@ -197,7 +197,7 @@ namespace LBM
             }
 
             template <const host::label_t SchemeOrder, typename ReturnType, typename T>
-            __host__ [[nodiscard]] const std::vector<ReturnType> dfdx(
+            hostFunctionReturnType const std::vector<ReturnType> dfdx(
                 const std::vector<T> &f,
                 const host::latticeMesh &mesh)
             {
@@ -205,7 +205,7 @@ namespace LBM
             }
 
             template <const host::label_t SchemeOrder, typename ReturnType, typename T>
-            __host__ [[nodiscard]] const std::vector<ReturnType> dfdy(
+            hostFunctionReturnType const std::vector<ReturnType> dfdy(
                 const std::vector<T> &f,
                 const host::latticeMesh &mesh)
             {
@@ -213,7 +213,7 @@ namespace LBM
             }
 
             template <const host::label_t SchemeOrder, typename ReturnType, typename T>
-            __host__ [[nodiscard]] const std::vector<ReturnType> dfdz(
+            hostFunctionReturnType const std::vector<ReturnType> dfdz(
                 const std::vector<T> &f,
                 const host::latticeMesh &mesh)
             {
@@ -221,7 +221,7 @@ namespace LBM
             }
 
             template <typename ReturnType, const bool LeftBoundary, const bool RightBoundary>
-            __host__ [[nodiscard]] inline const thread::array<const ReturnType, block::nx<host::label_t>() * 3> stencil_line(
+            hostFunctionReturnType inline const thread::array<const ReturnType, block::nx<host::label_t>() * 3> stencil_line(
                 const std::vector<scalar_t> &f,
                 const host::label_t ty, const host::label_t tz,
                 const host::label_t bx, const host::label_t by, const host::label_t bz,
@@ -316,7 +316,7 @@ namespace LBM
             };
 
             // template <typename ReturnType, typename T>
-            // __host__ [[nodiscard]] const std::vector<ReturnType> dfdx_v2(
+            // hostFunctionReturnType const std::vector<ReturnType> dfdx_v2(
             //     const std::vector<T> &f,
             //     const host::latticeMesh &mesh)
             // {

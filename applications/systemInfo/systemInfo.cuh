@@ -64,7 +64,7 @@ namespace LBM
      * @return A string containing the output file extension for the current OS:
      *         ".bat" on Windows and ".info" on Linux.
      **/
-    __host__ inline consteval const char *hardware_info_file_extension() noexcept
+    hostFunctionReturnType inline consteval const char *hardware_info_file_extension() noexcept
     {
         if constexpr (system::distro() == system::WINDOWS)
         {
@@ -85,7 +85,7 @@ namespace LBM
      *
      * @return The comment marker for the current OS: "::" on Windows and "#" on Linux.
      **/
-    __host__ [[nodiscard]] inline consteval const char *comment_string() noexcept
+    hostFunctionReturnType inline consteval const char *comment_string() noexcept
     {
         if constexpr (system::distro() == system::WINDOWS)
         {
@@ -128,11 +128,11 @@ namespace LBM
      * @details Checks for CUDA devices and handles potential errors during device querying.
      * @return The number of CUDA devices available. Returns 0 if no devices are found.
      **/
-    __host__ [[nodiscard]] deviceIndex_t countDevices() noexcept
+    hostFunctionReturnType deviceIndex_t countDevices() noexcept
     {
         deviceIndex_t deviceCount = 0;
 
-        if (cudaGetDeviceCount(&deviceCount) != cudaSuccess)
+        if (API::getDeviceCount(&deviceCount) != errorCodes::deviceSuccess)
         {
             return 0;
         }
@@ -151,7 +151,7 @@ namespace LBM
      * @return Numerical index of the month (0 for January, 11 for December).
      * @throws std::runtime_error If the input string does not match any month abbreviation.
      **/
-    __host__ [[nodiscard]] host::label_t monthIndex(const name_t &monthStr)
+    hostFunctionReturnType host::label_t monthIndex(const name_t &monthStr)
     {
         // Map month abbreviations to numbers
         const words_t months{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -172,7 +172,7 @@ namespace LBM
      * @details Uses the predefined __DATE__ and __TIME__ macros to determine compilation time.
      * @return Formatted timestamp string (YYYY-MM-DD HH:MM:SS).
      **/
-    __host__ [[nodiscard]] const name_t compileTimestamp()
+    hostFunctionReturnType const name_t compileTimestamp()
     {
         const name_t date = __DATE__;
         const name_t time = __TIME__;
@@ -199,7 +199,7 @@ namespace LBM
      * @return The value of the environment variable, or the default value if it is not set.
      **/
     template <const bool verboseOutput = false>
-    __host__ [[nodiscard]] const name_t getEnvironmentVariable(const name_t &envVariable, const name_t &defaultName)
+    hostFunctionReturnType const name_t getEnvironmentVariable(const name_t &envVariable, const name_t &defaultName)
     {
         const char *const env_ptr = std::getenv(envVariable.c_str());
 
@@ -229,7 +229,7 @@ namespace LBM
      * @throws std::runtime_error If the environment variable is not set.
      **/
     template <const bool verboseOutput = false>
-    __host__ [[nodiscard]] const name_t getEnvironmentVariable(const name_t &envVariable)
+    hostFunctionReturnType const name_t getEnvironmentVariable(const name_t &envVariable)
     {
         const char *const env_ptr = std::getenv(envVariable.c_str());
 
@@ -245,6 +245,134 @@ namespace LBM
         }
 
         return env_ptr;
+    }
+
+    /**
+     * @brief Pair of architecture and LTO flags built from the same architecture version.
+     */
+    struct flagPair
+    {
+        const name_t arch;
+        const name_t lto;
+    };
+
+    /**
+     * @brief Extracts the architecture version string from a device properties struct.
+     * @param[in] props Device properties struct
+     **/
+    template <typename PropT>
+    hostFunctionReturnType const name_t archVersionFromProps(const PropT &props)
+    {
+        if constexpr (requires { props.gcnArchName; })
+        {
+            return name_t{std::string{props.gcnArchName}};
+        }
+        else
+        {
+            return name_t{std::to_string(props.major) + std::to_string(props.minor)};
+        }
+    }
+
+    /**
+     * @brief Constructs a generic flag string (either "sm" or "lto")
+     * @param[in] archVersion String representation of the architecture flag
+     * @param[in] codeArg Either "sm" or "lto"
+     **/
+    hostFunctionReturnType const name_t flagString(const name_t &archVersion, const name_t &codeArg)
+    {
+        if constexpr (deviceType::v == AMD)
+        {
+            return "--offload-arch=" + archVersion;
+        }
+
+        if constexpr (deviceType::v == NVIDIA)
+        {
+            return "-gencode arch=compute_" + archVersion + ",code=" + codeArg + "_" + archVersion;
+        }
+    }
+
+    /**
+     * @brief Constructs a generic flag from a device properties struct.
+     * @param[in] props Device properties struct
+     * @param[in] codeArg Either "sm" or "lto"
+     **/
+    template <typename PropT>
+    hostFunctionReturnType const name_t flagFromProps(const PropT &props, const name_t &codeArg)
+    {
+        return flagString(archVersionFromProps(props), codeArg);
+    }
+
+    /**
+     * @brief Constructs the architecture flag used for compilation from a given string
+     * @param[in] archVersion String representation of the architecture flag
+     **/
+    hostFunctionReturnType const name_t archFlag(const name_t &archVersion)
+    {
+        return flagString(archVersion, "sm");
+    }
+
+    template <typename PropT>
+    hostFunctionReturnType const name_t archFlagImpl(const PropT &props)
+    {
+        return flagFromProps(props, "sm");
+    }
+
+    /**
+     * @brief Constructs the architecture flag used for compilation from a given device properties struct
+     * @param[in] props Device properties struct
+     **/
+    hostFunctionReturnType const name_t archFlag(const deviceProp_t &props)
+    {
+        return archFlagImpl(props);
+    }
+
+    /**
+     * @brief Constructs the lto flag used for compilation from a given string
+     * @param[in] archVersion String representation of the lto flag
+     **/
+    hostFunctionReturnType const name_t ltoFlag(const name_t &archVersion)
+    {
+        return flagString(archVersion, "lto");
+    }
+
+    template <typename PropT>
+    hostFunctionReturnType const name_t ltoFlagImpl(const PropT &props)
+    {
+        return flagFromProps(props, "lto");
+    }
+
+    /**
+     * @brief Constructs the lto flag used for compilation from a given device properties struct
+     * @param[in] props Device properties struct
+     **/
+    hostFunctionReturnType const name_t ltoFlag(const deviceProp_t &props)
+    {
+        return ltoFlagImpl(props);
+    }
+
+    /**
+     * @brief Constructs both the architecture and lto flags from a given string
+     * @param[in] archVersion String representation of the architecture version
+     **/
+    hostFunctionReturnType const flagPair flags(const name_t &archVersion)
+    {
+        return {flagString(archVersion, "sm"), flagString(archVersion, "lto")};
+    }
+
+    template <typename PropT>
+    hostFunctionReturnType const flagPair flagsImpl(const PropT &props)
+    {
+        const name_t archVersion = archVersionFromProps(props);
+        return {flagString(archVersion, "sm"), flagString(archVersion, "lto")};
+    }
+
+    /**
+     * @brief Constructs both the architecture and lto flags from a given device properties struct
+     * @param[in] props Device properties struct
+     **/
+    hostFunctionReturnType const flagPair flags(const deviceProp_t &props)
+    {
+        return flagsImpl(props);
     }
 }
 
