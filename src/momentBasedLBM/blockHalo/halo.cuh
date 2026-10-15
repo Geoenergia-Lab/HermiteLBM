@@ -105,20 +105,17 @@ namespace LBM
              * neighboring blocks to read.
              **/
             __device__ static inline constexpr void save(
-                thread::array<scalar_t, VelocitySet::Q()> &pop,
                 const momentsArray &moments,
                 const device::ptrCollection<6, scalar_t> &writeBuffer,
                 const thread::coordinate &Tx,
                 const block::coordinate &Bx,
                 const device::pointCoordinate &point) noexcept
             {
-                VelocitySet::reconstruct<false>(pop, moments);
+                save_direction<axis::X>(moments, writeBuffer, Tx, Bx, point);
 
-                save_direction<axis::X>(pop, writeBuffer, Tx, Bx, point);
+                save_direction<axis::Y>(moments, writeBuffer, Tx, Bx, point);
 
-                save_direction<axis::Y>(pop, writeBuffer, Tx, Bx, point);
-
-                save_direction<axis::Z>(pop, writeBuffer, Tx, Bx, point);
+                save_direction<axis::Z>(moments, writeBuffer, Tx, Bx, point);
             }
 
 #include "haloSharedMemoryOperations.cuh"
@@ -131,7 +128,7 @@ namespace LBM
              * @param[in] i The index of the velocity
              **/
             template <const axis::type alpha, const int coeff>
-            __device__ [[nodiscard]] static inline consteval device::label_t streaming_index(const device::label_t i) noexcept
+            deviceFunctionReturnType static inline consteval device::label_t streaming_index(const device::label_t i) noexcept
             {
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -150,7 +147,7 @@ namespace LBM
              * @return True if the thread is at the specified block boundary and not at the domain edge (if non-periodic)
              **/
             template <const axis::type alpha, const int coeff, const bool isPeriodic>
-            __device__ [[nodiscard]] static inline constexpr bool boundaryCheck(const device::label_t alpha_v, const thread::coordinate &Tx) noexcept
+            deviceFunctionReturnType static inline constexpr bool boundaryCheck(const device::label_t alpha_v, const thread::coordinate &Tx) noexcept
             {
                 if constexpr (coeff == -1)
                 {
@@ -184,7 +181,7 @@ namespace LBM
              * @param[in] t The thread coordinate
              **/
             template <const int coeff>
-            __device__ [[nodiscard]] static inline constexpr device::label_t thread_stencil(const blockStencil &dt, const device::label_t t) noexcept
+            deviceFunctionReturnType static inline constexpr device::label_t thread_stencil(const blockStencil &dt, const device::label_t t) noexcept
             {
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::CAN_BE_NULL>();
 
@@ -213,7 +210,7 @@ namespace LBM
              * @param[in] b The current block
              **/
             template <const axis::type alpha, const int coeff>
-            __device__ [[nodiscard]] static inline constexpr device::label_t block_stencil(const device::label_t t, const device::label_t b_shifted, const device::label_t b) noexcept
+            deviceFunctionReturnType static inline constexpr device::label_t block_stencil(const device::label_t t, const device::label_t b_shifted, const device::label_t b) noexcept
             {
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -320,11 +317,11 @@ namespace LBM
                 const block::coordinate &Bx,
                 const device::pointCoordinate &point) noexcept
             {
-                if (boundaryCheck<alpha, -1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
+                if (boundaryCheck<alpha, -1, BoundaryConditions::template periodic<alpha>()>(point.value<alpha>(), Tx))
                 {
                     pull_face<alpha, +1>(pop, readBuffer, Tx, Bx);
                 }
-                else if (boundaryCheck<alpha, +1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
+                else if (boundaryCheck<alpha, +1, BoundaryConditions::template periodic<alpha>()>(point.value<alpha>(), Tx))
                 {
                     pull_face<alpha, -1>(pop, readBuffer, Tx, Bx);
                 }
@@ -342,7 +339,7 @@ namespace LBM
              **/
             template <const axis::type alpha, const int coeff>
             __device__ static inline constexpr void save_face(
-                const thread::array<scalar_t, VelocitySet::Q()> &pop,
+                const momentsArray &moments,
                 const device::ptrCollection<6, scalar_t> &writeBuffer,
                 const thread::coordinate &Tx,
                 const block::coordinate &Bx) noexcept
@@ -359,7 +356,7 @@ namespace LBM
                             Tx.value<axis::orthogonal<alpha, 1>()>(),
                             Bx.value<axis::X>(),
                             Bx.value<axis::Y>(),
-                            Bx.value<axis::Z>())] = pop[q_i<streaming_index<alpha, coeff>(i)>()];
+                            Bx.value<axis::Z>())] = VelocitySet::template reconstruct<streaming_index<alpha, coeff>(i)>(moments);
                     });
             }
 
@@ -374,19 +371,19 @@ namespace LBM
              **/
             template <const axis::type alpha>
             __device__ static inline constexpr void save_direction(
-                const thread::array<scalar_t, VelocitySet::Q()> &pop,
+                const momentsArray &moments,
                 const device::ptrCollection<6, scalar_t> &writeBuffer,
                 const thread::coordinate &Tx,
                 const block::coordinate &Bx,
                 const device::pointCoordinate &point) noexcept
             {
-                if (boundaryCheck<alpha, -1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
+                if (boundaryCheck<alpha, -1, BoundaryConditions::template periodic<alpha>()>(point.value<alpha>(), Tx))
                 {
-                    save_face<alpha, -1>(pop, writeBuffer, Tx, Bx);
+                    save_face<alpha, -1>(moments, writeBuffer, Tx, Bx);
                 }
-                else if (boundaryCheck<alpha, +1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
+                else if (boundaryCheck<alpha, +1, BoundaryConditions::template periodic<alpha>()>(point.value<alpha>(), Tx))
                 {
-                    save_face<alpha, +1>(pop, writeBuffer, Tx, Bx);
+                    save_face<alpha, +1>(moments, writeBuffer, Tx, Bx);
                 }
             }
         };

@@ -76,13 +76,13 @@ namespace LBM
         /**
          * @brief Default constructor (consteval)
          **/
-        __device__ __host__ [[nodiscard]] inline consteval velocitySet() noexcept {}
+        devicehostFunctionReturnType inline consteval velocitySet() noexcept {}
 
         /**
          * @brief Calculates the diagonal correction term for the isothermal velocity set
          * @param[in] moments Moment array (rho, U, Pi)
          **/
-        __device__ __host__ [[nodiscard]] static inline constexpr const thread::array<const scalar_t, 3> diagonal_term(const momentsArray &moments) noexcept
+        devicehostFunctionReturnType static inline constexpr const thread::array<const scalar_t, 3> diagonal_term(const momentsArray &moments) noexcept
         {
             const scalar_t Delta_m = (moments[q_i<1>()] * moments[q_i<1>()] + moments[q_i<2>()] * moments[q_i<2>()] + moments[q_i<3>()] * moments[q_i<3>()] - moments[q_i<4>()] - moments[q_i<7>()] - moments[q_i<9>()]) / static_cast<scalar_t>(3);
 
@@ -99,7 +99,7 @@ namespace LBM
          * @return The calculated moment value
          **/
         template <const axis::type alpha, const axis::type beta, typename... Args>
-        __device__ __host__ [[nodiscard]] static inline constexpr scalar_t calculate_moment(const thread::array<scalar_t, Lattice::Q()> &pop, Args &&...args) noexcept
+        devicehostFunctionReturnType static inline constexpr scalar_t calculate_moment(const thread::array<scalar_t, Lattice::Q()> &pop, Args &&...args) noexcept
         {
             constexpr const thread::array<int, Lattice::Q()> c_AB = c_product<alpha, beta>();
             constexpr const host::label_t N = c_AB.number_non_zero();
@@ -156,7 +156,7 @@ namespace LBM
          * @return Indices of the distribution on a specific face
          **/
         template <const axis::type alpha, const int coeff>
-        __device__ __host__ [[nodiscard]] static inline consteval thread::array<host::label_t, Lattice::template QF<host::label_t>()> indices_on_face() noexcept
+        devicehostFunctionReturnType static inline consteval thread::array<host::label_t, Lattice::template QF<host::label_t>()> indices_on_face() noexcept
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -184,7 +184,7 @@ namespace LBM
          * @param[in] moments Moment array (rho, U, Pi)
          **/
         template <const host::label_t i>
-        __device__ __host__ [[nodiscard]] static inline constexpr scalar_t sum_moments(const ThermoModel &thermo, const momentsArray &moments) noexcept
+        devicehostFunctionReturnType static inline constexpr scalar_t sum_moments(const ThermoModel &thermo, const momentsArray &moments) noexcept
         {
             return [&]<host::label_t... Is>(std::index_sequence<Is...>)
             {
@@ -194,29 +194,50 @@ namespace LBM
 
         /**
          * @brief Calculate the regularized distribution function from the moments
-         * @tparam CalculateRest Whether to calculate the rest population (f_0) or not
          * @param[out] pop The distribution function array
          * @param[in] moments Moment array (rho, U, Pi)
          **/
-        template <const bool CalculateRest = true>
-        __device__ __host__ static inline constexpr void reconstruct(
-            thread::array<scalar_t, Lattice::Q()> &pop,
-            const momentsArray &moments) noexcept
+        __device__ __host__ static inline constexpr void reconstruct(thread::array<scalar_t, Lattice::Q()> &pop, const momentsArray &moments) noexcept
+        {
+            // Loop over the non-rest populations
+            device::constexpr_for<0, This::Q()>(
+                [&](const auto i)
+                {
+                    reconstruct<i>(pop, moments);
+                });
+        }
+
+        /**
+         * @brief Reconstruct a specific population from a given set of moments
+         * @tparam i The index of the population to reconstruct
+         * @param[out] pop The distribution function array
+         * @param[in] moments Moment array (rho, U, Pi)
+         **/
+        template <const device::label_t i>
+        __device__ __host__ static inline constexpr void reconstruct(thread::array<scalar_t, Lattice::Q()> &pop, const momentsArray &moments) noexcept
+        {
+            pop[q_i<i>()] = reconstruct<i>(moments);
+        }
+
+        /**
+         * @brief Reconstruct a specific population from a given set of moments
+         * @tparam i The index of the population to reconstruct
+         * @return The distribution function value for the specified population index
+         * @param[in] moments Moment array (rho, U, Pi)
+         **/
+        template <const device::label_t i>
+        devicehostFunctionReturnType static inline constexpr scalar_t reconstruct(const momentsArray &moments) noexcept
         {
             const ThermoModel thermo(moments);
 
-            if constexpr (CalculateRest)
+            if constexpr (i == 0)
             {
-                pop[q_i<0>()] = moments[m_i<0>()] * Lattice::template w_0<scalar_t>() * thermo.pics2();
+                return moments[m_i<0>()] * Lattice::template w_0<const scalar_t>() * thermo.pics2();
             }
-            const thread::array<const scalar_t, This::nPerm()> rho_w = This::rhow(moments[m_i<0>()]);
-
-            // Loop over the non-rest populations
-            device::constexpr_for<1, This::Q()>(
-                [&](const auto i)
-                {
-                    pop[q_i<i>()] = This::rhow<i>(rho_w) * (thermo.pics2() + This::template sum_moments<i>(thermo, moments));
-                });
+            else
+            {
+                return moments[m_i<0>()] * Lattice::template weight<const scalar_t, i>() * (thermo.pics2() + This::template sum_moments<i>(thermo, moments));
+            }
         }
 
     private:
@@ -248,7 +269,7 @@ namespace LBM
          * @tparam i The moment index
          **/
         template <const host::label_t i>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<int, 10> C() noexcept
+        devicehostFunctionReturnType static inline consteval const thread::array<int, 10> C() noexcept
         {
             return {static_cast<int>(0), c_product<axis::X>()[i], c_product<axis::Y>()[i], c_product<axis::Z>()[i], c_product<axis::X, axis::X>()[i], c_product<axis::X, axis::Y>()[i], c_product<axis::X, axis::Z>()[i], c_product<axis::Y, axis::Y>()[i], c_product<axis::Y, axis::Z>()[i], c_product<axis::Z, axis::Z>()[i]};
         }
@@ -272,7 +293,7 @@ namespace LBM
          * Returns 1 only if no incoming component is detected on any axis
          **/
         template <typename T, class BoundaryNormal, const device::label_t q_>
-        __device__ __host__ [[nodiscard]] static inline constexpr T is_incoming(const q_i<q_> q, const BoundaryNormal &boundaryNormal) noexcept
+        devicehostFunctionReturnType static inline constexpr T is_incoming(const q_i<q_> q, const BoundaryNormal &boundaryNormal) noexcept
         {
             // boundaryNormal.x > 0  => EAST boundary
             // boundaryNormal.x < 0  => WEST boundary
@@ -294,7 +315,7 @@ namespace LBM
          * @tparam Axes The axis directions (X, Y, Z or NULL)
          **/
         template <const axis::type... Axes>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<int, Lattice::Q()> c_product() noexcept
+        devicehostFunctionReturnType static inline consteval const thread::array<int, Lattice::Q()> c_product() noexcept
         {
             static_assert(sizeof...(Axes) <= 3, "c_product supports at most three axes.");
 
@@ -320,7 +341,7 @@ namespace LBM
          * @return Plus or minus pop_value depending on the value of coeff
          **/
         template <const int coeff>
-        __device__ __host__ [[nodiscard]] static inline constexpr scalar_t process_momentum_element(const scalar_t pop_value) noexcept
+        devicehostFunctionReturnType static inline constexpr scalar_t process_momentum_element(const scalar_t pop_value) noexcept
         {
             velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
@@ -345,7 +366,7 @@ namespace LBM
          * @return Plus or minus pop_value depending on the value of coeff
          **/
         template <const int coeff, const device::label_t I, class BoundaryNormal>
-        __device__ __host__ [[nodiscard]] static inline constexpr scalar_t process_momentum_element(const scalar_t pop_value, const BoundaryNormal &boundaryNormal) noexcept
+        devicehostFunctionReturnType static inline constexpr scalar_t process_momentum_element(const scalar_t pop_value, const BoundaryNormal &boundaryNormal) noexcept
         {
             velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
@@ -368,7 +389,7 @@ namespace LBM
          * @return True if the lattice coefficient is negative, false otherwise
          **/
         template <const axis::type alpha, const device::label_t q_>
-        __device__ __host__ [[nodiscard]] static inline consteval bool is_negative(const q_i<q_> q) noexcept
+        devicehostFunctionReturnType static inline consteval bool is_negative(const q_i<q_> q) noexcept
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -383,7 +404,7 @@ namespace LBM
          * @return True if the lattice coefficient is positive, false otherwise
          **/
         template <const axis::type alpha, const device::label_t q_>
-        __device__ __host__ [[nodiscard]] static inline consteval bool is_positive(const q_i<q_> q) noexcept
+        devicehostFunctionReturnType static inline consteval bool is_positive(const q_i<q_> q) noexcept
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -396,7 +417,7 @@ namespace LBM
          * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
          **/
         template <const int coeff>
-        __host__ [[nodiscard]] static inline consteval const char *c_str() noexcept
+        hostFunctionReturnType static inline consteval const char *c_str() noexcept
         {
             if constexpr (coeff == 0)
             {

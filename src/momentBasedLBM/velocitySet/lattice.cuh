@@ -63,7 +63,7 @@ namespace LBM
          * @tparam T The underlying type of the array
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, 3> validQ() noexcept
+        devicehostFunctionReturnType static inline consteval const thread::array<T, 3> validQ() noexcept
         {
             return {static_cast<T>(7), static_cast<T>(19), static_cast<T>(27)};
         }
@@ -123,7 +123,7 @@ namespace LBM
          * @tparam T The return type
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval T w_0() noexcept
+        devicehostFunctionReturnType static inline consteval T w_0() noexcept
         {
             if constexpr (Q_ == 27)
             {
@@ -141,7 +141,7 @@ namespace LBM
          * @tparam T The return type
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval T w_1() noexcept
+        devicehostFunctionReturnType static inline consteval T w_1() noexcept
         {
             if constexpr (Q_ == 27)
             {
@@ -159,7 +159,7 @@ namespace LBM
          * @tparam T The return type
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval T w_2() noexcept
+        devicehostFunctionReturnType static inline consteval T w_2() noexcept
         {
             if constexpr (Q_ == 27)
             {
@@ -177,7 +177,7 @@ namespace LBM
          * @tparam T The return type
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval T w_3() noexcept
+        devicehostFunctionReturnType static inline consteval T w_3() noexcept
         {
             if constexpr (Q_ == 27)
             {
@@ -196,9 +196,20 @@ namespace LBM
          * @return Thread array of 27 weights in D3Q27 order
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, Q_> w_q() noexcept
+        devicehostFunctionReturnType static inline consteval const thread::array<T, Q_> w_q() noexcept
         {
             return make_first_Q<T>(w_impl<T>());
+        }
+
+        /**
+         * @brief Get a specific weight for a given lattice index
+         * @tparam T The underlying data type of the array
+         * @tparam i The lattice index
+         **/
+        template <typename T, const device::label_t i>
+        devicehostFunctionReturnType static inline consteval T weight() noexcept
+        {
+            return w_q<T>()[i];
         }
 
         /**
@@ -207,7 +218,7 @@ namespace LBM
          * @tparam alpha The axis (X, Y or Z)
          **/
         template <typename T, const axis::type alpha>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, Q_> c() noexcept
+        devicehostFunctionReturnType static inline consteval const thread::array<T, Q_> c() noexcept
         {
             return make_first_Q<T>(c_base_impl<T, alpha>());
         }
@@ -220,7 +231,7 @@ namespace LBM
          * @param[in] q The lattice index
          **/
         template <typename T, const axis::type alpha, const device::label_t q_>
-        __device__ __host__ [[nodiscard]] static inline consteval T c(const q_i<q_> q) noexcept
+        devicehostFunctionReturnType static inline consteval T c(const q_i<q_> q) noexcept
         {
             return c<T, alpha>()[q];
         }
@@ -230,7 +241,7 @@ namespace LBM
          * @tparam T The return type
          **/
         template <typename T = host::label_t>
-        __device__ __host__ [[nodiscard]] static inline consteval T Q() noexcept
+        devicehostFunctionReturnType static inline consteval T Q() noexcept
         {
             return Q_;
         }
@@ -240,7 +251,7 @@ namespace LBM
          * @tparam T The return type
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval T QF() noexcept
+        devicehostFunctionReturnType static inline consteval T QF() noexcept
         {
             return make_first_Q<int>(cx_base<int>()).template count<1, true>();
         }
@@ -255,7 +266,7 @@ namespace LBM
          * @return A thread::array containing the first N elements of the input array
          **/
         template <typename T, const host::label_t N, const host::label_t M>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, N> make_first_N(const thread::array<T, M> &arr) noexcept
+        devicehostFunctionReturnType static inline consteval const thread::array<T, N> make_first_N(const thread::array<T, M> &arr) noexcept
         {
             return [&]<const host::label_t... Is>(const std::index_sequence<Is...>)
             {
@@ -270,7 +281,7 @@ namespace LBM
          * @return A thread::array containing the first Q_ elements of the input array
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, Q_> make_first_Q(const thread::array<T, 27> &arr) noexcept
+        devicehostFunctionReturnType static inline consteval const thread::array<T, Q_> make_first_Q(const thread::array<T, 27> &arr) noexcept
         {
             return make_first_N<T, Q_>(arr);
         }
@@ -281,7 +292,7 @@ namespace LBM
          * @tparam alpha The axis direction (X, Y or Z)
          **/
         template <typename T, const axis::type alpha>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, 27> c_base_impl() noexcept
+        devicehostFunctionReturnType static inline consteval const thread::array<T, 27> c_base_impl() noexcept
         {
             axis::assertions::validate<alpha, axis::CAN_BE_NULL>();
 
@@ -310,7 +321,7 @@ namespace LBM
          * @return Thread array of 27 weights in D3Q27 order
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, 27> w_impl() noexcept
+        devicehostFunctionReturnType static inline consteval const thread::array<T, 27> w_impl() noexcept
         {
             return {w_0<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>()};
         }
@@ -321,7 +332,7 @@ namespace LBM
          * @return Thread array of 27 x-velocity components
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, 27> cx_base() noexcept
+        devicehostFunctionReturnType static inline consteval const thread::array<T, 27> cx_base() noexcept
         {
             return {static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(-1), static_cast<T>(1)};
         }
@@ -332,7 +343,7 @@ namespace LBM
          * @return Thread array of 27 y-velocity components
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, 27> cy_base() noexcept
+        devicehostFunctionReturnType static inline consteval const thread::array<T, 27> cy_base() noexcept
         {
             return {static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(1), static_cast<T>(-1)};
         }
@@ -343,7 +354,7 @@ namespace LBM
          * @return Thread array of 27 z-velocity components
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, 27> cz_base() noexcept
+        devicehostFunctionReturnType static inline consteval const thread::array<T, 27> cz_base() noexcept
         {
             return {static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(1), static_cast<T>(-1), static_cast<T>(1), static_cast<T>(-1)};
         }

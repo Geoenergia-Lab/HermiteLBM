@@ -63,46 +63,39 @@ namespace LBM
         /**
          * @brief Switch determining whether or not the boundary condition actually applies a condition
          **/
-        __device__ __host__ [[nodiscard]] static inline consteval bool appliesCondition() noexcept { return true; }
+        devicehostFunctionReturnType static inline consteval bool appliesCondition() noexcept { return true; }
 
         /**
          * @brief Public method to calculate the post-streaming methods and update boundary conditions
          **/
-        template <class VelocitySet, class SharedBuffer>
+        template <class VelocitySet>
         __device__ static inline constexpr void calculate_moments(
-            const thread::array<scalar_t, VelocitySet::Q()> &pop,
             momentsArray &moments,
-            SharedBuffer &sharedBuffer,
+            blockSharedBuffer &sharedBuffer,
             const thread::coordinate &Tx,
             const device::pointCoordinate &point,
-            const device::label_t tid) noexcept
+            const device::label_t tid,
+            const NormalVector &boundaryNormal) noexcept
         {
-            // Compute post-stream moments
-            VelocitySet::template calculate_moments(moments, pop);
-
             // Update the shared buffer with the refreshed moments
             device::constexpr_for<0, NUMBER_MOMENTS()>(
                 [&](const auto moment)
                 {
-                    const device::label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
+                    const device::label_t ID = tid * label_constant<NUMBER_MOMENTS()>() + label_constant<moment>();
                     sharedBuffer[ID] = moments[moment];
                 });
 
             block::sync();
 
-            // Calculate the moments at the boundary
-
-            const NormalVector boundaryNormal(point);
-
             if (boundaryNormal.isBoundary())
             {
-                calculate_moments<VelocitySet>(pop, moments, boundaryNormal, sharedBuffer, Tx, point);
+                calculate_moments<VelocitySet>(moments, boundaryNormal, sharedBuffer, Tx, point);
             }
         }
 
     private:
-        template <const bool FixDensity, class SharedBuffer>
-        __device__ static inline constexpr void smemNeumann(momentsArray &moments, const device::label_t tidOutlet, const SharedBuffer &sharedBuffer) noexcept
+        template <const bool FixDensity>
+        __device__ static inline constexpr void smemNeumann(momentsArray &moments, const device::label_t tidOutlet, const blockSharedBuffer &sharedBuffer) noexcept
         {
             if constexpr (FixDensity)
             {
@@ -110,7 +103,7 @@ namespace LBM
                 device::constexpr_for<1, NUMBER_MOMENTS()>(
                     [&](const auto moment)
                     {
-                        moments[m_i<moment>()] = sharedBuffer[tidOutlet * (NUMBER_MOMENTS() + 1) + m_i<moment>()];
+                        moments[m_i<moment>()] = sharedBuffer[tidOutlet * (NUMBER_MOMENTS()) + m_i<moment>()];
                     });
             }
             else
@@ -118,7 +111,7 @@ namespace LBM
                 device::constexpr_for<0, NUMBER_MOMENTS()>(
                     [&](const auto moment)
                     {
-                        moments[m_i<moment>()] = sharedBuffer[tidOutlet * (NUMBER_MOMENTS() + 1) + m_i<moment>()];
+                        moments[m_i<moment>()] = sharedBuffer[tidOutlet * (NUMBER_MOMENTS()) + m_i<moment>()];
                     });
             }
         }
@@ -130,24 +123,23 @@ namespace LBM
          * @param[out] moments Moment array (rho, U, Pi)
          * @param[in] boundaryNormal Normal vector information at boundary node
          **/
-        template <class VelocitySet, class SharedBuffer>
+        template <class VelocitySet>
         __device__ static inline constexpr void calculate_moments(
-            const thread::array<scalar_t, VelocitySet::Q()> &pop,
             momentsArray &moments,
             const NormalVector &boundaryNormal,
-            const SharedBuffer &sharedBuffer,
+            const blockSharedBuffer &sharedBuffer,
             const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept
         {
 #include "jetBoundaryCondition.cuh"
         }
 
-        __device__ [[nodiscard]] static inline scalar_t center_x() noexcept
+        deviceFunctionReturnType static inline scalar_t center_x() noexcept
         {
             return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::n<axis::X>() - 1);
         }
 
-        __device__ [[nodiscard]] static inline scalar_t center_y() noexcept
+        deviceFunctionReturnType static inline scalar_t center_y() noexcept
         {
             return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::n<axis::Y>() - 1);
         }
@@ -156,22 +148,22 @@ namespace LBM
 
         static constexpr const scalar_t pi = static_cast<scalar_t>(std::numbers::pi);
 
-        __device__ [[nodiscard]] static inline scalar_t dudx(const scalar_t x, const scalar_t y) noexcept
+        deviceFunctionReturnType static inline scalar_t dudx(const scalar_t x, const scalar_t y) noexcept
         {
             return -(x * (std::exp(-pow<2>(device::L_char - static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)) - std::exp(-pow<2>(device::L_char + static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)))) / (std::sqrt(sigma) * std::sqrt(pi) * std::erf(device::L_char / (static_cast<scalar_t>(2) * std::sqrt(sigma))) * std::sqrt(pow<2>(x) + pow<2>(y)));
         }
 
-        __device__ [[nodiscard]] static inline scalar_t dudy(const scalar_t x, const scalar_t y) noexcept
+        deviceFunctionReturnType static inline scalar_t dudy(const scalar_t x, const scalar_t y) noexcept
         {
             return -(y * (std::exp(-pow<2>(device::L_char - static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)) - std::exp(-pow<2>(device::L_char + static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)))) / (std::sqrt(sigma) * std::sqrt(pi) * std::erf(device::L_char / (static_cast<scalar_t>(2) * std::sqrt(sigma))) * std::sqrt(pow<2>(x) + pow<2>(y)));
         }
 
-        __device__ [[nodiscard]] static inline scalar_t radius() noexcept
+        deviceFunctionReturnType static inline scalar_t radius() noexcept
         {
             return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::L_char);
         }
 
-        __device__ [[nodiscard]] static inline scalar_t r2() noexcept
+        deviceFunctionReturnType static inline scalar_t r2() noexcept
         {
             return radius() * radius();
         }

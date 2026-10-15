@@ -63,12 +63,12 @@ namespace LBM
          * @tparam T Return type
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] inline consteval T nx() noexcept
+        devicehostFunctionReturnType inline consteval T nx() noexcept
         {
 #ifdef SCALAR_PRECISION
             types::assertions::validate<scalar_t>();
 
-            return 8 * sizeof(float) / (sizeof(scalar_t));
+            return 16 * sizeof(float) / (sizeof(scalar_t));
 #else
             return 8;
 #endif
@@ -79,7 +79,7 @@ namespace LBM
          * @tparam T Return type
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] inline consteval T ny() noexcept
+        devicehostFunctionReturnType inline consteval T ny() noexcept
         {
 #ifdef SCALAR_PRECISION
             types::assertions::validate<scalar_t>();
@@ -95,7 +95,7 @@ namespace LBM
          * @tparam T Return type
          **/
         template <typename T>
-        __device__ __host__ [[nodiscard]] inline consteval T nz() noexcept
+        devicehostFunctionReturnType inline consteval T nz() noexcept
         {
 #ifdef SCALAR_PRECISION
             types::assertions::validate<scalar_t>();
@@ -112,7 +112,7 @@ namespace LBM
          * @tparam T Return type
          **/
         template <const axis::type alpha, typename T = device::label_t>
-        __device__ __host__ [[nodiscard]] inline consteval T n() noexcept
+        devicehostFunctionReturnType inline consteval T n() noexcept
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -124,55 +124,15 @@ namespace LBM
          * @tparam T Return type
          **/
         template <typename T = device::label_t>
-        __device__ __host__ [[nodiscard]] inline consteval T size() noexcept
+        devicehostFunctionReturnType inline consteval T size() noexcept
         {
             return nx<T>() * ny<T>() * nz<T>();
         }
 
         /**
-         * @brief Padding for the shared memory
-         * @tparam T Return type
-         **/
-        template <typename T = device::label_t>
-        __device__ __host__ [[nodiscard]] inline consteval T padding() noexcept
-        {
-            return 33;
-        }
-
-        /**
-         * @brief Stride for the shared memory
-         * @tparam T Return type
-         **/
-        template <typename T = device::label_t>
-        __device__ __host__ [[nodiscard]] inline consteval T stride() noexcept
-        {
-            return size<T>() + padding<T>();
-        }
-
-        /**
-         * @brief Total size of the shared memory
-         * @tparam Q Number of velocity coefficients of the lattice
-         * @tparam nVars Number of moment variables
-         * @param[in] variableSize Size of the variable
-         **/
-        template <const host::label_t Q, const host::label_t nVars>
-        __device__ __host__ [[nodiscard]] inline consteval host::label_t sharedMemoryBufferSize(const host::label_t variableSize = 1) noexcept
-        {
-            constexpr const host::label_t A = (Q - static_cast<host::label_t>(1)) * block::stride<host::label_t>();
-            constexpr const host::label_t B = block::size<host::label_t>() * (nVars + static_cast<host::label_t>(1));
-
-            if constexpr (Q == 0)
-            {
-                return B * variableSize;
-            }
-
-            return (A > B ? A : B) * variableSize;
-        }
-
-        /**
          * @brief Size of the warp (32)
          **/
-        __device__ __host__ [[nodiscard]] inline consteval device::label_t warp_size() noexcept
+        devicehostFunctionReturnType inline consteval device::label_t warp_size() noexcept
         {
             return 32;
         }
@@ -180,7 +140,7 @@ namespace LBM
         /**
          * @brief Number of warps within the block
          **/
-        __device__ __host__ [[nodiscard]] inline consteval device::label_t n_warps() noexcept
+        devicehostFunctionReturnType inline consteval device::label_t n_warps() noexcept
         {
             return block::size() / warp_size();
         }
@@ -189,7 +149,7 @@ namespace LBM
          * @brief Launch bounds information
          * @note These variables are device specific - enable modification later
          **/
-        __host__ [[nodiscard]] inline consteval device::label_t maxThreads() noexcept
+        hostFunctionReturnType inline consteval device::label_t maxThreads() noexcept
         {
             return block::nx<device::label_t>() * block::ny<device::label_t>() * block::nz<device::label_t>();
         }

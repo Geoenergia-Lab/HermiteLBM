@@ -158,33 +158,33 @@ namespace LBM
             std::cout << "};" << std::endl;
         }
 
-        __host__ void dfdx_v2(
-            const host::arrayCollection<scalar_t> &variables,
-            const host::latticeMesh &mesh,
-            const host::label_t timeStep,
-            [[maybe_unused]] int &status,
-            const name_t &fileName) noexcept
-        {
-            const std::vector<std::vector<scalar_t>> fields = variables.splitFieldsRaw(mesh);
+        // __host__ void dfdx_v2(
+        //     const host::arrayCollection<scalar_t> &variables,
+        //     const host::latticeMesh &mesh,
+        //     const host::label_t timeStep,
+        //     [[maybe_unused]] int &status,
+        //     const name_t &fileName) noexcept
+        // {
+        //     const std::vector<std::vector<scalar_t>> fields = variables.splitFieldsRaw(mesh);
 
-            std::cout << "Time: " << timeStep << std::endl;
-            std::cout << "{" << std::endl;
+        //     std::cout << "Time: " << timeStep << std::endl;
+        //     std::cout << "{" << std::endl;
 
-            std::vector<std::vector<scalar_t>> result;
-            for (host::label_t field = 0; field < fields.size(); field++)
-            {
-                result.push_back(numericalSchemes::derivative::dfdx_v2<scalar_t>(fields[field], mesh));
-            }
+        //     std::vector<std::vector<scalar_t>> result;
+        //     for (host::label_t field = 0; field < fields.size(); field++)
+        //     {
+        //         result.push_back(numericalSchemes::derivative::dfdx_v2<scalar_t>(fields[field], mesh));
+        //     }
 
-            constexpr const char *suffix = "_dx";
-            const std::string outputName = "d" + fileName + suffix;
+        //     constexpr const char *suffix = "_dx";
+        //     const std::string outputName = "d" + fileName + suffix;
 
-            postProcess::LBMBin::write(outputName, mesh, string::catenate("d", string::catenate(variables.varNames(), "_dx")), result, timeStep);
+        //     postProcess::LBMBin::write(outputName, mesh, string::catenate("d", string::catenate(variables.varNames(), "_dx")), result, timeStep);
 
-            std::cout << IO::whitespace<4>{} << "Written d" << fileName << "/dx to " << outputName << std::endl;
+        //     std::cout << IO::whitespace<4>{} << "Written d" << fileName << "/dx to " << outputName << std::endl;
 
-            std::cout << "};" << std::endl;
-        }
+        //     std::cout << "};" << std::endl;
+        // }
     }
 }
 

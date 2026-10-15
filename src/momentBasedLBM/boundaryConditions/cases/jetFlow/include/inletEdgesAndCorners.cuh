@@ -64,7 +64,7 @@ case normalVectorBase::SOUTH_WEST_BACK():
     // moments[0] = rho0();
 
     noSlipVelocityBC::apply<normalVectorBase::SOUTH_WEST_BACK()>(moments);
-    noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_WEST_BACK()>(moments, pop);
+    noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_WEST_BACK()>(moments);
 
     return;
 }
@@ -84,7 +84,7 @@ case normalVectorBase::SOUTH_EAST_BACK():
     // moments[0] = rho0();
 
     noSlipVelocityBC::apply<normalVectorBase::SOUTH_EAST_BACK()>(moments);
-    noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_EAST_BACK()>(moments, pop);
+    noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_EAST_BACK()>(moments);
 
     return;
 }
@@ -104,7 +104,7 @@ case normalVectorBase::NORTH_WEST_BACK():
     // moments[0] = rho0();
 
     noSlipVelocityBC::apply<normalVectorBase::NORTH_WEST_BACK()>(moments);
-    noSlipBC::apply<VelocitySet, normalVectorBase::NORTH_WEST_BACK()>(moments, pop);
+    noSlipBC::apply<VelocitySet, normalVectorBase::NORTH_WEST_BACK()>(moments);
 
     return;
 }
@@ -124,7 +124,7 @@ case normalVectorBase::NORTH_EAST_BACK():
     // moments[0] = rho0();
 
     noSlipVelocityBC::apply<normalVectorBase::NORTH_EAST_BACK()>(moments);
-    noSlipBC::apply<VelocitySet, normalVectorBase::NORTH_EAST_BACK()>(moments, pop);
+    noSlipBC::apply<VelocitySet, normalVectorBase::NORTH_EAST_BACK()>(moments);
 
     return;
 }
@@ -146,7 +146,7 @@ case normalVectorBase::WEST_BACK():
     // moments[0] = rho0();
 
     noSlipVelocityBC::apply<normalVectorBase::WEST_BACK()>(moments);
-    noSlipBC::apply<VelocitySet, normalVectorBase::WEST_BACK()>(moments, pop);
+    noSlipBC::apply<VelocitySet, normalVectorBase::WEST_BACK()>(moments);
 
     return;
 }
@@ -166,7 +166,7 @@ case normalVectorBase::EAST_BACK():
     // moments[0] = rho0();
 
     noSlipVelocityBC::apply<normalVectorBase::EAST_BACK()>(moments);
-    noSlipBC::apply<VelocitySet, normalVectorBase::EAST_BACK()>(moments, pop);
+    noSlipBC::apply<VelocitySet, normalVectorBase::EAST_BACK()>(moments);
 
     return;
 }
@@ -186,7 +186,7 @@ case normalVectorBase::SOUTH_BACK():
     // moments[0] = rho0();
 
     noSlipVelocityBC::apply<normalVectorBase::SOUTH_BACK()>(moments);
-    noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_BACK()>(moments, pop);
+    noSlipBC::apply<VelocitySet, normalVectorBase::SOUTH_BACK()>(moments);
 
     return;
 }
@@ -206,7 +206,7 @@ case normalVectorBase::NORTH_BACK():
     // moments[0] = rho0();
 
     noSlipVelocityBC::apply<normalVectorBase::NORTH_BACK()>(moments);
-    noSlipBC::apply<VelocitySet, normalVectorBase::NORTH_BACK()>(moments, pop);
+    noSlipBC::apply<VelocitySet, normalVectorBase::NORTH_BACK()>(moments);
 
     return;
 }

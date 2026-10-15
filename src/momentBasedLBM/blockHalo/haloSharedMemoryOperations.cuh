@@ -60,7 +60,7 @@ SourceFiles
  *
  * Memory layout: [tz][ty][tx] (tz slowest varying, tx fastest)
  **/
-__device__ __host__ [[nodiscard]] static inline constexpr device::label_t idx_block(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t idx_block(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
 {
     return tx + block::nx<device::label_t>() * (ty + block::ny<device::label_t>() * tz);
 }
@@ -69,7 +69,7 @@ __device__ __host__ [[nodiscard]] static inline constexpr device::label_t idx_bl
  * @overload Passes a pre-constructed thread coordinate
  * @param[in] Tx Three-dimensional thread coordinates
  **/
-__device__ __host__ [[nodiscard]] static inline constexpr device::label_t idx_block(const thread::coordinate &Tx) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t idx_block(const thread::coordinate &Tx) noexcept
 {
     return idx_block(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
 }
@@ -83,7 +83,7 @@ __device__ __host__ [[nodiscard]] static inline constexpr device::label_t idx_bl
  *
  * Memory layout: [tz][ty][tx] (tz slowest varying, tx fastest)
  **/
-__device__ __host__ [[nodiscard]] static inline constexpr device::label_t warpID(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t warpID(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
 {
     return idx_block(tx, ty, tz) / block::warp_size();
 }
@@ -92,7 +92,7 @@ __device__ __host__ [[nodiscard]] static inline constexpr device::label_t warpID
  * @overload Passes a pre-constructed thread coordinate
  * @param[in] Tx Three-dimensional thread coordinates
  **/
-__device__ __host__ [[nodiscard]] static inline constexpr device::label_t warpID(const thread::coordinate &Tx) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t warpID(const thread::coordinate &Tx) noexcept
 {
     return warpID(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
 }
@@ -106,7 +106,7 @@ __device__ __host__ [[nodiscard]] static inline constexpr device::label_t warpID
  *
  * Memory layout: [tz][ty][tx] (tz slowest varying, tx fastest)
  **/
-__device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxWarp(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t idxWarp(const device::label_t tx, const device::label_t ty, const device::label_t tz) noexcept
 {
     return idx_block(tx, ty, tz) % block::warp_size();
 }
@@ -115,7 +115,7 @@ __device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxWar
  * @overload Passes a pre-constructed thread coordinate
  * @param[in] Tx Three-dimensional thread coordinates
  **/
-__device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxWarp(const thread::coordinate &Tx) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t idxWarp(const thread::coordinate &Tx) noexcept
 {
     return idxWarp(Tx.value<axis::X>(), Tx.value<axis::Y>(), Tx.value<axis::Z>());
 }
@@ -127,7 +127,7 @@ __device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxWar
  * @return Linearized face index>
  **/
 template <const axis::type alpha, typename T = device::label_t>
-__device__ __host__ [[nodiscard]] static inline consteval T faceArea() noexcept
+devicehostFunctionReturnType static inline consteval T faceArea() noexcept
 {
     return block::n<axis::orthogonal<alpha, 0>(), T>() * block::n<axis::orthogonal<alpha, 1>(), T>();
 }
@@ -139,7 +139,7 @@ __device__ __host__ [[nodiscard]] static inline consteval T faceArea() noexcept
  * @return Linearized face index>
  **/
 template <const axis::type alpha>
-__device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxFace(const thread::coordinate &Tx) noexcept
+devicehostFunctionReturnType static inline constexpr device::label_t idxFace(const thread::coordinate &Tx) noexcept
 {
     return Tx.value<axis::orthogonal<alpha, 0>()>() + (Tx.value<axis::orthogonal<alpha, 1>()>() * block::n<axis::orthogonal<alpha, 0>()>());
 }
@@ -149,13 +149,12 @@ __device__ __host__ [[nodiscard]] static inline constexpr device::label_t idxFac
  * @tparam alpha The axis direction (X, Y or Z)
  * @tparam coeff The coefficient indicating the direction along the axis (must be -1 or 1)
  * @tparam idxOffset The constant offset into the shared memory for the particular block configuration
- * @tparam SharedBuffer Type of the shared memory buffer
  * @param[in] Tx Three-dimensional thread coordinates
- * @param[in] pop Population density array at current lattice node
+ * @param[in] moments Moments array at current lattice node
  * @param[in] sharedBuffer Inline or externally stored shared memory buffer
  **/
-template <const axis::type alpha, const int coeff, const device::label_t idxOffset, class SharedBuffer>
-__device__ static inline constexpr void transpose(const thread::coordinate &Tx, const thread::array<scalar_t, VelocitySet::Q()> &pop, SharedBuffer &sharedBuffer) noexcept
+template <const axis::type alpha, const int coeff, const device::label_t idxOffset>
+__device__ static inline constexpr void transpose(const thread::coordinate &Tx, const momentsArray &moments, blockSharedBuffer &sharedBuffer) noexcept
 {
     axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -165,7 +164,7 @@ __device__ static inline constexpr void transpose(const thread::coordinate &Tx, 
     device::constexpr_for<0, VelocitySet::template QF<device::label_t>()>(
         [&](const auto i)
         {
-            sharedBuffer[idxOffset + base_idx + (static_cast<device::label_t>(i) * faceArea<alpha>())] = pop[q_i<streaming_index<alpha, coeff>(i)>()];
+            sharedBuffer[idxOffset + base_idx + (static_cast<device::label_t>(i) * faceArea<alpha>())] = VelocitySet::reconstructPop<streaming_index<alpha, coeff>(i)>(moments);
         });
 }
 
@@ -175,7 +174,7 @@ __device__ static inline constexpr void transpose(const thread::coordinate &Tx, 
  * @return Sum of the face areas for all faces before @p FaceIdx
  **/
 template <const int FaceIdx>
-__device__ __host__ [[nodiscard]] static inline consteval device::label_t sumFaceAreasBefore() noexcept
+devicehostFunctionReturnType static inline consteval device::label_t sumFaceAreasBefore() noexcept
 {
     return []<host::label_t... I>(std::index_sequence<I...>)
     {
@@ -190,7 +189,7 @@ __device__ __host__ [[nodiscard]] static inline consteval device::label_t sumFac
  * @return Offset (in elements) to the beginning of the halo data for this axis/direction
  **/
 template <const axis::type alpha, const int coeff>
-__device__ __host__ [[nodiscard]] static inline consteval device::label_t smemOffset() noexcept
+devicehostFunctionReturnType static inline consteval device::label_t smemOffset() noexcept
 {
     axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -207,10 +206,10 @@ __device__ __host__ [[nodiscard]] static inline consteval device::label_t smemOf
  * @param[in] point The global point coordinate
  * @param[in] Tx Three-dimensional thread coordinates
  **/
-template <const axis::type alpha, class SharedBuffer>
+template <const axis::type alpha>
 __device__ static inline constexpr void transpose_direction(
-    const thread::array<scalar_t, VelocitySet::Q()> &pop,
-    SharedBuffer &sharedBuffer,
+    const momentsArray &moments,
+    blockSharedBuffer &sharedBuffer,
     const device::pointCoordinate &point,
     const thread::coordinate &Tx) noexcept
 {
@@ -218,11 +217,11 @@ __device__ static inline constexpr void transpose_direction(
 
     if (boundaryCheck<alpha, -1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
     {
-        transpose<alpha, -1, smemOffset<alpha, -1>()>(Tx, pop, sharedBuffer);
+        transpose<alpha, -1, smemOffset<alpha, -1>()>(Tx, moments, sharedBuffer);
     }
     else if (boundaryCheck<alpha, +1, BoundaryConditions::periodic<alpha>()>(point.value<alpha>(), Tx))
     {
-        transpose<alpha, +1, smemOffset<alpha, +1>()>(Tx, pop, sharedBuffer);
+        transpose<alpha, +1, smemOffset<alpha, +1>()>(Tx, moments, sharedBuffer);
     }
 }
 
@@ -235,31 +234,30 @@ __device__ static inline constexpr void transpose_direction(
  * @param[in] Bx Three-dimensional block coordinates
  * @param[in] point The global point coordinate
  **/
-template <class SharedBuffer>
 __device__ static inline constexpr void transpose_to_shared(
-    const thread::array<scalar_t, VelocitySet::Q()> &pop,
+    const momentsArray &moments,
     const device::ptrCollection<6, scalar_t> &writeBuffer,
-    SharedBuffer &sharedBuffer,
+    blockSharedBuffer &sharedBuffer,
     const thread::coordinate &Tx,
     const block::coordinate &Bx,
     const device::pointCoordinate &point) noexcept
 {
     // X axis halo transposition
-    transpose_direction<axis::X>(pop, sharedBuffer, point, Tx);
+    transpose_direction<axis::X>(moments, sharedBuffer, point, Tx);
 
     // Y axis halo transposition
-    transpose_direction<axis::Y>(pop, sharedBuffer, point, Tx);
+    transpose_direction<axis::Y>(moments, sharedBuffer, point, Tx);
 
     block::sync();
 
     // Z halos: these halos coalesce naturally, so no transposition is needed
-    save_direction<axis::Z>(pop, writeBuffer, Tx, Bx, point);
+    save_direction<axis::Z>(moments, writeBuffer, Tx, Bx, point);
 }
 
 /**
  * @brief Compute the number of channels for the given block set
  **/
-__device__ __host__ [[nodiscard]] static inline consteval device::label_t n_channels() noexcept
+devicehostFunctionReturnType static inline consteval device::label_t n_channels() noexcept
 {
     return block::n_warps() / warps_per_face();
 }
@@ -271,7 +269,7 @@ __device__ __host__ [[nodiscard]] static inline consteval device::label_t n_chan
  * @return The axis corresponding to this warp/cycle combination
  **/
 template <const host::label_t warpIdx, const host::label_t warpCycle>
-__device__ __host__ [[nodiscard]] static inline consteval axis::type precompute_axis() noexcept
+devicehostFunctionReturnType static inline consteval axis::type precompute_axis() noexcept
 {
     constexpr const host::label_t result = (warpIdx + (warpCycle * n_channels())) / (VelocitySet::template QF<host::label_t>() * warps_per_face());
     axis::assertions::validate<static_cast<axis::type>(result), axis::NOT_NULL>();
@@ -285,7 +283,7 @@ __device__ __host__ [[nodiscard]] static inline consteval axis::type precompute_
  * @return The population index for this lane/cycle pair
  **/
 template <const host::label_t idx, const host::label_t warpCycle>
-__device__ __host__ [[nodiscard]] static inline consteval host::label_t precompute_q() noexcept
+devicehostFunctionReturnType static inline consteval host::label_t precompute_q() noexcept
 {
     constexpr const host::label_t result = (idx + (warpCycle * n_channels())) % VelocitySet::template QF<host::label_t>();
     static_assert(result < VelocitySet::template QF<host::label_t>());
@@ -300,7 +298,7 @@ __device__ __host__ [[nodiscard]] static inline consteval host::label_t precompu
  * @return The coordinate pair corresponding to axis @p alpha
  **/
 template <const axis::type alpha>
-__device__ [[nodiscard]] static inline constexpr const dim2 &choose_axis(const dim2 &x, const dim2 &y) noexcept
+deviceFunctionReturnType static inline constexpr const dim2 &choose_axis(const dim2 &x, const dim2 &y) noexcept
 {
     if constexpr (alpha == axis::X)
     {
@@ -320,7 +318,7 @@ __device__ [[nodiscard]] static inline constexpr const dim2 &choose_axis(const d
  * @return Index into the write buffer for this warp/channel combination
  **/
 template <const device::label_t warpIdx>
-__device__ [[nodiscard]] static inline constexpr device::label_t bufferIdx(const device::label_t c) noexcept
+deviceFunctionReturnType static inline constexpr device::label_t bufferIdx(const device::label_t c) noexcept
 {
     return (c + (warpIdx * n_channels())) / VelocitySet::template QF<device::label_t>();
 }
@@ -329,7 +327,7 @@ __device__ [[nodiscard]] static inline constexpr device::label_t bufferIdx(const
  * @brief Calculates the shared memory stride (padded to avoid bank conflicts)
  * @return Padded stride in elements
  **/
-__device__ [[nodiscard]] static inline consteval device::label_t padded_stride() noexcept
+deviceFunctionReturnType static inline consteval device::label_t padded_stride() noexcept
 {
     return block::size() + static_cast<device::label_t>(0);
 }
@@ -337,7 +335,6 @@ __device__ [[nodiscard]] static inline consteval device::label_t padded_stride()
 /**
  * @brief Perform a save cycle from the shared memory
  * @tparam i Warp cycle index
- * @tparam SharedBuffer Type of the shared memory buffer
  * @param[in] yz Coordinates on the X-face
  * @param[in] xz Coordinates on the Y-face
  * @param[in] Bx Three-dimensional block coordinates
@@ -346,13 +343,13 @@ __device__ [[nodiscard]] static inline consteval device::label_t padded_stride()
  * @param[in] ID Linear index of the thread within the block
  * @param[in] c Shared memory channel (warp group ID)
  **/
-template <const device::label_t i, class SharedBuffer>
+template <const device::label_t i>
 __device__ static inline void store_lane(
     const dim2 &yz,
     const dim2 &xz,
     const block::coordinate &Bx,
     const device::ptrCollection<6, scalar_t> &writeBuffer,
-    const SharedBuffer &sharedBuffer,
+    const blockSharedBuffer &sharedBuffer,
     const device::label_t ID,
     const device::label_t c) noexcept
 {
@@ -370,13 +367,12 @@ __device__ static inline void store_lane(
     writeBuffer.ptr(bufferIdx<i>(c))[lane[c]] = sharedBuffer[ID + (i * padded_stride())];
 }
 
-template <class SharedBuffer>
 __device__ static inline void store_final_lane(
     const dim2 &yz,
     const dim2 &xz,
     const block::coordinate &Bx,
     const device::ptrCollection<6, scalar_t> &writeBuffer,
-    const SharedBuffer &sharedBuffer,
+    const blockSharedBuffer &sharedBuffer,
     const device::label_t ID,
     const device::label_t c) noexcept
 {
@@ -394,7 +390,7 @@ __device__ static inline void store_final_lane(
  * @brief Calculate the number of shared memory loading cycles for the given velocity set
  * @return Number of cycles needed to save all populations per warp group
  **/
-__device__ [[nodiscard]] static inline consteval device::label_t warps_per_face() noexcept
+deviceFunctionReturnType static inline consteval device::label_t warps_per_face() noexcept
 {
     return static_cast<device::label_t>(2);
 }
@@ -403,23 +399,21 @@ __device__ [[nodiscard]] static inline consteval device::label_t warps_per_face(
  * @brief Calculate the number of shared memory loading cycles for the given velocity set
  * @return Number of cycles needed to save all populations per warp group
  **/
-__device__ [[nodiscard]] static inline consteval device::label_t n_cycles() noexcept
+deviceFunctionReturnType static inline consteval device::label_t n_cycles() noexcept
 {
     return (static_cast<device::label_t>(4) * VelocitySet::template QF<device::label_t>() + n_channels() - static_cast<device::label_t>(1)) / n_channels();
 }
 
 /**
  * @brief Saves population data to halo regions for neighboring blocks
- * @tparam SharedBuffer Type of the shared memory buffer
  * @param[in] sharedBuffer Shared array containing the packed population halos
  * @param[out] writeBuffer Collection of pointers to the halo faces
  * @param[in] Tx Three-dimensional thread coordinates
  * @param[in] Bx Three-dimensional block coordinates
  * @note This device function saves population values to halo regions for neighboring blocks to read.
  **/
-template <class SharedBuffer>
 __device__ static inline constexpr void save_from_shared(
-    const SharedBuffer &sharedBuffer,
+    const blockSharedBuffer &sharedBuffer,
     const device::ptrCollection<6, scalar_t> &writeBuffer,
     const thread::coordinate &Tx,
     const block::coordinate &Bx) noexcept
