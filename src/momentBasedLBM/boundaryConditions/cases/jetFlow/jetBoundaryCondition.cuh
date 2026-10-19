@@ -53,16 +53,18 @@ const device::label_t tidInlet = block::idx(Tx.value<axis::X>(), Tx.value<axis::
 
 constexpr const bool lateralNeumann = false;
 constexpr const bool fixOutletDensity = false;
+constexpr const bool noneq_inlet = false;
 
 switch (boundaryNormal.nodeType())
 {
 // Round inflow + no-slip
 case normalVectorBase::BACK():
 {
-    const scalar_t r = std::sqrt(pow<2>(point.value<axis::X, scalar_t>() - center_x()) + pow<2>(point.value<axis::Y, scalar_t>() - center_y()));
+    const scalar_t x = point.value<axis::X, scalar_t>() - center<axis::X>();
+    const scalar_t y = point.value<axis::Y, scalar_t>() - center<axis::Y>();
+    const scalar_t r = std::sqrt(pow<2>(x) + pow<2>(y));
 
     const scalar_t A = (std::erf((device::L_char - static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * std::sqrt(sigma))) + std::erf((device::L_char + static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * std::sqrt(sigma)))) / (static_cast<scalar_t>(2) * std::erf(device::L_char / (static_cast<scalar_t>(2) * std::sqrt(sigma))));
-    const scalar_t B = static_cast<scalar_t>(1) - pow<2>(A);
 
     const scalar_t U_z = A * device::U_Back[2];
 
@@ -70,13 +72,33 @@ case normalVectorBase::BACK():
     moments[2] = static_cast<scalar_t>(0);
     moments[3] = U_z;
 
+    // OK but a bit weird
     moments[0] = rho0();
+
+    // Experimental
+    // const scalar_t B = static_cast<scalar_t>(1) - pow<2>(A);
+    // const scalar_t rho_interior = sharedBuffer[tidInlet * (NUMBER_MOMENTS()) + m_i<0>()];
+    // moments[0] = (B * rho0()) + (A * rho_interior);
 
     moments[4] = static_cast<scalar_t>(0);
     moments[5] = static_cast<scalar_t>(0);
-    moments[6] = -device::tau * velocitySetBase::cs2<scalar_t>() * dudx(point.value<axis::X, scalar_t>() - center_x(), point.value<axis::Y, scalar_t>() - center_y());
+    if constexpr (noneq_inlet)
+    {
+        moments[6] = -device::tau * velocitySetBase::cs2<scalar_t>() * dudx(x, y);
+    }
+    else
+    {
+        moments[6] = static_cast<scalar_t>(0);
+    }
     moments[7] = static_cast<scalar_t>(0);
-    moments[8] = -device::tau * velocitySetBase::cs2<scalar_t>() * dudy(point.value<axis::X, scalar_t>() - center_x(), point.value<axis::Y, scalar_t>() - center_y());
+    if constexpr (noneq_inlet)
+    {
+        moments[8] = -device::tau * velocitySetBase::cs2<scalar_t>() * dudy(x, y);
+    }
+    else
+    {
+        moments[8] = static_cast<scalar_t>(0);
+    }
     moments[9] = pow<2>(U_z);
 
     return;

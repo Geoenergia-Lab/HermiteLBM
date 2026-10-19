@@ -134,14 +134,10 @@ namespace LBM
 #include "jetBoundaryCondition.cuh"
         }
 
-        deviceFunctionReturnType static inline scalar_t center_x() noexcept
+        template <const axis::type alpha>
+        deviceFunctionReturnType static inline scalar_t center() noexcept
         {
-            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::n<axis::X>() - 1);
-        }
-
-        deviceFunctionReturnType static inline scalar_t center_y() noexcept
-        {
-            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::n<axis::Y>() - 1);
+            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::n<alpha>() - static_cast<device::label_t>(1));
         }
 
         static constexpr const scalar_t sigma = static_cast<scalar_t>(8);
@@ -158,14 +154,15 @@ namespace LBM
             return -(y * (std::exp(-pow<2>(device::L_char - static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)) - std::exp(-pow<2>(device::L_char + static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)))) / (std::sqrt(sigma) * std::sqrt(pi) * std::erf(device::L_char / (static_cast<scalar_t>(2) * std::sqrt(sigma))) * std::sqrt(pow<2>(x) + pow<2>(y)));
         }
 
-        deviceFunctionReturnType static inline scalar_t radius() noexcept
+        __device__ static inline void base_state(momentsArray &moments) noexcept
         {
-            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::L_char);
-        }
+            moments[0] = rho0();
 
-        deviceFunctionReturnType static inline scalar_t r2() noexcept
-        {
-            return radius() * radius();
+            device::constexpr_for<1, NUMBER_MOMENTS()>(
+                [&](const auto moment)
+                {
+                    moments[moment] = static_cast<scalar_t>(0);
+                });
         }
     };
 }
