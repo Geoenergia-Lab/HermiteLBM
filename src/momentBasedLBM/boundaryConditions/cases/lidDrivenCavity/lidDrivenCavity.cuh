@@ -69,7 +69,7 @@ namespace LBM
         /**
          * @brief Switch determining whether or not the boundary condition actually applies a condition
          **/
-        devicehostFunctionReturnType static inline consteval bool appliesCondition() noexcept { return true; }
+        deviceHostFunctionReturnType static inline consteval bool appliesCondition() noexcept { return true; }
 
         /**
          * @brief Public method to calculate the post-streaming methods and update boundary conditions

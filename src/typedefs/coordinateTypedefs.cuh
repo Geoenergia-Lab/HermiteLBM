@@ -120,6 +120,8 @@ namespace LBM
         template <const axis::type alpha, const int coeff, typename ValueType = device::label_t>
         hostFunctionReturnType inline consteval ValueType boundary() noexcept
         {
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
+
             if constexpr (coeff == -1)
             {
                 return 0;
@@ -268,31 +270,31 @@ namespace LBM
     class dim2
     {
     public:
-        devicehostFunctionReturnType inline constexpr dim2(const device::label_t a, const device::label_t b) noexcept
+        deviceHostFunctionReturnType inline constexpr dim2(const device::label_t a, const device::label_t b) noexcept
             : i_(a),
               j_(b){};
 
-        devicehostFunctionReturnType dim2(const dim2 &) = delete;
-        devicehostFunctionReturnType dim2 &operator=(const dim2 &) = delete;
+        deviceHostFunctionReturnType dim2(const dim2 &) = delete;
+        deviceHostFunctionReturnType dim2 &operator=(const dim2 &) = delete;
 
-        devicehostFunctionReturnType inline constexpr device::label_t i() const noexcept
+        deviceHostFunctionReturnType inline constexpr device::label_t i() const noexcept
         {
             return i_;
         }
 
         template <const axis::type alpha>
-        devicehostFunctionReturnType static inline constexpr device::label_t i(const device::label_t linearIdx) noexcept
+        deviceHostFunctionReturnType static inline constexpr device::label_t i(const device::label_t linearIdx) noexcept
         {
             return linearIdx % (block::n<axis::orthogonal<alpha, 0>()>());
         }
 
         template <const axis::type alpha>
-        devicehostFunctionReturnType static inline constexpr device::label_t j(const device::label_t linearIdx) noexcept
+        deviceHostFunctionReturnType static inline constexpr device::label_t j(const device::label_t linearIdx) noexcept
         {
             return linearIdx / (block::n<axis::orthogonal<alpha, 0>()>());
         }
 
-        devicehostFunctionReturnType inline constexpr device::label_t j() const noexcept
+        deviceHostFunctionReturnType inline constexpr device::label_t j() const noexcept
         {
             return j_;
         }

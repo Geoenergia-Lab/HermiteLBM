@@ -56,12 +56,12 @@ namespace LBM
     {
         namespace derivative
         {
-            devicehostFunctionReturnType inline consteval host::label_t maxSchemeOrder() noexcept
+            deviceHostFunctionReturnType inline consteval host::label_t maxSchemeOrder() noexcept
             {
                 return 8;
             }
 
-            devicehostFunctionReturnType inline consteval host::label_t gridPadding(const host::label_t SchemeOrder) noexcept
+            deviceHostFunctionReturnType inline consteval host::label_t gridPadding(const host::label_t SchemeOrder) noexcept
             {
                 return SchemeOrder - 1;
             }

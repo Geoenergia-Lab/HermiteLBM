@@ -78,7 +78,7 @@ namespace LBM
          * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)
          **/
         template <typename T, const T nx, const T ny, const T nz>
-        devicehostFunctionReturnType inline constexpr T idx(const T tx, const T ty, const T tz, const T bx, const T by, const T bz, const T nxBlocks, const T nyBlocks) noexcept
+        deviceHostFunctionReturnType inline constexpr T idx(const T tx, const T ty, const T tz, const T bx, const T by, const T bz, const T nxBlocks, const T nyBlocks) noexcept
         {
             return (tx + nx * (ty + ny * (tz + nz * (bx + nxBlocks * (by + nyBlocks * bz)))));
         }
@@ -162,7 +162,7 @@ namespace LBM
          * @tparam Args Type of the function arguments
          **/
         template <typename T, typename... Args>
-        devicehostFunctionReturnType inline consteval bool has_reference_parameters(T (*)(Args...))
+        deviceHostFunctionReturnType inline consteval bool has_reference_parameters(T (*)(Args...))
         {
             // Folds over all arguments, returning true if ANY are references
             return (std::is_reference_v<Args> || ...);
@@ -189,32 +189,73 @@ namespace LBM
         }
     }
 
-    /**
-     * @brief Raise a variable to a compile-time constant integer power
-     * @tparam Pow The power
-     * @tparam T The arithmetic type
-     * @param[in] val The variable to exponent
-     **/
-    template <const host::label_t Pow, typename T>
-    devicehostFunctionReturnType inline constexpr T pow(const T &val) noexcept
+    namespace math
     {
-        if constexpr (Pow == 0)
+        /**
+         * @brief Raise a variable to a compile-time constant integer power
+         * @tparam Pow The power
+         * @tparam T The arithmetic type
+         * @param[in] val The variable to exponent
+         **/
+        template <const host::label_t Pow, typename T>
+        deviceHostFunctionReturnType inline constexpr T pow(const T &val) noexcept
         {
-            return T{1};
-        }
-        else
-        {
-            return [&]<host::label_t... Is>(std::index_sequence<Is...>)
+            if constexpr (Pow == 0)
             {
-                return (T{1} * ... * (static_cast<void>(Is), val));
-            }(std::make_index_sequence<Pow>{});
+                return T{1};
+            }
+            else
+            {
+                return [&]<host::label_t... Is>(std::index_sequence<Is...>)
+                {
+                    return (T{1} * ... * (static_cast<void>(Is), val));
+                }(std::make_index_sequence<Pow>{});
+            }
         }
-    }
 
-    template <typename T>
-    devicehostFunctionReturnType inline constexpr T rms_sq(const T x, const T y) noexcept
-    {
-        return (x * x) + (y * y);
+        /**
+         * @brief Compute a square root at compile time
+         * @tparam T The arithmetic return type
+         * @tparam x The value to calculate the square root of
+         **/
+        template <typename T, const double x>
+        deviceHostFunctionReturnType static inline consteval T constexpr_sqrt() noexcept
+        {
+            if constexpr (x < static_cast<double>(0))
+            {
+                static_assert(false, "constexpr_sqrt requires a non-negative argument");
+            }
+
+            if constexpr (__builtin_bit_cast(std::uint64_t, x) == __builtin_bit_cast(std::uint64_t, static_cast<double>(0)) || __builtin_bit_cast(std::uint64_t, x) == __builtin_bit_cast(std::uint64_t, static_cast<double>(1)))
+            {
+                return static_cast<T>(x);
+            }
+
+            double curr = x;
+            double prev = static_cast<double>(0);
+
+            while (__builtin_bit_cast(std::uint64_t, curr) != __builtin_bit_cast(std::uint64_t, prev))
+            {
+                prev = curr;
+                curr = static_cast<double>(0.5) * (curr + x / curr);
+            }
+            return static_cast<T>(curr);
+        }
+
+        namespace constants
+        {
+            template <typename T>
+            deviceHostFunctionReturnType inline consteval T pi() noexcept
+            {
+                return static_cast<T>(std::numbers::pi);
+            }
+
+            template <typename T>
+            deviceHostFunctionReturnType inline consteval T sqrtpi() noexcept
+            {
+                return math::constexpr_sqrt<T, math::constants::pi<double>()>();
+            }
+        }
     }
 
     namespace GPU
@@ -399,7 +440,7 @@ namespace LBM
          * @param[in] ny Global Y dimension
          * @return Linearized index: x + nx*(y + ny*z)
          **/
-        devicehostFunctionReturnType inline constexpr host::label_t idx(const host::label_t x, const host::label_t y, const host::label_t z, const host::label_t nx, const host::label_t ny) noexcept
+        deviceHostFunctionReturnType inline constexpr host::label_t idx(const host::label_t x, const host::label_t y, const host::label_t z, const host::label_t nx, const host::label_t ny) noexcept
         {
             return x + (nx * (y + (ny * z)));
         }
@@ -410,7 +451,7 @@ namespace LBM
          * @param[in] nx Global X dimension
          * @param[in] ny Global Y dimension
          **/
-        devicehostFunctionReturnType inline constexpr host::label_t idx(const host::pointLabel &point, const host::label_t nx, const host::label_t ny) noexcept
+        deviceHostFunctionReturnType inline constexpr host::label_t idx(const host::pointLabel &point, const host::label_t nx, const host::label_t ny) noexcept
         {
             return idx(point.value<axis::X>(), point.value<axis::Y>(), point.value<axis::Z>(), nx, ny);
         }
@@ -504,7 +545,7 @@ namespace LBM
          * @param[in] dx, dy, dz Device indices in the X, Y and Z directions
          * @param[in] ndx, ndy Number of devices in the X and Y directions
          **/
-        devicehostFunctionReturnType inline constexpr host::label_t idx(
+        deviceHostFunctionReturnType inline constexpr host::label_t idx(
             const host::label_t dx, const host::label_t dy, const host::label_t dz,
             const host::label_t ndx, const host::label_t ndy) noexcept
         {

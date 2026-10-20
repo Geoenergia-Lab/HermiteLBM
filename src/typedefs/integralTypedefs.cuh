@@ -111,8 +111,8 @@ namespace LBM
         static constexpr const T value = v;
         using value_type = T;
         using type = integralConstant;
-        devicehostFunctionReturnType inline consteval operator value_type() const noexcept { return value; }
-        devicehostFunctionReturnType inline consteval value_type operator()() const noexcept { return value; }
+        deviceHostFunctionReturnType inline consteval operator value_type() const noexcept { return value; }
+        deviceHostFunctionReturnType inline consteval value_type operator()() const noexcept { return value; }
     };
 
     /**

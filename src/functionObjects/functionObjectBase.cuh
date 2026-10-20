@@ -92,7 +92,7 @@ namespace LBM
              * @param[in] meanCount The current mean count
              * @return The inverse of the new mean count
              **/
-            devicehostFunctionReturnType static inline constexpr scalar_t invNewCount(const host::label_t meanCount) noexcept
+            deviceHostFunctionReturnType static inline constexpr scalar_t invNewCount(const host::label_t meanCount) noexcept
             {
                 return static_cast<scalar_t>(1) / static_cast<scalar_t>(meanCount + 1);
             }

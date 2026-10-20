@@ -62,9 +62,9 @@ case normalVectorBase::BACK():
 {
     const scalar_t x = point.value<axis::X, scalar_t>() - center<axis::X>();
     const scalar_t y = point.value<axis::Y, scalar_t>() - center<axis::Y>();
-    const scalar_t r = std::sqrt(pow<2>(x) + pow<2>(y));
+    const scalar_t r = math::sqrt(math::pow<2>(x) + math::pow<2>(y));
 
-    const scalar_t A = (std::erf((device::L_char - static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * std::sqrt(sigma))) + std::erf((device::L_char + static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * std::sqrt(sigma)))) / (static_cast<scalar_t>(2) * std::erf(device::L_char / (static_cast<scalar_t>(2) * std::sqrt(sigma))));
+    const scalar_t A = (math::erf((device::L_char - static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * math::sqrt(sigma()))) + math::erf((device::L_char + static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * math::sqrt(sigma())))) / (static_cast<scalar_t>(2) * math::erf(device::L_char / (static_cast<scalar_t>(2) * math::sqrt(sigma()))));
 
     const scalar_t U_z = A * device::U_Back[2];
 
@@ -76,7 +76,7 @@ case normalVectorBase::BACK():
     moments[0] = rho0();
 
     // Experimental
-    // const scalar_t B = static_cast<scalar_t>(1) - pow<2>(A);
+    // const scalar_t B = static_cast<scalar_t>(1) - math::pow<2>(A);
     // const scalar_t rho_interior = sharedBuffer[tidInlet * (NUMBER_MOMENTS()) + m_i<0>()];
     // moments[0] = (B * rho0()) + (A * rho_interior);
 
@@ -99,7 +99,7 @@ case normalVectorBase::BACK():
     {
         moments[8] = static_cast<scalar_t>(0);
     }
-    moments[9] = pow<2>(U_z);
+    moments[9] = math::pow<2>(U_z);
 
     return;
 }

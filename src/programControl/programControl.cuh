@@ -99,7 +99,7 @@ namespace LBM
                 "caseName\t", caseName_,
                 "Re\t\t", Re_,
                 "Ma\t\t", Ma_,
-                "U_inf\t", Ma_ / std::sqrt(static_cast<scalar_t>(3)),
+                "U_inf\t", Ma_ / math::sqrt(static_cast<scalar_t>(3)),
                 "nTimeSteps\t", nTimeSteps_,
                 "saveInterval", saveInterval_,
                 "infoInterval", infoInterval_,
@@ -115,7 +115,7 @@ namespace LBM
                     errorHandler::handle(API::setDevice(deviceList()[virtualDeviceIndex]));
 
                     // Allocate symbols on the GPU
-                    const scalar_t U = Ma_ / std::sqrt(static_cast<scalar_t>(3));
+                    const scalar_t U = Ma_ / math::sqrt(static_cast<scalar_t>(3));
                     const scalar_t nuTemp = U * L_char() / Re();
                     const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3) * nuTemp;
                     const scalar_t omegaTemp = static_cast<scalar_t>(1) / tauTemp;
@@ -201,7 +201,7 @@ namespace LBM
          * @brief Returns the Reynolds number
          * @return The Reynolds number
          **/
-        devicehostFunctionReturnType inline constexpr scalar_t Re() const noexcept
+        deviceHostFunctionReturnType inline constexpr scalar_t Re() const noexcept
         {
             return Re_;
         }
@@ -210,7 +210,7 @@ namespace LBM
          * @brief Returns the characteristic velocity
          * @return The characteristic velocity
          **/
-        devicehostFunctionReturnType inline constexpr scalar_t Ma() const noexcept
+        deviceHostFunctionReturnType inline constexpr scalar_t Ma() const noexcept
         {
             return Ma_;
         }
@@ -219,7 +219,7 @@ namespace LBM
          * @brief Returns the characteristic velocity
          * @return The characteristic velocity
          **/
-        devicehostFunctionReturnType inline constexpr scalar_t L_char() const noexcept
+        deviceHostFunctionReturnType inline constexpr scalar_t L_char() const noexcept
         {
             return L_char_;
         }
@@ -228,7 +228,7 @@ namespace LBM
          * @brief Returns the total number of simulation time steps
          * @return The total number of simulation time steps
          **/
-        devicehostFunctionReturnType inline constexpr host::label_t nt() const noexcept
+        deviceHostFunctionReturnType inline constexpr host::label_t nt() const noexcept
         {
             return nTimeSteps_;
         }
@@ -238,7 +238,7 @@ namespace LBM
          * @param[in] timeStep The time step to check
          * @return True if the program should checkpoint, false otherwise
          **/
-        devicehostFunctionReturnType inline constexpr bool save(const host::label_t timeStep) const noexcept
+        deviceHostFunctionReturnType inline constexpr bool save(const host::label_t timeStep) const noexcept
         {
             return (timeStep % saveInterval_) == 0;
         }
@@ -248,7 +248,7 @@ namespace LBM
          * @param[in] timeStep The time step to check
          * @return True if the program should checkpoint, false otherwise
          **/
-        devicehostFunctionReturnType inline constexpr bool print(const host::label_t timeStep) const noexcept
+        deviceHostFunctionReturnType inline constexpr bool print(const host::label_t timeStep) const noexcept
         {
             return (timeStep % infoInterval_) == 0;
         }
@@ -257,7 +257,7 @@ namespace LBM
          * @brief Returns the latest time step of the solution files contained within the current directory
          * @return The latest time step as a host::label_t
          **/
-        devicehostFunctionReturnType inline constexpr host::label_t latestTime() const noexcept
+        deviceHostFunctionReturnType inline constexpr host::label_t latestTime() const noexcept
         {
             return latestTime_;
         }
@@ -266,11 +266,11 @@ namespace LBM
          * @brief Returns a reference to the current time step
          * @return The latest time step as a host::label_t
          **/
-        devicehostFunctionReturnType inline constexpr const host::label_t &timeStep() const noexcept
+        deviceHostFunctionReturnType inline constexpr const host::label_t &timeStep() const noexcept
         {
             return timeStep_;
         }
-        devicehostFunctionReturnType inline constexpr host::label_t &timeStep() noexcept
+        deviceHostFunctionReturnType inline constexpr host::label_t &timeStep() noexcept
         {
             return timeStep_;
         }

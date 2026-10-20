@@ -63,7 +63,7 @@ namespace LBM
         /**
          * @brief Switch determining whether or not the boundary condition actually applies a condition
          **/
-        devicehostFunctionReturnType static inline consteval bool appliesCondition() noexcept { return true; }
+        deviceHostFunctionReturnType static inline consteval bool appliesCondition() noexcept { return true; }
 
         /**
          * @brief Public method to calculate the post-streaming methods and update boundary conditions
@@ -116,6 +116,38 @@ namespace LBM
             }
         }
 
+        template <const axis::type alpha>
+        deviceFunctionReturnType static inline constexpr scalar_t center() noexcept
+        {
+            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::n<alpha>() - static_cast<device::label_t>(1));
+        }
+
+        deviceHostFunctionReturnType static inline consteval scalar_t sigma() noexcept
+        {
+            return static_cast<scalar_t>(2);
+        }
+
+        deviceFunctionReturnType static inline constexpr scalar_t dudx(const scalar_t x, const scalar_t y) noexcept
+        {
+            return -(x * (math::exp(-math::pow<2>(device::L_char - static_cast<scalar_t>(2) * math::sqrt(math::pow<2>(x) + math::pow<2>(y))) / (static_cast<scalar_t>(4) * sigma())) - math::exp(-math::pow<2>(device::L_char + static_cast<scalar_t>(2) * math::sqrt(math::pow<2>(x) + math::pow<2>(y))) / (static_cast<scalar_t>(4) * sigma())))) / (math::sqrt(sigma()) * math::constants::sqrtpi<scalar_t>() * math::erf(device::L_char / (static_cast<scalar_t>(2) * math::sqrt(sigma()))) * math::sqrt(math::pow<2>(x) + math::pow<2>(y)));
+        }
+
+        deviceFunctionReturnType static inline constexpr scalar_t dudy(const scalar_t x, const scalar_t y) noexcept
+        {
+            return -(y * (math::exp(-math::pow<2>(device::L_char - static_cast<scalar_t>(2) * math::sqrt(math::pow<2>(x) + math::pow<2>(y))) / (static_cast<scalar_t>(4) * sigma())) - math::exp(-math::pow<2>(device::L_char + static_cast<scalar_t>(2) * math::sqrt(math::pow<2>(x) + math::pow<2>(y))) / (static_cast<scalar_t>(4) * sigma())))) / (math::sqrt(sigma()) * math::constants::sqrtpi<scalar_t>() * math::erf(device::L_char / (static_cast<scalar_t>(2) * math::sqrt(sigma()))) * math::sqrt(math::pow<2>(x) + math::pow<2>(y)));
+        }
+
+        __device__ static inline constexpr void base_state(momentsArray &moments) noexcept
+        {
+            moments[0] = rho0();
+
+            device::constexpr_for<1, NUMBER_MOMENTS()>(
+                [&](const auto moment)
+                {
+                    moments[moment] = static_cast<scalar_t>(0);
+                });
+        }
+
         /**
          * @brief Calculate moment variables at boundary nodes
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
@@ -132,37 +164,6 @@ namespace LBM
             const device::pointCoordinate &point) noexcept
         {
 #include "jetBoundaryCondition.cuh"
-        }
-
-        template <const axis::type alpha>
-        deviceFunctionReturnType static inline scalar_t center() noexcept
-        {
-            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::n<alpha>() - static_cast<device::label_t>(1));
-        }
-
-        static constexpr const scalar_t sigma = static_cast<scalar_t>(8);
-
-        static constexpr const scalar_t pi = static_cast<scalar_t>(std::numbers::pi);
-
-        deviceFunctionReturnType static inline scalar_t dudx(const scalar_t x, const scalar_t y) noexcept
-        {
-            return -(x * (std::exp(-pow<2>(device::L_char - static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)) - std::exp(-pow<2>(device::L_char + static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)))) / (std::sqrt(sigma) * std::sqrt(pi) * std::erf(device::L_char / (static_cast<scalar_t>(2) * std::sqrt(sigma))) * std::sqrt(pow<2>(x) + pow<2>(y)));
-        }
-
-        deviceFunctionReturnType static inline scalar_t dudy(const scalar_t x, const scalar_t y) noexcept
-        {
-            return -(y * (std::exp(-pow<2>(device::L_char - static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)) - std::exp(-pow<2>(device::L_char + static_cast<scalar_t>(2) * std::sqrt(pow<2>(x) + pow<2>(y))) / (static_cast<scalar_t>(4) * sigma)))) / (std::sqrt(sigma) * std::sqrt(pi) * std::erf(device::L_char / (static_cast<scalar_t>(2) * std::sqrt(sigma))) * std::sqrt(pow<2>(x) + pow<2>(y)));
-        }
-
-        __device__ static inline void base_state(momentsArray &moments) noexcept
-        {
-            moments[0] = rho0();
-
-            device::constexpr_for<1, NUMBER_MOMENTS()>(
-                [&](const auto moment)
-                {
-                    moments[moment] = static_cast<scalar_t>(0);
-                });
         }
     };
 }

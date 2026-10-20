@@ -77,7 +77,7 @@ namespace LBM
     };
 
 #if defined(__HIP__)
-#define devicehostFunctionReturnType [[nodiscard]] __device__ __host__
+#define deviceHostFunctionReturnType [[nodiscard]] __device__ __host__
 #define deviceFunctionReturnType [[nodiscard]] __device__
 #define hostFunctionReturnType [[nodiscard]] __host__
 
@@ -121,7 +121,7 @@ namespace LBM
 
 #elif defined(__CUDACC__)
 
-#define devicehostFunctionReturnType __device__ __host__ [[nodiscard]]
+#define deviceHostFunctionReturnType __device__ __host__ [[nodiscard]]
 #define deviceFunctionReturnType __device__ [[nodiscard]]
 #define hostFunctionReturnType __host__ [[nodiscard]]
 
@@ -167,6 +167,48 @@ namespace LBM
     static_assert(false, GPU_COMPILER_ERROR_MSG);
 
 #endif
+
+    namespace math
+    {
+        template <typename T>
+        deviceHostFunctionReturnType inline constexpr T sqrt(const T &val) noexcept
+        {
+#if defined(__HIP__)
+            return hip::std::sqrt(val);
+#elif defined(__CUDACC__)
+            return cuda::std::sqrt(val);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return static_cast<T>(0);
+#endif
+        }
+
+        template <typename T>
+        deviceHostFunctionReturnType inline constexpr T exp(const T &val) noexcept
+        {
+#if defined(__HIP__)
+            return hip::std::exp(val);
+#elif defined(__CUDACC__)
+            return cuda::std::exp(val);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return static_cast<T>(0);
+#endif
+        }
+
+        template <typename T>
+        deviceHostFunctionReturnType inline constexpr T erf(const T &val) noexcept
+        {
+#if defined(__HIP__)
+            return hip::std::erf(val);
+#elif defined(__CUDACC__)
+            return cuda::std::erf(val);
+#else
+            static_assert(false, GPU_COMPILER_ERROR_MSG);
+            return static_cast<T>(0);
+#endif
+        }
+    }
 
     namespace API
     {

@@ -159,7 +159,7 @@ namespace LBM
      * @note Optional
      **/
     template <class ReturnType, class ClassName, class ParamType>
-    devicehostFunctionReturnType ReturnType nonMemberFunction(const ClassName &obj, const ParamType param) {}
+    deviceHostFunctionReturnType ReturnType nonMemberFunction(const ClassName &obj, const ParamType param) {}
 
 } // namespace LBM
 

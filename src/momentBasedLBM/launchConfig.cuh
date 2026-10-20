@@ -57,7 +57,7 @@ namespace LBM
      * @tparam VelocitySet The velocity set in use
      **/
     template <class VelocitySet>
-    devicehostFunctionReturnType inline consteval device::label_t MIN_BLOCKS_PER_MP() noexcept
+    deviceHostFunctionReturnType inline consteval device::label_t MIN_BLOCKS_PER_MP() noexcept
     {
         // D3Q19 thermal model
         if constexpr (std::is_same_v<VelocitySet, D3Q19<Thermal>>)
@@ -90,7 +90,7 @@ namespace LBM
     /**
      * @brief Use experimental block co-operative halo saving
      **/
-    devicehostFunctionReturnType inline consteval bool use_cooperative_halo() noexcept
+    deviceHostFunctionReturnType inline consteval bool use_cooperative_halo() noexcept
     {
         return false;
         // #ifdef USE_SMEM_HALO
@@ -107,7 +107,7 @@ namespace LBM
     /**
      * @brief Runtime bounds checking for GPU kernels
      **/
-    devicehostFunctionReturnType inline consteval bool out_of_bounds_check() noexcept
+    deviceHostFunctionReturnType inline consteval bool out_of_bounds_check() noexcept
     {
 #ifdef OOB_CHECK
         return true;

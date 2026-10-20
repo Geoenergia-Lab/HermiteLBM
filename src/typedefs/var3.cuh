@@ -75,7 +75,7 @@ namespace LBM
          * @param[in] Y Initialiser value
          * @param[in] Z Initialiser value
          **/
-        devicehostFunctionReturnType inline constexpr var3(const T X, const T Y, const T Z) noexcept
+        deviceHostFunctionReturnType inline constexpr var3(const T X, const T Y, const T Z) noexcept
             : x(X),
               y(Y),
               z(Z) {}
@@ -86,7 +86,7 @@ namespace LBM
          * @tparam ValueType The return type
          **/
         template <const axis::type alpha, typename ValueType = value_type>
-        devicehostFunctionReturnType constexpr ValueType value() const noexcept
+        deviceHostFunctionReturnType constexpr ValueType value() const noexcept
         {
             axis::assertions::validate<alpha, axis::NOT_NULL>();
 
@@ -153,7 +153,7 @@ namespace LBM
              * @tparam ValueType The return type
              **/
             template <typename ValueType = value_type>
-            devicehostFunctionReturnType inline constexpr ValueType size() const noexcept
+            deviceHostFunctionReturnType inline constexpr ValueType size() const noexcept
             {
                 return value<axis::X, ValueType>() * value<axis::Y, ValueType>() * value<axis::Z, ValueType>();
             }
@@ -179,7 +179,7 @@ namespace LBM
             /**
              * @brief Total size
              **/
-            devicehostFunctionReturnType inline constexpr host::label_t size() const noexcept
+            deviceHostFunctionReturnType inline constexpr host::label_t size() const noexcept
             {
                 return value<axis::X>() * value<axis::Y>() * value<axis::Z>();
             }
