@@ -124,7 +124,7 @@ namespace LBM
 
         deviceHostFunctionReturnType static inline consteval scalar_t sigma() noexcept
         {
-            return static_cast<scalar_t>(2);
+            return static_cast<scalar_t>(4);
         }
 
         deviceFunctionReturnType static inline constexpr scalar_t dudx(const scalar_t x, const scalar_t y) noexcept
