@@ -114,7 +114,7 @@ namespace LBM
             }
             else
             {
-                return static_cast<T>(std::sqrt(result));
+                return static_cast<T>(math::sqrt(result));
             }
         }
 

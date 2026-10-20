@@ -83,19 +83,19 @@ namespace LBM
              * @tparam i The index of the pointer
              **/
             template <const host::label_t i>
-            devicehostFunctionReturnType inline constexpr T *ptr() const noexcept
+            deviceHostFunctionReturnType inline constexpr T *ptr() const noexcept
             {
                 static_assert(i < N, "Invalid pointer access");
 
                 return ptrs_[i];
             }
             template <typename Idx>
-            devicehostFunctionReturnType inline constexpr const T *constPtr(const Idx i) const noexcept
+            deviceHostFunctionReturnType inline constexpr const T *constPtr(const Idx i) const noexcept
             {
                 return ptrs_[i];
             }
             template <typename Idx>
-            devicehostFunctionReturnType inline constexpr T *ptr(const Idx i) const noexcept
+            deviceHostFunctionReturnType inline constexpr T *ptr(const Idx i) const noexcept
             {
                 return ptrs_[i];
             }
@@ -106,11 +106,11 @@ namespace LBM
              * @return Value at index @p i
              * @warning No bounds checking performed
              **/
-            devicehostFunctionReturnType inline constexpr const T *operator[](const host::label_t i) const noexcept
+            deviceHostFunctionReturnType inline constexpr const T *operator[](const host::label_t i) const noexcept
             {
                 return ptrs_[i];
             }
-            devicehostFunctionReturnType inline constexpr T *operator[](const host::label_t i) noexcept
+            deviceHostFunctionReturnType inline constexpr T *operator[](const host::label_t i) noexcept
             {
                 return ptrs_[i];
             }

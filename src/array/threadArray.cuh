@@ -84,7 +84,7 @@ namespace LBM
              * @note Compile-time enforced check ensures correct number of arguments
              **/
             template <typename... Args>
-            devicehostFunctionReturnType inline constexpr array(const Args... args) : data_{args...}
+            deviceHostFunctionReturnType inline constexpr array(const Args... args) : data_{args...}
             {
                 static_assert(sizeof...(Args) == N, "Incorrect number of arguments");
             }
@@ -95,7 +95,7 @@ namespace LBM
              * @param[in] value Initial value for all array elements
              **/
             template <const T v>
-            devicehostFunctionReturnType inline consteval array(const integralConstant<T, v> &value) noexcept
+            deviceHostFunctionReturnType inline consteval array(const integralConstant<T, v> &value) noexcept
             {
                 for (host::label_t i = 0; i < N; i++)
                 {
@@ -108,14 +108,14 @@ namespace LBM
              * @note Elements will be default-initialized or zero-initialized
              **/
             [[nodiscard]] inline constexpr array() = default;
-            devicehostFunctionReturnType array(const array<T, N> &) = delete;
-            devicehostFunctionReturnType array &operator=(const array<T, N> &) = delete;
+            deviceHostFunctionReturnType array(const array<T, N> &) = delete;
+            deviceHostFunctionReturnType array &operator=(const array<T, N> &) = delete;
 
             /**
              * @brief Addition operator
              * @return The sum of two arrays of the same type and size
              **/
-            devicehostFunctionReturnType inline constexpr thread::array<T, N> operator+(const thread::array<T, N> &A) const __restrict__ noexcept
+            deviceHostFunctionReturnType inline constexpr thread::array<T, N> operator+(const thread::array<T, N> &A) const __restrict__ noexcept
             {
                 return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -128,7 +128,7 @@ namespace LBM
              * @brief Addition operator
              * @return The sum of the array and a constant of type T
              **/
-            devicehostFunctionReturnType inline constexpr thread::array<T, N> operator+(const T &A) const __restrict__ noexcept
+            deviceHostFunctionReturnType inline constexpr thread::array<T, N> operator+(const T &A) const __restrict__ noexcept
             {
                 return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -141,7 +141,7 @@ namespace LBM
              * @brief Subtraction operator
              * @return The subtraction of two arrays of the same type and size
              **/
-            devicehostFunctionReturnType inline constexpr thread::array<T, N> operator-(const thread::array<T, N> &A) const __restrict__ noexcept
+            deviceHostFunctionReturnType inline constexpr thread::array<T, N> operator-(const thread::array<T, N> &A) const __restrict__ noexcept
             {
                 return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -154,7 +154,7 @@ namespace LBM
              * @brief Subtraction operator
              * @return The subtraction of the array and a constant of type T
              **/
-            devicehostFunctionReturnType inline constexpr thread::array<T, N> operator-(const T &A) const __restrict__ noexcept
+            deviceHostFunctionReturnType inline constexpr thread::array<T, N> operator-(const T &A) const __restrict__ noexcept
             {
                 return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -167,7 +167,7 @@ namespace LBM
              * @brief Multiplication operator
              * @return The dot product of two arrays of the same type and size
              **/
-            devicehostFunctionReturnType inline constexpr thread::array<T, N> operator*(const thread::array<T, N> &A) const __restrict__ noexcept
+            deviceHostFunctionReturnType inline constexpr thread::array<T, N> operator*(const thread::array<T, N> &A) const __restrict__ noexcept
             {
                 return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -180,7 +180,7 @@ namespace LBM
              * @brief Multiplication operator
              * @return The product of the array and a constant of type T
              **/
-            devicehostFunctionReturnType inline constexpr thread::array<T, N> operator*(const T &A) const __restrict__ noexcept
+            deviceHostFunctionReturnType inline constexpr thread::array<T, N> operator*(const T &A) const __restrict__ noexcept
             {
                 return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -193,7 +193,7 @@ namespace LBM
              * @brief Division operator
              * @return The dot product of the first array and the inverse of the second, both of which are of the same type and size
              **/
-            devicehostFunctionReturnType inline constexpr thread::array<T, N> operator/(const thread::array<T, N> &A) const __restrict__ noexcept
+            deviceHostFunctionReturnType inline constexpr thread::array<T, N> operator/(const thread::array<T, N> &A) const __restrict__ noexcept
             {
                 return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -206,7 +206,7 @@ namespace LBM
              * @brief Division operator
              * @return The dot product of the first array and the inverse of the second, both of which are of the same type and size
              **/
-            devicehostFunctionReturnType inline constexpr thread::array<T, N> operator/(const T &A) const __restrict__ noexcept
+            deviceHostFunctionReturnType inline constexpr thread::array<T, N> operator/(const T &A) const __restrict__ noexcept
             {
                 return [&]<const host::label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -224,7 +224,7 @@ namespace LBM
              * @note No runtime bounds checking - compile-time safe
              **/
             template <const host::label_t index_>
-            devicehostFunctionReturnType inline constexpr T &operator[](const size_constant<index_> &index) __restrict__ noexcept
+            deviceHostFunctionReturnType inline constexpr T &operator[](const size_constant<index_> &index) __restrict__ noexcept
             {
                 assert_legal_access<index_>();
                 return data_[size_constant<index.value>()];
@@ -239,7 +239,7 @@ namespace LBM
              * @note No runtime bounds checking - compile-time safe
              **/
             template <const host::label_t index_>
-            devicehostFunctionReturnType inline constexpr const T &operator[]([[maybe_unused]] const size_constant<index_> &index) __restrict__ const noexcept
+            deviceHostFunctionReturnType inline constexpr const T &operator[]([[maybe_unused]] const size_constant<index_> &index) __restrict__ const noexcept
             {
                 assert_legal_access<index_>();
                 // return data_[index];
@@ -256,7 +256,7 @@ namespace LBM
              * @note Runtime access for integral types (no bounds checking)
              **/
             template <typename Idx>
-            devicehostFunctionReturnType inline constexpr T &operator[](const Idx idx) __restrict__ noexcept
+            deviceHostFunctionReturnType inline constexpr T &operator[](const Idx idx) __restrict__ noexcept
             {
                 // Runtime index
                 return data_[idx];
@@ -272,7 +272,7 @@ namespace LBM
              * @note Runtime access for integral types (no bounds checking)
              **/
             template <typename Idx>
-            devicehostFunctionReturnType inline constexpr const T &operator[](const Idx idx) __restrict__ const noexcept
+            deviceHostFunctionReturnType inline constexpr const T &operator[](const Idx idx) __restrict__ const noexcept
             {
                 return data_[idx];
             }
@@ -281,11 +281,11 @@ namespace LBM
              * @brief Returns a pointer to the first element of the array
              * @return Pointer to data_[0]
              **/
-            devicehostFunctionReturnType inline constexpr const T *data() __restrict__ const noexcept
+            deviceHostFunctionReturnType inline constexpr const T *data() __restrict__ const noexcept
             {
                 return &data_[0];
             }
-            devicehostFunctionReturnType inline constexpr T *data() __restrict__ noexcept
+            deviceHostFunctionReturnType inline constexpr T *data() __restrict__ noexcept
             {
                 return &data_[0];
             }
@@ -294,7 +294,7 @@ namespace LBM
              * @brief Returns the number of elements in the array
              * @return Compile-time constant number of elements (N)
              **/
-            devicehostFunctionReturnType static inline consteval host::label_t size() noexcept
+            deviceHostFunctionReturnType static inline consteval host::label_t size() noexcept
             {
                 return N;
             }
@@ -303,7 +303,7 @@ namespace LBM
              * @brief Sums all elements in the array.
              * @return Total of every entry in the array.
              **/
-            devicehostFunctionReturnType inline constexpr T sum() const __restrict__ noexcept
+            deviceHostFunctionReturnType inline constexpr T sum() const __restrict__ noexcept
             {
                 return [&]<host::label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -318,7 +318,7 @@ namespace LBM
              * @return Number of elements in the array equal to val
              **/
             template <const T val, const bool Equal>
-            devicehostFunctionReturnType inline constexpr host::label_t count() const noexcept
+            deviceHostFunctionReturnType inline constexpr host::label_t count() const noexcept
             {
                 host::label_t n = 0;
 
@@ -378,7 +378,7 @@ namespace LBM
              * @return Array containing the matching indices.
              **/
             template <const T val, const bool Equal, const host::label_t ReturnSize>
-            devicehostFunctionReturnType inline constexpr thread::array<host::label_t, ReturnSize> indices_of() const noexcept
+            deviceHostFunctionReturnType inline constexpr thread::array<host::label_t, ReturnSize> indices_of() const noexcept
             {
                 return [&]<host::label_t... Ks>(std::index_sequence<Ks...>)
                 {
@@ -395,7 +395,7 @@ namespace LBM
              * @return Array containing the matching values.
              **/
             template <const T val, const bool Equal, const host::label_t ReturnSize>
-            devicehostFunctionReturnType inline constexpr thread::array<T, ReturnSize> values_of() const noexcept
+            deviceHostFunctionReturnType inline constexpr thread::array<T, ReturnSize> values_of() const noexcept
             {
                 return [&]<host::label_t... Ks>(std::index_sequence<Ks...>)
                 {
@@ -409,7 +409,7 @@ namespace LBM
              * @return True if the array contains val, false otherwise
              **/
             template <const T val>
-            devicehostFunctionReturnType inline constexpr bool contains() const noexcept
+            deviceHostFunctionReturnType inline constexpr bool contains() const noexcept
             {
                 for (host::label_t i = 0; i < N; i++)
                 {
@@ -425,7 +425,7 @@ namespace LBM
              * @brief Computes the number of non-zero elements of an array
              * @return Number of non-zero elements in the array
              **/
-            devicehostFunctionReturnType inline constexpr host::label_t number_non_zero() const noexcept
+            deviceHostFunctionReturnType inline constexpr host::label_t number_non_zero() const noexcept
             {
                 return count<0, false>();
             }
@@ -436,7 +436,7 @@ namespace LBM
              * @return Array containing only non-zero values from the input array
              **/
             template <const host::label_t ReturnSize>
-            devicehostFunctionReturnType inline constexpr thread::array<T, ReturnSize> non_zero_values() const noexcept
+            deviceHostFunctionReturnType inline constexpr thread::array<T, ReturnSize> non_zero_values() const noexcept
             {
                 return values_of<0, false, ReturnSize>();
             }
@@ -447,7 +447,7 @@ namespace LBM
              * @return Array containing only non-zero indices from the input array
              **/
             template <const device::label_t ReturnSize>
-            devicehostFunctionReturnType inline constexpr thread::array<host::label_t, ReturnSize> non_zero_indices() const noexcept
+            deviceHostFunctionReturnType inline constexpr thread::array<host::label_t, ReturnSize> non_zero_indices() const noexcept
             {
                 return indices_of<0, false, ReturnSize>();
             }
@@ -505,7 +505,7 @@ namespace LBM
      * @return Zero-filled `thread::array<T, N>`.
      **/
     template <typename T, const host::label_t N>
-    devicehostFunctionReturnType inline consteval const thread::array<T, N> zeros() noexcept
+    deviceHostFunctionReturnType inline consteval const thread::array<T, N> zeros() noexcept
     {
         constexpr const integralConstant<T, static_cast<T>(0)> value;
         return thread::array<T, N>(value);

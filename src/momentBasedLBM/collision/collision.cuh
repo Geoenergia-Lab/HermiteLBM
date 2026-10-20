@@ -60,7 +60,7 @@ namespace LBM
          * @return A collision object
          * @note This constructor is consteval
          **/
-        devicehostFunctionReturnType inline consteval collision() noexcept {}
+        deviceHostFunctionReturnType inline consteval collision() noexcept {}
 
     private:
     };

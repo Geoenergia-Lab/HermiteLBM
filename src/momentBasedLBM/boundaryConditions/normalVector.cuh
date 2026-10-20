@@ -60,27 +60,27 @@ namespace LBM
          * @brief Bitmask values for individual boundary faces
          * @return Bitmask value for the specified boundary face
          **/
-        devicehostFunctionReturnType static inline consteval nodeType_t WEST() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t WEST() noexcept
         {
             return 0x01;
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t EAST() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t EAST() noexcept
         {
             return 0x02;
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t SOUTH() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t SOUTH() noexcept
         {
             return 0x04;
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t NORTH() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t NORTH() noexcept
         {
             return 0x08;
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t BACK() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t BACK() noexcept
         {
             return 0x10;
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t FRONT() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t FRONT() noexcept
         {
             return 0x20;
         }
@@ -90,35 +90,35 @@ namespace LBM
          * @brief Bitmask values for corner configurations (8 types)
          * @return Bitmask value for the specified corner configuration
          **/
-        devicehostFunctionReturnType static inline consteval nodeType_t SOUTH_WEST_BACK() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t SOUTH_WEST_BACK() noexcept
         {
             return SOUTH() | WEST() | BACK();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t SOUTH_WEST_FRONT() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t SOUTH_WEST_FRONT() noexcept
         {
             return SOUTH() | WEST() | FRONT();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t SOUTH_EAST_BACK() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t SOUTH_EAST_BACK() noexcept
         {
             return SOUTH() | EAST() | BACK();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t SOUTH_EAST_FRONT() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t SOUTH_EAST_FRONT() noexcept
         {
             return SOUTH() | EAST() | FRONT();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t NORTH_WEST_BACK() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t NORTH_WEST_BACK() noexcept
         {
             return NORTH() | WEST() | BACK();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t NORTH_WEST_FRONT() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t NORTH_WEST_FRONT() noexcept
         {
             return NORTH() | WEST() | FRONT();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t NORTH_EAST_BACK() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t NORTH_EAST_BACK() noexcept
         {
             return NORTH() | EAST() | BACK();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t NORTH_EAST_FRONT() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t NORTH_EAST_FRONT() noexcept
         {
             return NORTH() | EAST() | FRONT();
         }
@@ -128,51 +128,51 @@ namespace LBM
          * @brief Bitmask values for edge configurations (12 types)
          * @return Bitmask value for the specified edge configuration
          **/
-        devicehostFunctionReturnType static inline consteval nodeType_t SOUTH_WEST() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t SOUTH_WEST() noexcept
         {
             return SOUTH() | WEST();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t SOUTH_EAST() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t SOUTH_EAST() noexcept
         {
             return SOUTH() | EAST();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t NORTH_WEST() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t NORTH_WEST() noexcept
         {
             return NORTH() | WEST();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t NORTH_EAST() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t NORTH_EAST() noexcept
         {
             return NORTH() | EAST();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t WEST_BACK() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t WEST_BACK() noexcept
         {
             return WEST() | BACK();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t WEST_FRONT() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t WEST_FRONT() noexcept
         {
             return WEST() | FRONT();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t EAST_BACK() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t EAST_BACK() noexcept
         {
             return EAST() | BACK();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t EAST_FRONT() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t EAST_FRONT() noexcept
         {
             return EAST() | FRONT();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t SOUTH_BACK() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t SOUTH_BACK() noexcept
         {
             return SOUTH() | BACK();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t SOUTH_FRONT() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t SOUTH_FRONT() noexcept
         {
             return SOUTH() | FRONT();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t NORTH_BACK() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t NORTH_BACK() noexcept
         {
             return NORTH() | BACK();
         }
-        devicehostFunctionReturnType static inline consteval nodeType_t NORTH_FRONT() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t NORTH_FRONT() noexcept
         {
             return NORTH() | FRONT();
         }
@@ -181,13 +181,13 @@ namespace LBM
          * @brief Special type for interior points
          * @return Bitmask value for interior points (no boundaries)
          **/
-        devicehostFunctionReturnType static inline consteval nodeType_t INTERIOR() noexcept
+        deviceHostFunctionReturnType static inline consteval nodeType_t INTERIOR() noexcept
         {
             return 0x00;
         }
 
         template <typename T, const nodeType_t Boundary>
-        devicehostFunctionReturnType static inline constexpr bool is(const nodeType_t bitMask) noexcept
+        deviceHostFunctionReturnType static inline constexpr bool is(const nodeType_t bitMask) noexcept
         {
             return static_cast<T>(static_cast<bool>(bitMask & Boundary));
         }
@@ -228,7 +228,7 @@ namespace LBM
          * @return True if the point lies on the specified boundary
          **/
         template <typename T = bool>
-        devicehostFunctionReturnType inline constexpr T isWest() const noexcept
+        deviceHostFunctionReturnType inline constexpr T isWest() const noexcept
         {
             return Base::is<T, Base::WEST()>(bitmask_);
         }
@@ -239,7 +239,7 @@ namespace LBM
          * @return True if the point lies on the specified boundary
          **/
         template <typename T = bool>
-        devicehostFunctionReturnType inline constexpr T isEast() const noexcept
+        deviceHostFunctionReturnType inline constexpr T isEast() const noexcept
         {
             return Base::is<T, Base::EAST()>(bitmask_);
         }
@@ -250,7 +250,7 @@ namespace LBM
          * @return True if the point lies on the specified boundary
          **/
         template <typename T = bool>
-        devicehostFunctionReturnType inline constexpr T isSouth() const noexcept
+        deviceHostFunctionReturnType inline constexpr T isSouth() const noexcept
         {
             return Base::is<T, Base::SOUTH()>(bitmask_);
         }
@@ -261,7 +261,7 @@ namespace LBM
          * @return True if the point lies on the specified boundary
          **/
         template <typename T = bool>
-        devicehostFunctionReturnType inline constexpr T isNorth() const noexcept
+        deviceHostFunctionReturnType inline constexpr T isNorth() const noexcept
         {
             return Base::is<T, Base::NORTH()>(bitmask_);
         }
@@ -272,7 +272,7 @@ namespace LBM
          * @return True if the point lies on the specified boundary
          **/
         template <typename T = bool>
-        devicehostFunctionReturnType inline constexpr T isBack() const noexcept
+        deviceHostFunctionReturnType inline constexpr T isBack() const noexcept
         {
             return Base::is<T, Base::BACK()>(bitmask_);
         }
@@ -283,7 +283,7 @@ namespace LBM
          * @return True if the point lies on the specified boundary
          **/
         template <typename T = bool>
-        devicehostFunctionReturnType inline constexpr T isFront() const noexcept
+        deviceHostFunctionReturnType inline constexpr T isFront() const noexcept
         {
             return Base::is<T, Base::FRONT()>(bitmask_);
         }
@@ -294,7 +294,7 @@ namespace LBM
          * @return True if the point lies on the specified boundary
          **/
         template <typename T = bool>
-        devicehostFunctionReturnType inline constexpr T isBoundary() const noexcept
+        deviceHostFunctionReturnType inline constexpr T isBoundary() const noexcept
         {
             return static_cast<T>(static_cast<bool>(bitmask_ & 0x40));
         }
@@ -305,7 +305,7 @@ namespace LBM
          * @return True if the point lies on the specified boundary
          **/
         template <typename T = bool>
-        devicehostFunctionReturnType inline constexpr T isInterior() const noexcept
+        deviceHostFunctionReturnType inline constexpr T isInterior() const noexcept
         {
             return static_cast<T>(!isBoundary<bool>());
         }
@@ -316,7 +316,7 @@ namespace LBM
          * @return Number of boundary planes that intersect a point
          **/
         template <typename T = nodeType_t>
-        devicehostFunctionReturnType inline constexpr T countBoundaries() const noexcept
+        deviceHostFunctionReturnType inline constexpr T countBoundaries() const noexcept
         {
             // Count set bits in 6-bit value using parallel addition
             // This is known as the "popcount" algorithm for small integers

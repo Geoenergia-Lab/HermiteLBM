@@ -73,7 +73,7 @@ namespace LBM
         /**
          * @brief Determines the amount of shared memory required for a kernel based on the velocity set
          **/
-        devicehostFunctionReturnType static inline consteval host::label_t smem_alloc_size() noexcept
+        deviceHostFunctionReturnType static inline consteval host::label_t smem_alloc_size() noexcept
         {
             return 0;
         }

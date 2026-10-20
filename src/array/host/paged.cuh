@@ -280,7 +280,7 @@ namespace LBM
                                 if ((fieldName == "U_x") || (fieldName == "U_y") || (fieldName == "U_z"))
                                 {
                                     // std::cout << "Doing velocity value" << std::endl;
-                                    field[globalIdx] = value * programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3));
+                                    field[globalIdx] = value * programCtrl.Ma() / math::sqrt(static_cast<scalar_t>(3));
                                 }
                                 else
                                 {

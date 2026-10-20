@@ -74,6 +74,7 @@ namespace LBM
          * to both the read and write halo buffers so the neighbouring data is available
          * to the next streaming step.
          **/
+        template <const bool periodic_x, const bool periodic_y, const bool periodic_z>
         __device__ static inline void saveHalo(
             const momentsArray &moments,
             const device::ptrCollection<6, scalar_t> &readBuffer,
@@ -82,8 +83,8 @@ namespace LBM
             const block::coordinate &Bx,
             const device::pointCoordinate &point) noexcept
         {
-            device::halo<VelocitySet, boundaryConditionType<true, true, true>>::save(moments, readBuffer, Tx, Bx, point);
-            device::halo<VelocitySet, boundaryConditionType<true, true, true>>::save(moments, writeBuffer, Tx, Bx, point);
+            device::halo<VelocitySet, boundaryConditionType<periodic_x, periodic_y, periodic_z>>::save(moments, readBuffer, Tx, Bx, point);
+            device::halo<VelocitySet, boundaryConditionType<periodic_x, periodic_y, periodic_z>>::save(moments, writeBuffer, Tx, Bx, point);
         }
 
         /**
@@ -150,12 +151,6 @@ namespace LBM
 
             block::sync();
 
-            // Reconstruct the population from the moments
-            thread::array<scalar_t, VelocitySet::Q()> pop;
-            VelocitySet::reconstruct(pop, moments);
-
-            // constexpr const integralConstant<scalar_t, static_cast<scalar_t>(0)> v;
-
             __shared__ blockSharedBuffer sharedBuffer;
 
             // Update the post-streaming moments according to the interior and/or boundary conditions
@@ -163,18 +158,17 @@ namespace LBM
             {
                 using NormalVector = normalVector<var3<bool>(BoundaryConditions::template periodic<axis::X>(), BoundaryConditions::template periodic<axis::Y>(), BoundaryConditions::template periodic<axis::Z>())>;
                 const NormalVector boundaryNormal(point);
-                VelocitySet::template calculate_moments(moments, pop, boundaryNormal);
                 BoundaryConditions::template calculate_moments<VelocitySet>(moments, sharedBuffer, Tx, point, tid, boundaryNormal);
-            }
-            else
-            {
-                VelocitySet::template calculate_moments(moments, pop);
             }
 
             velocitySetBase::scale(moments);
 
+            // Temp weird fix
+            moments[6] = -moments[6];
+            moments[8] = -moments[8];
+
             // Save the halo
-            saveHalo(moments, readBuffer, writeBuffer, Tx, Bx, point);
+            saveHalo<BoundaryConditions::template periodic<axis::X>(), BoundaryConditions::template periodic<axis::Y>(), BoundaryConditions::template periodic<axis::Z>()>(moments, readBuffer, writeBuffer, Tx, Bx, point);
 
             device::constexpr_for<0, NUMBER_MOMENTS()>(
                 [&](const auto moment)

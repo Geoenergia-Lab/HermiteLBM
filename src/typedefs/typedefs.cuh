@@ -196,6 +196,8 @@ namespace LBM
         template <const type alpha>
         hostFunctionReturnType inline constexpr host::blockLabel to_3d(const host::label_t ta, const host::label_t tb, const host::label_t i) noexcept
         {
+            axis::assertions::validate<alpha, axis::NOT_NULL>();
+
             if constexpr (alpha == X)
             {
                 return {i, ta, tb};

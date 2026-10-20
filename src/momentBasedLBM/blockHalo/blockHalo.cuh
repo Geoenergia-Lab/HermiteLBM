@@ -131,7 +131,7 @@ namespace LBM
          * @returns The pointer index corresponding to the axis direction alpha and coefficient coeff
          **/
         template <const axis::type alpha, const int coeff>
-        devicehostFunctionReturnType static inline consteval axis::pointerIndex_t pointerIndex() noexcept
+        deviceHostFunctionReturnType static inline consteval axis::pointerIndex_t pointerIndex() noexcept
         {
             axis::assertions::validate<alpha, axis::null::NOT_NULL>();
             velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();

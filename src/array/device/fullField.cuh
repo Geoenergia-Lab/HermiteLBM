@@ -102,7 +102,7 @@ namespace LBM
                       mesh,
                       programCtrl)
             {
-                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3)));
+                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl.Ma() / math::sqrt(static_cast<scalar_t>(3)));
             }
 
             /**
@@ -127,7 +127,7 @@ namespace LBM
                       mesh,
                       programCtrl)
             {
-                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl.Ma() / std::sqrt(static_cast<scalar_t>(3)));
+                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl.Ma() / math::sqrt(static_cast<scalar_t>(3)));
             }
 
             /**
@@ -142,7 +142,7 @@ namespace LBM
              * @return Const pointer to device memory.
              **/
             template <typename Idx>
-            devicehostFunctionReturnType inline const T *constPtr(const Idx idx) const noexcept
+            deviceHostFunctionReturnType inline const T *constPtr(const Idx idx) const noexcept
             {
                 return ptr_[idx];
             }
@@ -154,7 +154,7 @@ namespace LBM
              * @return Pointer to device memory.
              **/
             template <typename Idx>
-            devicehostFunctionReturnType inline T *ptr(const Idx idx) noexcept
+            deviceHostFunctionReturnType inline T *ptr(const Idx idx) noexcept
             {
                 return ptr_[idx];
             }
@@ -166,7 +166,7 @@ namespace LBM
              * @return Pointer to device memory.
              **/
             template <typename Idx>
-            devicehostFunctionReturnType inline T *mutPtr(const Idx idx) const noexcept
+            deviceHostFunctionReturnType inline T *mutPtr(const Idx idx) const noexcept
             {
                 return ptr_[idx];
             }

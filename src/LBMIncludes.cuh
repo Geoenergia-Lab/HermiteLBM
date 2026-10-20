@@ -53,14 +53,15 @@ SourceFiles
 #if defined(__HIPCC__)
 #include <hip/hip_runtime.h>
 #include <hip/hiprtc.h>
+#include <hip/std/cmath>
 #elif defined(__CUDACC__)
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include <nvrtc.h>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
+#include <cuda/std/cmath>
 #endif
-
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -111,7 +112,7 @@ namespace LBM
     /**
      * @brief Verbose logging
      **/
-    devicehostFunctionReturnType inline consteval bool verbose() noexcept
+    deviceHostFunctionReturnType inline consteval bool verbose() noexcept
     {
 #ifdef VERBOSE
         return true;
