@@ -50,6 +50,7 @@ SourceFiles
 #ifndef __MBLBM_CASES_CUH
 #define __MBLBM_CASES_CUH
 
+#include "channel/channelFlow.cuh"
 #include "jetFlow/jetFlow.cuh"
 #include "lidDrivenCavity/lidDrivenCavity.cuh"
 #include "benchmark/benchmark.cuh"
@@ -62,7 +63,7 @@ namespace LBM
     template <class BoundaryCondition>
     __device__ __host__ inline constexpr void validateBoundaryConditions() noexcept
     {
-        static_assert(std::is_same_v<BoundaryCondition, jetFlow> || std::is_same_v<BoundaryCondition, lidDrivenCavity> || std::is_same_v<BoundaryCondition, benchmark>, "BoundaryConditionCase must be one of the available boundary condition types.");
+        static_assert(std::is_same_v<BoundaryCondition, channelFlow> || std::is_same_v<BoundaryCondition, jetFlow> || std::is_same_v<BoundaryCondition, lidDrivenCavity> || std::is_same_v<BoundaryCondition, benchmark>, "BoundaryConditionCase must be one of the available boundary condition types.");
     }
 }
 

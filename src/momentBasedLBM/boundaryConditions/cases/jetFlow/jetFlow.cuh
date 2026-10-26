@@ -47,8 +47,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_jetFlow_CUH
-#define __MBLBM_jetFlow_CUH
+#ifndef __MBLBM_JETFLOW_CUH
+#define __MBLBM_JETFLOW_CUH
 
 namespace LBM
 {
@@ -60,10 +60,15 @@ namespace LBM
     class jetFlow : public boundaryConditionType<true, true, false>
     {
     public:
+        using Base = boundaryConditionType<true, true, false>;
+
         /**
          * @brief Switch determining whether or not the boundary condition actually applies a condition
          **/
-        deviceHostFunctionReturnType static inline consteval bool appliesCondition() noexcept { return true; }
+        deviceHostFunctionReturnType static inline consteval bool appliesCondition() noexcept
+        {
+            return true;
+        }
 
         /**
          * @brief Public method to calculate the post-streaming methods and update boundary conditions
@@ -77,16 +82,6 @@ namespace LBM
             const device::label_t tid,
             const NormalVector &boundaryNormal) noexcept
         {
-            // Update the shared buffer with the refreshed moments
-            device::constexpr_for<0, NUMBER_MOMENTS()>(
-                [&](const auto moment)
-                {
-                    const device::label_t ID = tid * label_constant<NUMBER_MOMENTS()>() + label_constant<moment>();
-                    sharedBuffer[ID] = moments[moment];
-                });
-
-            block::sync();
-
             if (boundaryNormal.isBoundary())
             {
                 calculate_moments<VelocitySet>(moments, boundaryNormal, sharedBuffer, Tx, point);

@@ -91,7 +91,7 @@ namespace LBM
             printHeader<true>();
             IO::printBlock(
                 std::cout, "programControl",
-                "{", "}",
+                "{", "};",
                 "programName\t", input_.commandLine()[0],
                 "launchTime\t", std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S"),
                 "launchDirectory", launchDirectory.string(),
@@ -115,6 +115,7 @@ namespace LBM
                     errorHandler::handle(API::setDevice(deviceList()[virtualDeviceIndex]));
 
                     // Allocate symbols on the GPU
+                    const scalar_t MaTemp = Ma_;
                     const scalar_t U = Ma_ / math::sqrt(static_cast<scalar_t>(3));
                     const scalar_t nuTemp = U * L_char() / Re();
                     const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3) * nuTemp;
@@ -122,13 +123,19 @@ namespace LBM
                     const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
                     const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
 
+                    std::cout << "nu: " << nuTemp << std::endl;
+
+                    device::copyToSymbol(device::Ma, MaTemp);
                     device::copyToSymbol(device::L_char, L_char());
                     device::copyToSymbol(device::nu, nuTemp);
                     device::copyToSymbol(device::Re, Re());
                     device::copyToSymbol(device::tau, tauTemp);
                     device::copyToSymbol(device::omega, omegaTemp);
-                    device::copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
-                    device::copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
+
+                    const scalar_t gTemp = (math::pow<2>(Ma_)) / (static_cast<scalar_t>(3) * L_char());
+                    std::cout << "g: " << gTemp << std::endl;
+
+                    device::copyToSymbol(device::g, gTemp);
                 }
             }
 

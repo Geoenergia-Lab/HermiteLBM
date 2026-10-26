@@ -87,6 +87,24 @@ namespace LBM
             device::halo<VelocitySet, boundaryConditionType<periodic_x, periodic_y, periodic_z>>::save(moments, writeBuffer, Tx, Bx, point);
         }
 
+        __device__ __forceinline__ static constexpr uint32_t hash_u32(uint32_t x) noexcept
+        {
+            x ^= x >> 16;
+            x *= 0x7feb352dU;
+            x ^= x >> 15;
+            x *= 0x846ca68bU;
+            x ^= x >> 16;
+            return x;
+        }
+
+        // Uniform in [-1, 1)
+        __device__ __forceinline__ static constexpr scalar_t uniform_signed(
+            const uint32_t seed, const uint32_t idx, const uint32_t comp) noexcept
+        {
+            const uint32_t h = hash_u32(seed ^ (idx * 0x9E3779B9U) ^ (comp * 0x85EBCA6BU));
+            return static_cast<scalar_t>(h >> 8) * (2.0f / 16777216.0f) - static_cast<scalar_t>(1);
+        }
+
         /**
          * @brief Initialises the block halo for a single lattice block.
          *
@@ -127,6 +145,12 @@ namespace LBM
                 return;
             }
 
+            // constexpr const scalar_t u0 = static_cast<scalar_t>(0.1 / math::constexpr_sqrt<double, static_cast<double>(3)>());
+
+            // const scalar_t fx = cuda::std::sin(point.value<axis::X>()) * u0;
+            // const scalar_t fy = cuda::std::sin(point.value<axis::Y>()) * u0;
+            // const scalar_t fz = cuda::std::sin(point.value<axis::Z>()) * u0;
+
             // Coalesced read from global memory
             momentsArray moments{
                 rho0(),
@@ -139,6 +163,37 @@ namespace LBM
                 static_cast<scalar_t>(0),
                 static_cast<scalar_t>(0),
                 static_cast<scalar_t>(0)};
+
+            // momentsArray moments{
+            //     static_cast<scalar_t>(0),
+            //     static_cast<scalar_t>(0),
+            //     static_cast<scalar_t>(0),
+            //     static_cast<scalar_t>(0),
+            //     static_cast<scalar_t>(0),
+            //     static_cast<scalar_t>(0),
+            //     static_cast<scalar_t>(0),
+            //     static_cast<scalar_t>(0),
+            //     static_cast<scalar_t>(0),
+            //     static_cast<scalar_t>(0)};
+
+            // if (firstTimeStep)
+            // {
+            //     constexpr uint32_t SEED = 0xDEADBEEFu;
+            //     constexpr scalar_t A = static_cast<scalar_t>(0.1);
+
+            //     const uint32_t i = static_cast<uint32_t>(idx);
+
+            //     moments[1] = (A * velocitySetBase::cs2<scalar_t>()) * uniform_signed(SEED, i, 0);                                            // ux
+            //     moments[2] = (A * velocitySetBase::cs2<scalar_t>()) * uniform_signed(SEED, i, 1);                                            // uy
+            //     moments[3] = (A * velocitySetBase::cs2<scalar_t>()) + ((A * velocitySetBase::cs2<scalar_t>()) * uniform_signed(SEED, i, 2)); // uz
+            //     // Second moments at equilibrium: m_ab = rho * u_a * u_b
+            //     moments[4] = moments[1] * moments[1]; // mxx
+            //     moments[5] = moments[1] * moments[2]; // mxy
+            //     moments[6] = moments[1] * moments[3]; // mxz
+            //     moments[7] = moments[2] * moments[2]; // myy
+            //     moments[8] = moments[2] * moments[3]; // myz
+            //     moments[9] = moments[3] * moments[3]; // mzz
+            // }
 
             if (!firstTimeStep)
             {
@@ -158,14 +213,15 @@ namespace LBM
             {
                 using NormalVector = normalVector<var3<bool>(BoundaryConditions::template periodic<axis::X>(), BoundaryConditions::template periodic<axis::Y>(), BoundaryConditions::template periodic<axis::Z>())>;
                 const NormalVector boundaryNormal(point);
+                BoundaryConditions::Base::template update_smem(moments, sharedBuffer, tid);
                 BoundaryConditions::template calculate_moments<VelocitySet>(moments, sharedBuffer, Tx, point, tid, boundaryNormal);
             }
 
             velocitySetBase::scale(moments);
 
             // Temp weird fix
-            moments[6] = -moments[6];
-            moments[8] = -moments[8];
+            // moments[6] = -moments[6];
+            // moments[8] = -moments[8];
 
             // Save the halo
             saveHalo<BoundaryConditions::template periodic<axis::X>(), BoundaryConditions::template periodic<axis::Y>(), BoundaryConditions::template periodic<axis::Z>()>(moments, readBuffer, writeBuffer, Tx, Bx, point);

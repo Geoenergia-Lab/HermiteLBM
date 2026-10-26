@@ -68,13 +68,24 @@ namespace LBM
     /**
      * @brief Define the boundary condition case
      **/
+    using BoundaryConditionCase = channelFlow;
     // using BoundaryConditionCase = lidDrivenCavity;
-    using BoundaryConditionCase = jetFlow;
+    // using BoundaryConditionCase = jetFlow;
     // using BoundaryConditionCase = benchmark;
 }
 
 #include "../../../src/momentBasedLBM/blockHalo/blockHalo.cuh"
 #include "../../../src/momentBasedLBM/collision/collision.cuh"
+
+namespace LBM
+{
+    /**
+     * @brief Define the collision and forcing model
+     **/
+    using Forcing = forcing::Guo;
+    using Collision = BGK<Forcing>;
+}
+
 #include "../../../src/momentBasedLBM/streaming/streaming.cuh"
 
 // Runtime IO includes
