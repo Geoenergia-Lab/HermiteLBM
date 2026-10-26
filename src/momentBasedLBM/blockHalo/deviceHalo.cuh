@@ -231,7 +231,7 @@ namespace LBM
 
             if (runTime::program_status.load() == runTime::GOOD)
             {
-                kernel::launch<kernel::momentBasedLBMInitialisation<VelocitySet>()>(
+                kernel::launch<momentBasedLBM::initialisation<VelocitySet>::kernel()>(
                     mesh,
                     programCtrl.streams()[device::internalStreamID(deviceIdx)],
                     devPtrs,

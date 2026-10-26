@@ -128,13 +128,6 @@ namespace LBM
             static constexpr const bool canCalculateInstantaneous = true;
         };
 
-        namespace strainRateTensorDetail
-        {
-            using This = S;
-
-#include "commonKernelDefinitions.cuh"
-        }
-
         /**
          * @brief Class for managing strain rate tensor calculations in LBM simulations
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
@@ -148,7 +141,7 @@ namespace LBM
              **/
             using ObjectType = S;
             using BaseType = FunctionObjectBase<ObjectType::N>;
-            using Kernel = strainRateTensorDetail::kernel;
+            using Kernel = functionObjectKernel<ObjectType>;
 
             /**
              * @brief Bring base members into scope

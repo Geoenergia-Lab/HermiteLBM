@@ -50,15 +50,118 @@ SourceFiles
 #ifndef __MBLBM_OBJECTS_CUH
 #define __MBLBM_OBJECTS_CUH
 
+namespace LBM
+{
+    /**
+     * @brief CUDA kernel for calculating the time averaged quantity only
+     * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
+     * @param[out] resultMeanPtrs Device pointer collection for the time averaged quantity
+     * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
+     **/
+    template <class FunctionObject>
+    __launch_bounds__(block::maxThreads(), 1) __global__ static void meanKernel(
+        const device::ptrColl_t devPtrs,
+        const device::ptrCollection<FunctionObject::N, scalar_t> resultMeanPtrs,
+        const scalar_t invNewCount)
+    {
+        functionObjects::mean<FunctionObject>(devPtrs, resultMeanPtrs, invNewCount);
+    }
+
+    /**
+     * @brief CUDA kernel for calculating the instantaneous and time averaged quantity
+     * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
+     * @param[out] resultPtrs Device pointer collection for the instantaneous quantity
+     * @param[out] resultMeanPtrs Device pointer collection for the time averaged quantity
+     * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
+     **/
+    template <class FunctionObject>
+    __launch_bounds__(block::maxThreads(), 1) __global__ static void instantaneousAndMeanKernel(
+        const device::ptrColl_t devPtrs,
+        const device::ptrCollection<FunctionObject::N, scalar_t> resultPtrs,
+        const device::ptrCollection<FunctionObject::N, scalar_t> resultMeanPtrs,
+        const scalar_t invNewCount)
+    {
+        functionObjects::instantaneousAndMean<FunctionObject>(devPtrs, resultPtrs, resultMeanPtrs, invNewCount);
+    }
+
+    /**
+     * @brief CUDA kernel for calculating the instantaneous quantity only
+     * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
+     * @param[out] resultPtrs Device pointer collection for the instantaneous quantity
+     **/
+    template <class FunctionObject>
+    __launch_bounds__(block::maxThreads(), 1) __global__ static void instantaneousKernel(
+        const device::ptrColl_t devPtrs,
+        const device::ptrCollection<FunctionObject::N, scalar_t> resultPtrs)
+    {
+        functionObjects::instantaneous<FunctionObject>(devPtrs, resultPtrs);
+    }
+
+    /**
+     * @brief CUDA kernel for calculating the prime quantity only
+     * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
+     * @param[out] resultPtrs Device pointer collection for the instantaneous quantity
+     **/
+    template <class FunctionObject>
+    __launch_bounds__(block::maxThreads(), 1) __global__ static void primeKernel(
+        const device::ptrColl_t devPtrs,
+        const device::ptrCollection<FunctionObject::N, scalar_t> resultMeanPtrs,
+        const device::ptrCollection<FunctionObject::N, scalar_t> resultPtrs)
+    {
+        functionObjects::prime<FunctionObject>(devPtrs, resultMeanPtrs, resultPtrs);
+    }
+
+    /**
+     * @brief CUDA kernel for calculating the time average of the square of the prime quantity
+     * @param[in] devPtrs Device pointer collection containing density, velocity and moment fields
+     * @param[in] resultMeanPtrs Device pointer collection for the time average quantity
+     * @param[out] resultPrimeMeanSqPtrs Device pointer collection for the time average of the square of the prime quantity
+     * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
+     **/
+    template <class FunctionObject>
+    __launch_bounds__(block::maxThreads(), 1) __global__ static void primeSqMeanKernel(
+        const device::ptrColl_t devPtrs,
+        const device::ptrCollection<FunctionObject::N, scalar_t> resultMeanPtrs,
+        const device::ptrCollection<FunctionObject::N, scalar_t> resultPrimeMeanSqPtrs,
+        const scalar_t invNewCount)
+    {
+        functionObjects::primeSqMean<FunctionObject>(devPtrs, resultMeanPtrs, resultPrimeMeanSqPtrs, invNewCount);
+    }
+
+    template <class FunctionObject>
+    struct functionObjectKernel
+    {
+        /**
+         * @brief Returns a function pointer to the instantaneous kernel
+         **/
+        hostFunctionReturnType static inline consteval auto instantaneous() noexcept { return instantaneousKernel<FunctionObject>; }
+
+        /**
+         * @brief Returns a function pointer to the time average kernel
+         **/
+        hostFunctionReturnType static inline consteval auto mean() noexcept { return meanKernel<FunctionObject>; }
+
+        /**
+         * @brief Returns a function pointer to the instantaneous and time average kernel
+         **/
+        hostFunctionReturnType static inline consteval auto instantaneousAndMean() noexcept { return instantaneousAndMeanKernel<FunctionObject>; }
+
+        /**
+         * @brief Returns a function pointer to the prime kernel
+         **/
+        hostFunctionReturnType static inline consteval auto prime() noexcept { return primeKernel<FunctionObject>; }
+
+        /**
+         * @brief Returns a function pointer to the prime squared time average kernel
+         **/
+        hostFunctionReturnType static inline consteval auto primeSqMean() noexcept { return primeSqMeanKernel<FunctionObject>; }
+    };
+}
+
 #include "kineticEnergy.cuh"
 #include "PiMean.cuh"
 #include "rhoMean.cuh"
 #include "strainRateTensor.cuh"
 #include "UMean.cuh"
-
-namespace LBM
-{
-
-}
 
 #endif
