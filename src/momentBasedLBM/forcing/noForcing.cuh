@@ -57,7 +57,7 @@ namespace LBM
         class none : public forceBase<false>
         {
         public:
-            __host__ [[nodiscard]] static inline consteval const char *name() noexcept { return "none"; }
+            hostFunctionReturnType static inline consteval const char *name() noexcept { return "none"; }
         };
     }
 }

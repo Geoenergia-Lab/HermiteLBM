@@ -57,7 +57,7 @@ namespace LBM
         class Guo : public forceBase<true>
         {
         public:
-            __host__ [[nodiscard]] static inline consteval const char *name() noexcept { return "Guo"; }
+            hostFunctionReturnType static inline consteval const char *name() noexcept { return "Guo"; }
 
             template <const axis::type alpha>
             deviceFunctionReturnType static inline constexpr scalar_t apply() noexcept

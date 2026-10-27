@@ -120,8 +120,8 @@ namespace LBM
                     const scalar_t nuTemp = U * L_char() / Re();
                     const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3) * nuTemp;
                     const scalar_t omegaTemp = static_cast<scalar_t>(1) / tauTemp;
-                    const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
-                    const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
+                    // const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
+                    // const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
 
                     std::cout << "nu: " << nuTemp << std::endl;
 

@@ -53,7 +53,8 @@ SourceFiles
 #if defined(__HIPCC__)
 #include <hip/hip_runtime.h>
 #include <hip/hiprtc.h>
-#include <hip/std/cmath>
+// #include <hip/std/cmath>
+#include <cmath>
 #elif defined(__CUDACC__)
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
