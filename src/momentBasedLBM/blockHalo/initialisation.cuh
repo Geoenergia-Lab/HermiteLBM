@@ -202,6 +202,23 @@ namespace LBM
                     {
                         kernel::readFromPtr<moment>(devPtrs, moments, idx);
                     });
+
+                // Add some random noise to the velocity field
+                if constexpr (false)
+                {
+                    constexpr uint32_t SEED = 0xDEADBEEFu;
+                    constexpr scalar_t A = static_cast<scalar_t>(0.1);
+
+                    const uint32_t i = static_cast<uint32_t>(idx);
+
+                    const scalar_t ux = (A * velocitySetBase::cs2<scalar_t>()) * uniform_signed(SEED, i, 0);
+                    const scalar_t uy = (A * velocitySetBase::cs2<scalar_t>()) * uniform_signed(SEED, i, 1);
+                    const scalar_t uz = (A * velocitySetBase::cs2<scalar_t>()) * uniform_signed(SEED, i, 2);
+
+                    moments[1] = moments[1] + ux;
+                    moments[2] = moments[2] + uy;
+                    moments[3] = moments[3] + uz;
+                }
             }
             else
             {

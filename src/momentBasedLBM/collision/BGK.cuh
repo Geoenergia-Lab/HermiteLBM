@@ -76,17 +76,46 @@ namespace LBM
         {
             if constexpr (Force::appliesForce())
             {
-                apply<axis::X>(moments);
-                apply<axis::Y>(moments);
-                apply<axis::Z>(moments);
+                const scalar_t u_x = moments[1];
+                const scalar_t u_y = moments[2];
+                const scalar_t u_z = moments[3];
+
+                const scalar_t A = (static_cast<scalar_t>(3) * (device::omega - static_cast<scalar_t>(2))) / (static_cast<scalar_t>(2) * moments[0]);
+
+                moments[1] = u_x + (A * Force::template apply<axis::X>());
+                moments[2] = u_y + (A * Force::template apply<axis::Y>());
+                moments[3] = u_z + (A * Force::template apply<axis::Z>());
+
+                moments[4] = (static_cast<scalar_t>(0.5) * device::omega * math::pow<2>(u_x)) - ((device::omega - static_cast<scalar_t>(1)) * moments[4]) - (A * Force::template apply<axis::X>() * u_x);
+                moments[5] = (device::omega * u_x * u_y) - ((device::omega - static_cast<scalar_t>(1)) * moments[5]) - (A * ((Force::template apply<axis::X>() * u_y) + (Force::template apply<axis::Y>() * u_x)));
+                moments[6] = (device::omega * u_x * u_z) - ((device::omega - static_cast<scalar_t>(1)) * moments[6]) - (A * ((Force::template apply<axis::X>() * u_z) + (Force::template apply<axis::Z>() * u_x)));
+                moments[7] = (static_cast<scalar_t>(0.5) * device::omega * math::pow<2>(u_y)) - ((device::omega - static_cast<scalar_t>(1)) * moments[7]) - (A * Force::template apply<axis::Y>() * u_y);
+                moments[8] = (device::omega * u_y * u_z) - ((device::omega - static_cast<scalar_t>(1)) * moments[8]) - (A * ((Force::template apply<axis::Y>() * u_z) + (Force::template apply<axis::Z>() * u_y)));
+                moments[9] = (static_cast<scalar_t>(0.5) * device::omega * math::pow<2>(u_z)) - ((device::omega - static_cast<scalar_t>(1)) * moments[9]) - (A * Force::template apply<axis::Z>() * u_z);
+            }
+            else
+            {
+                apply<axis::X, axis::X>(moments);
+                apply<axis::X, axis::Y>(moments);
+                apply<axis::X, axis::Z>(moments);
+                apply<axis::Y, axis::Y>(moments);
+                apply<axis::Y, axis::Z>(moments);
+                apply<axis::Z, axis::Z>(moments);
             }
 
-            apply<axis::X, axis::X>(moments);
-            apply<axis::X, axis::Y>(moments);
-            apply<axis::X, axis::Z>(moments);
-            apply<axis::Y, axis::Y>(moments);
-            apply<axis::Y, axis::Z>(moments);
-            apply<axis::Z, axis::Z>(moments);
+            // if constexpr (Force::appliesForce())
+            // {
+            //     apply<axis::X>(moments);
+            //     apply<axis::Y>(moments);
+            //     apply<axis::Z>(moments);
+            // }
+
+            // apply<axis::X, axis::X>(moments);
+            // apply<axis::X, axis::Y>(moments);
+            // apply<axis::X, axis::Z>(moments);
+            // apply<axis::Y, axis::Y>(moments);
+            // apply<axis::Y, axis::Z>(moments);
+            // apply<axis::Z, axis::Z>(moments);
         }
 
         __host__ static inline void print() noexcept
@@ -121,7 +150,9 @@ namespace LBM
         template <const axis::type alpha>
         __device__ static inline constexpr void apply(momentsArray &moments) noexcept
         {
-            moments[axis::index<alpha, axis::NO_DIRECTION>()] = moments[axis::index<alpha, axis::NO_DIRECTION>()] + ((static_cast<scalar_t>(2) * velocitySetBase::scale_i<scalar_t>() / moments[0]) * Force::template apply<alpha>());
+            moments[axis::index<alpha, axis::NO_DIRECTION>()] =
+                moments[axis::index<alpha, axis::NO_DIRECTION>()] +
+                ((static_cast<scalar_t>(2) * velocitySetBase::scale_i<scalar_t>() / moments[0]) * Force::template apply<alpha>());
         }
 
         /**

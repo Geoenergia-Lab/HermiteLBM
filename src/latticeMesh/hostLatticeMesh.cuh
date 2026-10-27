@@ -211,7 +211,7 @@ namespace LBM
              * @param[in] x X coordinate of the point.
              * @return true if the point is on the west face; otherwise false.
              **/
-            hostFunctionReturnType inline constexpr bool West(const host::label_t x) const noexcept
+            hostFunctionReturnType static inline constexpr bool West(const host::label_t x) noexcept
             {
                 return (x == 0);
             }
@@ -233,7 +233,7 @@ namespace LBM
              * @param[in] y Y coordinate of the point.
              * @return true if the point is on the south face; otherwise false.
              **/
-            hostFunctionReturnType inline constexpr bool South(const host::label_t y) const noexcept
+            hostFunctionReturnType static inline constexpr bool South(const host::label_t y) noexcept
             {
                 return (y == 0);
             }
@@ -255,7 +255,7 @@ namespace LBM
              * @param[in] z Z coordinate of the point.
              * @return true if the point is on the back face; otherwise false.
              **/
-            hostFunctionReturnType inline constexpr bool Back(const host::label_t z) const noexcept
+            hostFunctionReturnType static inline constexpr bool Back(const host::label_t z) noexcept
             {
                 return (z == 0);
             }

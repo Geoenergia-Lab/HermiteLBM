@@ -279,8 +279,7 @@ namespace LBM
                                 const host::label_t globalIdx = virtualDeviceIndex * nPointsPerDevice + localIdx;
                                 if ((fieldName == "U_x") || (fieldName == "U_y") || (fieldName == "U_z"))
                                 {
-                                    // std::cout << "Doing velocity value" << std::endl;
-                                    field[globalIdx] = value * programCtrl.Ma() / math::sqrt(static_cast<scalar_t>(3));
+                                    field[globalIdx] = value * programCtrl.Ma() / math::constexpr_sqrt<scalar_t, static_cast<double>(3)>();
                                 }
                                 else
                                 {

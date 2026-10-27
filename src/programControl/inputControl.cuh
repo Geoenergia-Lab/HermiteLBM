@@ -142,7 +142,7 @@ namespace LBM
          * @return device::label_t Validated number of arguments
          * @throws std::runtime_error if argument count is negative
          **/
-        hostFunctionReturnType device::label_t nArgsCheck(const int argc) const
+        hostFunctionReturnType static device::label_t nArgsCheck(const int argc)
         {
             // Check for a bad number of supplied arguments
             if (argc < 0)
@@ -167,7 +167,7 @@ namespace LBM
          * @param[in] argv Second argument passed to main (argument vector)
          * @return words_t Parsed command line arguments
          **/
-        hostFunctionReturnType const words_t parseCommandLine(const int argc, const char *const argv[]) const noexcept
+        hostFunctionReturnType static const words_t parseCommandLine(const int argc, const char *const argv[]) noexcept
         {
             if (argc > 0)
             {

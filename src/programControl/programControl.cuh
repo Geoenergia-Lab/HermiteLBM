@@ -88,24 +88,34 @@ namespace LBM
             // Get current working directory
             const std::filesystem::path launchDirectory = std::filesystem::current_path();
 
+            const scalar_t MaTemp = Ma();
+            const scalar_t U = Ma_ / math::constexpr_sqrt<scalar_t, static_cast<double>(3)>();
+            const scalar_t nuTemp = U * L_char() / Re();
+            const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3) * nuTemp;
+            const scalar_t omegaTemp = static_cast<scalar_t>(1) / tauTemp;
+            const scalar_t gTemp = (math::pow<2>(Ma())) / (static_cast<scalar_t>(3) * L_char());
+
             printHeader<true>();
             IO::printBlock(
                 std::cout, "programControl",
                 "{", "};",
-                "programName\t", input_.commandLine()[0],
-                "launchTime\t", std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S"),
-                "launchDirectory", launchDirectory.string(),
-                "deviceList\t", deviceList(),
-                "caseName\t", caseName_,
-                "Re\t\t", Re_,
-                "Ma\t\t", Ma_,
-                "U_inf\t", Ma_ / math::sqrt(static_cast<scalar_t>(3)),
-                "nTimeSteps\t", nTimeSteps_,
-                "saveInterval", saveInterval_,
-                "infoInterval", infoInterval_,
-                "latestTime\t", latestTime_,
-                "scalarSize\t", sizeof(scalar_t) * 8,
-                "labelType\t", "uint" + std::to_string(sizeof(device::label_t) * 8) + "_t");
+                "programName     ", input_.commandLine()[0],
+                "launchTime      ", std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S"),
+                "launchDirectory ", launchDirectory.string(),
+                "deviceList      ", deviceList(),
+                "caseName        ", caseName_,
+                "Re              ", Re_,
+                "Ma              ", Ma_,
+                "U_inf           ", Ma_ / math::sqrt(static_cast<scalar_t>(3)),
+                "tau             ", tauTemp,
+                "omega           ", omegaTemp,
+                "g               ", gTemp,
+                "nTimeSteps      ", nTimeSteps_,
+                "saveInterval    ", saveInterval_,
+                "infoInterval    ", infoInterval_,
+                "latestTime      ", latestTime_,
+                "scalarSize      ", sizeof(scalar_t) * 8,
+                "labelType       ", "uint" + std::to_string(sizeof(device::label_t) * 8) + "_t");
 
             std::cout << std::endl;
             if (deviceList().size() > 0)
@@ -115,26 +125,12 @@ namespace LBM
                     errorHandler::handle(API::setDevice(deviceList()[virtualDeviceIndex]));
 
                     // Allocate symbols on the GPU
-                    const scalar_t MaTemp = Ma_;
-                    const scalar_t U = Ma_ / math::sqrt(static_cast<scalar_t>(3));
-                    const scalar_t nuTemp = U * L_char() / Re();
-                    const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3) * nuTemp;
-                    const scalar_t omegaTemp = static_cast<scalar_t>(1) / tauTemp;
-                    // const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
-                    // const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
-
-                    std::cout << "nu: " << nuTemp << std::endl;
-
                     device::copyToSymbol(device::Ma, MaTemp);
                     device::copyToSymbol(device::L_char, L_char());
                     device::copyToSymbol(device::nu, nuTemp);
                     device::copyToSymbol(device::Re, Re());
                     device::copyToSymbol(device::tau, tauTemp);
                     device::copyToSymbol(device::omega, omegaTemp);
-
-                    const scalar_t gTemp = (math::pow<2>(Ma_)) / (static_cast<scalar_t>(3) * L_char());
-                    std::cout << "g: " << gTemp << std::endl;
-
                     device::copyToSymbol(device::g, gTemp);
                 }
             }
