@@ -98,13 +98,6 @@ namespace LBM
             static constexpr const bool canCalculateInstantaneous = true;
         };
 
-        namespace kineticEnergyDetail
-        {
-            using This = k;
-
-#include "commonKernelDefinitions.cuh"
-        }
-
         /**
          * @brief Class for managing total kinetic energy scalar calculations in LBM simulations
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
@@ -118,7 +111,7 @@ namespace LBM
              **/
             using ObjectType = k;
             using BaseType = FunctionObjectBase<ObjectType::N>;
-            using Kernel = kineticEnergyDetail::kernel;
+            using Kernel = functionObjectKernel<ObjectType>;
 
             /**
              * @brief Bring base members into scope

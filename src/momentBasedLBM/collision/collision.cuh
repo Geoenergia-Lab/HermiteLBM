@@ -50,22 +50,17 @@ SourceFiles
 #ifndef __MBLBM_COLLISION_CUH
 #define __MBLBM_COLLISION_CUH
 
+#include "../forcing/forcing.cuh"
+
 namespace LBM
 {
-    class collision
-    {
-    public:
-        /**
-         * @brief Constructor for the collision class
-         * @return A collision object
-         * @note This constructor is consteval
-         **/
-        deviceHostFunctionReturnType inline consteval collision() noexcept {}
-
-    private:
-    };
+    // class collision
+    // {
+    // public:
+    // private:
+    // };
 }
 
-#include "secondOrder.cuh"
+#include "BGK.cuh"
 
 #endif

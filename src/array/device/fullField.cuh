@@ -102,7 +102,7 @@ namespace LBM
                       mesh,
                       programCtrl)
             {
-                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl.Ma() / math::sqrt(static_cast<scalar_t>(3)));
+                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl.Ma() / math::constexpr_sqrt<scalar_t, static_cast<double>(3)>());
             }
 
             /**
@@ -127,7 +127,7 @@ namespace LBM
                       mesh,
                       programCtrl)
             {
-                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl.Ma() / math::sqrt(static_cast<scalar_t>(3)));
+                initialise_boundary_condition(componentName, programCtrl.deviceList(), programCtrl.Ma() / math::constexpr_sqrt<scalar_t, static_cast<double>(3)>());
             }
 
             /**

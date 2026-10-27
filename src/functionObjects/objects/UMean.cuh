@@ -90,13 +90,6 @@ namespace LBM
             static constexpr const bool canCalculateInstantaneous = false;
         };
 
-        namespace UDetail
-        {
-            using This = U;
-
-#include "commonKernelDefinitions.cuh"
-        }
-
         /**
          * @brief Class for managing total velocity vector calculations in LBM simulations
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
@@ -110,7 +103,7 @@ namespace LBM
              **/
             using ObjectType = U;
             using BaseType = FunctionObjectBase<ObjectType::N>;
-            using Kernel = UDetail::kernel;
+            using Kernel = functionObjectKernel<ObjectType>;
 
             /**
              * @brief Bring base members into scope

@@ -63,6 +63,21 @@ namespace LBM
     class boundaryConditionType
     {
     public:
+        __device__ static inline constexpr void update_smem(
+            momentsArray &moments,
+            blockSharedBuffer &sharedBuffer,
+            const device::label_t tid) noexcept
+        {
+            device::constexpr_for<0, NUMBER_MOMENTS()>(
+                [&](const auto moment)
+                {
+                    const device::label_t ID = tid * label_constant<NUMBER_MOMENTS()>() + label_constant<moment>();
+                    sharedBuffer[ID] = moments[moment];
+                });
+
+            block::sync();
+        }
+
         /**
          * @brief Define the normal vector type
          **/

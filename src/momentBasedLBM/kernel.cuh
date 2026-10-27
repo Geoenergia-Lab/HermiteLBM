@@ -125,6 +125,7 @@ namespace LBM
                     using NormalVector = normalVector<var3<bool>(BoundaryConditions::template periodic<axis::X>(), BoundaryConditions::template periodic<axis::Y>(), BoundaryConditions::template periodic<axis::Z>())>;
                     const NormalVector boundaryNormal(point);
                     VelocitySet::template calculate_moments(moments, pop, boundaryNormal);
+                    BoundaryConditions::Base::update_smem(moments, sharedBuffer, tid);
                     BoundaryConditions::template calculate_moments<VelocitySet>(moments, sharedBuffer, Tx, point, tid, boundaryNormal);
                 }
                 else

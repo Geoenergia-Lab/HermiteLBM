@@ -174,7 +174,7 @@ namespace LBM
         deviceHostFunctionReturnType inline constexpr T sqrt(const T &val) noexcept
         {
 #if defined(__HIP__)
-            return hip::std::sqrt(val);
+            return std::sqrt(val);
 #elif defined(__CUDACC__)
             return cuda::std::sqrt(val);
 #else
@@ -187,7 +187,7 @@ namespace LBM
         deviceHostFunctionReturnType inline constexpr T exp(const T &val) noexcept
         {
 #if defined(__HIP__)
-            return hip::std::exp(val);
+            return std::exp(val);
 #elif defined(__CUDACC__)
             return cuda::std::exp(val);
 #else
@@ -200,7 +200,7 @@ namespace LBM
         deviceHostFunctionReturnType inline constexpr T erf(const T &val) noexcept
         {
 #if defined(__HIP__)
-            return hip::std::erf(val);
+            return std::erf(val);
 #elif defined(__CUDACC__)
             return cuda::std::erf(val);
 #else
