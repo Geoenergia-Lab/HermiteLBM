@@ -118,7 +118,9 @@ namespace LBM
          **/
         __host__ static void handleSignalImpl([[maybe_unused]] int signal)
         {
+            std::cout << std::endl;
             std::cout << "Abort signal received" << std::endl;
+            std::cout << "Performing cleanup" << std::endl;
             runTime::program_status.store(runTime::programStatus::BAD, std::memory_order_relaxed);
         }
 

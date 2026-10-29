@@ -68,13 +68,15 @@ namespace LBM
          **/
         hostFunctionReturnType programControl(const int argc, const char *const argv[]) noexcept
             : input_(inputControl(argc, argv)),
-              caseName_(string::extractParameter<name_t>(string::readFile("programControl"), "caseName")),
-              Re_(initialiseConst<scalar_t>("Re")),
-              Ma_(initialiseConst<scalar_t>("Ma")),
-              L_char_(initialiseConst<scalar_t>("L_char")),
-              nTimeSteps_(string::extractParameter<host::label_t>(string::readFile("programControl"), "nTimeSteps")),
-              saveInterval_(string::extractParameter<host::label_t>(string::readFile("programControl"), "saveInterval")),
-              infoInterval_(string::extractParameter<host::label_t>(string::readFile("programControl"), "infoInterval")),
+              caseName_(string::extractParameter<name_t>(string::readFile<true>("programControl"), "caseName")),
+              Re_(initialiseConst<scalar_t, true>("Re")),
+              Ma_(initialiseConst<scalar_t, true>("Ma")),
+              L_char_(initialiseConst<scalar_t, true>("L_char")),
+              sigma_(initialiseConst<scalar_t, false>("sigma")),
+              F_(string::extractParameter<var3<scalar_t>>("forcing", "F_")),
+              nTimeSteps_(string::extractParameter<host::label_t>(string::readFile<true>("programControl"), "nTimeSteps")),
+              saveInterval_(string::extractParameter<host::label_t>(string::readFile<true>("programControl"), "saveInterval")),
+              infoInterval_(string::extractParameter<host::label_t>(string::readFile<true>("programControl"), "infoInterval")),
               latestTime_(latestSaved()),
               timeStep_(latestTime_),
               streams_(deviceList())
@@ -88,12 +90,10 @@ namespace LBM
             // Get current working directory
             const std::filesystem::path launchDirectory = std::filesystem::current_path();
 
-            const scalar_t MaTemp = Ma();
             const scalar_t U = Ma_ / math::constexpr_sqrt<scalar_t, static_cast<double>(3)>();
             const scalar_t nuTemp = U * L_char() / Re();
             const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3) * nuTemp;
             const scalar_t omegaTemp = static_cast<scalar_t>(1) / tauTemp;
-            const scalar_t gTemp = (math::pow<2>(Ma())) / (static_cast<scalar_t>(3) * L_char());
 
             printHeader<true>();
             IO::printBlock(
@@ -104,12 +104,14 @@ namespace LBM
                 "launchDirectory ", launchDirectory.string(),
                 "deviceList      ", deviceList(),
                 "caseName        ", caseName_,
-                "Re              ", Re_,
-                "Ma              ", Ma_,
-                "U_inf           ", Ma_ / math::sqrt(static_cast<scalar_t>(3)),
+                "Re              ", Re(),
+                "Ma              ", Ma(),
+                "U_inf           ", Ma() / math::sqrt(static_cast<scalar_t>(3)),
+                "L               ", L_char_,
+                "sigma           ", sigma_,
                 "tau             ", tauTemp,
                 "omega           ", omegaTemp,
-                "g               ", gTemp,
+                "F               ", std::array<scalar_t, 3>{F_.x, F_.y, F_.z},
                 "nTimeSteps      ", nTimeSteps_,
                 "saveInterval    ", saveInterval_,
                 "infoInterval    ", infoInterval_,
@@ -120,19 +122,7 @@ namespace LBM
             std::cout << std::endl;
             if (deviceList().size() > 0)
             {
-                for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList().size(); virtualDeviceIndex++)
-                {
-                    errorHandler::handle(API::setDevice(deviceList()[virtualDeviceIndex]));
-
-                    // Allocate symbols on the GPU
-                    device::copyToSymbol(device::Ma, MaTemp);
-                    device::copyToSymbol(device::L_char, L_char());
-                    device::copyToSymbol(device::nu, nuTemp);
-                    device::copyToSymbol(device::Re, Re());
-                    device::copyToSymbol(device::tau, tauTemp);
-                    device::copyToSymbol(device::omega, omegaTemp);
-                    device::copyToSymbol(device::g, gTemp);
-                }
+                set_constants(nuTemp, tauTemp, omegaTemp);
             }
 
             // Make sure we synchronize and set active device to 0
@@ -426,6 +416,16 @@ namespace LBM
         const scalar_t L_char_;
 
         /**
+         * @brief The Gaussian decay parameter
+         **/
+        const scalar_t sigma_;
+
+        /**
+         * @brief The forcing term
+         **/
+        const var3<scalar_t> F_;
+
+        /**
          * @brief Total number of simulation time steps, the save interval, info output interval and the latest time step at program start
          **/
         const host::label_t nTimeSteps_;
@@ -443,10 +443,10 @@ namespace LBM
          * @return The variable as type T
          * @param[in] varName The name of the variable to read
          **/
-        template <typename T>
+        template <typename T, const bool Required>
         hostFunctionReturnType static inline T initialiseConst(const name_t &varName) noexcept
         {
-            return string::extractParameter<T>(string::readFile("programControl"), varName);
+            return string::extractParameter<T>(string::readFile<Required>("programControl"), varName);
         }
 
         /**
@@ -501,6 +501,31 @@ namespace LBM
         hostFunctionReturnType static inline host::label_t latestSaved()
         {
             return savedTimeSteps("timeStep").empty() ? 0 : savedTimeSteps("timeStep").back();
+        }
+
+        /**
+         * @brief Copies the case constants onto each GPU used by the simulation
+         **/
+        __host__ void set_constants(const scalar_t nu, const scalar_t tau, const scalar_t omega) noexcept
+        {
+            for (host::label_t virtualDeviceIndex = 0; virtualDeviceIndex < deviceList().size(); virtualDeviceIndex++)
+            {
+                errorHandler::handle(API::setDevice(deviceList()[virtualDeviceIndex]));
+
+                // Allocate symbols on the GPU
+                device::copyToSymbol(device::Ma, Ma());
+                device::copyToSymbol(device::L_char, L_char());
+                device::copyToSymbol(device::sigma, sigma_);
+                device::copyToSymbol(device::nu, nu);
+                device::copyToSymbol(device::Re, Re());
+                device::copyToSymbol(device::tau, tau);
+                device::copyToSymbol(device::omega, omega);
+
+                const scalar_t FTemp[3] = {F_.x, F_.y, F_.z};
+
+                // Allocate mesh symbols on the GPU
+                device::copyToSymbol(device::F, FTemp);
+            }
         }
     };
 }

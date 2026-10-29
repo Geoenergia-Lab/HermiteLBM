@@ -114,22 +114,17 @@ namespace LBM
         template <const axis::type alpha>
         deviceFunctionReturnType static inline constexpr scalar_t center() noexcept
         {
-            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::n<alpha>() - static_cast<device::label_t>(1));
-        }
-
-        deviceHostFunctionReturnType static inline consteval scalar_t sigma() noexcept
-        {
-            return static_cast<scalar_t>(4);
+            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::latticeMesh::nPoints[alpha] - static_cast<device::label_t>(1));
         }
 
         deviceFunctionReturnType static inline constexpr scalar_t dudx(const scalar_t x, const scalar_t y) noexcept
         {
-            return -(x * (math::exp(-math::pow<2>(device::L_char - static_cast<scalar_t>(2) * math::sqrt(math::pow<2>(x) + math::pow<2>(y))) / (static_cast<scalar_t>(4) * sigma())) - math::exp(-math::pow<2>(device::L_char + static_cast<scalar_t>(2) * math::sqrt(math::pow<2>(x) + math::pow<2>(y))) / (static_cast<scalar_t>(4) * sigma())))) / (math::sqrt(sigma()) * math::constants::sqrtpi<scalar_t>() * math::erf(device::L_char / (static_cast<scalar_t>(2) * math::sqrt(sigma()))) * math::sqrt(math::pow<2>(x) + math::pow<2>(y)));
+            return -(x * (math::exp(-math::pow<2>(device::L_char - static_cast<scalar_t>(2) * math::sqrt(math::pow<2>(x) + math::pow<2>(y))) / (static_cast<scalar_t>(4) * device::sigma)) - math::exp(-math::pow<2>(device::L_char + static_cast<scalar_t>(2) * math::sqrt(math::pow<2>(x) + math::pow<2>(y))) / (static_cast<scalar_t>(4) * device::sigma)))) / (math::sqrt(device::sigma) * math::constants::sqrtpi<scalar_t>() * math::erf(device::L_char / (static_cast<scalar_t>(2) * math::sqrt(device::sigma))) * math::sqrt(math::pow<2>(x) + math::pow<2>(y)));
         }
 
         deviceFunctionReturnType static inline constexpr scalar_t dudy(const scalar_t x, const scalar_t y) noexcept
         {
-            return -(y * (math::exp(-math::pow<2>(device::L_char - static_cast<scalar_t>(2) * math::sqrt(math::pow<2>(x) + math::pow<2>(y))) / (static_cast<scalar_t>(4) * sigma())) - math::exp(-math::pow<2>(device::L_char + static_cast<scalar_t>(2) * math::sqrt(math::pow<2>(x) + math::pow<2>(y))) / (static_cast<scalar_t>(4) * sigma())))) / (math::sqrt(sigma()) * math::constants::sqrtpi<scalar_t>() * math::erf(device::L_char / (static_cast<scalar_t>(2) * math::sqrt(sigma()))) * math::sqrt(math::pow<2>(x) + math::pow<2>(y)));
+            return -(y * (math::exp(-math::pow<2>(device::L_char - static_cast<scalar_t>(2) * math::sqrt(math::pow<2>(x) + math::pow<2>(y))) / (static_cast<scalar_t>(4) * device::sigma)) - math::exp(-math::pow<2>(device::L_char + static_cast<scalar_t>(2) * math::sqrt(math::pow<2>(x) + math::pow<2>(y))) / (static_cast<scalar_t>(4) * device::sigma)))) / (math::sqrt(device::sigma) * math::constants::sqrtpi<scalar_t>() * math::erf(device::L_char / (static_cast<scalar_t>(2) * math::sqrt(device::sigma))) * math::sqrt(math::pow<2>(x) + math::pow<2>(y)));
         }
 
         __device__ static inline constexpr void base_state(momentsArray &moments) noexcept

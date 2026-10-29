@@ -397,7 +397,7 @@ namespace LBM
                 }
                 else if constexpr (coeff == 1)
                 {
-                    return (i == device::n<alpha>() - static_cast<device::label_t>(1));
+                    return (i == device::latticeMesh::nPoints[alpha] - static_cast<device::label_t>(1));
                 }
             }
         }

@@ -1,0 +1,18 @@
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/Geoenergia-Lab/HermiteLBM                        |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+F_x             0;
+
+F_y             0;
+
+F_z             0.001;
+
+\*---------------------------------------------------------------------------*/

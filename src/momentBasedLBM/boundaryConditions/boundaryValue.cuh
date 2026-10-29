@@ -108,7 +108,7 @@ namespace LBM
         template <const bool safety_check>
         hostFunctionReturnType static scalar_t extractParameter(const name_t &fieldName, const name_t &regionName, const name_t &initialConditionsName)
         {
-            const words_t boundaryLines = string::readFile(initialConditionsName);
+            const words_t boundaryLines = string::readFile<true>(initialConditionsName);
 
             // Extracts the entire block of text corresponding to currentField
             const words_t fieldBlock = string::extractBlock(boundaryLines, fieldName, "field");
@@ -151,7 +151,7 @@ namespace LBM
          **/
         hostFunctionReturnType static scalar_t initialiseValue(const name_t &fieldName, const name_t &regionName, const name_t &initialConditionsName = "initialConditions")
         {
-            const words_t boundaryLines = string::readFile(initialConditionsName);
+            const words_t boundaryLines = string::readFile<true>(initialConditionsName);
 
             // Extracts the entire block of text corresponding to currentField
             const words_t fieldBlock = string::extractBlock(boundaryLines, fieldName, "field");

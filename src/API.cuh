@@ -55,6 +55,10 @@ namespace LBM
 
 #define GPU_COMPILER_ERROR_MSG "GPU compiler not found"
 
+#define deviceHostFunctionReturnType [[nodiscard]] __device__ __host__
+#define deviceFunctionReturnType [[nodiscard]] __device__
+#define hostFunctionReturnType [[nodiscard]] __host__
+
     /**
      * @brief Supported GPU brands for the build
      **/
@@ -77,10 +81,6 @@ namespace LBM
     };
 
 #if defined(__HIP__)
-#define deviceHostFunctionReturnType [[nodiscard]] __device__ __host__
-#define deviceFunctionReturnType [[nodiscard]] __device__
-#define hostFunctionReturnType [[nodiscard]] __host__
-
     using deviceError_t = hipError_t;
     using deviceStream_t = hipStream_t;
     using deviceEvent_t = hipEvent_t;
@@ -118,13 +118,7 @@ namespace LBM
         static constexpr const T device = hipMemoryTypeDevice;
         static constexpr const T managed = hipMemoryTypeManaged;
     };
-
 #elif defined(__CUDACC__)
-
-#define deviceHostFunctionReturnType __device__ __host__ [[nodiscard]]
-#define deviceFunctionReturnType __device__ [[nodiscard]]
-#define hostFunctionReturnType __host__ [[nodiscard]]
-
     using deviceError_t = cudaError_t;
     using deviceStream_t = cudaStream_t;
     using deviceEvent_t = cudaEvent_t;
@@ -162,10 +156,8 @@ namespace LBM
         static constexpr const T device = cudaMemoryTypeDevice;
         static constexpr const T managed = cudaMemoryTypeManaged;
     };
-
 #else
     static_assert(false, GPU_COMPILER_ERROR_MSG);
-
 #endif
 
     namespace math

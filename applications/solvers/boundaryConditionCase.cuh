@@ -55,9 +55,9 @@ namespace LBM
     /**
      * @brief Define the boundary condition case
      **/
-    using BoundaryConditionCase = channelFlow;
+    // using BoundaryConditionCase = channelFlow;
     // using BoundaryConditionCase = lidDrivenCavity;
-    // using BoundaryConditionCase = jetFlow;
+    using BoundaryConditionCase = jetFlow;
     // using BoundaryConditionCase = benchmark;
 }
 

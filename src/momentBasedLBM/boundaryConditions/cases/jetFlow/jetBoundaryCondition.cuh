@@ -64,7 +64,7 @@ case normalVectorBase::BACK():
     const scalar_t y = point.value<axis::Y, scalar_t>() - center<axis::Y>();
     const scalar_t r = math::sqrt(math::pow<2>(x) + math::pow<2>(y));
 
-    const scalar_t A = (math::erf((device::L_char - static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * math::sqrt(sigma()))) + math::erf((device::L_char + static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * math::sqrt(sigma())))) / (static_cast<scalar_t>(2) * math::erf(device::L_char / (static_cast<scalar_t>(2) * math::sqrt(sigma()))));
+    const scalar_t A = (math::erf((device::L_char - static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * math::sqrt(device::sigma))) + math::erf((device::L_char + static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * math::sqrt(device::sigma)))) / (static_cast<scalar_t>(2) * math::erf(device::L_char / (static_cast<scalar_t>(2) * math::sqrt(device::sigma))));
 
     const scalar_t U_z = A * device::U_Back[2];
 

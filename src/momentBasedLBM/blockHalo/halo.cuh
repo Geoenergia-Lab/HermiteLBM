@@ -169,7 +169,7 @@ namespace LBM
                     }
                     else
                     {
-                        return (Tx.value<alpha>() == (block::n<alpha>() - static_cast<device::label_t>(1)) && alpha_v != (device::n<alpha>() - static_cast<device::label_t>(1)));
+                        return (Tx.value<alpha>() == (block::n<alpha>() - static_cast<device::label_t>(1)) && alpha_v != (device::latticeMesh::nPoints[alpha] - static_cast<device::label_t>(1)));
                     }
                 }
             }

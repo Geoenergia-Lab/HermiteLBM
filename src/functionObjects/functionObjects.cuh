@@ -348,7 +348,7 @@ namespace LBM
          **/
         hostFunctionReturnType bool initialiserSwitch(const name_t &objectName) noexcept
         {
-            return std::filesystem::exists("functionObjects") ? string::containsString(string::trim<true>(string::eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), objectName) : false;
+            return std::filesystem::exists("functionObjects") ? string::containsString(string::trim<true>(string::eraseBraces(string::extractBlock(string::readFile<true>("functionObjects"), "functionObjectList"))), objectName) : false;
         }
     }
 }

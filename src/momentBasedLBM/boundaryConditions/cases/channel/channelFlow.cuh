@@ -113,135 +113,39 @@ namespace LBM
             const scalar_t Uy_interior = sharedBuffer[tidInterior * (NUMBER_MOMENTS()) + m_i<2>()];
             const scalar_t Uz_interior = sharedBuffer[tidInterior * (NUMBER_MOMENTS()) + m_i<3>()];
 
-            constexpr const bool branchless_impl = true;
+            // Branchless boundary condition implementation
+            const scalar_t not_x_boundary = static_cast<scalar_t>(!(boundaryNormal.isWest<bool>() || boundaryNormal.isEast<bool>()));
+            const scalar_t not_y_boundary = static_cast<scalar_t>(!(boundaryNormal.isSouth<bool>() || boundaryNormal.isNorth<bool>()));
 
-            // Moments in terms of calculated finite differences
-            if constexpr (branchless_impl)
-            {
-                const scalar_t not_x_boundary = static_cast<scalar_t>(!(boundaryNormal.isWest<bool>() || boundaryNormal.isEast<bool>()));
-                const scalar_t not_y_boundary = static_cast<scalar_t>(!(boundaryNormal.isSouth<bool>() || boundaryNormal.isNorth<bool>()));
+            const scalar_t x_normal = static_cast<scalar_t>(boundaryNormal.isWest<int8_t>() - boundaryNormal.isEast<int8_t>());
+            const scalar_t y_normal = static_cast<scalar_t>(boundaryNormal.isSouth<int8_t>() - boundaryNormal.isNorth<int8_t>());
 
-                const scalar_t x_normal = static_cast<scalar_t>(boundaryNormal.isWest<int8_t>() - boundaryNormal.isEast<int8_t>());
-                const scalar_t y_normal = static_cast<scalar_t>(boundaryNormal.isSouth<int8_t>() - boundaryNormal.isNorth<int8_t>());
+            // The x derivative is positive if West wall. Subtract if East.
+            const scalar_t dUxdx = Ux_interior * x_normal * not_y_boundary;
+            const scalar_t dUydx = Uy_interior * x_normal * not_y_boundary;
+            const scalar_t dUzdx = Uz_interior * x_normal * not_y_boundary;
 
-                // The x derivative is positive if West wall. Subtract if East.
-                const scalar_t dUxdx = Ux_interior * x_normal * not_y_boundary;
-                const scalar_t dUydx = Uy_interior * x_normal * not_y_boundary;
-                const scalar_t dUzdx = Uz_interior * x_normal * not_y_boundary;
+            const scalar_t dUxdy = Ux_interior * y_normal * not_x_boundary;
+            const scalar_t dUydy = Uy_interior * y_normal * not_x_boundary;
+            const scalar_t dUzdy = Uz_interior * y_normal * not_x_boundary;
 
-                const scalar_t dUxdy = Ux_interior * y_normal * not_x_boundary;
-                const scalar_t dUydy = Uy_interior * y_normal * not_x_boundary;
-                const scalar_t dUzdy = Uz_interior * y_normal * not_x_boundary;
+            // Adiabatic wall
+            moments[0] = rho_interior;
 
-                moments[0] = rho_interior;
+            // No-slip wall
+            moments[1] = static_cast<scalar_t>(0);
+            moments[2] = static_cast<scalar_t>(0);
+            moments[3] = static_cast<scalar_t>(0);
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
+            // No-slip wall (velocity gradient)
+            moments[axis::index<axis::X, axis::X>()] = -static_cast<scalar_t>(2) * device::tau * velocitySetBase::cs2<scalar_t>() * dUxdx;
+            moments[axis::index<axis::X, axis::Y>()] = -device::tau * velocitySetBase::cs2<scalar_t>() * (dUxdy + dUydx);
+            moments[axis::index<axis::X, axis::Z>()] = -device::tau * velocitySetBase::cs2<scalar_t>() * (dUzdx);
+            moments[axis::index<axis::Y, axis::Y>()] = -static_cast<scalar_t>(2) * device::tau * velocitySetBase::cs2<scalar_t>() * dUydy;
+            moments[axis::index<axis::Y, axis::Z>()] = -device::tau * velocitySetBase::cs2<scalar_t>() * (dUzdy);
+            moments[axis::index<axis::Z, axis::Z>()] = static_cast<scalar_t>(0);
 
-                moments[axis::index<axis::X, axis::X>()] = -static_cast<scalar_t>(2) * device::tau * velocitySetBase::cs2<scalar_t>() * dUxdx;
-                moments[axis::index<axis::X, axis::Y>()] = -device::tau * velocitySetBase::cs2<scalar_t>() * (dUxdy + dUydx);
-                moments[axis::index<axis::X, axis::Z>()] = -device::tau * velocitySetBase::cs2<scalar_t>() * (dUzdx);
-                moments[axis::index<axis::Y, axis::Y>()] = -static_cast<scalar_t>(2) * device::tau * velocitySetBase::cs2<scalar_t>() * dUydy;
-                moments[axis::index<axis::Y, axis::Z>()] = -device::tau * velocitySetBase::cs2<scalar_t>() * (dUzdy);
-                moments[axis::index<axis::Z, axis::Z>()] = static_cast<scalar_t>(0);
-
-                return;
-            }
-            else
-            {
-                moments[0] = rho_interior;
-
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-
-                moments[axis::index<axis::Z, axis::Z>()] = static_cast<scalar_t>(0);
-
-                switch (boundaryNormal.nodeType())
-                {
-                case NormalVector::SOUTH_WEST():
-                {
-                    moments[axis::index<axis::X, axis::X>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::X, axis::Y>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::X, axis::Z>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::Y, axis::Y>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::Y, axis::Z>()] = static_cast<scalar_t>(0);
-
-                    return;
-                }
-                case NormalVector::SOUTH_EAST():
-                {
-                    moments[axis::index<axis::X, axis::X>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::X, axis::Y>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::X, axis::Z>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::Y, axis::Y>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::Y, axis::Z>()] = static_cast<scalar_t>(0);
-
-                    return;
-                }
-                case NormalVector::WEST():
-                {
-                    moments[axis::index<axis::X, axis::X>()] = -static_cast<scalar_t>(2) * device::tau * velocitySetBase::cs2<scalar_t>() * Ux_interior;
-                    moments[axis::index<axis::X, axis::Y>()] = -device::tau * velocitySetBase::cs2<scalar_t>() * Uy_interior;
-                    moments[axis::index<axis::X, axis::Z>()] = -device::tau * velocitySetBase::cs2<scalar_t>() * Uz_interior;
-                    moments[axis::index<axis::Y, axis::Y>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::Y, axis::Z>()] = static_cast<scalar_t>(0);
-
-                    return;
-                }
-                case NormalVector::EAST():
-                {
-                    moments[axis::index<axis::X, axis::X>()] = static_cast<scalar_t>(2) * device::tau * velocitySetBase::cs2<scalar_t>() * Ux_interior;
-                    moments[axis::index<axis::X, axis::Y>()] = device::tau * velocitySetBase::cs2<scalar_t>() * Uy_interior;
-                    moments[axis::index<axis::X, axis::Z>()] = device::tau * velocitySetBase::cs2<scalar_t>() * Uz_interior;
-                    moments[axis::index<axis::Y, axis::Y>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::Y, axis::Z>()] = static_cast<scalar_t>(0);
-
-                    return;
-                }
-                case NormalVector::SOUTH():
-                {
-                    moments[axis::index<axis::X, axis::X>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::X, axis::Y>()] = -device::tau * velocitySetBase::cs2<scalar_t>() * Ux_interior;
-                    moments[axis::index<axis::X, axis::Z>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::Y, axis::Y>()] = -static_cast<scalar_t>(2) * device::tau * velocitySetBase::cs2<scalar_t>() * Uy_interior;
-                    moments[axis::index<axis::Y, axis::Z>()] = -device::tau * velocitySetBase::cs2<scalar_t>() * Uz_interior;
-
-                    return;
-                }
-                case NormalVector::NORTH():
-                {
-                    moments[axis::index<axis::X, axis::X>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::X, axis::Y>()] = device::tau * velocitySetBase::cs2<scalar_t>() * Ux_interior;
-                    moments[axis::index<axis::X, axis::Z>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::Y, axis::Y>()] = static_cast<scalar_t>(2) * device::tau * velocitySetBase::cs2<scalar_t>() * Uy_interior;
-                    moments[axis::index<axis::Y, axis::Z>()] = device::tau * velocitySetBase::cs2<scalar_t>() * Uz_interior;
-
-                    return;
-                }
-                case NormalVector::NORTH_EAST():
-                {
-                    moments[axis::index<axis::X, axis::X>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::X, axis::Y>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::X, axis::Z>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::Y, axis::Y>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::Y, axis::Z>()] = static_cast<scalar_t>(0);
-
-                    return;
-                }
-                case NormalVector::NORTH_WEST():
-                {
-                    moments[axis::index<axis::X, axis::X>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::X, axis::Y>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::X, axis::Z>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::Y, axis::Y>()] = static_cast<scalar_t>(0);
-                    moments[axis::index<axis::Y, axis::Z>()] = static_cast<scalar_t>(0);
-
-                    return;
-                }
-                }
-            }
+            return;
         }
     };
 }
