@@ -60,7 +60,7 @@ namespace LBM
     class channelFlow : public boundaryConditionType<false, false, true>
     {
     public:
-        using Base = boundaryConditionType<false, false, true>;
+        using Base = boundaryConditionType::This;
 
         /**
          * @brief Switch determining whether or not the boundary condition actually applies a condition
@@ -68,33 +68,37 @@ namespace LBM
         deviceHostFunctionReturnType static inline consteval bool appliesCondition() noexcept { return true; }
 
         /**
-         * @brief Public method to calculate the post-streaming methods and update boundary conditions
+         * @brief Public method to apply the boundary conditions
+         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
+         * @param[out] moments Moment array (rho, U, Pi)
+         * @param[in] boundaryNormal Normal vector information at boundary node
+         * @param[in] sharedBuffer Shared memory array containing moment data
+         * @param[in] Tx Three-dimensional thread coordinates
+         * @param[in] point The global point coordinate
          **/
         template <class VelocitySet>
         __device__ static inline constexpr void calculate_moments(
             momentsArray &moments,
-            blockSharedBuffer &sharedBuffer,
+            const NormalVector &boundaryNormal,
+            const blockSharedBuffer &sharedBuffer,
             const thread::coordinate &Tx,
-            const device::pointCoordinate &point,
-            const device::label_t tid,
-            const NormalVector &boundaryNormal) noexcept
+            const device::pointCoordinate &point) noexcept
         {
-            if (boundaryNormal.isBoundary())
-            {
-                calculate_moments<VelocitySet>(moments, boundaryNormal, sharedBuffer, Tx, point);
-            }
+            calculate_moments_impl<VelocitySet>(moments, boundaryNormal, sharedBuffer, Tx, point);
         }
 
     private:
         /**
          * @brief Calculate moment variables at boundary nodes
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
-         * @param[in] pop Population density array at current lattice node
          * @param[out] moments Moment array (rho, U, Pi)
          * @param[in] boundaryNormal Normal vector information at boundary node
+         * @param[in] sharedBuffer Shared memory array containing moment data
+         * @param[in] Tx Three-dimensional thread coordinates
+         * @param[in] point The global point coordinate
          **/
         template <class VelocitySet>
-        __device__ static inline constexpr void calculate_moments(
+        __device__ static inline constexpr void calculate_moments_impl(
             momentsArray &moments,
             const NormalVector &boundaryNormal,
             const blockSharedBuffer &sharedBuffer,
@@ -108,7 +112,7 @@ namespace LBM
                 Tx.value<axis::Z>());
 
             // Now get density and the velocities from the interior
-            const scalar_t rho_interior = sharedBuffer[tidInterior * (NUMBER_MOMENTS()) + m_i<0>()];
+            // const scalar_t rho_interior = sharedBuffer[tidInterior * (NUMBER_MOMENTS()) + m_i<0>()];
             const scalar_t Ux_interior = sharedBuffer[tidInterior * (NUMBER_MOMENTS()) + m_i<1>()];
             const scalar_t Uy_interior = sharedBuffer[tidInterior * (NUMBER_MOMENTS()) + m_i<2>()];
             const scalar_t Uz_interior = sharedBuffer[tidInterior * (NUMBER_MOMENTS()) + m_i<3>()];
@@ -129,8 +133,8 @@ namespace LBM
             const scalar_t dUydy = Uy_interior * y_normal * not_x_boundary;
             const scalar_t dUzdy = Uz_interior * y_normal * not_x_boundary;
 
-            // Adiabatic wall
-            moments[0] = rho_interior;
+            // Fixed gradient wall
+            moments[0] = rho0();
 
             // No-slip wall
             moments[1] = static_cast<scalar_t>(0);

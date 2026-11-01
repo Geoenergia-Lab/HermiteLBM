@@ -55,8 +55,8 @@ namespace LBM
     /**
      * @brief Define the collision and forcing model
      **/
-    // using Forcing = forcing::none;
-    using Forcing = forcing::Guo;
+    using Forcing = forcing::none;
+    // using Forcing = forcing::Guo;
     using Collision = BGK<Forcing>;
 }
 

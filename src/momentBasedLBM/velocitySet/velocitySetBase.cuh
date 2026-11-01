@@ -79,10 +79,10 @@ namespace LBM
          * @brief Get the speed of sound squared (c^2 = 1 / 3)
          * @tparam T The return type
          **/
-        template <typename T>
+        template <typename T, const int N = 1>
         deviceHostFunctionReturnType static inline consteval T cs2() noexcept
         {
-            return static_cast<T>(static_cast<double>(1) / as2<double>());
+            return static_cast<T>(static_cast<double>(N) / as2<double>());
         }
 
         /**
