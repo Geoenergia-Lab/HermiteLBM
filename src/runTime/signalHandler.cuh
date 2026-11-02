@@ -67,7 +67,7 @@ namespace LBM
          *
          * @throws std::runtime_error If the OS-specific handler registration fails.
          **/
-        __host__ [[nodiscard]] signalHandler()
+        hostFunctionReturnType signalHandler()
         {
 #ifdef _WIN32
             // Register a console control handler for Ctrl+C and Ctrl+Break.
@@ -118,7 +118,9 @@ namespace LBM
          **/
         __host__ static void handleSignalImpl([[maybe_unused]] int signal)
         {
+            std::cout << std::endl;
             std::cout << "Abort signal received" << std::endl;
+            std::cout << "Performing cleanup" << std::endl;
             runTime::program_status.store(runTime::programStatus::BAD, std::memory_order_relaxed);
         }
 
@@ -129,7 +131,7 @@ namespace LBM
          * @param[in] dwCtrlType Event type reported by the OS.
          * @return TRUE if the event was handled and should not be passed further; otherwise FALSE.
          **/
-        __host__ [[nodiscard]] static BOOL WINAPI handleSignal(const DWORD dwCtrlType)
+        hostFunctionReturnType static BOOL WINAPI handleSignal(const DWORD dwCtrlType)
         {
             if (dwCtrlType == CTRL_C_EVENT || dwCtrlType == CTRL_BREAK_EVENT)
             {

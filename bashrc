@@ -11,19 +11,30 @@
 #  USER-DEFINED ENVIRONMENT VARIABLES                                         #
 # --------------------------------------------------------------------------- #
 
-# CUDA version (major and minor)
+# GPU backend selection. Must be one of: "CUDA", "HIP"
+export HERMITELBM_API="CUDA"
+
+# --- CUDA settings (used only when HERMITELBM_API="CUDA") ------------------- #
+
 export HERMITELBM_CUDA_VERSION_MAJOR="13"
-export HERMITELBM_CUDA_VERSION_MINOR="0"
+export HERMITELBM_CUDA_VERSION_MINOR="1"
+
+# --- ROCm/HIP settings (used only when HERMITELBM_API="HIP") ---------------- #
+
+export HERMITELBM_ROCM_VERSION_MAJOR="6"
+export HERMITELBM_ROCM_VERSION_MINOR="4"
+
+# --- Shared settings -------------------------------------------------------- #
 
 # Architecture detection mode: "Automatic" or "Manual"
 export HERMITELBM_ARCHITECTURE_DETECTION="Automatic"
 
-# Manual architecture version 
-# Used only if HERMITELBM_ARCHITECTURE_DETECTION="Manual"
-export HERMITELBM_ARCHITECTURE_VERSION="89"
+# Manual architecture version, used only if HERMITELBM_ARCHITECTURE_DETECTION="Manual".
+#   CUDA: compute capability, e.g. "89" for sm_89
+#   HIP:  gfx target suffix without the "gfx" prefix, e.g. "1200" for gfx1200
+export HERMITELBM_ARCHITECTURE_VERSION="1200"
 
-# Manual specification of the number of devices 
-# Used only if HERMITELBM_ARCHITECTURE_DETECTION="Manual"
+# Manual number of devices, used only if HERMITELBM_ARCHITECTURE_DETECTION="Manual"
 export HERMITELBM_NUM_DEVICES="1"
 
 # --------------------------------------------------------------------------- #
@@ -116,83 +127,161 @@ export HERMITELBM_BIN_DIR="$HERMITELBM_BUILD_DIR/bin"
 export HERMITELBM_INCLUDE_DIR="$HERMITELBM_BUILD_DIR/include"
 
 # --------------------------------------------------------------------------- #
+#  Validate backend switch                                                    #
+# --------------------------------------------------------------------------- #
+
+case "$HERMITELBM_API" in
+    CUDA|HIP) ;;
+    *)
+        echo "Error: HERMITELBM_API must be 'CUDA' or 'HIP' (got '$HERMITELBM_API')." >&2
+        return 1 2>/dev/null || exit 1
+        ;;
+esac
+
+# --------------------------------------------------------------------------- #
 #  Automatic distro detection (now supports Fedora, RHEL, CentOS)             #
 # --------------------------------------------------------------------------- #
 
-if [[ -z "$HERMITELBM_CUDA_DOWNLOAD_DISTRO" ]]; then
+if [[ -z "$HERMITELBM_DOWNLOAD_DISTRO" ]]; then
     if [[ -f /etc/os-release ]]; then
         source /etc/os-release
         case "$ID" in
             ubuntu)
                 # Remove dots from version (e.g., 24.04 -> 2404)
                 VERSION_NODOTS="${VERSION_ID//./}"
-                HERMITELBM_CUDA_DOWNLOAD_DISTRO="ubuntu${VERSION_NODOTS}"
+                HERMITELBM_DOWNLOAD_DISTRO="ubuntu${VERSION_NODOTS}"
                 ;;
             debian)
                 # Debian VERSION_ID is just the major number (e.g., "13")
-                HERMITELBM_CUDA_DOWNLOAD_DISTRO="debian${VERSION_ID}"
+                HERMITELBM_DOWNLOAD_DISTRO="debian${VERSION_ID}"
                 ;;
             fedora)
-                HERMITELBM_CUDA_DOWNLOAD_DISTRO="fedora${VERSION_ID}"
+                HERMITELBM_DOWNLOAD_DISTRO="fedora${VERSION_ID}"
                 ;;
             rhel|centos)
                 # Use major version only (e.g., "9")
-                HERMITELBM_CUDA_DOWNLOAD_DISTRO="${ID}${VERSION_ID%%.*}"
+                HERMITELBM_DOWNLOAD_DISTRO="${ID}${VERSION_ID%%.*}"
                 ;;
             *)
-                HERMITELBM_CUDA_DOWNLOAD_DISTRO="ubuntu2404"
+                HERMITELBM_DOWNLOAD_DISTRO="ubuntu2404"
                 ;;
         esac
+        HERMITELBM_DISTRO="${ID}${VERSION_NODOTS}"
     else
-        HERMITELBM_CUDA_DOWNLOAD_DISTRO="ubuntu2404"
+        HERMITELBM_DOWNLOAD_DISTRO="ubuntu2404"
+        HERMITELBM_DISTRO="unknown"
     fi
 fi
-HERMITELBM_DISTRO="${ID}${VERSION_NODOTS}"
-export HERMITELBM_CUDA_DOWNLOAD_DISTRO
+export HERMITELBM_DOWNLOAD_DISTRO
 export HERMITELBM_DISTRO
 
 # --------------------------------------------------------------------------- #
-#  CUDA Toolkit                                                               #
+#  GPU Toolkit                                                                #
 # --------------------------------------------------------------------------- #
 
-# Determine suffix for default CUDA path
-CUDA_DIR_SUFFIX="${HERMITELBM_CUDA_VERSION_MAJOR}.${HERMITELBM_CUDA_VERSION_MINOR}"
-if [[ "$HERMITELBM_DISTRO" =~ ^(debian|fedora) ]] && [[ "${HERMITELBM_CUDA_VERSION_MINOR}" == "0" ]]; then
-    CUDA_DIR_SUFFIX="${HERMITELBM_CUDA_VERSION_MAJOR}"
-fi
+if [[ "$HERMITELBM_API" == "CUDA" ]]; then
 
-# Default expected CUDA directory
-DEFAULT_CUDA_DIR="/usr/local/cuda-${CUDA_DIR_SUFFIX}"
-
-# 1) Try the default CUDA directory first (most common installation)
-if [[ -x "$DEFAULT_CUDA_DIR/bin/nvcc" ]]; then
-    export HERMITELBM_CUDA_DIR="$DEFAULT_CUDA_DIR"
-    export PATH="$HERMITELBM_CUDA_DIR/bin:$PATH"
-    export LD_LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LD_LIBRARY_PATH"
-    export LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LIBRARY_PATH"
-    HERMITELBM_CUDA_FOUND=1
-
-# 2) If not in default location, fall back to whatever nvcc is in PATH
-elif command -v nvcc > /dev/null 2>&1; then
-    NVCC_PATH=$(command -v nvcc)
-    RESOLVED_NVCC_PATH=$(readlink -f "$NVCC_PATH" 2>/dev/null || echo "$NVCC_PATH")
-    HERMITELBM_CUDA_DIR=$(dirname "$(dirname "$RESOLVED_NVCC_PATH")")
-
-    if [[ -d "$HERMITELBM_CUDA_DIR" ]]; then
-        export HERMITELBM_CUDA_DIR
-        export PATH="$HERMITELBM_CUDA_DIR/bin:$PATH"
-        export LD_LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LD_LIBRARY_PATH"
-        export LIBRARY_PATH="$HERMITELBM_CUDA_DIR/lib64:$LIBRARY_PATH"
-        HERMITELBM_CUDA_FOUND=1
-    else
-        echo "Warning: CUDA directory $HERMITELBM_CUDA_DIR not found. Skipping CUDA paths." >&2
-        HERMITELBM_CUDA_FOUND=0
+    # Determine suffix for default CUDA path
+    CUDA_DIR_SUFFIX="${HERMITELBM_CUDA_VERSION_MAJOR}.${HERMITELBM_CUDA_VERSION_MINOR}"
+    if [[ "$HERMITELBM_DISTRO" =~ ^(debian|fedora) ]] && [[ "${HERMITELBM_CUDA_VERSION_MINOR}" == "0" ]]; then
+        CUDA_DIR_SUFFIX="${HERMITELBM_CUDA_VERSION_MAJOR}"
     fi
 
-# 3) No CUDA found at all
+    DEFAULT_CUDA_DIR="/usr/local/cuda-${CUDA_DIR_SUFFIX}"
+
+    # 1) Try the versioned default directory first
+    if [[ -x "$DEFAULT_CUDA_DIR/bin/nvcc" ]]; then
+        export HERMITELBM_TOOLKIT_DIR="$DEFAULT_CUDA_DIR"
+        export PATH="$HERMITELBM_TOOLKIT_DIR/bin:$PATH"
+        export LD_LIBRARY_PATH="$HERMITELBM_TOOLKIT_DIR/lib64:$LD_LIBRARY_PATH"
+        export LIBRARY_PATH="$HERMITELBM_TOOLKIT_DIR/lib64:$LIBRARY_PATH"
+        HERMITELBM_TOOLKIT_FOUND=1
+
+    # 2) Fall back to the generic /usr/local/cuda symlink
+    elif [[ -x "/usr/local/cuda/bin/nvcc" ]]; then
+        export HERMITELBM_TOOLKIT_DIR="/usr/local/cuda"
+        export PATH="$HERMITELBM_TOOLKIT_DIR/bin:$PATH"
+        export LD_LIBRARY_PATH="$HERMITELBM_TOOLKIT_DIR/lib64:$LD_LIBRARY_PATH"
+        export LIBRARY_PATH="$HERMITELBM_TOOLKIT_DIR/lib64:$LIBRARY_PATH"
+        HERMITELBM_TOOLKIT_FOUND=1
+
+    # 3) Fall back to whatever nvcc is in PATH
+    elif command -v nvcc > /dev/null 2>&1; then
+        NVCC_PATH=$(command -v nvcc)
+        RESOLVED_NVCC_PATH=$(readlink -f "$NVCC_PATH" 2>/dev/null || echo "$NVCC_PATH")
+        HERMITELBM_TOOLKIT_DIR=$(dirname "$(dirname "$RESOLVED_NVCC_PATH")")
+
+        if [[ -d "$HERMITELBM_TOOLKIT_DIR" ]]; then
+            export HERMITELBM_TOOLKIT_DIR
+            export PATH="$HERMITELBM_TOOLKIT_DIR/bin:$PATH"
+            export LD_LIBRARY_PATH="$HERMITELBM_TOOLKIT_DIR/lib64:$LD_LIBRARY_PATH"
+            export LIBRARY_PATH="$HERMITELBM_TOOLKIT_DIR/lib64:$LIBRARY_PATH"
+            HERMITELBM_TOOLKIT_FOUND=1
+        else
+            echo "Warning: CUDA directory $HERMITELBM_TOOLKIT_DIR not found. Skipping CUDA paths." >&2
+            HERMITELBM_TOOLKIT_FOUND=0
+        fi
+
+    else
+        HERMITELBM_TOOLKIT_FOUND=0
+        echo "Warning: nvcc not found. CUDA environment will not be configured." >&2
+    fi
+
+    HERMITELBM_TOOLKIT_VERSION="${HERMITELBM_CUDA_VERSION_MAJOR}.${HERMITELBM_CUDA_VERSION_MINOR}"
+
+elif [[ "$HERMITELBM_API" == "HIP" ]]; then
+
+    # Determine suffix for default ROCm path
+    ROCM_DIR_SUFFIX="${HERMITELBM_ROCM_VERSION_MAJOR}.${HERMITELBM_ROCM_VERSION_MINOR}"
+    DEFAULT_ROCM_DIR="/opt/rocm-${ROCM_DIR_SUFFIX}"
+
+    # 1) Try the versioned default directory first
+    if [[ -x "$DEFAULT_ROCM_DIR/bin/hipcc" ]]; then
+        export HERMITELBM_TOOLKIT_DIR="$DEFAULT_ROCM_DIR"
+        export PATH="$HERMITELBM_TOOLKIT_DIR/bin:$PATH"
+        export LD_LIBRARY_PATH="$HERMITELBM_TOOLKIT_DIR/lib:$LD_LIBRARY_PATH"
+        export LIBRARY_PATH="$HERMITELBM_TOOLKIT_DIR/lib:$LIBRARY_PATH"
+        HERMITELBM_TOOLKIT_FOUND=1
+
+    # 2) Fall back to the generic /opt/rocm symlink
+    elif [[ -x "/opt/rocm/bin/hipcc" ]]; then
+        export HERMITELBM_TOOLKIT_DIR="/opt/rocm"
+        export PATH="$HERMITELBM_TOOLKIT_DIR/bin:$PATH"
+        export LD_LIBRARY_PATH="$HERMITELBM_TOOLKIT_DIR/lib:$LD_LIBRARY_PATH"
+        export LIBRARY_PATH="$HERMITELBM_TOOLKIT_DIR/lib:$LIBRARY_PATH"
+        HERMITELBM_TOOLKIT_FOUND=1
+
+    # 3) Fall back to whatever hipcc is in PATH
+    elif command -v hipcc > /dev/null 2>&1; then
+        HIPCC_PATH=$(command -v hipcc)
+        RESOLVED_HIPCC_PATH=$(readlink -f "$HIPCC_PATH" 2>/dev/null || echo "$HIPCC_PATH")
+        HERMITELBM_TOOLKIT_DIR=$(dirname "$(dirname "$RESOLVED_HIPCC_PATH")")
+
+        if [[ -d "$HERMITELBM_TOOLKIT_DIR" ]]; then
+            export HERMITELBM_TOOLKIT_DIR
+            export PATH="$HERMITELBM_TOOLKIT_DIR/bin:$PATH"
+            export LD_LIBRARY_PATH="$HERMITELBM_TOOLKIT_DIR/lib:$LD_LIBRARY_PATH"
+            export LIBRARY_PATH="$HERMITELBM_TOOLKIT_DIR/lib:$LIBRARY_PATH"
+            HERMITELBM_TOOLKIT_FOUND=1
+        else
+            echo "Warning: ROCm directory $HERMITELBM_TOOLKIT_DIR not found. Skipping ROCm paths." >&2
+            HERMITELBM_TOOLKIT_FOUND=0
+        fi
+
+    else
+        HERMITELBM_TOOLKIT_FOUND=0
+        echo "Warning: hipcc not found. ROCm environment will not be configured." >&2
+    fi
+
+    HERMITELBM_TOOLKIT_VERSION="${HERMITELBM_ROCM_VERSION_MAJOR}.${HERMITELBM_ROCM_VERSION_MINOR}"
+
+fi
+
+# Convenience: backend-specific compiler name, for build scripts that read it.
+if [[ "$HERMITELBM_API" == "CUDA" ]]; then
+    export HERMITELBM_DEVICE_COMPILER="nvcc"
 else
-    HERMITELBM_CUDA_FOUND=0
-    echo "Warning: nvcc not found. CUDA environment will not be configured." >&2
+    export HERMITELBM_DEVICE_COMPILER="hipcc"
 fi
 
 # --------------------------------------------------------------------------- #
@@ -202,11 +291,13 @@ fi
 source /etc/os-release
 echo "HermiteLBM"
 echo "{"
-if (( HERMITELBM_CUDA_FOUND )); then
-    echo "    CUDA version: ${HERMITELBM_CUDA_VERSION_MAJOR}.${HERMITELBM_CUDA_VERSION_MINOR}"
-    echo "    CUDA directory: ${HERMITELBM_CUDA_DIR}"
+echo "    API: ${HERMITELBM_API}"
+echo "    Device compiler: ${HERMITELBM_DEVICE_COMPILER}"
+if (( HERMITELBM_TOOLKIT_FOUND )); then
+    echo "    Toolkit version: ${HERMITELBM_TOOLKIT_VERSION}"
+    echo "    Toolkit directory: ${HERMITELBM_TOOLKIT_DIR}"
 else
-    echo "    CUDA version: Not found"
+    echo "    Toolkit version: Not found"
 fi
 echo "    Distro: ${ID} ${VERSION_ID}"
 echo "    Architecture detection: ${HERMITELBM_ARCHITECTURE_DETECTION}"
@@ -239,5 +330,3 @@ export CPLUS_INCLUDE_PATH="$HERMITELBM_MPI_DIR/include:$CPLUS_INCLUDE_PATH"
 # --------------------------------------------------------------------------- #
 
 export PATH="$HERMITELBM_BIN_DIR:$PATH"
-
-# --------------------------------------------------------------------------- #

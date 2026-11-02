@@ -50,8 +50,19 @@ SourceFiles
 #ifndef __MBLBM_INCLUDES_CUH
 #define __MBLBM_INCLUDES_CUH
 
+#if defined(__HIPCC__)
+#include <hip/hip_runtime.h>
+#include <hip/hiprtc.h>
+// #include <hip/std/cmath>
+#include <cmath>
+#elif defined(__CUDACC__)
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include <nvrtc.h>
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+#include <cuda/std/cmath>
+#endif
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -65,8 +76,6 @@ SourceFiles
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <cuda.h>
-#include <cuda_runtime_api.h>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -75,7 +84,6 @@ SourceFiles
 #include <limits>
 #include <locale>
 #include <memory>
-#include <nvrtc.h>
 // #include <mpi.h>
 #include <source_location>
 #include <sstream>
@@ -91,19 +99,21 @@ SourceFiles
 #include <variant>
 #include <vector>
 
+#include "API.cuh"
+
 namespace LBM
 {
     /**
      * @brief Multi-GPU related static asserts
      **/
-    __host__ [[nodiscard]] inline consteval bool MULTI_GPU_ASSERTION() { return true; }
+    hostFunctionReturnType inline consteval bool MULTI_GPU_ASSERTION() { return true; }
 #define MULTI_GPU_MSG_NOTE(func, note) #func " not implemented for multi GPU yet: " note
 #define MULTI_GPU_MSG(func) #func " not implemented for multi GPU yet"
 
     /**
      * @brief Verbose logging
      **/
-    __device__ __host__ [[nodiscard]] inline consteval bool verbose() noexcept
+    deviceHostFunctionReturnType inline consteval bool verbose() noexcept
     {
 #ifdef VERBOSE
         return true;

@@ -56,7 +56,6 @@ SourceFiles
 namespace LBM
 {
     using VelocitySet = D3Q27<Isothermal>;
-    using Collision = secondOrder;
 }
 
 #endif

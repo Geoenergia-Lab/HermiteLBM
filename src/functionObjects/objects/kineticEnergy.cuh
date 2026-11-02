@@ -71,7 +71,7 @@ namespace LBM
              * @param[in] U The perturbation of the velocity vector
              * @return The calculated total kinetic energy
              **/
-            __device__ [[nodiscard]] static inline constexpr const scalar calculate(const vector &U) noexcept
+            deviceFunctionReturnType static inline constexpr const scalar calculate(const vector &U) noexcept
             {
                 return ((U[0] * U[0]) + (U[1] * U[1]) + (U[2] * U[2])) / static_cast<scalar_t>(2 * velocitySetBase::scale_ij<int>());
             }
@@ -82,7 +82,7 @@ namespace LBM
              * @param[in] idx Spatial index
              * @return The calculated total kinetic energy
              **/
-            __device__ [[nodiscard]] static inline constexpr const thread::array<scalar_t, N> calculate(const device::ptrColl_t &devPtrs, const device::label_t idx) noexcept
+            deviceFunctionReturnType static inline constexpr const thread::array<scalar_t, N> calculate(const device::ptrColl_t &devPtrs, const device::label_t idx) noexcept
             {
                 return calculate(read_from_moments<axis::index<axis::X>(), axis::index<axis::Y>(), axis::index<axis::Z>()>(devPtrs, idx));
             }
@@ -98,13 +98,6 @@ namespace LBM
             static constexpr const bool canCalculateInstantaneous = true;
         };
 
-        namespace kineticEnergyDetail
-        {
-            using This = k;
-
-#include "commonKernelDefinitions.cuh"
-        }
-
         /**
          * @brief Class for managing total kinetic energy scalar calculations in LBM simulations
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
@@ -118,7 +111,7 @@ namespace LBM
              **/
             using ObjectType = k;
             using BaseType = FunctionObjectBase<ObjectType::N>;
-            using Kernel = kineticEnergyDetail::kernel;
+            using Kernel = functionObjectKernel<ObjectType>;
 
             /**
              * @brief Bring base members into scope
@@ -141,7 +134,7 @@ namespace LBM
              * @param[in] Pi Device symmetric tensor field containing the stress tensor values on the GPU
              * @param[in] programCtrl The program control object
              **/
-            __host__ [[nodiscard]] kineticEnergy(
+            hostFunctionReturnType kineticEnergy(
                 const host::latticeMesh &mesh,
                 const kernel::ptrCollection &devPtrs,
                 const programControl &programCtrl) noexcept
@@ -158,8 +151,8 @@ namespace LBM
              * @brief Disable copying
              **/
             __host__ ~kineticEnergy() {}
-            __host__ [[nodiscard]] kineticEnergy(const kineticEnergy &) = delete;
-            __host__ [[nodiscard]] kineticEnergy &operator=(const kineticEnergy &) = delete;
+            hostFunctionReturnType kineticEnergy(const kineticEnergy &) = delete;
+            hostFunctionReturnType kineticEnergy &operator=(const kineticEnergy &) = delete;
 
             /**
              * @brief Calculate the instantaneous kinetic energy
@@ -245,7 +238,7 @@ namespace LBM
              * @brief Access to the pointers of the instantaneous field
              * @param[in] idx Memory index
              **/
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> instantaneousPtrs(const host::label_t idx) noexcept
+            hostFunctionReturnType inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> instantaneousPtrs(const host::label_t idx) noexcept
             {
                 return k_.ptr(idx);
             }
@@ -254,7 +247,7 @@ namespace LBM
              * @brief Access to the pointers of the time averaged field
              * @param[in] idx Memory index
              **/
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
+            hostFunctionReturnType inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> meanPtrs(const host::label_t idx) noexcept
             {
                 return {kMean_.ptr(idx)};
             }
@@ -263,7 +256,7 @@ namespace LBM
              * @brief Access to the pointers of the perturbation field
              * @param[in] idx Memory index
              **/
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept
+            hostFunctionReturnType inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primePtrs(const host::label_t idx) noexcept
             {
                 return {kPrime_.ptr(idx)};
             }
@@ -272,7 +265,7 @@ namespace LBM
              * @brief Access to the pointers of the mean of the square of the perturbation field
              * @param[in] idx Memory index
              **/
-            __host__ [[nodiscard]] inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primeSqMeanPtrs(const host::label_t idx) noexcept
+            hostFunctionReturnType inline constexpr const device::ptrCollection<ObjectType::N, scalar_t> primeSqMeanPtrs(const host::label_t idx) noexcept
             {
                 return {kPrimeSqMean_.ptr(idx)};
             }

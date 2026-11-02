@@ -64,26 +64,52 @@ namespace LBM
     {
     public:
         /**
+         * @brief Place the moments into the shared memory prior to application of the boundary conditions
+         * @param[in] moments Moment array (rho, U, Pi)
+         * @param[out] sharedBuffer Shared memory array containing moment data
+         * @param[in] tid Thread ID within block
+         **/
+        __device__ static inline constexpr void update_smem(
+            const momentsArray &moments,
+            blockSharedBuffer &sharedBuffer,
+            const device::label_t tid) noexcept
+        {
+            device::constexpr_for<0, NUMBER_MOMENTS()>(
+                [&](const auto moment)
+                {
+                    const device::label_t ID = tid * label_constant<NUMBER_MOMENTS()>() + label_constant<moment>();
+                    sharedBuffer[ID] = moments[moment];
+                });
+
+            block::sync();
+        }
+
+        /**
+         * @brief Apply an equilibrium boundary condition to the second order moments
+         * @param[out] moments Moment array (rho, U, Pi)
+         **/
+        __device__ static inline constexpr void equilibrium_moment(momentsArray &moments) noexcept
+        {
+            moments[axis::index<axis::X, axis::X>()] = moments[axis::index<axis::X>()] * moments[axis::index<axis::X>()];
+            moments[axis::index<axis::X, axis::Y>()] = moments[axis::index<axis::X>()] * moments[axis::index<axis::Y>()];
+            moments[axis::index<axis::X, axis::Z>()] = moments[axis::index<axis::X>()] * moments[axis::index<axis::Z>()];
+            moments[axis::index<axis::Y, axis::Y>()] = moments[axis::index<axis::Y>()] * moments[axis::index<axis::Y>()];
+            moments[axis::index<axis::Y, axis::Z>()] = moments[axis::index<axis::Y>()] * moments[axis::index<axis::Z>()];
+            moments[axis::index<axis::Z, axis::Z>()] = moments[axis::index<axis::Z>()] * moments[axis::index<axis::Z>()];
+        }
+
+        /**
          * @brief Define the normal vector type
          **/
         using NormalVector = normalVector<var3<bool>(PeriodicX, PeriodicY, PeriodicZ)>;
-
-        /**
-         * @brief Define the block indices of the points on the interior of each boundary
-         **/
-        static constexpr const device::label_t WestInterior = 1;
-        static constexpr const device::label_t EastInterior = block::nx<device::label_t>() - 2;
-        static constexpr const device::label_t SouthInterior = 1;
-        static constexpr const device::label_t NorthInterior = block::ny<device::label_t>() - 2;
-        static constexpr const device::label_t BackInterior = 1;
-        static constexpr const device::label_t FrontInterior = block::nz<device::label_t>() - 2;
+        using This = boundaryConditionType<PeriodicX, PeriodicY, PeriodicZ>;
 
         /**
          * @brief Determine whether or not the boundary conditions are periodc along a particular axis
          * @tparam alpha The axis direction (X, Y or Z)
          **/
         template <const axis::type alpha>
-        __device__ __host__ [[nodiscard]] static inline consteval bool periodic() noexcept
+        deviceHostFunctionReturnType static inline consteval bool periodic() noexcept
         {
             constexpr const var3<bool> result(PeriodicX, PeriodicY, PeriodicZ);
             return result.value<alpha>();
@@ -92,7 +118,7 @@ namespace LBM
         /**
          * @brief Switch determining whether or not the simulation should save to a file
          **/
-        __device__ __host__ [[nodiscard]] static inline consteval bool save() noexcept { return true; }
+        deviceHostFunctionReturnType static inline consteval bool save() noexcept { return true; }
 
         /**
          * @brief Generic switch to apply the boundary conditions to the case (WIP)

@@ -10,7 +10,7 @@
 /*---------------------------------------------------------------------------*\
 
 Copyright (C) 2023 UDESC Geoenergia Lab
-Authors: Nathan Duggins, Vinicius Czarnobay, Breno Gemelgo (Geoenergia Lab, UDESC)
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
 
 This implementation is derived from concepts and algorithms developed in:
   MR-LBM: Moment Representation Lattice Boltzmann Method
@@ -37,97 +37,27 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Edge and corner definitions along the outlet plane of the jet.
+    Definition of the collision type
+
+Namespace
+    LBM
 
 SourceFiles
-    outlet.cuh
-
-Notes
-    This file is intended to be included directly inside a switch-case block.
-    Do NOT use include guards (#ifndef/#define/#endif).
+    collisionType.cuh
 
 \*---------------------------------------------------------------------------*/
 
-// Faces
-case normalVectorBase::FRONT():
-{
-    smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
+#ifndef __MBLBM_COLLISIONTYPE_CUH
+#define __MBLBM_COLLISIONTYPE_CUH
 
-    return;
+namespace LBM
+{
+    /**
+     * @brief Define the collision and forcing model
+     **/
+    using Forcing = forcing::none;
+    // using Forcing = forcing::Guo;
+    using Collision = BGK<Forcing>;
 }
 
-// Edges
-case normalVectorBase::WEST_FRONT():
-{
-    if constexpr (lateralNeumann)
-    {
-        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
-    }
-
-    return;
-}
-case normalVectorBase::EAST_FRONT():
-{
-    if constexpr (lateralNeumann)
-    {
-        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
-    }
-
-    return;
-}
-case normalVectorBase::SOUTH_FRONT():
-{
-    if constexpr (lateralNeumann)
-    {
-        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
-    }
-
-    return;
-}
-case normalVectorBase::NORTH_FRONT():
-{
-    if constexpr (lateralNeumann)
-    {
-        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
-    }
-
-    return;
-}
-
-// Edges
-case normalVectorBase::SOUTH_WEST_FRONT():
-{
-    if constexpr (lateralNeumann)
-    {
-        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
-    }
-
-    return;
-}
-case normalVectorBase::NORTH_WEST_FRONT():
-{
-    if constexpr (lateralNeumann)
-    {
-        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
-    }
-
-    return;
-}
-case normalVectorBase::SOUTH_EAST_FRONT():
-{
-    if constexpr (lateralNeumann)
-    {
-        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
-    }
-
-    return;
-}
-case normalVectorBase::NORTH_EAST_FRONT():
-{
-    if constexpr (lateralNeumann)
-    {
-        smemNeumann<fixOutletDensity>(moments, tidOutlet, sharedBuffer);
-    }
-
-    return;
-}
+#endif

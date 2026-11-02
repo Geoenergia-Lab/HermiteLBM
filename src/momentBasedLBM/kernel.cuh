@@ -125,7 +125,11 @@ namespace LBM
                     using NormalVector = normalVector<var3<bool>(BoundaryConditions::template periodic<axis::X>(), BoundaryConditions::template periodic<axis::Y>(), BoundaryConditions::template periodic<axis::Z>())>;
                     const NormalVector boundaryNormal(point);
                     VelocitySet::template calculate_moments(moments, pop, boundaryNormal);
-                    BoundaryConditions::template calculate_moments<VelocitySet>(moments, sharedBuffer, Tx, point, tid, boundaryNormal);
+                    BoundaryConditions::Base::update_smem(moments, sharedBuffer, tid);
+                    if (boundaryNormal.isBoundary())
+                    {
+                        BoundaryConditions::template calculate_moments<VelocitySet>(moments, boundaryNormal, sharedBuffer, Tx, point);
+                    }
                 }
                 else
                 {
@@ -205,12 +209,16 @@ namespace LBM
          * @param[in] readBuffer Collection of read-only pointers to the block halo faces used during streaming
          * @param[in] writeBuffer Collection of mutable pointers to the block halo faces used after streaming
          **/
-        __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP<VelocitySet>()) __global__ void momentBasedLBM(
+        __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP<VelocitySet>()) __global__ static void momentBasedLBM(
             const device::ptrColl_t devPtrs,
             const device::ptrCollection<6, const scalar_t> readBuffer,
             const device::ptrCollection<6, scalar_t> writeBuffer,
             const device::label_t bzOffset)
         {
+            // __shared__ blockSharedBuffer sharedBuffer;
+
+            // constexpr const integralConstant<scalar_t, static_cast<scalar_t>(0)> v;
+
             __shared__ blockSharedBuffer sharedBuffer;
 
             momentBasedLBMKernel<VelocitySet, BoundaryConditionCase, Collision>::momentBasedLBM(devPtrs, readBuffer, writeBuffer, sharedBuffer, bzOffset);
@@ -227,7 +235,7 @@ namespace LBM
          * @param[in] bzOffset Offsets to the block ID in the Z axis
          **/
         template <const host::label_t N>
-        __host__ void launchHelper(
+        __host__ inline void launchHelper(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const ptrCollection &devPtrs,
@@ -240,7 +248,7 @@ namespace LBM
             for (host::label_t deviceIdx = 0; deviceIdx < programCtrl.deviceList().size(); deviceIdx++)
             {
                 // Set the active device
-                errorHandler::handleInline(cudaSetDevice(programCtrl.deviceList()[deviceIdx]));
+                errorHandler::handleInline(API::setDevice(programCtrl.deviceList()[deviceIdx]));
 
                 // Sync the streams to ensure previous operations are complete before launching new kernels
                 for (host::label_t idxStream = 0; idxStream < idxStreams.size(); idxStream++)

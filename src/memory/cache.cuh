@@ -91,74 +91,74 @@ namespace LBM
             } Enum;
         }
 
-        /**
-         * @brief Prefetch data to a specific cache level with specified eviction policy
-         * @tparam level Cache level to prefetch to (Level::L1 or Level::L2)
-         * @tparam policy Cache eviction policy (Policy::evict_first or Policy::evict_last)
-         * @tparam T Type of data being prefetched
-         * @param[in] ptr Pointer to data to be prefetched
-         *
-         * This function uses CUDA inline assembly to issue hardware prefetch instructions
-         * that move data into the specified cache level before it's needed. This can
-         * significantly reduce memory latency for carefully orchestrated memory access patterns.
-         *
-         * @note Requires CUDA architecture >= 350 (Kepler or newer)
-         * @note Uses restrict qualifier to indicate no pointer aliasing
-         * @note Compile-time validation ensures only valid cache levels and policies are used
-         **/
-        template <const Level::Enum level, const Policy::Enum policy, typename T>
-        __device__ inline void prefetch(const T *const ptrRestrict ptr) noexcept
-        {
-            // Check that the CUDA architecture is valid
-#if defined(__CUDA_ARCH__)
-            static_assert((__CUDA_ARCH__ >= 350), "CUDA architecture must be >= 350");
-#endif
+        //         /**
+        //          * @brief Prefetch data to a specific cache level with specified eviction policy
+        //          * @tparam level Cache level to prefetch to (Level::L1 or Level::L2)
+        //          * @tparam policy Cache eviction policy (Policy::evict_first or Policy::evict_last)
+        //          * @tparam T Type of data being prefetched
+        //          * @param[in] ptr Pointer to data to be prefetched
+        //          *
+        //          * This function uses CUDA inline assembly to issue hardware prefetch instructions
+        //          * that move data into the specified cache level before it's needed. This can
+        //          * significantly reduce memory latency for carefully orchestrated memory access patterns.
+        //          *
+        //          * @note Requires CUDA architecture >= 350 (Kepler or newer)
+        //          * @note Uses restrict qualifier to indicate no pointer aliasing
+        //          * @note Compile-time validation ensures only valid cache levels and policies are used
+        //          **/
+        //         template <const Level::Enum level, const Policy::Enum policy, typename T>
+        //         __device__ inline void prefetch(const T *const ptrRestrict ptr) noexcept
+        //         {
+        //             // Check that the CUDA architecture is valid
+        // #if defined(__CUDA_ARCH__)
+        //             static_assert((__CUDA_ARCH__ >= 350), "CUDA architecture must be >= 350");
+        // #endif
 
-            // Check that the cache level is valid
-            static_assert((level == Level::L1) | (level == Level::L2), "Prefetch cache level must be 1 or 2");
+        //             // Check that the cache level is valid
+        //             static_assert((level == Level::L1) | (level == Level::L2), "Prefetch cache level must be 1 or 2");
 
-            // Check that the eviction policy is valid
-            static_assert((policy == Policy::evict_first) | (policy == Policy::evict_last), "Cache eviction policy must be evict_first or evict_last");
+        //             // Check that the eviction policy is valid
+        //             static_assert((policy == Policy::evict_first) | (policy == Policy::evict_last), "Cache eviction policy must be evict_first or evict_last");
 
-            if constexpr (level == Level::L1)
-            {
-                if constexpr (policy == Policy::evict_first)
-                {
-#if (__CUDA_ARCH__ >= 800)
-                    asm volatile("prefetch.global.L1::evict_first [%0];" ::"l"(ptr));
-#else
-                    asm volatile("prefetch.global.L1 [%0];" ::"l"(ptr));
-#endif
-                }
-                else if constexpr (policy == Policy::evict_last)
-                {
-#if (__CUDA_ARCH__ >= 800)
-                    asm volatile("prefetch.global.L1::evict_last [%0];" ::"l"(ptr));
-#else
-                    asm volatile("prefetch.global.L1 [%0];" ::"l"(ptr));
-#endif
-                }
-            }
-            else if constexpr (level == Level::L2)
-            {
-                if constexpr (policy == Policy::evict_first)
-                {
-#if (__CUDA_ARCH__ >= 800)
-                    asm volatile("prefetch.global.L2::evict_first [%0];" ::"l"(ptr));
-#else
-                    asm volatile("prefetch.global.L2 [%0];" ::"l"(ptr));
-#endif
-                }
-                else if constexpr (policy == Policy::evict_last)
-                {
-#if (__CUDA_ARCH__ >= 800)
-                    asm volatile("prefetch.global.L2::evict_last [%0];" ::"l"(ptr));
-#else
-                    asm volatile("prefetch.global.L1 [%0];" ::"l"(ptr));
-#endif
-                }
-            }
-        }
+        //             if constexpr (level == Level::L1)
+        //             {
+        //                 if constexpr (policy == Policy::evict_first)
+        //                 {
+        // #if (__CUDA_ARCH__ >= 800)
+        //                     asm volatile("prefetch.global.L1::evict_first [%0];" ::"l"(ptr));
+        // #else
+        //                     asm volatile("prefetch.global.L1 [%0];" ::"l"(ptr));
+        // #endif
+        //                 }
+        //                 else if constexpr (policy == Policy::evict_last)
+        //                 {
+        // #if (__CUDA_ARCH__ >= 800)
+        //                     asm volatile("prefetch.global.L1::evict_last [%0];" ::"l"(ptr));
+        // #else
+        //                     asm volatile("prefetch.global.L1 [%0];" ::"l"(ptr));
+        // #endif
+        //                 }
+        //             }
+        //             else if constexpr (level == Level::L2)
+        //             {
+        //                 if constexpr (policy == Policy::evict_first)
+        //                 {
+        // #if (__CUDA_ARCH__ >= 800)
+        //                     asm volatile("prefetch.global.L2::evict_first [%0];" ::"l"(ptr));
+        // #else
+        //                     asm volatile("prefetch.global.L2 [%0];" ::"l"(ptr));
+        // #endif
+        //                 }
+        //                 else if constexpr (policy == Policy::evict_last)
+        //                 {
+        // #if (__CUDA_ARCH__ >= 800)
+        //                     asm volatile("prefetch.global.L2::evict_last [%0];" ::"l"(ptr));
+        // #else
+        //                     asm volatile("prefetch.global.L1 [%0];" ::"l"(ptr));
+        // #endif
+        //                 }
+        //             }
+        //         }
     }
 }
 

@@ -55,59 +55,6 @@ SourceFiles
 
 namespace LBM
 {
-    namespace device
-    {
-        /**
-         * @brief Returns the global mesh size in a particular axis direction
-         * @tparam alpha The axis direction (X, Y or Z)
-         **/
-        template <const axis::type alpha>
-        __device__ [[nodiscard]] inline constexpr device::label_t n() noexcept
-        {
-            axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-            if constexpr (alpha == axis::X)
-            {
-                return nx;
-            }
-
-            if constexpr (alpha == axis::Y)
-            {
-                return ny;
-            }
-
-            if constexpr (alpha == axis::Z)
-            {
-                return nz;
-            }
-        }
-
-        /**
-         * @brief Returns the number of mesh blocks per GPU in a particular axis direction
-         * @tparam alpha The axis direction (X, Y or Z)
-         **/
-        template <const axis::type alpha>
-        __device__ [[nodiscard]] inline constexpr device::label_t NUM_BLOCK() noexcept
-        {
-            axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-            if constexpr (alpha == axis::X)
-            {
-                return NUM_BLOCK_X;
-            }
-
-            if constexpr (alpha == axis::Y)
-            {
-                return NUM_BLOCK_Y;
-            }
-
-            if constexpr (alpha == axis::Z)
-            {
-                return NUM_BLOCK_Z;
-            }
-        }
-    }
-
     namespace thread
     {
         /**
@@ -118,8 +65,10 @@ namespace LBM
          * @returns One of two thread coordinates that lie on the extremities of alpha within the block
          **/
         template <const axis::type alpha, const int coeff, typename ValueType = device::label_t>
-        __host__ [[nodiscard]] inline consteval ValueType boundary() noexcept
+        hostFunctionReturnType inline consteval ValueType boundary() noexcept
         {
+            velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
+
             if constexpr (coeff == -1)
             {
                 return 0;
@@ -143,7 +92,7 @@ namespace LBM
             /**
              * @brief Constructs from threadIdx
              **/
-            __device__ [[nodiscard]] inline explicit coordinate() noexcept
+            deviceFunctionReturnType inline explicit coordinate() noexcept
                 : var3<device::label_t>(
                       static_cast<device::label_t>(threadIdx.x),
                       static_cast<device::label_t>(threadIdx.y),
@@ -155,7 +104,7 @@ namespace LBM
              * @tparam coeff The coefficient indicating the direction along the axis (must be -1, 0 or 1)
              **/
             template <const axis::type alpha, const int coeff>
-            __device__ [[nodiscard]] inline constexpr device::label_t shifted_coordinate() const noexcept
+            deviceFunctionReturnType inline constexpr device::label_t shifted_coordinate() const noexcept
             {
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
@@ -192,7 +141,7 @@ namespace LBM
             /**
              * @brief Constructs from blockIdx
              **/
-            __device__ [[nodiscard]] inline explicit coordinate() noexcept
+            deviceFunctionReturnType inline explicit coordinate() noexcept
                 : var3<device::label_t>(
                       static_cast<device::label_t>(blockIdx.x),
                       static_cast<device::label_t>(blockIdx.y),
@@ -201,7 +150,7 @@ namespace LBM
             /**
              * @brief Constructs from an arbitrary input
              **/
-            __device__ [[nodiscard]] inline explicit coordinate(
+            deviceFunctionReturnType inline explicit coordinate(
                 const device::label_t bx,
                 const device::label_t by,
                 const device::label_t bz) noexcept
@@ -213,14 +162,14 @@ namespace LBM
              * @tparam coeff The coefficient indicating the direction along the axis (must be -1, 0 or 1)
              **/
             template <const axis::type alpha, const int coeff>
-            __device__ [[nodiscard]] inline constexpr device::label_t shifted_block() const noexcept
+            deviceFunctionReturnType inline constexpr device::label_t shifted_block() const noexcept
             {
                 axis::assertions::validate<alpha, axis::NOT_NULL>();
                 velocityCoefficient::assertions::validate<coeff, velocityCoefficient::NOT_NULL>();
 
                 if constexpr (coeff == -1)
                 {
-                    return (value<alpha>() + device::NUM_BLOCK<alpha>() - static_cast<device::label_t>(1)) % (device::NUM_BLOCK<alpha>());
+                    return (value<alpha>() + device::latticeMesh::nBlocks[alpha] - static_cast<device::label_t>(1)) % (device::latticeMesh::nBlocks[alpha]);
                 }
 
                 if constexpr (coeff == 0)
@@ -230,7 +179,7 @@ namespace LBM
 
                 if constexpr (coeff == +1)
                 {
-                    return (value<alpha>() + device::NUM_BLOCK<alpha>() + +static_cast<device::label_t>(1)) % (device::NUM_BLOCK<alpha>());
+                    return (value<alpha>() + device::latticeMesh::nBlocks[alpha] + +static_cast<device::label_t>(1)) % (device::latticeMesh::nBlocks[alpha]);
                 }
             }
         };
@@ -252,13 +201,16 @@ namespace LBM
              * @param[in] Tx Three-dimensional thread coordinates
              * @param[in] Bx Three-dimensional block coordinates
              **/
-            __device__ [[nodiscard]] inline explicit pointCoordinate(
+            deviceFunctionReturnType inline explicit pointCoordinate(
                 const thread::coordinate &Tx,
                 const block::coordinate &Bx) noexcept
-                : var3<device::label_t>(
-                      Tx.value<axis::X>() + block::nx<device::label_t>() * (Bx.value<axis::X>() + device::BLOCK_OFFSET_X),
-                      Tx.value<axis::Y>() + block::ny<device::label_t>() * (Bx.value<axis::Y>() + device::BLOCK_OFFSET_Y),
-                      Tx.value<axis::Z>() + block::nz<device::label_t>() * (Bx.value<axis::Z>() + device::BLOCK_OFFSET_Z)) {}
+                : var3<device::label_t>(ordinate<axis::X>(Tx, Bx), ordinate<axis::Y>(Tx, Bx), ordinate<axis::Z>(Tx, Bx)) {}
+
+            template <const axis::type alpha>
+            deviceFunctionReturnType static inline constexpr device::label_t ordinate(const thread::coordinate &Tx, const block::coordinate &Bx) noexcept
+            {
+                return Tx.value<alpha>() + block::n<alpha, device::label_t>() * (Bx.value<alpha>() + device::latticeMesh::blockOffset[alpha]);
+            }
         };
     }
 
@@ -268,31 +220,31 @@ namespace LBM
     class dim2
     {
     public:
-        __device__ __host__ [[nodiscard]] inline constexpr dim2(const device::label_t a, const device::label_t b) noexcept
+        deviceHostFunctionReturnType inline constexpr dim2(const device::label_t a, const device::label_t b) noexcept
             : i_(a),
               j_(b){};
 
-        __device__ __host__ [[nodiscard]] dim2(const dim2 &) = delete;
-        __device__ __host__ [[nodiscard]] dim2 &operator=(const dim2 &) = delete;
+        deviceHostFunctionReturnType dim2(const dim2 &) = delete;
+        deviceHostFunctionReturnType dim2 &operator=(const dim2 &) = delete;
 
-        __device__ __host__ [[nodiscard]] inline constexpr device::label_t i() const noexcept
+        deviceHostFunctionReturnType inline constexpr device::label_t i() const noexcept
         {
             return i_;
         }
 
         template <const axis::type alpha>
-        __device__ __host__ [[nodiscard]] static inline constexpr device::label_t i(const device::label_t linearIdx) noexcept
+        deviceHostFunctionReturnType static inline constexpr device::label_t i(const device::label_t linearIdx) noexcept
         {
             return linearIdx % (block::n<axis::orthogonal<alpha, 0>()>());
         }
 
         template <const axis::type alpha>
-        __device__ __host__ [[nodiscard]] static inline constexpr device::label_t j(const device::label_t linearIdx) noexcept
+        deviceHostFunctionReturnType static inline constexpr device::label_t j(const device::label_t linearIdx) noexcept
         {
             return linearIdx / (block::n<axis::orthogonal<alpha, 0>()>());
         }
 
-        __device__ __host__ [[nodiscard]] inline constexpr device::label_t j() const noexcept
+        deviceHostFunctionReturnType inline constexpr device::label_t j() const noexcept
         {
             return j_;
         }

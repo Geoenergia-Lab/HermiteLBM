@@ -50,7 +50,6 @@ SourceFiles
 #ifndef __MBLBM_SOLVERINCLUDES_CUH
 #define __MBLBM_SOLVERINCLUDES_CUH
 
-// Fundamental includes
 #include "../../../src/LBMIncludes.cuh"
 #include "../../../src/IO/basicIO.cuh"
 #include "../../../src/typedefs/typedefs.cuh"
@@ -58,26 +57,13 @@ SourceFiles
 #include "../../../src/array/array.cuh"
 #include "../../../src/fields/fields.cuh"
 #include "../../../src/postProcess/postProcess.cuh"
-
-// LBM includes
 #include "../../../src/momentBasedLBM/velocitySet/velocitySet.cuh"
 #include "../../../src/momentBasedLBM/boundaryConditions/boundaryConditions.cuh"
-
-namespace LBM
-{
-    /**
-     * @brief Define the boundary condition case
-     **/
-    // using BoundaryConditionCase = lidDrivenCavity;
-    using BoundaryConditionCase = jetFlow;
-    // using BoundaryConditionCase = benchmark;
-}
-
+#include "boundaryConditionCase.cuh"
 #include "../../../src/momentBasedLBM/blockHalo/blockHalo.cuh"
 #include "../../../src/momentBasedLBM/collision/collision.cuh"
+#include "collisionType.cuh"
 #include "../../../src/momentBasedLBM/streaming/streaming.cuh"
-
-// Runtime IO includes
 #include "../../../src/functionObjects/objectRegistry.cuh"
 #include "../../../src/IO/runTimeIO/runTimeIO.cuh"
 

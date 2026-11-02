@@ -71,7 +71,7 @@ namespace LBM
              * @param[in] programCtrl Program control object containing information about the devices and streams
              **/
             template <class VelocitySet>
-            __host__ [[nodiscard]] ptrCollection(
+            hostFunctionReturnType ptrCollection(
                 const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
                 const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
                 const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi,
@@ -83,7 +83,7 @@ namespace LBM
              * @param[in] index Index of the device/stream to access
              * @return Collection of pointers to device arrays for the specified device/stream
              **/
-            __host__ [[nodiscard]] inline constexpr const CollectionType &operator[](const host::label_t index) const noexcept
+            hostFunctionReturnType inline constexpr const CollectionType &operator[](const host::label_t index) const noexcept
             {
                 return devPtrs_[index];
             }
@@ -103,7 +103,7 @@ namespace LBM
              * @return Collection of pointers to device arrays for all devices/streams
              **/
             template <class VelocitySet>
-            __host__ [[nodiscard]] static const Type initialisePtrs(
+            hostFunctionReturnType static const Type initialisePtrs(
                 const device::scalarField<VelocitySet, time::instantaneous, solutionField> &rho,
                 const device::vectorField<VelocitySet, time::instantaneous, solutionField> &U,
                 const device::symmetricTensorField<VelocitySet, time::instantaneous, solutionField> &Pi,
@@ -115,8 +115,8 @@ namespace LBM
 
                 for (host::label_t stream = 0; stream < programCtrl.deviceList().size(); stream++)
                 {
-                    errorHandler::handleInline(cudaSetDevice(programCtrl.deviceList()[stream]));
-                    errorHandler::handleInline(cudaDeviceSynchronize());
+                    errorHandler::handleInline(API::setDevice(programCtrl.deviceList()[stream]));
+                    errorHandler::handleInline(API::deviceSynchronize());
 
                     ptrs.emplace_back(
                         device::ptrColl_t(

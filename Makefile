@@ -24,8 +24,13 @@ ifeq ($(HERMITELBM_INCLUDE_DIR),)
 $(error HERMITELBM_INCLUDE_DIR is not set. Please run "source bashrc" in the project directory first)
 endif
 
-ifeq ($(HERMITELBM_CUDA_DIR),)
-$(error HERMITELBM_CUDA_DIR is not set. Please run "source bashrc" in the project directory first)
+# GPU backend must be selected and its toolkit located by bashrc.
+ifeq ($(HERMITELBM_API),)
+$(error HERMITELBM_API is not set. Please run "source bashrc" in the project directory first)
+endif
+
+ifeq ($(HERMITELBM_TOOLKIT_DIR),)
+$(error HERMITELBM_TOOLKIT_DIR is not set. $(HERMITELBM_API) toolkit was not found by bashrc)
 endif
 
 TOOL_SUBDIRS = applications/systemInfo applications/postProcessing/fieldConvert applications/postProcessing/fieldCalculate

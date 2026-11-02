@@ -50,16 +50,6 @@ SourceFiles
 #ifndef __MBLBM_MAIN_CUH
 #define __MBLBM_MAIN_CUH
 
-// namespace LBM
-// {
-//     /**
-//      * @brief Define the boundary condition case
-//      **/
-//     // using BoundaryConditionCase = lidDrivenCavity;
-//     using BoundaryConditionCase = jetFlow;
-//     // using BoundaryConditionCase = benchmark;
-// }
-
 #include "../../../src/momentBasedLBM/momentBasedLBM.cuh"
 
 using namespace LBM;
@@ -87,6 +77,7 @@ int main(const int argc, const char *const argv[])
     }
 
     VelocitySet::print();
+    Collision::print();
 
     // Allocate the arrays on the device
     const ScalarField rho("rho", mesh, programCtrl);

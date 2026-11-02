@@ -57,7 +57,7 @@ namespace LBM
      * @tparam T The return type
      **/
     template <typename T = device::label_t>
-    __device__ __host__ [[nodiscard]] inline consteval T NUMBER_MOMENTS() noexcept
+    deviceHostFunctionReturnType inline consteval T NUMBER_MOMENTS() noexcept
     {
         return 10;
     }
@@ -68,7 +68,7 @@ namespace LBM
      * @tparam nVars Number of moment variables
      * @param[in] variableSize Size of the variable
      **/
-    __device__ __host__ [[nodiscard]] inline consteval host::label_t sharedMemoryBufferSize(const host::label_t variableSize = 1) noexcept
+    deviceHostFunctionReturnType inline consteval host::label_t sharedMemoryBufferSize(const host::label_t variableSize = 1) noexcept
     {
         return block::size<host::label_t>() * NUMBER_MOMENTS<host::label_t>() * variableSize;
     }
@@ -83,7 +83,7 @@ namespace LBM
      * @tparam T The return type
      **/
     template <typename T = scalar_t>
-    __device__ __host__ [[nodiscard]] inline consteval T rho0() noexcept
+    deviceHostFunctionReturnType inline consteval T rho0() noexcept
     {
         return static_cast<T>(1);
     }
@@ -93,36 +93,38 @@ namespace LBM
         /**
          * @brief Characteristic physical variables
          **/
-        __device__ __constant__ scalar_t Re;
-        __device__ __constant__ scalar_t nu;
-        __device__ __constant__ scalar_t tau;
-        __device__ __constant__ scalar_t L_char;
-        __device__ __constant__ scalar_t omega;
-        __device__ __constant__ scalar_t t_omegaVar;
-        __device__ __constant__ scalar_t omegaVar_d2;
+        __device__ __constant__ scalar_t Ma = static_cast<scalar_t>(0);
+        __device__ __constant__ scalar_t Re = static_cast<scalar_t>(0);
+        __device__ __constant__ scalar_t nu = static_cast<scalar_t>(0);
+        __device__ __constant__ scalar_t tau = static_cast<scalar_t>(0);
+        __device__ __constant__ scalar_t L_char = static_cast<scalar_t>(0);
+        __device__ __constant__ scalar_t omega = static_cast<scalar_t>(0);
+        __device__ __constant__ scalar_t sigma = static_cast<scalar_t>(0);
+
+        /**
+         * @brief Force term
+         **/
+        __device__ __constant__ scalar_t F[3] = {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)};
 
         /**
          * @brief Boundary condition variables
          **/
-        __device__ __constant__ scalar_t U_North[3];
-        __device__ __constant__ scalar_t U_South[3];
-        __device__ __constant__ scalar_t U_East[3];
-        __device__ __constant__ scalar_t U_West[3];
-        __device__ __constant__ scalar_t U_Back[3];
-        __device__ __constant__ scalar_t U_Front[3];
+        __device__ __constant__ scalar_t U_North[3] = {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)};
+        __device__ __constant__ scalar_t U_South[3] = {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)};
+        __device__ __constant__ scalar_t U_East[3] = {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)};
+        __device__ __constant__ scalar_t U_West[3] = {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)};
+        __device__ __constant__ scalar_t U_Back[3] = {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)};
+        __device__ __constant__ scalar_t U_Front[3] = {static_cast<scalar_t>(0), static_cast<scalar_t>(0), static_cast<scalar_t>(0)};
 
         /**
          * @brief Mesh constant variables
          **/
-        __device__ __constant__ device::label_t nx;
-        __device__ __constant__ device::label_t ny;
-        __device__ __constant__ device::label_t nz;
-        __device__ __constant__ device::label_t NUM_BLOCK_X;
-        __device__ __constant__ device::label_t NUM_BLOCK_Y;
-        __device__ __constant__ device::label_t NUM_BLOCK_Z;
-        __device__ __constant__ device::label_t BLOCK_OFFSET_X;
-        __device__ __constant__ device::label_t BLOCK_OFFSET_Y;
-        __device__ __constant__ device::label_t BLOCK_OFFSET_Z;
+        namespace latticeMesh
+        {
+            __device__ __constant__ device::label_t nPoints[3] = {static_cast<device::label_t>(0), static_cast<device::label_t>(0), static_cast<device::label_t>(0)};
+            __device__ __constant__ device::label_t nBlocks[3] = {static_cast<device::label_t>(0), static_cast<device::label_t>(0), static_cast<device::label_t>(0)};
+            __device__ __constant__ device::label_t blockOffset[3] = {static_cast<device::label_t>(0), static_cast<device::label_t>(0), static_cast<device::label_t>(0)};
+        }
     }
 }
 
