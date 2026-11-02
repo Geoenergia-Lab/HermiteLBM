@@ -62,20 +62,9 @@ namespace LBM
             template <const axis::type alpha>
             deviceFunctionReturnType static inline constexpr scalar_t apply() noexcept
             {
-                if constexpr (alpha == axis::X)
-                {
-                    return static_cast<scalar_t>(0);
-                }
+                axis::assertions::validate<alpha, axis::NOT_NULL>();
 
-                if constexpr (alpha == axis::Y)
-                {
-                    return static_cast<scalar_t>(0);
-                }
-
-                if constexpr (alpha == axis::Z)
-                {
-                    return device::g;
-                }
+                return device::F[alpha];
             }
 
             template <const axis::type alpha, const axis::type beta>

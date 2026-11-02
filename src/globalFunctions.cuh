@@ -470,7 +470,7 @@ namespace LBM
          **/
         deviceFunctionReturnType inline bool out_of_bounds(const device::pointCoordinate &point) noexcept
         {
-            return ((point.value<axis::X>() >= device::n<axis::X>()) || (point.value<axis::Y>() >= device::n<axis::Y>()) || (point.value<axis::Z>() >= device::n<axis::Z>()));
+            return ((point.value<axis::X>() >= device::latticeMesh::nPoints[axis::X]) || (point.value<axis::Y>() >= device::latticeMesh::nPoints[axis::Y]) || (point.value<axis::Z>() >= device::latticeMesh::nPoints[axis::Z]));
         }
 
         /**
@@ -481,11 +481,9 @@ namespace LBM
          *
          * Layout: [bx][by][bz][tz][ty][tx] (tx fastest varying)
          **/
-        deviceFunctionReturnType inline device::label_t idx(
-            const device::label_t tx, const device::label_t ty, const device::label_t tz,
-            const device::label_t bx, const device::label_t by, const device::label_t bz) noexcept
+        deviceFunctionReturnType inline device::label_t idx(const device::label_t tx, const device::label_t ty, const device::label_t tz, const device::label_t bx, const device::label_t by, const device::label_t bz) noexcept
         {
-            return global::idx<device::label_t, block::nx<device::label_t>(), block::ny<device::label_t>(), block::nz<device::label_t>()>(tx, ty, tz, bx, by, bz, NUM_BLOCK_X, NUM_BLOCK_Y);
+            return global::idx<device::label_t, block::nx<device::label_t>(), block::ny<device::label_t>(), block::nz<device::label_t>()>(tx, ty, tz, bx, by, bz, latticeMesh::nBlocks[axis::X], latticeMesh::nBlocks[axis::Y]);
         }
 
         /**
@@ -545,9 +543,7 @@ namespace LBM
          * @param[in] dx, dy, dz Device indices in the X, Y and Z directions
          * @param[in] ndx, ndy Number of devices in the X and Y directions
          **/
-        deviceHostFunctionReturnType inline constexpr host::label_t idx(
-            const host::label_t dx, const host::label_t dy, const host::label_t dz,
-            const host::label_t ndx, const host::label_t ndy) noexcept
+        deviceHostFunctionReturnType inline constexpr host::label_t idx(const host::label_t dx, const host::label_t dy, const host::label_t dz, const host::label_t ndx, const host::label_t ndy) noexcept
         {
             return Cartesian::idx(dx, dy, dz, ndx, ndy);
         }

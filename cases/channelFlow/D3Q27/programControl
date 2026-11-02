@@ -23,7 +23,7 @@ startTime       0;
                 
 nTimeSteps      1000001;
 
-saveInterval    10000;
+saveInterval    100000;
 
 infoInterval    1000;
 

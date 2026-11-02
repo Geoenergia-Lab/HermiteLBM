@@ -219,6 +219,8 @@ namespace LBM
                     moments[2] = moments[2] + uy;
                     moments[3] = moments[3] + uz;
                 }
+
+                block::sync();
             }
             else
             {
@@ -230,17 +232,16 @@ namespace LBM
                     using NormalVector = normalVector<var3<bool>(BoundaryConditions::template periodic<axis::X>(), BoundaryConditions::template periodic<axis::Y>(), BoundaryConditions::template periodic<axis::Z>())>;
                     const NormalVector boundaryNormal(point);
                     BoundaryConditions::Base::update_smem(moments, sharedBuffer, tid);
-                    BoundaryConditions::template calculate_moments<VelocitySet>(moments, sharedBuffer, Tx, point, tid, boundaryNormal);
+                    if (boundaryNormal.isBoundary())
+                    {
+                        BoundaryConditions::template calculate_moments<VelocitySet>(moments, boundaryNormal, sharedBuffer, Tx, point);
+                    }
                 }
+
+                block::sync();
+
+                velocitySetBase::scale(moments);
             }
-
-            block::sync();
-
-            // velocitySetBase::scale(moments);
-
-            // Temp weird fix
-            // moments[6] = -moments[6];
-            // moments[8] = -moments[8];
 
             // Save the halo
             saveHalo<BoundaryConditions::template periodic<axis::X>(), BoundaryConditions::template periodic<axis::Y>(), BoundaryConditions::template periodic<axis::Z>()>(moments, readBuffer, writeBuffer, Tx, Bx, point);

@@ -126,7 +126,10 @@ namespace LBM
                     const NormalVector boundaryNormal(point);
                     VelocitySet::template calculate_moments(moments, pop, boundaryNormal);
                     BoundaryConditions::Base::update_smem(moments, sharedBuffer, tid);
-                    BoundaryConditions::template calculate_moments<VelocitySet>(moments, sharedBuffer, Tx, point, tid, boundaryNormal);
+                    if (boundaryNormal.isBoundary())
+                    {
+                        BoundaryConditions::template calculate_moments<VelocitySet>(moments, boundaryNormal, sharedBuffer, Tx, point);
+                    }
                 }
                 else
                 {

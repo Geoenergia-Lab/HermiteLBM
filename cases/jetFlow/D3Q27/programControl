@@ -17,11 +17,13 @@ Ma              0.1;
 
 L_char          16;
 
+sigma           4;
+
 startFrom       latestTime;
 
 startTime       0;
 
-nTimeSteps      100001;
+nTimeSteps      10001;
 
 saveInterval    10000;
 

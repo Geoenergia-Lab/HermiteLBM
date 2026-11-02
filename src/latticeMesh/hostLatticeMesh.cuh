@@ -475,34 +475,31 @@ namespace LBM
             {
                 GPU::forAll(
                     nDevices,
-                    [&](const host::label_t dx, const host::label_t dy, const host::label_t dz)
+                    [&](const host::label_t GPU_x, const host::label_t GPU_y, const host::label_t GPU_z)
                     {
-                        const host::label_t virtualDeviceIndex = GPU::idx(dx, dy, dz, nDevices.value<axis::X>(), nDevices.value<axis::Y>());
+                        const host::label_t virtualDeviceIndex = GPU::idx(GPU_x, GPU_y, GPU_z, nDevices.value<axis::X>(), nDevices.value<axis::Y>());
 
                         errorHandler::handle(API::setDevice(programCtrl.deviceList()[virtualDeviceIndex]));
 
-                        const device::label_t nx = static_cast<device::label_t>(dimensions.x);
-                        const device::label_t ny = static_cast<device::label_t>(dimensions.y);
-                        const device::label_t nz = static_cast<device::label_t>(dimensions.z);
+                        const device::label_t nPointsTemp[3] = {
+                            static_cast<device::label_t>(dimensions.x),
+                            static_cast<device::label_t>(dimensions.y),
+                            static_cast<device::label_t>(dimensions.z)};
 
-                        const device::label_t nxBlocksPerDevice = static_cast<device::label_t>(nBlocks.value<axis::X>() / nDevices.value<axis::X>());
-                        const device::label_t nyBlocksPerDevice = static_cast<device::label_t>(nBlocks.value<axis::Y>() / nDevices.value<axis::Y>());
-                        const device::label_t nzBlocksPerDevice = static_cast<device::label_t>(nBlocks.value<axis::Z>() / nDevices.value<axis::Z>());
+                        const device::label_t nBlocksTemp[3] = {
+                            static_cast<device::label_t>(nBlocks.value<axis::X>() / nDevices.value<axis::X>()),
+                            static_cast<device::label_t>(nBlocks.value<axis::Y>() / nDevices.value<axis::Y>()),
+                            static_cast<device::label_t>(nBlocks.value<axis::Z>() / nDevices.value<axis::Z>())};
 
-                        const device::label_t xBlockOffset = static_cast<device::label_t>((nBlocks.value<axis::X>() / nDevices.value<axis::X>()) * dx);
-                        const device::label_t yBlockOffset = static_cast<device::label_t>((nBlocks.value<axis::Y>() / nDevices.value<axis::Y>()) * dy);
-                        const device::label_t zBlockOffset = static_cast<device::label_t>((nBlocks.value<axis::Z>() / nDevices.value<axis::Z>()) * dz);
+                        const device::label_t blockOffsetsTemp[3] = {
+                            static_cast<device::label_t>((nBlocks.value<axis::X>() / nDevices.value<axis::X>()) * GPU_x),
+                            static_cast<device::label_t>((nBlocks.value<axis::Y>() / nDevices.value<axis::Y>()) * GPU_y),
+                            static_cast<device::label_t>((nBlocks.value<axis::Z>() / nDevices.value<axis::Z>()) * GPU_z)};
 
                         // Allocate mesh symbols on the GPU
-                        device::copyToSymbol(device::nx, nx);
-                        device::copyToSymbol(device::ny, ny);
-                        device::copyToSymbol(device::nz, nz);
-                        device::copyToSymbol(device::NUM_BLOCK_X, nxBlocksPerDevice);
-                        device::copyToSymbol(device::NUM_BLOCK_Y, nyBlocksPerDevice);
-                        device::copyToSymbol(device::NUM_BLOCK_Z, nzBlocksPerDevice);
-                        device::copyToSymbol(device::BLOCK_OFFSET_X, xBlockOffset);
-                        device::copyToSymbol(device::BLOCK_OFFSET_Y, yBlockOffset);
-                        device::copyToSymbol(device::BLOCK_OFFSET_Z, zBlockOffset);
+                        device::copyToSymbol(device::latticeMesh::nPoints, nPointsTemp);
+                        device::copyToSymbol(device::latticeMesh::nBlocks, nBlocksTemp);
+                        device::copyToSymbol(device::latticeMesh::blockOffset, blockOffsetsTemp);
                     });
             }
 

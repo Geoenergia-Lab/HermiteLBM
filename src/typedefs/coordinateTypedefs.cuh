@@ -55,59 +55,6 @@ SourceFiles
 
 namespace LBM
 {
-    namespace device
-    {
-        /**
-         * @brief Returns the global mesh size in a particular axis direction
-         * @tparam alpha The axis direction (X, Y or Z)
-         **/
-        template <const axis::type alpha>
-        deviceFunctionReturnType inline constexpr device::label_t n() noexcept
-        {
-            axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-            if constexpr (alpha == axis::X)
-            {
-                return nx;
-            }
-
-            if constexpr (alpha == axis::Y)
-            {
-                return ny;
-            }
-
-            if constexpr (alpha == axis::Z)
-            {
-                return nz;
-            }
-        }
-
-        /**
-         * @brief Returns the number of mesh blocks per GPU in a particular axis direction
-         * @tparam alpha The axis direction (X, Y or Z)
-         **/
-        template <const axis::type alpha>
-        deviceFunctionReturnType inline constexpr device::label_t NUM_BLOCK() noexcept
-        {
-            axis::assertions::validate<alpha, axis::NOT_NULL>();
-
-            if constexpr (alpha == axis::X)
-            {
-                return NUM_BLOCK_X;
-            }
-
-            if constexpr (alpha == axis::Y)
-            {
-                return NUM_BLOCK_Y;
-            }
-
-            if constexpr (alpha == axis::Z)
-            {
-                return NUM_BLOCK_Z;
-            }
-        }
-    }
-
     namespace thread
     {
         /**
@@ -222,7 +169,7 @@ namespace LBM
 
                 if constexpr (coeff == -1)
                 {
-                    return (value<alpha>() + device::NUM_BLOCK<alpha>() - static_cast<device::label_t>(1)) % (device::NUM_BLOCK<alpha>());
+                    return (value<alpha>() + device::latticeMesh::nBlocks[alpha] - static_cast<device::label_t>(1)) % (device::latticeMesh::nBlocks[alpha]);
                 }
 
                 if constexpr (coeff == 0)
@@ -232,7 +179,7 @@ namespace LBM
 
                 if constexpr (coeff == +1)
                 {
-                    return (value<alpha>() + device::NUM_BLOCK<alpha>() + +static_cast<device::label_t>(1)) % (device::NUM_BLOCK<alpha>());
+                    return (value<alpha>() + device::latticeMesh::nBlocks[alpha] + +static_cast<device::label_t>(1)) % (device::latticeMesh::nBlocks[alpha]);
                 }
             }
         };
@@ -257,10 +204,13 @@ namespace LBM
             deviceFunctionReturnType inline explicit pointCoordinate(
                 const thread::coordinate &Tx,
                 const block::coordinate &Bx) noexcept
-                : var3<device::label_t>(
-                      Tx.value<axis::X>() + block::nx<device::label_t>() * (Bx.value<axis::X>() + device::BLOCK_OFFSET_X),
-                      Tx.value<axis::Y>() + block::ny<device::label_t>() * (Bx.value<axis::Y>() + device::BLOCK_OFFSET_Y),
-                      Tx.value<axis::Z>() + block::nz<device::label_t>() * (Bx.value<axis::Z>() + device::BLOCK_OFFSET_Z)) {}
+                : var3<device::label_t>(ordinate<axis::X>(Tx, Bx), ordinate<axis::Y>(Tx, Bx), ordinate<axis::Z>(Tx, Bx)) {}
+
+            template <const axis::type alpha>
+            deviceFunctionReturnType static inline constexpr device::label_t ordinate(const thread::coordinate &Tx, const block::coordinate &Bx) noexcept
+            {
+                return Tx.value<alpha>() + block::n<alpha, device::label_t>() * (Bx.value<alpha>() + device::latticeMesh::blockOffset[alpha]);
+            }
         };
     }
 

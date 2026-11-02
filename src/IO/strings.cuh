@@ -439,12 +439,20 @@ namespace LBM
          * @return A std::vector of std::string_view objects contained within the caseInfo file
          * @note This function will cause the program to exit if caseInfo is not found in the launch directory
          **/
+        template <const bool throws_on_error>
         hostFunctionReturnType const words_t readFile(const name_t &fileName)
         {
             // Does the file even exist?
             if (!std::filesystem::exists(fileName))
             {
-                throw std::runtime_error(name_t(fileName) + name_t(" file not opened"));
+                if constexpr (throws_on_error)
+                {
+                    throw std::runtime_error(name_t(fileName) + name_t(" file not opened"));
+                }
+                else
+                {
+                    return {};
+                }
             }
 
             // Read the caseInfo file contained within the directory
@@ -621,6 +629,10 @@ namespace LBM
         template <typename T>
         hostFunctionReturnType T extractParameter(const name_t &parameterValueString)
         {
+            if (parameterValueString.empty())
+            {
+                return static_cast<T>(0);
+            }
             // Is it supposed an integral value?
             if constexpr (std::is_integral_v<T>)
             {
@@ -690,9 +702,16 @@ namespace LBM
         {
             using value_type = typename T::value_type;
 
-            const words_t fileLines = string::readFile(fileName);
+            const words_t fileLines = string::readFile<false>(fileName);
 
-            return {string::extractParameter<value_type>(fileLines, prefix + "x"), string::extractParameter<value_type>(fileLines, prefix + "y"), string::extractParameter<value_type>(fileLines, prefix + "z")};
+            if (fileLines.empty())
+            {
+                return {static_cast<value_type>(0), static_cast<value_type>(0), static_cast<value_type>(0)};
+            }
+            else
+            {
+                return {string::extractParameter<value_type>(fileLines, prefix + "x"), string::extractParameter<value_type>(fileLines, prefix + "y"), string::extractParameter<value_type>(fileLines, prefix + "z")};
+            }
         }
 
         /**

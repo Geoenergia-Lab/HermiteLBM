@@ -17,6 +17,8 @@ Ma              0.1;
 
 L_char          16;
 
+sigma           4;
+
 startFrom       latestTime;
 
 startTime       0;
