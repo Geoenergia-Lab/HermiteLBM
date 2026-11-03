@@ -90,6 +90,16 @@ isothermalD3Q27 -GPU 0
 
 *(Note: Modify the execution command based on your specific path and setup).*
 
-## License
+## 📄 License
 
-\[Include License Information Here - e.g., MIT, GPLv3\]
+
+This project is licensed under the terms of the LICENSE file.
+
+
+## 🙏 Acknowledgments
+
+
+This codebase was heavily influenced by the `MR-LBM` project, although it has been completely rewritten. You can find the original repository here:
+
+
+<https://github.com/CERNN/MR-LBM>
