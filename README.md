@@ -2,189 +2,94 @@
 
 # HermiteLBM
 
-`HermiteLBM` is a high-performance computing project that implements the moment representation of the Lattice Boltzmann Method (LBM) on NVIDIA GPUs using CUDA. The code supports both single‑GPU and multi‑GPU execution (via domain decomposition and peer‑to‑peer memory transfers). This project is under active development and supports both Linux‑based and Windows systems.
+## Overview
 
-## 🚀 Features
+HermiteLBM is a high-performance, GPU-accelerated Lattice Boltzmann Method (LBM) solver. Written in C++, it leverages both **NVIDIA CUDA** and **AMD ROCm (HIP)** to deliver massively parallel execution across a wide range of modern GPU architectures. It is designed to simulate 3D fluid flows using isothermal and moment-based approaches.
 
-* **Lattice Boltzmann Method:** Implements the moment‑based LBM for fluid dynamics simulations.
-* **D3Q19 and D3Q27 Velocity Sets:** Both **D3Q19** and **D3Q27** lattices are fully supported for three‑dimensional simulations.
-* **Multi‑GPU Support:** Scales across multiple GPUs using domain decomposition. The inter-GPU communication is fully overlapped.
-* **Example Cases:** Two validation cases are provided:
-  * **Lid‑Driven Cavity:** Standard benchmark for 3D flows.
-  * **Jet Flow:** A submerged jet configuration demonstrating shear‑layer dynamics.
+## Features
 
-## ⚡ Performance
+- **Cross-Platform GPU Acceleration**: Compatible with both NVIDIA (CUDA) and AMD (ROCm) GPUs, ensuring high performance regardless of your hardware vendor.
+- **Velocity Sets**: Supports **D3Q19** and **D3Q27** lattice configurations.
+- **Multiple Solvers**: Includes ready-to-run solvers for:
+  * `isothermalD3Q19`
+  * `isothermalD3Q27`
+  * `momentBasedD3Q19`
+  * `momentBasedD3Q27`
+- **Advanced Boundary Conditions**: Supports regularized boundary conditions (Dirichlet, No-Slip) and specific configurations for jet flows and lid-driven cavities.
+- **Function Objects**: On-the-fly calculation of flow properties including:
+  * Kinetic Energy
+  * Strain Rate Tensor
+  * Turbulence Statistics
+  * Mean fields (PiMean, UMean, rhoMean)
+- **Post-Processing**: Built-in support for multiple output formats including **VTK** (VTU, VTI, VTS), **Tecplot**, and binary formats (LBMBin).
 
-The code has been benchmarked with the lid driven cavity case using D3Q19 and FP32 for both storage and arithmetic. The performance on various NVIDIA GPUs is as follows:
+## Repository Structure
 
-* **NVIDIA RTX A4000:** ~3300 MLUPS
-* **NVIDIA RTX 4090:** ~6600 MLUPS
-* **NVIDIA RTX 5090:** ~12900 MLUPS
+- `src/`: Core library containing the LBM implementation (streaming, collision, memory management, numerical schemes).
+- `applications/`: Source code for the main executable solvers and post-processing utilities (`fieldCalculate`, `fieldConvert`).
+- `cases/`: Ready-to-run example simulations:
+  * `benchmark`
+  * `jetFlow`
+  * `lidDrivenCavity`
+- `unitTests/`: Test suites, including NaN detection (`containsNaN`) and memory sanitization (`computeSanitizer`).
+- `preCommit/`: Python scripts for pre-commit formatting and code health checks (e.g., undocumented functions, comment mismatches).
 
-MLUPS stands for Million Lattice Updates Per Second. There is still room for improvement, as further optimizations are planned.
-
-## 📅 Future Features
-
-* **Extended boundary conditions:** Future versions will implement runtime-selectable boundary conditions via dynamic dispatch.
-
-## 🔧 Getting Started
+## Building from Source
 
 ### Prerequisites
 
-* A C++ compiler with **C++20** support (e.g., GCC or MSVC)
-* NVIDIA CUDA Toolkit
+- C++ Compiler (GCC/Clang for Linux, MSVC for Windows)
+- **For NVIDIA GPUs:** NVIDIA CUDA Toolkit
+- **For AMD GPUs:** AMD ROCm Toolkit (HIP)
 
-### Installation
+### Environment Setup (Linux)
 
-1.  Clone the repository:
+Before compiling on Linux, you must configure your environment and specify your compiler toolkit (HIP or CUDA) based on what you have installed. 
 
-    ```bash
-    git clone [https://github.com/Geoenergia-Lab/HermiteLBM.git](https://github.com/Geoenergia-Lab/HermiteLBM.git)
-    ```
-    
-2.  Navigate to the project directory and load the environment variables:
-   
-    * **On Linux:**
-      ```bash
-      cd HermiteLBM
-      source bashrc
-      ```
-    * **On Windows:** *(Note: It is highly recommended to use the Developer Command Prompt for Windows)*
-      ```cmd
-      cd HermiteLBM
-      bashrc
-      ```
-    
-3.  Compile the project (the command is the same for both operating systems):
-    ```bash
-    make install
-    ```
-
-## 💨 Usage
-
-### Running a Simulation
-
-To run a simulation, you must first navigate to the case directory (e.g., the `lidDrivenCavity` folder). You can then execute the compiled binary for the desired model:
+An environment setup script (`bashrc`) is provided in the root of the repository. Open the existing `bashrc` file and modify the `HERMITELBM_API` variable to match your target hardware:
 
 ```bash
-# For the D3Q19 model
-momentBasedD3Q19 -GPU 0
+# GPU backend selection. Must be one of: "CUDA", "HIP"
+export HERMITELBM_API="CUDA"
 ```
+
+You can also adjust the CUDA/ROCm versions and architecture detection settings within this file if necessary. Once configured, source the script to apply the environment variables before building:
 
 ```bash
-# For the D3Q27 model
-momentBasedD3Q27 -GPU 0
+source bashrc
 ```
 
-### Required Files
+### Compilation
 
-The following files **must** be present in the working (case) directory to run a simulation:
+The project supports both Linux and Windows build environments via Makefiles and batch scripts. The build system will automatically target your configured GPU environment (`CUDA` via `nvcc` or `ROCm` via `hipcc`).
 
-* `programControl`
-* `latticeMesh`
-* `initialConditions`
+**Linux:**
 
-Additionally, the optional `functionObjects` file may be present to enable runtime post-processing.
-
-### Runtime Function Objects
-
-The `functionObjects` file allows you to compute various quantities at runtime. Currently, it supports calculating the **kinetic energy** and the **strain rate tensor** of the flow, as well as their time averages.
-
-For example, including the following in your `functionObjects` file:
-
-```plaintext
-functionObjectList
-{
-    S;
-    SMean;
-    k;
-    kMean;
-};
+```
+# Compile the entire project
+make install
 ```
 
-will enable the calculation of the strain rate and kinetic energy, and additionally their time-averaged values.
+**Windows:**
 
-## 📦 Post-Processing
+Note: As of yet, HermiteLBM is not compatible with HIPCC on Windows. Windows compilation currently only supports CUDA.
 
-The project includes two key executables for post-processing: `fieldConvert` and `fieldCalculate`.
-
-### fieldConvert
-
-`fieldConvert` is primarily used to convert the `.LBMBin` files (saved by the solver) into other file types for visualization (e.g., `.vts` for ParaView).
-
-* **Default Conversion:** By default, it converts the 10 hydrodynamic moment variables.
-  
-    ```bash
-    fieldConvert -fileType vts
-    ```
-* **Convert Specific Fields:** You can convert other fields, like those generated by `functionObjects`.
-  
-    ```bash
-    fieldConvert -fileType vts -fieldName kMean
-    ```
-* **Extract Cut Plane:** It can also extract a cut plane in an arbitrary cardinal plane at a specific value.
-  
-    ```bash
-    fieldConvert -fileType vts -fieldName kMean -cutPlane z=0.5
-    ```
-
-### fieldCalculate
-
-`fieldCalculate` is used to perform mathematical operations on the solution fields.
-
-* **Check for NaN:** Inspect whether a field contains NaN values.
-    ```bash
-    fieldCalculate -calculationType containsNaN
-    ```
-    
-* **Calculate Derivatives:**
-    ```bash
-    # Calculate vorticity
-    fieldCalculate -calculationType vorticity
-    ```
-
-    ```bash
-    # Calculate divergence of velocity
-    fieldCalculate -calculationType div[U]
-    ```
-    
-* **Calculate Spatial Mean:**
-    ```bash
-    # Calculate spatial mean of velocity (default)
-    fieldCalculate -calculationType spatialMean
-    ```
-
-    ```bash
-    # Calculate spatial mean of a specific field
-    fieldCalculate -calculationType spatialMean -fieldName kMean
-    ```
-
-### ⏱️ Latest Time Flag
-
-Both `fieldConvert` and `fieldCalculate` can be limited to run on **only the latest saved time step** by adding the `-latestTime` flag. This is useful for quick visualization or saving disk space.
-
-```bash
-fieldConvert -fileType vts -fieldName kMean -latestTime
+```
+:: Compile the entire project
+Make install
 ```
 
-```bash
-fieldCalculate -fileType vts -calculationType div[U] -latestTime
+## Running a Case
+
+To run a simulation, navigate to one of the provided cases (e.g., the lid-driven cavity) and execute the desired solver:
+
+```
+cd cases/lidDrivenCavity/D3Q27
+isothermalD3Q27 -GPU 0
 ```
 
-## 📄 License
+*(Note: Modify the execution command based on your specific path and setup).*
 
+## License
 
-
-This project is licensed under the terms of the LICENSE file.
-
-
-
-## 🙏 Acknowledgments
-
-
-
-This codebase was heavily influenced by the `MR-LBM` project, although it has been completely rewritten. You can find the original repository here:
-
-
-
-<https://github.com/CERNN/MR-LBM>
+\[Include License Information Here - e.g., MIT, GPLv3\]
