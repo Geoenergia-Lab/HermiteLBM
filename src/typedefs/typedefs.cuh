@@ -90,7 +90,7 @@ namespace LBM
         /**
          * @brief Get the string that corresponds to the endian type
          **/
-        __device__ __host__ inline consteval const char *nameString() noexcept
+        deviceHostFunctionReturnType inline consteval const char *nameString() noexcept
         {
             assertions::validate();
 
@@ -135,7 +135,7 @@ namespace LBM
          * @tparam TimeType The time stepping approach
          **/
         template <const type TimeType>
-        __device__ __host__ inline consteval const char *nameString() noexcept
+        deviceHostFunctionReturnType inline consteval const char *nameString() noexcept
         {
             assertions::validate<TimeType>();
 

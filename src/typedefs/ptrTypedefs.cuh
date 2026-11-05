@@ -70,7 +70,7 @@ namespace LBM
              * @param[in] args An arbitrary number N of pointers of type T
              **/
             template <typename... Args>
-            __device__ __host__ constexpr ptrCollection(const Args... args)
+            deviceHostFunctionReturnType inline constexpr ptrCollection(const Args... args)
                 : ptrs_{args...} // Initialize array with arguments
             {
                 static_assert(sizeof...(Args) == N, "Incorrect number of arguments");

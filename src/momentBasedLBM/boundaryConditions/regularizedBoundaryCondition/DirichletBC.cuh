@@ -753,12 +753,6 @@ namespace LBM
                 }
             }
         }
-
-        // template <class VelocitySet, const nodeType_t BoundaryCase>
-        // __device__ __host__ static inline constexpr void apply(momentsArray &moments, const thread::array<scalar_t, VelocitySet::Q()> &pop) noexcept
-        // {
-        //     apply<VelocitySet, BoundaryCase>(moments, regularizedBC::incomingMoments<VelocitySet, BoundaryCase>(pop));
-        // }
     };
 }
 

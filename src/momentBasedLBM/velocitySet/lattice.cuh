@@ -80,7 +80,7 @@ namespace LBM
          * @brief Returns the number of unique weights in the velocity set
          * @return The number of unique weights in the velocity set
          **/
-        __device__ __host__ static inline consteval host::label_t nPerm() noexcept
+        deviceHostFunctionReturnType static inline consteval host::label_t nPerm() noexcept
         {
             return static_cast<host::label_t>(1) + static_cast<host::label_t>(Q_ > 7) + static_cast<host::label_t>(Q_ > 19);
         }
@@ -90,7 +90,7 @@ namespace LBM
          * @param[in] rho The total density
          * @return An array of weighted densities for the populations
          **/
-        __device__ __host__ static inline constexpr const thread::array<const scalar_t, This::nPerm()> rhow(const scalar_t rho) noexcept
+        deviceHostFunctionReturnType static inline constexpr const thread::array<const scalar_t, This::nPerm()> rhow(const scalar_t rho) noexcept
         {
             if constexpr (Q_ == 7)
             {
@@ -113,7 +113,7 @@ namespace LBM
          * @return The weighted density for the specified population index
          **/
         template <const host::label_t i>
-        __device__ __host__ static inline constexpr scalar_t rhow(const thread::array<const scalar_t, This::nPerm()> &rho_w) noexcept
+        deviceHostFunctionReturnType static inline constexpr scalar_t rhow(const thread::array<const scalar_t, This::nPerm()> &rho_w) noexcept
         {
             return rho_w[m_i<static_cast<host::label_t>(i >= 7) + static_cast<host::label_t>(i >= 19)>()];
         }

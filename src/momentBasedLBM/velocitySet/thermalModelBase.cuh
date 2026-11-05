@@ -92,7 +92,7 @@ namespace LBM
          * @brief Constructs a thermal model base with the specified Pics2 value
          * @param[in] val The value of 1 - c_s^2 * (m_xx + m_yy + m_zz) to be stored in the base
          **/
-        __device__ __host__ constexpr thermalModelBase(const scalar_t val) noexcept
+        deviceHostFunctionReturnType constexpr thermalModelBase(const scalar_t val) noexcept
             : pics2_(val) {}
 
         /**
