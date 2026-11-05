@@ -121,6 +121,58 @@ namespace LBM
         deviceHostFunctionReturnType static inline consteval bool save() noexcept { return true; }
 
         /**
+         * @brief Get the offset of the interior node based on the boundary node and the normal vector
+         * @tparam alpha The axis direction (X, Y or Z)
+         * @param[in] boundaryNormal Normal vector information at boundary node
+         **/
+        template <const axis::type alpha>
+        deviceFunctionReturnType static inline constexpr device::label_t boundaryOffset(const NormalVector &boundaryNormal) noexcept
+        {
+            if constexpr (alpha == axis::X)
+            {
+                if constexpr (PeriodicX)
+                {
+                    return 0;
+                }
+                return boundaryNormal.template isWest<device::label_t>() - boundaryNormal.template isEast<device::label_t>();
+            }
+
+            if constexpr (alpha == axis::Y)
+            {
+                if constexpr (PeriodicY)
+                {
+                    return 0;
+                }
+                return boundaryNormal.template isSouth<device::label_t>() - boundaryNormal.template isNorth<device::label_t>();
+            }
+
+            if constexpr (alpha == axis::Z)
+            {
+                if constexpr (PeriodicZ)
+                {
+                    return 0;
+                }
+                return boundaryNormal.template isBack<device::label_t>() - boundaryNormal.template isFront<device::label_t>();
+            }
+        }
+
+        /**
+         * @brief Get the thread coordinate of the interior node based on the boundary node and the normal vector
+         * @param[in] Tx Three-dimensional thread coordinates
+         * @param[in] boundaryNormal Normal vector information at boundary node
+         **/
+        deviceFunctionReturnType static inline constexpr device::label_t idxInterior(const thread::coordinate &Tx, const NormalVector &boundaryNormal) noexcept
+        {
+            return block::idx(Tx.value<axis::X>() + boundaryOffset<axis::X>(boundaryNormal), Tx.value<axis::Y>() + boundaryOffset<axis::Y>(boundaryNormal), Tx.value<axis::Z>() + boundaryOffset<axis::Z>(boundaryNormal));
+        }
+
+        template <const device::label_t moment>
+        deviceFunctionReturnType static inline constexpr device::label_t idxShared(const device::label_t tidInterior) noexcept
+        {
+            return (tidInterior * NUMBER_MOMENTS<device::label_t>()) + label_constant<moment>();
+        }
+
+        /**
          * @brief Generic switch to apply the boundary conditions to the case (WIP)
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @param[in] pop Population density array at current lattice node

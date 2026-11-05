@@ -87,7 +87,7 @@ namespace LBM
             device::halo<VelocitySet, boundaryConditionType<periodic_x, periodic_y, periodic_z>>::save(moments, writeBuffer, Tx, Bx, point);
         }
 
-        __device__ __forceinline__ static constexpr uint32_t hash_u32(uint32_t x) noexcept
+        __device__ static inline constexpr uint32_t hash_u32(uint32_t x) noexcept
         {
             x ^= x >> 16;
             x *= 0x7feb352dU;
@@ -98,7 +98,7 @@ namespace LBM
         }
 
         // Uniform in [-1, 1)
-        __device__ __forceinline__ static constexpr scalar_t uniform_signed(
+        __device__ static inline constexpr scalar_t uniform_signed(
             const uint32_t seed, const uint32_t idx, const uint32_t comp) noexcept
         {
             const uint32_t h = hash_u32(seed ^ (idx * 0x9E3779B9U) ^ (comp * 0x85EBCA6BU));

@@ -108,9 +108,12 @@ namespace LBM
             const thread::coordinate &Tx,
             const device::pointCoordinate &point) noexcept
         {
-            moments[0] = rho0();
+            constexpr const bool InletNeumannRho = false;
+            constexpr const bool OutletNeumannRho = true;
 
-            if (Tx.value<axis::Z>() == static_cast<device::label_t>(0))
+            constexpr const bool OutletNeumannPi = true;
+
+            if (point.value<axis::Z, device::label_t>() == static_cast<device::label_t>(0))
             {
                 const scalar_t x = point.value<axis::X, scalar_t>() - center<axis::X>();
                 const scalar_t y = point.value<axis::Y, scalar_t>() - center<axis::Y>();
@@ -120,28 +123,57 @@ namespace LBM
 
                 const scalar_t U_z = A * device::U_Back[2];
 
+                if constexpr (InletNeumannRho)
+                {
+                    const device::label_t tidInterior = idxInterior(Tx, boundaryNormal);
+                    moments[0] = sharedBuffer[idxShared<0>(tidInterior)];
+                }
+                else
+                {
+                    moments[0] = rho0();
+                }
+
                 moments[1] = static_cast<scalar_t>(0);
                 moments[2] = static_cast<scalar_t>(0);
                 moments[3] = U_z;
+
+                if constexpr (OutletNeumannPi)
+                {
+                    Base::equilibrium_moment(moments);
+                }
             }
             else
             {
-                const device::label_t tidInterior = block::idx(
-                    Tx.value<axis::X>() + boundaryNormal.isWest<device::label_t>() - boundaryNormal.isEast<device::label_t>(),
-                    Tx.value<axis::Y>() + boundaryNormal.isSouth<device::label_t>() - boundaryNormal.isNorth<device::label_t>(),
-                    Tx.value<axis::Z>() + boundaryNormal.isBack<device::label_t>() - boundaryNormal.isFront<device::label_t>());
+                const device::label_t tidInterior = idxInterior(Tx, boundaryNormal);
 
-                // Now get density and the velocities from the interior
-                const scalar_t Ux_interior = sharedBuffer[tidInterior * (NUMBER_MOMENTS()) + m_i<1>()];
-                const scalar_t Uy_interior = sharedBuffer[tidInterior * (NUMBER_MOMENTS()) + m_i<2>()];
-                const scalar_t Uz_interior = sharedBuffer[tidInterior * (NUMBER_MOMENTS()) + m_i<3>()];
+                if constexpr (OutletNeumannRho)
+                {
+                    moments[0] = sharedBuffer[idxShared<0>(tidInterior)];
+                }
+                else
+                {
+                    moments[0] = rho0();
+                }
 
-                moments[1] = Ux_interior;
-                moments[2] = Uy_interior;
-                moments[3] = Uz_interior;
+                moments[1] = sharedBuffer[idxShared<1>(tidInterior)];
+                moments[2] = sharedBuffer[idxShared<2>(tidInterior)];
+                moments[3] = sharedBuffer[idxShared<3>(tidInterior)];
+
+                if constexpr (OutletNeumannPi)
+                {
+                    moments[4] = sharedBuffer[idxShared<4>(tidInterior)];
+                    moments[5] = sharedBuffer[idxShared<5>(tidInterior)];
+                    moments[6] = sharedBuffer[idxShared<6>(tidInterior)];
+                    moments[7] = sharedBuffer[idxShared<7>(tidInterior)];
+                    moments[8] = sharedBuffer[idxShared<8>(tidInterior)];
+                    moments[9] = sharedBuffer[idxShared<9>(tidInterior)];
+                }
             }
 
-            Base::equilibrium_moment(moments);
+            if constexpr (!OutletNeumannPi)
+            {
+                Base::equilibrium_moment(moments);
+            }
         }
 
         template <const axis::type alpha>

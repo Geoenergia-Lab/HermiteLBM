@@ -353,7 +353,7 @@ namespace LBM
              * @note This helper is used internally by `indices_of()` and `values_of()`.
              **/
             template <const T val, const bool Equal, const host::label_t K>
-            __device__ __host__ constexpr host::label_t get_kth_matching_index() const noexcept
+            deviceHostFunctionReturnType constexpr host::label_t get_kth_matching_index() const noexcept
             {
                 host::label_t count = 0;
                 for (host::label_t i = 0; i < N; ++i)
@@ -478,7 +478,7 @@ namespace LBM
              * @note This is used as the value-producing counterpart to `get_kth_matching_index()`.
              **/
             template <const T val, bool Equal, host::label_t K>
-            __device__ __host__ constexpr T get_kth_matching_value() const noexcept
+            deviceHostFunctionReturnType constexpr T get_kth_matching_value() const noexcept
             {
                 host::label_t count = 0;
                 for (host::label_t i = 0; i < N; ++i)

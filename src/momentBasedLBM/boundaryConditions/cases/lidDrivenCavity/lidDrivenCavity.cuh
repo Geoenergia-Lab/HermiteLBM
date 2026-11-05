@@ -110,15 +110,12 @@ namespace LBM
             const device::pointCoordinate &point) noexcept
         {
             // Get the ID in the shared memory buffer of the interior point
-            const device::label_t tidInterior = block::idx(
-                Tx.value<axis::X>() + boundaryNormal.isWest<device::label_t>() - boundaryNormal.isEast<device::label_t>(),
-                Tx.value<axis::Y>() + boundaryNormal.isSouth<device::label_t>() - boundaryNormal.isNorth<device::label_t>(),
-                Tx.value<axis::Z>() + boundaryNormal.isBack<device::label_t>() - boundaryNormal.isFront<device::label_t>()); // Check this if NaN
+            const device::label_t tidInterior = idxInterior(Tx, boundaryNormal);
 
             // Now get density and the velocities from the interior
-            const scalar_t Ux_interior = sharedBuffer[tidInterior * (NUMBER_MOMENTS()) + m_i<1>()];
-            const scalar_t Uy_interior = sharedBuffer[tidInterior * (NUMBER_MOMENTS()) + m_i<2>()];
-            const scalar_t Uz_interior = sharedBuffer[tidInterior * (NUMBER_MOMENTS()) + m_i<3>()];
+            const scalar_t Ux_interior = sharedBuffer[idxShared<1>(tidInterior)];
+            const scalar_t Uy_interior = sharedBuffer[idxShared<2>(tidInterior)];
+            const scalar_t Uz_interior = sharedBuffer[idxShared<3>(tidInterior)];
 
             // Branchless boundary condition implementation
             const scalar_t not_x_boundary = static_cast<scalar_t>(!(boundaryNormal.isWest<bool>() || boundaryNormal.isEast<bool>()));
