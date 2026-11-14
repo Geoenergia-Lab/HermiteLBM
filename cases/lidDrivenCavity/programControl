@@ -9,9 +9,24 @@
 
 /*---------------------------------------------------------------------------*\
 
-functionObjectList
-{
-    
-};
+caseName        lidDrivenCavity;
+
+Re              10000;
+
+Ma              0.1;
+
+L_char          255;
+
+sigma           1;
+
+startFrom       latestTime;
+
+startTime       0;
+
+nTimeSteps      10001;
+
+saveInterval    10000;
+
+infoInterval    1000;
 
 \*---------------------------------------------------------------------------*/

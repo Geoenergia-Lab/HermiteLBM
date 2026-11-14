@@ -9,23 +9,23 @@
 
 /*---------------------------------------------------------------------------*\
 
-caseName        JICF;
+caseName        channelFlow;
 
-Re              1000;
+Re              180;
 
-Ma              0.1;
+Ma              0.01;
 
-L_char          16;
+L_char          127.5;
 
-sigma           4;
+sigma           1;
 
 startFrom       latestTime;
 
 startTime       0;
+                
+nTimeSteps      1000001;
 
-nTimeSteps      200001;
-
-saveInterval    10000;
+saveInterval    100000;
 
 infoInterval    1000;
 
