@@ -9,11 +9,24 @@
 
 /*---------------------------------------------------------------------------*\
 
-deviceDecomposition
-{
-    nx      1;
-    ny      1;
-    nz      1;
-};
+caseName        channelFlow;
+
+Re              180;
+
+Ma              0.01;
+
+L_char          127.5;
+
+sigma           1;
+
+startFrom       latestTime;
+
+startTime       0;
+                
+nTimeSteps      1000001;
+
+saveInterval    100000;
+
+infoInterval    1000;
 
 \*---------------------------------------------------------------------------*/

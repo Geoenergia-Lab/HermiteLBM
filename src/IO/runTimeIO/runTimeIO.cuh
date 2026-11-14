@@ -184,6 +184,8 @@ namespace LBM
         template <class Writer>
         __host__ void save()
         {
+            std::cout << std::endl;
+
             rho_.template save<Writer>(hostWriteBuffer_, programCtrl_.timeStep());
 
             U_.template save<Writer>(hostWriteBuffer_, programCtrl_.timeStep());

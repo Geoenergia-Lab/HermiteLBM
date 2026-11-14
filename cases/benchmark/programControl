@@ -9,9 +9,24 @@
 
 /*---------------------------------------------------------------------------*\
 
-functionObjectList
-{
-    
-};
+caseName        benchmark;
+
+Re              10000;
+
+Ma              0.1;
+
+L_char          127;
+
+sigma           1;
+
+startFrom       latestTime;
+
+startTime       0;
+
+nTimeSteps      220001;
+
+saveInterval    220000;
+
+infoInterval    1000;
 
 \*---------------------------------------------------------------------------*/

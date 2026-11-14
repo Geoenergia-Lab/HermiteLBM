@@ -72,27 +72,6 @@ namespace LBM
         deviceHostFunctionReturnType static inline consteval bool appliesCondition() noexcept { return true; }
 
         /**
-         * @brief Public method to apply the boundary conditions
-         * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
-         * @param[out] moments Moment array (rho, U, Pi)
-         * @param[in] boundaryNormal Normal vector information at boundary node
-         * @param[in] sharedBuffer Shared memory array containing moment data
-         * @param[in] Tx Three-dimensional thread coordinates
-         * @param[in] point The global point coordinate
-         **/
-        template <class VelocitySet>
-        __device__ static inline constexpr void calculate_moments(
-            momentsArray &moments,
-            const NormalVector &boundaryNormal,
-            const blockSharedBuffer &sharedBuffer,
-            const thread::coordinate &Tx,
-            const device::pointCoordinate &point) noexcept
-        {
-            calculate_moments_impl<VelocitySet>(moments, boundaryNormal, sharedBuffer, Tx, point);
-        }
-
-    private:
-        /**
          * @brief Calculate moment variables at boundary nodes
          * @tparam VelocitySet The velocity set (D3Q19 or D3Q27)
          * @param[out] moments Moment array (rho, U, Pi)
@@ -102,7 +81,7 @@ namespace LBM
          * @param[in] point The global point coordinate
          **/
         template <class VelocitySet>
-        __device__ static inline constexpr void calculate_moments_impl(
+        __device__ static inline constexpr void calculate_moments(
             momentsArray &moments,
             const NormalVector &boundaryNormal,
             const blockSharedBuffer &sharedBuffer,
@@ -160,6 +139,7 @@ namespace LBM
             return;
         }
 
+    private:
         /**
          * @brief Branchless computation of the velocity component based on the boundary
          * @tparam alpha The axis direction (X, Y or Z)

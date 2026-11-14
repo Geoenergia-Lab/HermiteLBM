@@ -213,6 +213,22 @@ namespace LBM
             }
         }
 
+        template <const host::label_t Pow, typename T, const double val>
+        deviceHostFunctionReturnType inline constexpr T constexpr_pow() noexcept
+        {
+            if constexpr (Pow == 0)
+            {
+                return T{1};
+            }
+            else
+            {
+                return [&]<host::label_t... Is>(std::index_sequence<Is...>)
+                {
+                    return (T{1} * ... * (static_cast<void>(Is), val));
+                }(std::make_index_sequence<Pow>{});
+            }
+        }
+
         /**
          * @brief Compute a square root at compile time
          * @tparam T The arithmetic return type

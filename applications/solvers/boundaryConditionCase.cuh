@@ -59,6 +59,7 @@ namespace LBM
     // using BoundaryConditionCase = lidDrivenCavity;
     using BoundaryConditionCase = jetFlow;
     // using BoundaryConditionCase = benchmark;
+    // using BoundaryConditionCase = JICF;
 }
 
 #endif
