@@ -155,14 +155,27 @@ namespace LBM
              **/
             __host__ static void createTimeStepDirectories(const host::label_t timeStep)
             {
-                if (!fileSystem::makeDirectory("timeStep"))
+                if (!fileSystem::makeDirectory<true>("timeStep"))
                 {
                     throw std::runtime_error("Error: unable to create timeStep directory");
                 }
-                if (!fileSystem::makeDirectory("timeStep/" + std::to_string(timeStep)))
+                if (!fileSystem::makeDirectory<true>("timeStep/" + std::to_string(timeStep)))
                 {
                     throw std::runtime_error("Error: unable to create directory for time step " + std::to_string(timeStep));
                 }
+            }
+
+            __host__ static bool createTimeStepDirectoriesNoexcept(const host::label_t timeStep) noexcept
+            {
+                if (!fileSystem::makeDirectory<false>("timeStep"))
+                {
+                    return false;
+                }
+                if (!fileSystem::makeDirectory<false>("timeStep/" + std::to_string(timeStep)))
+                {
+                    return false;
+                }
+                return true;
             }
 
             /**
@@ -191,7 +204,7 @@ namespace LBM
                 const host::label_t meanCount)
             {
                 const name_t resolvedName = make_filename(timeStep, fileName);
-                createTimeStepDirectories(timeStep);
+                const bool directoryStatus = createTimeStepDirectoriesNoexcept(timeStep);
 
                 //  types::assertions::validate<typename std::remove_pointer_t<Fields>>();
                 endian::assertions::validate();
@@ -200,10 +213,20 @@ namespace LBM
                 writer::diskSpaceAssertion<This>(mesh, varNames, resolvedName);
 
                 std::ofstream out(resolvedName, std::ios::binary);
-                if (!out)
-                {
-                    throw std::runtime_error("Cannot open file: " + resolvedName);
-                }
+
+                const bool out_is_bad = !out.good();
+
+                runTime::update_codes(out_is_bad);
+
+                std::cout << This::name << std::endl;
+                std::cout << "{" << std::endl;
+                std::cout << IO::whitespace<4>{} << "fileName: " << fileName << ";" << std::endl;
+                std::cout << IO::whitespace<4>{} << "timeStep: " << timeStep << ";" << std::endl;
+                printStatus("directory", directoryStatus);
+                std::cout << IO::whitespace<4>{} << "fileSize: " << fileSystem::to_MiB<double>(fileSystem::expectedDiskUsage<This::file_format, This::has_fields, This::has_points, This::has_elements, This::has_offsets>(mesh, varNames.size())) << " MiB;" << std::endl;
+                printStatus("ofstream", !out_is_bad);
+                std::cout << "};" << std::endl;
+                std::cout << std::endl;
 
                 // Write system and mesh information
                 system::print(out);

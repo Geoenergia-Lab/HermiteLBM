@@ -244,7 +244,7 @@ namespace LBM
             std::cout << "{" << std::endl;
             std::cout << IO::whitespace<4>{} << "fileName: " << trueFileName << ";" << std::endl;
 
-            const bool directoryStatus = fileSystem::makeDirectory(directoryPrefix);
+            const bool directoryStatus = fileSystem::makeDirectory<true>(directoryPrefix);
 
             printStatus("directory", directoryStatus);
 
