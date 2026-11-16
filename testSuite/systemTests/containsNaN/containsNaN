@@ -17,7 +17,7 @@ unset TIMESTAMP LOG_DIR LOG_FILE EXIT_CODE OVERALL_EXIT_STATUS
 unset EXEC EXECS GPU GPUS DEVICES_OUTPUT CLEAN_DEVICES
 
 # Source the environment
-source ../../bashrc
+source ../../../bashrc
 
 # All solver executables to test
 EXECS=("momentBasedD3Q19" "momentBasedD3Q27" "isothermalD3Q19" "isothermalD3Q27")

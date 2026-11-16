@@ -118,18 +118,18 @@ namespace LBM
 
             constexpr const bool OutletNeumannPi = true;
 
-            if ((point.value<axis::Z, device::label_t>() == static_cast<device::label_t>(0)) || (point.value<axis::X, device::label_t>() == static_cast<device::label_t>(0)))
+            if ((point.value<axis::X, device::label_t>() == static_cast<device::label_t>(0)) || (point.value<axis::Z, device::label_t>() == static_cast<device::label_t>(0)))
             {
                 // Do the Blasius velocity profile
-                const scalar_t z = point.value<axis::Z, scalar_t>();
-                const scalar_t U_x = uBlasius(z) * device::U_Back[2] / R();
+                const scalar_t x = point.value<axis::X, scalar_t>();
+                const scalar_t U_z = uBlasius(x) * device::U_West[0] / R();
 
                 // Do the top hat velocity profile
-                const scalar_t x = point.value<axis::X, scalar_t>() - center<axis::X>();
                 const scalar_t y = point.value<axis::Y, scalar_t>() - center<axis::Y>();
-                const scalar_t r = math::sqrt(math::pow<2>(x) + math::pow<2>(y));
+                const scalar_t z = point.value<axis::Z, scalar_t>() - center<axis::Z>();
+                const scalar_t r = math::sqrt(math::pow<2>(y) + math::pow<2>(z));
                 const scalar_t A = (math::erf((device::L_char - static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * math::sqrt(device::sigma))) + math::erf((device::L_char + static_cast<scalar_t>(2) * r) / (static_cast<scalar_t>(2) * math::sqrt(device::sigma)))) / (static_cast<scalar_t>(2) * math::erf(device::L_char / (static_cast<scalar_t>(2) * math::sqrt(device::sigma))));
-                const scalar_t U_z = A * device::U_Back[2];
+                const scalar_t U_x = A * device::U_West[0];
 
                 if constexpr (InletNeumannRho)
                 {
@@ -216,7 +216,7 @@ namespace LBM
         template <const axis::type alpha>
         deviceFunctionReturnType static inline constexpr scalar_t center() noexcept
         {
-            if constexpr (alpha == axis::X)
+            if constexpr (alpha == axis::Z)
             {
                 return static_cast<scalar_t>(256);
             }

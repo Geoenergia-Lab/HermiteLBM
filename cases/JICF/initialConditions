@@ -71,7 +71,7 @@ field U_x
 
     West
     {
-        value   0;
+        value   1;
     };
 
     Front
@@ -157,7 +157,7 @@ field U_z
 
     Back
     {
-        value   1;
+        value   0;
     };
 };
 

@@ -31,7 +31,7 @@ HermiteLBM is a high-performance, GPU-accelerated Lattice Boltzmann Method (LBM)
   * `benchmark`
   * `jetFlow`
   * `lidDrivenCavity`
-- `unitTests/`: Test suites, including NaN detection (`containsNaN`) and memory sanitization (`computeSanitizer`).
+- `systemTests/`: Test suites, including NaN detection (`containsNaN`) and memory sanitization (`computeSanitizer`).
 - `preCommit/`: Python scripts for pre-commit formatting and code health checks (e.g., undocumented functions, comment mismatches).
 
 ## Building from Source

@@ -18,7 +18,7 @@ unset TOTAL_TESTS FAILED_COUNT SKIPPED_COUNT PASSED_COUNT EXIT_STATUS
 unset EXEC EXECS
 
 # Source the environment
-source ../../bashrc
+source ../../../bashrc
 
 # All solver executables to test
 EXECS=("momentBasedD3Q19" "momentBasedD3Q27" "isothermalD3Q19" "isothermalD3Q27")

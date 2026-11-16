@@ -45,14 +45,6 @@ cases/*/timeStep
 cases/*/postProcess
 cases/*/profiling_results
 
-# Unit test directory ignores
-unitTests/*/*.LBMBin
-unitTests/*/*/*.dat
-unitTests/*/*/*.vts
-unitTests/*/*/*.vtu
-unitTests/*/logs
-unitTests/*/timeStep
-
 # Test executable directory ignores
 applications/testExecutable/*/*.LBMBin
 applications/testExecutable/*/*/*.dat
@@ -60,5 +52,11 @@ applications/testExecutable/*/*/*.vts
 applications/testExecutable/*/*/*.vtu
 applications/testExecutable/*/logs
 
-# Pre-commit folder ignores
-preCommit/__pycache__
+# Unit test directory ignores
+testSuite/systemTests/*/*.LBMBin
+testSuite/systemTests/*/*/*.dat
+testSuite/systemTests/*/*/*.vts
+testSuite/systemTests/*/*/*.vtu
+testSuite/systemTests/*/logs
+testSuite/systemTests/*/timeStep
+testSuite/staticAnalysis/*.txt

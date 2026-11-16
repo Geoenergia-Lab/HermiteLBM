@@ -1,0 +1,18 @@
+# --------------------------------------------------------------------------- #
+#                                                                             #
+# HermiteLBM: CUDA-based moment representation Lattice Boltzmann Method       #
+# Developed at UDESC - State University of Santa Catarina                     #
+# Website: https://www.udesc.br                                               #
+# Github: https://github.com/Geoenergia-Lab/HermiteLBM                        #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+# Performs static analysis of the src/ directory with cppcheck                #
+# --------------------------------------------------------------------------- #
+
+#!/bin/bash
+
+rm -rf files_to_check.lst
+find $HERMITELBM_PROJECT_DIR/src -type f -name "*.cuh" > files_to_check.lst
+cppcheck --enable=all --language=c++ --check-level=exhaustive -D__CUDACC__ -DSCALAR_PRECISION=32 -DLABEL_SIZE=32 --file-list=files_to_check.lst 2> cppcheck_report_nvcc.txt
+cppcheck --enable=all --language=c++ --check-level=exhaustive -D__HIP__ -DSCALAR_PRECISION=32 -DLABEL_SIZE=32 --file-list=files_to_check.lst 2> cppcheck_report_hipcc.txt
+rm -rf files_to_check.lst

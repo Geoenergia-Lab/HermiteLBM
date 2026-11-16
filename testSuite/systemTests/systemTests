@@ -14,7 +14,7 @@
 # Save the original working directory
 ORIG_DIR="$(pwd)"
 
-# Get the directory where *this script* is located (unitTest/)
+# Get the directory where *this script* is located (systemTests/)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Don't print individual headers and footers
